@@ -152,14 +152,25 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
         ],
       );
     } else {
-      // Android / Material Simplification
-      return ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Text('设置', style: Theme.of(context).textTheme.titleLarge),
-          const SizedBox(height: 16),
-          const Text('请在 Windows 版本中使用完整设置功能'),
-        ],
+      // Mobile: This should not normally be reached as mobile uses MobileSettingsPage via navigation.
+      // Show a fallback anyway.
+      return Scaffold(
+        appBar: AppBar(title: const Text('设置')),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.settings, size: 48, color: Colors.grey),
+                const SizedBox(height: 16),
+                const Text('移动端设置', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                const Text('请使用顶部导航栏的设置按钮访问完整设置页面', textAlign: TextAlign.center),
+              ],
+            ),
+          ),
+        ),
       );
     }
   }

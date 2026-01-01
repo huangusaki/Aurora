@@ -29,17 +29,17 @@ class _HistoryContentState extends ConsumerState<HistoryContent> {
   @override
   void initState() {
     super.initState();
-    // Load sessions initially and auto-open the latest one
     Future.microtask(() async {
        await ref.read(sessionsProvider.notifier).loadSessions();
-       
+       // Auto-select logic moved to handle interaction better or kept minimal
        if (ref.read(selectedHistorySessionIdProvider) == null) {
           final sessions = ref.read(sessionsProvider).sessions;
           if (sessions.isNotEmpty) {
-             // Assume sessions are sorted by date (descending) from storage
+             // On Mobile, maybe don't auto-open? 
+             // Ideally we check screen size here but context is tricky.
+             // For now keep desktop behavior as default (auto-open).
              ref.read(selectedHistorySessionIdProvider.notifier).state = sessions.first.sessionId;
           } else {
-             // No history, start new chat
              ref.read(selectedHistorySessionIdProvider.notifier).state = 'new_chat';
           }
        }
@@ -48,129 +48,164 @@ class _HistoryContentState extends ConsumerState<HistoryContent> {
 
   @override
   Widget build(BuildContext context) {
-    final isWindows = Platform.isWindows;
     final sessionsState = ref.watch(sessionsProvider);
-    final isSidebarVisible = ref.watch(isHistorySidebarVisibleProvider);
     final selectedSessionId = ref.watch(selectedHistorySessionIdProvider);
+    
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isMobile = constraints.maxWidth < 600;
 
-    return Row(
-      children: [
-        // Left Sidebar: Topics (Animated)
-        AnimatedContainer(
-          duration: const Duration(milliseconds: 250),
-          curve: Curves.easeInOut,
-          width: isSidebarVisible ? 250 : 0,
-          child: ClipRect(
-            child: OverflowBox(
-              minWidth: 250,
-              maxWidth: 250,
-              alignment: Alignment.centerLeft,
-              child: Container(
-                width: 250,
-                decoration: BoxDecoration(
-                  border: Border(right: BorderSide(color: isWindows 
-                      ? fluent.FluentTheme.of(context).resources.dividerStrokeColorDefault 
-                      : Theme.of(context).dividerColor)),
-                  color: isWindows 
-                      ? fluent.FluentTheme.of(context).cardColor 
-                      : Theme.of(context).cardColor,
-                ),
-                child: Column(
-                  children: [
-                    // New Topic Button
-                    Padding(
-                      padding: const EdgeInsets.all(12.0),
-                      child: SizedBox(
-                         width: double.infinity,
-                         child: isWindows 
-                          ? fluent.Button(
-                              child: const Row(
-                                mainAxisAlignment: MainAxisAlignment.center, 
-                                children: [fluent.Icon(fluent.FluentIcons.add), SizedBox(width: 8), Text('新建话题')]
-                              ),
-                              onPressed: () {
-                                 // Use 'new_chat' for lazy creation
-                                 ref.read(selectedHistorySessionIdProvider.notifier).state = 'new_chat';
-                                 ref.read(isHistorySidebarVisibleProvider.notifier).state = false; 
-                              },
-                            )
-                          : ElevatedButton.icon(
-                              icon: const Icon(Icons.add),
-                              label: const Text('新建话题'),
-                              onPressed: () {
-                                 ref.read(selectedHistorySessionIdProvider.notifier).state = 'new_chat';
-                                 ref.read(isHistorySidebarVisibleProvider.notifier).state = false;
-                              },
-                          ),
-                      ),
+        // --- Mobile View ---
+        if (isMobile) {
+          if (selectedSessionId != null && selectedSessionId != '') {
+             // Show Chat Detail with Back Button
+             return Column(
+               children: [
+                 Container(
+                   height: 48,
+                   padding: const EdgeInsets.symmetric(horizontal: 8),
+                   decoration: BoxDecoration(
+                      border: Border(bottom: BorderSide(color: fluent.FluentTheme.of(context).resources.dividerStrokeColorDefault)),
+                      color: fluent.FluentTheme.of(context).navigationPaneTheme.backgroundColor,
+                   ),
+                   child: Row(
+                     children: [
+                       fluent.IconButton(
+                         icon: const Icon(Icons.arrow_back),
+                         onPressed: () {
+                            ref.read(selectedHistorySessionIdProvider.notifier).state = null;
+                         },
+                       ),
+                       const SizedBox(width: 8),
+                       const Text('会话详情', style: TextStyle(fontWeight: FontWeight.bold)),
+                     ],
+                   ),
+                 ),
+                 const Expanded(child: _HistoryChatView()),
+               ],
+             );
+          } else {
+             // Show Session List (Full Width)
+             return _SessionList(
+               sessionsState: sessionsState, 
+               selectedSessionId: selectedSessionId,
+               isMobile: true,
+             );
+          }
+        }
+
+        // --- Desktop View (Split) ---
+        final isSidebarVisible = ref.watch(isHistorySidebarVisibleProvider);
+        return Row(
+          children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeInOut,
+              width: isSidebarVisible ? 250 : 0,
+              child: ClipRect(
+                child: OverflowBox(
+                  minWidth: 250,
+                  maxWidth: 250,
+                  alignment: Alignment.centerLeft,
+                  child: Container(
+                    width: 250,
+                    decoration: BoxDecoration(
+                      border: Border(right: BorderSide(color: fluent.FluentTheme.of(context).resources.dividerStrokeColorDefault)),
+                      color: fluent.FluentTheme.of(context).cardColor,
                     ),
-                    
-                    const Divider(),
-                    
-                    // Session List
-                    Expanded(
-                      child: sessionsState.isLoading && sessionsState.sessions.isEmpty
-                        ? const Center(child: fluent.ProgressRing())
-                        : ListView.builder(
-                            itemCount: sessionsState.sessions.length,
-                            itemBuilder: (context, index) {
-                              final session = sessionsState.sessions[index];
-                              final isSelected = session.sessionId == selectedSessionId;
-                              
-                              return GestureDetector(
-                                onTap: () {
-                                   ref.read(selectedHistorySessionIdProvider.notifier).state = session.sessionId;
-                                   // ref.read(isHistorySidebarVisibleProvider.notifier).state = false; // No auto hide
-                                },
-                                child: Container(
-                                  color: isSelected 
-                                    ? (isWindows ? fluent.FluentTheme.of(context).accentColor.withOpacity(0.1) : Colors.blue.withOpacity(0.1)) 
-                                    : Colors.transparent,
-                                  child: isWindows 
-                                    ? fluent.ListTile(
-                                        title: Text(session.title, maxLines: 1, overflow: TextOverflow.ellipsis),
-                                        subtitle: Text(DateFormat('MM/dd HH:mm').format(session.lastMessageTime)),
-                                        onPressed: () {
-                                           ref.read(selectedHistorySessionIdProvider.notifier).state = session.sessionId;
-                                           // ref.read(isHistorySidebarVisibleProvider.notifier).state = false; // No auto hide
-                                        },
-                                        trailing: fluent.IconButton(
-                                          icon: const fluent.Icon(fluent.FluentIcons.delete, size: 12),
-                                          onPressed: () {
-                                            ref.read(sessionsProvider.notifier).deleteSession(session.sessionId);
-                                            if (isSelected) {
-                                               ref.read(selectedHistorySessionIdProvider.notifier).state = null;
-                                            }
-                                          },
-                                        ),
-                                      )
-                                    : ListTile(
-                                        title: Text(session.title),
-                                        selected: isSelected,
-                                        onTap: () {
-                                          ref.read(selectedHistorySessionIdProvider.notifier).state = session.sessionId;
-                                          // ref.read(isHistorySidebarVisibleProvider.notifier).state = false; // No auto hide
-                                        },
-                                      ),
-                                ),
-                              );
-                            },
-                          ),
+                    child: _SessionList(
+                      sessionsState: sessionsState, 
+                      selectedSessionId: selectedSessionId,
+                      isMobile: false,
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),
-          ),
-        ),
-        
-        // Right Side: Chat View
-        Expanded(
-          child: selectedSessionId == null
-            ? const Center(child: Text('请选择或新建一个话题'))
-            : const _HistoryChatView(),
-        ),
-      ],
+            Expanded(
+              child: selectedSessionId == null
+                ? const Center(child: Text('请选择或新建一个话题'))
+                : const _HistoryChatView(),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _SessionList extends ConsumerWidget {
+  final SessionsState sessionsState;
+  final String? selectedSessionId;
+  final bool isMobile;
+
+  const _SessionList({
+    required this.sessionsState,
+    required this.selectedSessionId,
+    required this.isMobile,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Column(
+       children: [
+         Padding(
+           padding: const EdgeInsets.all(12.0),
+           child: SizedBox(
+              width: double.infinity,
+              child: fluent.Button(
+                   child: const Row(
+                     mainAxisAlignment: MainAxisAlignment.center, 
+                     children: [fluent.Icon(fluent.FluentIcons.add), SizedBox(width: 8), Text('新建话题')]
+                   ),
+                   onPressed: () {
+                      ref.read(selectedHistorySessionIdProvider.notifier).state = 'new_chat';
+                      // On mobile we don't need to hide sidebar, we just navigate.
+                      // On desktop we might want to keep sidebar open.
+                   },
+                 ),
+           ),
+         ),
+         const Divider(),
+         Expanded(
+           child: sessionsState.isLoading && sessionsState.sessions.isEmpty
+             ? const Center(child: fluent.ProgressRing())
+             : ListView.builder(
+                 itemCount: sessionsState.sessions.length,
+                 itemBuilder: (context, index) {
+                   final session = sessionsState.sessions[index];
+                   final isSelected = session.sessionId == selectedSessionId;
+                   
+                   return GestureDetector(
+                     onTap: () {
+                        ref.read(selectedHistorySessionIdProvider.notifier).state = session.sessionId;
+                     },
+                     child: Container(
+                       color: isSelected 
+                         ? fluent.FluentTheme.of(context).accentColor.withOpacity(0.1)
+                         : Colors.transparent,
+                       child: fluent.ListTile(
+                             title: Text(session.title, maxLines: 1, overflow: TextOverflow.ellipsis),
+                             subtitle: Text(DateFormat('MM/dd HH:mm').format(session.lastMessageTime)),
+                             onPressed: () {
+                                ref.read(selectedHistorySessionIdProvider.notifier).state = session.sessionId;
+                             },
+                             trailing: fluent.IconButton(
+                               icon: const fluent.Icon(fluent.FluentIcons.delete, size: 12),
+                               onPressed: () {
+                                 ref.read(sessionsProvider.notifier).deleteSession(session.sessionId);
+                                 if (isSelected) {
+                                    ref.read(selectedHistorySessionIdProvider.notifier).state = null;
+                                 }
+                               },
+                             ),
+                           ),
+                     ),
+                   );
+                 },
+               ),
+         ),
+       ],
     );
   }
 }
@@ -433,11 +468,10 @@ class _HistoryChatViewState extends ConsumerState<_HistoryChatView> {
   @override
   Widget build(BuildContext context) {
     final chatState = ref.watch(historyChatProvider);
-    final isWindows = Platform.isWindows;
+    // Removed isWindows check - Pure Fluent UI
 
     return Column(
       children: [
-        // Message List
         // Message List
         Expanded(
           child: AnimatedSwitcher(
@@ -455,7 +489,7 @@ class _HistoryChatViewState extends ConsumerState<_HistoryChatView> {
                 final msg = chatState.messages[index];
                 final isLast = index == chatState.messages.length - 1;
                 return _HistoryMessageBubble(
-                  key: ValueKey(msg.id), // Ensure individual messages maintain state if needed, though list replacement effectively resets
+                  key: ValueKey(msg.id),
                   message: msg, 
                   isLast: isLast
                 );
@@ -480,9 +514,9 @@ class _HistoryChatViewState extends ConsumerState<_HistoryChatView> {
                     margin: const EdgeInsets.only(right: 8),
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: (isWindows ? fluent.FluentTheme.of(context).cardColor : Theme.of(context).cardColor),
+                      color: fluent.FluentTheme.of(context).cardColor,
                       borderRadius: BorderRadius.circular(4),
-                      border: Border.all(color: isWindows ? fluent.FluentTheme.of(context).resources.dividerStrokeColorDefault : Theme.of(context).dividerColor),
+                      border: Border.all(color: fluent.FluentTheme.of(context).resources.dividerStrokeColorDefault),
                     ),
                     child: Row(
                       children: [
@@ -504,172 +538,213 @@ class _HistoryChatViewState extends ConsumerState<_HistoryChatView> {
 
         // Input Area
       Container(
-         padding: const EdgeInsets.all(12),
+         padding: EdgeInsets.all(Platform.isWindows ? 12 : 8), // Less padding on mobile
          decoration: BoxDecoration(
-           border: Border(top: BorderSide(color: isWindows 
-               ? fluent.FluentTheme.of(context).resources.dividerStrokeColorDefault 
-               : Theme.of(context).dividerColor)),
-           color: isWindows ? fluent.FluentTheme.of(context).cardColor : Theme.of(context).cardColor,
+           border: Border(top: BorderSide(color: fluent.FluentTheme.of(context).resources.dividerStrokeColorDefault)),
+           color: Platform.isWindows 
+               ? fluent.FluentTheme.of(context).cardColor
+               : Theme.of(context).scaffoldBackgroundColor, // Solid bg on mobile
          ),
-         child: Column(
-           children: [
-             // 1. Multi-line Input Field
-             isWindows 
-               ? Focus(
-                   onKeyEvent: (node, event) {
-                     if (event is! KeyDownEvent) return KeyEventResult.ignored;
-                     
-                     final isControl = HardwareKeyboard.instance.isControlPressed;
-                     final isShift = HardwareKeyboard.instance.isShiftPressed;
-                     
-                     // Ctrl + V (Intercept Win+V or standard paste if ignored by TextBox)
-                     if ((isControl && event.logicalKey == LogicalKeyboardKey.keyV) || 
-                         (isShift && event.logicalKey == LogicalKeyboardKey.insert)) {
-                       _handlePaste();
-                       return KeyEventResult.handled;
-                     }
-                     
-                     // Ctrl + Enter (Send)
-                     if (isControl && event.logicalKey == LogicalKeyboardKey.enter) {
-                       _sendMessage();
-                       return KeyEventResult.handled;
-                     }
-                     
-                     return KeyEventResult.ignored;
-                   },
-                   child: fluent.TextBox(
-                     controller: _controller,
-                     placeholder: 'Enter 换行，Ctrl + Enter 发送',
-                     maxLines: 3, 
-                     minLines: 1,
-                     decoration: const fluent.WidgetStatePropertyAll(fluent.BoxDecoration()), 
-                     style: const TextStyle(fontSize: 14),
-                   ),
-                 )
-               : TextField(
-                   controller: _controller,
-                   decoration: const InputDecoration(
-                     hintText: '在这里输入消息，按 Enter 发送',
-                     border: InputBorder.none,
-                   ),
-                   maxLines: 3,
-                   minLines: 1,
-                   onSubmitted: (_) => _sendMessage(),
-               ),
-
-             
-             const SizedBox(height: 8),
-
-             // 2. Bottom Toolbar
-             Row(
-               children: [
-                 // Left Actions: Attach, New Chat, Clear
-                 if (isWindows) ...[
-                    fluent.IconButton(
-                      icon: const fluent.Icon(fluent.FluentIcons.attach),
-                      onPressed: _pickFiles,
-                    ),
-                    const SizedBox(width: 8),
-                    fluent.IconButton(
-                      icon: const fluent.Icon(fluent.FluentIcons.add),
-                      onPressed: () {
-                         ref.read(selectedHistorySessionIdProvider.notifier).state = 'new_chat';
-                         ref.read(isHistorySidebarVisibleProvider.notifier).state = false; // Auto hide on new chat
-                      },
-                    ),
-                    const SizedBox(width: 8),
-                    fluent.IconButton(
-                      icon: const fluent.Icon(fluent.FluentIcons.paste),
-                      onPressed: _handlePaste, // Fallback manual paste
-                      style: fluent.ButtonStyle(
-                         // Optional: tooltip 'Paste'
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    fluent.IconButton(
-                      icon: const fluent.Icon(fluent.FluentIcons.broom),
-                      onPressed: () {
-                        showDialog(
-                          context: context,
-                          builder: (ctx) => fluent.ContentDialog(
-                            title: const Text('清空上下文'),
-                            content: const Text('确定要清空当前对话的历史记录吗？此操作不可撤销。'),
-                            actions: [
-                              fluent.Button(
-                                child: const Text('取消'),
-                                onPressed: () => Navigator.pop(ctx),
-                              ),
-                              fluent.FilledButton(
-                                child: const Text('确定'),
-                                onPressed: () {
-                                  Navigator.pop(ctx);
-                                  ref.read(historyChatProvider.notifier).clearContext();
-                                },
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-                 ] else ...[
-                    IconButton(
-                      icon: const Icon(Icons.attach_file),
-                      onPressed: _pickFiles,
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.add),
-                      onPressed: () {
-                         ref.read(selectedHistorySessionIdProvider.notifier).state = 'new_chat';
-                         ref.read(isHistorySidebarVisibleProvider.notifier).state = false;
-                      },
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline),
-                      onPressed: () {
-                        showDialog(
-                          context: context,
-                          builder: (ctx) => AlertDialog(
-                            title: const Text('清空上下文'),
-                            content: const Text('确定要清空当前对话的历史记录吗？'),
-                            actions: [
-                              TextButton(
-                                child: const Text('取消'),
-                                onPressed: () => Navigator.pop(ctx),
-                              ),
-                              TextButton(
-                                child: const Text('确定'),
-                                onPressed: () {
-                                  Navigator.pop(ctx);
-                                  ref.read(historyChatProvider.notifier).clearContext();
-                                },
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-                 ],
-
-                 const Spacer(),
-
-                 // Right Actions: Send
-                 if (chatState.isLoading)
-                   const fluent.ProgressRing(strokeWidth: 2, activeColor: Colors.blue)
-                 else 
-                    isWindows
-                    ? fluent.IconButton(
-                        icon: const fluent.Icon(fluent.FluentIcons.send),
-                        onPressed: _sendMessage,
-                      )
-                    : IconButton(
-                        icon: const Icon(Icons.send),
-                        onPressed: _sendMessage,
-                      ),
-               ],
-             ),
-           ],
-         ),
+         child: Platform.isWindows 
+             ? _buildDesktopInputArea(chatState)
+             : _buildMobileInputArea(chatState),
       ),
+      ],
+    );
+  }
+
+  // Desktop Input Area (with keyboard shortcuts)
+  Widget _buildDesktopInputArea(ChatState chatState) {
+    return Column(
+      children: [
+        Focus(
+          onKeyEvent: (node, event) {
+            if (event is! KeyDownEvent) return KeyEventResult.ignored;
+            
+            final isControl = HardwareKeyboard.instance.isControlPressed;
+            final isShift = HardwareKeyboard.instance.isShiftPressed;
+            
+            if ((isControl && event.logicalKey == LogicalKeyboardKey.keyV) || 
+                (isShift && event.logicalKey == LogicalKeyboardKey.insert)) {
+              _handlePaste();
+              return KeyEventResult.handled;
+            }
+            
+            if (isControl && event.logicalKey == LogicalKeyboardKey.enter) {
+              _sendMessage();
+              return KeyEventResult.handled;
+            }
+            
+            return KeyEventResult.ignored;
+          },
+          child: fluent.TextBox(
+            controller: _controller,
+            placeholder: '输入消息 (Enter 换行，Ctrl + Enter 发送)',
+            maxLines: 3, 
+            minLines: 1,
+            decoration: const fluent.WidgetStatePropertyAll(fluent.BoxDecoration()), 
+            style: const TextStyle(fontSize: 14),
+          ),
+        ),
+
+        const SizedBox(height: 8),
+
+        Row(
+          children: [
+            fluent.IconButton(
+              icon: const fluent.Icon(fluent.FluentIcons.attach),
+              onPressed: _pickFiles,
+            ),
+            const SizedBox(width: 8),
+            fluent.IconButton(
+              icon: const fluent.Icon(fluent.FluentIcons.add),
+              onPressed: () {
+                 ref.read(selectedHistorySessionIdProvider.notifier).state = 'new_chat';
+              },
+            ),
+            const SizedBox(width: 8),
+            fluent.IconButton(
+              icon: const fluent.Icon(fluent.FluentIcons.paste),
+              onPressed: _handlePaste,
+            ),
+            const SizedBox(width: 8),
+            fluent.IconButton(
+              icon: const fluent.Icon(fluent.FluentIcons.broom),
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (ctx) => fluent.ContentDialog(
+                    title: const Text('清空上下文'),
+                    content: const Text('确定要清空当前对话的历史记录吗？此操作不可撤销。'),
+                    actions: [
+                      fluent.Button(
+                        child: const Text('取消'),
+                        onPressed: () => Navigator.pop(ctx),
+                      ),
+                      fluent.FilledButton(
+                        child: const Text('确定'),
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          ref.read(historyChatProvider.notifier).clearContext();
+                        },
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+
+            const Spacer(),
+
+            if (chatState.isLoading)
+              const fluent.ProgressRing(strokeWidth: 2, activeColor: Colors.blue)
+            else 
+              fluent.IconButton(
+                icon: const fluent.Icon(fluent.FluentIcons.send),
+                onPressed: _sendMessage,
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // Mobile Input Area (simple and large)
+  Widget _buildMobileInputArea(ChatState chatState) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Action buttons row
+        Row(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            // Attachment
+            IconButton(
+              icon: const Icon(Icons.attach_file, size: 22),
+              onPressed: _pickFiles,
+              tooltip: '添加附件',
+            ),
+            // New chat
+            IconButton(
+              icon: const Icon(Icons.add_circle_outline, size: 22),
+              onPressed: () {
+                ref.read(selectedHistorySessionIdProvider.notifier).state = 'new_chat';
+              },
+              tooltip: '新对话',
+            ),
+            // Clear context
+            IconButton(
+              icon: const Icon(Icons.cleaning_services_outlined, size: 22),
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title: const Text('清空上下文'),
+                    content: const Text('确定要清空当前对话的历史记录吗？此操作不可撤销。'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        child: const Text('取消'),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          ref.read(historyChatProvider.notifier).clearContext();
+                        },
+                        child: const Text('确定'),
+                      ),
+                    ],
+                  ),
+                );
+              },
+              tooltip: '清空上下文',
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        // Input row
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            // Input field
+            Expanded(
+              child: Container(
+                constraints: const BoxConstraints(maxHeight: 120),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                child: TextField(
+                  controller: _controller,
+                  maxLines: 4,
+                  minLines: 1,
+                  decoration: const InputDecoration(
+                    hintText: '输入消息...',
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  ),
+                  style: const TextStyle(fontSize: 16),
+                  textInputAction: TextInputAction.newline,
+                ),
+              ),
+            ),
+            
+            const SizedBox(width: 8),
+            
+            // Send button
+            chatState.isLoading
+                ? const Padding(
+                    padding: EdgeInsets.all(8),
+                    child: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2)),
+                  )
+                : IconButton(
+                    icon: Icon(Icons.send, color: Theme.of(context).colorScheme.primary),
+                    iconSize: 26,
+                    onPressed: _sendMessage,
+                    padding: const EdgeInsets.all(8),
+                  ),
+          ],
+        ),
       ],
     );
   }
@@ -866,6 +941,7 @@ class _HistoryMessageBubbleState extends ConsumerState<_HistoryMessageBubble> {
     final message = widget.message;
     final isUser = message.isUser;
     final settingsState = ref.watch(settingsProvider);
+    final theme = fluent.FluentTheme.of(context);
     
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovering = true),
@@ -918,16 +994,15 @@ class _HistoryMessageBubbleState extends ConsumerState<_HistoryMessageBubble> {
                     decoration: BoxDecoration(
                       color: _isEditing 
                         ? fluent.Colors.transparent 
-                        : (Platform.isWindows ? fluent.FluentTheme.of(context).cardColor : (isUser ? Colors.blue : Theme.of(context).cardColor)),
+                        : (isUser ? theme.accentColor : theme.cardColor),
                       borderRadius: BorderRadius.circular(12),
-                      border: _isEditing ? null : Border.all(color: Platform.isWindows 
-                          ? fluent.FluentTheme.of(context).resources.dividerStrokeColorDefault 
-                          : Theme.of(context).dividerColor),
+                      border: _isEditing ? null : Border.all(
+                          color: isUser ? theme.accentColor : theme.resources.dividerStrokeColorDefault
+                      ),
                     ),
                     child: Column(
                        crossAxisAlignment: CrossAxisAlignment.start,
                        children: [
-
 
                           if (!message.isUser && message.reasoningContent != null && message.reasoningContent!.isNotEmpty)
                              Padding(
@@ -936,7 +1011,7 @@ class _HistoryMessageBubbleState extends ConsumerState<_HistoryMessageBubble> {
                                   : const EdgeInsets.only(bottom: 8.0),
                                child: ReasoningDisplay(
                                  content: message.reasoningContent!,
-                                 isWindows: Platform.isWindows,
+                                 isWindows: true, // Force Fluent Style
                                  isRunning: false,
                                ),
                              ),
@@ -948,9 +1023,9 @@ class _HistoryMessageBubbleState extends ConsumerState<_HistoryMessageBubble> {
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                                     decoration: BoxDecoration(
-                                      color: fluent.FluentTheme.of(context).cardColor,
+                                      color: theme.cardColor,
                                       borderRadius: BorderRadius.circular(24),
-                                      border: Border.all(color: fluent.FluentTheme.of(context).resources.dividerStrokeColorDefault),
+                                      border: Border.all(color: theme.resources.dividerStrokeColorDefault),
                                     ),
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -971,9 +1046,9 @@ class _HistoryMessageBubbleState extends ConsumerState<_HistoryMessageBubble> {
                                                       child: Container(
                                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                                          decoration: BoxDecoration(
-                                                            color: fluent.FluentTheme.of(context).accentColor.withOpacity(0.1),
+                                                            color: theme.accentColor.withOpacity(0.1),
                                                             borderRadius: BorderRadius.circular(12),
-                                                            border: Border.all(color: fluent.FluentTheme.of(context).accentColor.withOpacity(0.3)),
+                                                            border: Border.all(color: theme.accentColor.withOpacity(0.3)),
                                                          ),
                                                          child: Row(
                                                             mainAxisSize: MainAxisSize.min,
@@ -987,7 +1062,7 @@ class _HistoryMessageBubbleState extends ConsumerState<_HistoryMessageBubble> {
                                                                   ),
                                                                ),
                                                                const SizedBox(width: 4),
-                                                               Icon(fluent.FluentIcons.chrome_close, size: 8, color: fluent.FluentTheme.of(context).accentColor),
+                                                               Icon(fluent.FluentIcons.chrome_close, size: 8, color: theme.accentColor),
                                                             ],
                                                          ),
                                                       ),
@@ -1013,10 +1088,9 @@ class _HistoryMessageBubbleState extends ConsumerState<_HistoryMessageBubble> {
                                                style: TextStyle(
                                                   fontSize: 14, 
                                                   height: 1.5,
-                                                  fontFamily: Platform.isWindows ? 'Microsoft YaHei' : null,
-                                                  color: fluent.FluentTheme.of(context).typography.body?.color
+                                                  color: theme.typography.body?.color
                                                ),
-                                               cursorColor: fluent.FluentTheme.of(context).accentColor,
+                                               cursorColor: theme.accentColor,
                                                textInputAction: TextInputAction.send,
                                                onSubmitted: (_) => _saveEdit(),
                                            ),
@@ -1069,7 +1143,7 @@ class _HistoryMessageBubbleState extends ConsumerState<_HistoryMessageBubble> {
                               )
                           else
                              fluent.FluentTheme(
-                               data: fluent.FluentTheme.of(context),
+                               data: theme,
                                child: SelectionArea(
                                  child: MarkdownBody(
                                    data: message.content,
@@ -1078,10 +1152,11 @@ class _HistoryMessageBubbleState extends ConsumerState<_HistoryMessageBubble> {
                                      p: TextStyle(
                                        fontSize: 14, 
                                        height: 1.5,
-                                       fontFamily: Platform.isWindows ? 'Microsoft YaHei' : null,
-                                       color: Platform.isWindows 
-                                         ? fluent.FluentTheme.of(context).typography.body!.color 
-                                         : (isUser ? Colors.white : Colors.black87),
+                                       color: isUser ? Colors.white : theme.typography.body!.color,
+                                     ),
+                                     code: TextStyle(
+                                       backgroundColor: isUser ? Colors.white.withOpacity(0.2) : theme.micaBackgroundColor,
+                                       color: isUser ? Colors.white : theme.typography.body!.color,
                                      ),
                                    ),
                                  ),
@@ -1118,32 +1193,65 @@ class _HistoryMessageBubbleState extends ConsumerState<_HistoryMessageBubble> {
               ],
             ),
             
-            // Action Toolbar (Always occupies space)
-            Visibility(
-               visible: _isHovering && !_isEditing,
-               maintainSize: true, 
-               maintainAnimation: true,
-               maintainState: true,
-               child: Padding(
-                 padding: EdgeInsets.only(
-                    top: 4, 
-                    left: isUser ? 0 : 40, 
-                    right: isUser ? 40 : 0
-                 ),
-                 child: Row(
-                   mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
-                   children: [
-                      _ActionButton(icon: fluent.FluentIcons.refresh, tooltip: 'Retry', onPressed: () => _handleAction('retry')),
-                      const SizedBox(width: 4),
-                      _ActionButton(icon: fluent.FluentIcons.edit, tooltip: 'Edit', onPressed: () => _handleAction('edit')),
-                      const SizedBox(width: 4),
-                      _ActionButton(icon: fluent.FluentIcons.copy, tooltip: 'Copy', onPressed: () => _handleAction('copy')),
-                      const SizedBox(width: 4),
-                      _ActionButton(icon: fluent.FluentIcons.delete, tooltip: 'Delete', onPressed: () => _handleAction('delete')),
-                   ],
-                 ),
-               ),
-            ),
+            // Action Toolbar - Always visible on mobile, hover on desktop
+            Platform.isWindows
+                ? Visibility(
+                    visible: _isHovering && !_isEditing,
+                    maintainSize: true, 
+                    maintainAnimation: true,
+                    maintainState: true,
+                    child: Padding(
+                      padding: EdgeInsets.only(
+                         top: 4, 
+                         left: isUser ? 0 : 40, 
+                         right: isUser ? 40 : 0
+                      ),
+                      child: Row(
+                        mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+                        children: [
+                           _ActionButton(icon: fluent.FluentIcons.refresh, tooltip: 'Retry', onPressed: () => _handleAction('retry')),
+                           const SizedBox(width: 4),
+                           _ActionButton(icon: fluent.FluentIcons.edit, tooltip: 'Edit', onPressed: () => _handleAction('edit')),
+                           const SizedBox(width: 4),
+                           _ActionButton(icon: fluent.FluentIcons.copy, tooltip: 'Copy', onPressed: () => _handleAction('copy')),
+                           const SizedBox(width: 4),
+                           _ActionButton(icon: fluent.FluentIcons.delete, tooltip: 'Delete', onPressed: () => _handleAction('delete')),
+                        ],
+                      ),
+                    ),
+                  )
+                // Mobile: Always visible action buttons
+                : _isEditing
+                    ? const SizedBox.shrink()
+                    : Padding(
+                        padding: EdgeInsets.only(
+                          top: 4, 
+                          left: isUser ? 0 : 40, 
+                          right: isUser ? 40 : 0
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+                          children: [
+                            _MobileActionButton(
+                              icon: Icons.refresh,
+                              onPressed: () => _handleAction('retry'),
+                            ),
+                            _MobileActionButton(
+                              icon: Icons.edit_outlined,
+                              onPressed: () => _handleAction('edit'),
+                            ),
+                            _MobileActionButton(
+                              icon: Icons.copy_outlined,
+                              onPressed: () => _handleAction('copy'),
+                            ),
+                            _MobileActionButton(
+                              icon: Icons.delete_outline,
+                              onPressed: () => _handleAction('delete'),
+                            ),
+                          ],
+                        ),
+                      ),
           ],
         ),
       ),
@@ -1199,3 +1307,112 @@ class _ActionButton extends StatelessWidget {
   }
 }
 
+// --- Public Widgets for Mobile UI ---
+
+/// Public session list widget for use in mobile drawer
+class SessionListWidget extends ConsumerWidget {
+  final SessionsState sessionsState;
+  final String? selectedSessionId;
+  final Function(String sessionId) onSessionSelected;
+  final Function(String sessionId) onSessionDeleted;
+
+  const SessionListWidget({
+    super.key,
+    required this.sessionsState,
+    required this.selectedSessionId,
+    required this.onSessionSelected,
+    required this.onSessionDeleted,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final searchQuery = ref.watch(sessionSearchQueryProvider).toLowerCase();
+    
+    if (sessionsState.isLoading && sessionsState.sessions.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    // Filter sessions by search query
+    final filteredSessions = searchQuery.isEmpty 
+        ? sessionsState.sessions 
+        : sessionsState.sessions.where((s) => 
+            s.title.toLowerCase().contains(searchQuery) ||
+            (s.snippet?.toLowerCase().contains(searchQuery) ?? false)
+          ).toList();
+
+    if (filteredSessions.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Text(
+            searchQuery.isEmpty ? '暂无对话历史' : '未找到匹配的对话',
+            style: const TextStyle(color: Colors.grey),
+          ),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      itemCount: filteredSessions.length,
+      itemBuilder: (context, index) {
+        final session = filteredSessions[index];
+        final isSelected = session.sessionId == selectedSessionId;
+
+        return ListTile(
+          selected: isSelected,
+          selectedTileColor: Theme.of(context).primaryColor.withOpacity(0.1),
+          leading: const Icon(Icons.chat_bubble_outline),
+          title: Text(
+            session.title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          subtitle: Text(
+            DateFormat('MM/dd HH:mm').format(session.lastMessageTime),
+            style: const TextStyle(fontSize: 12),
+          ),
+          trailing: IconButton(
+            icon: const Icon(Icons.delete_outline, size: 20),
+            onPressed: () => onSessionDeleted(session.sessionId),
+          ),
+          onTap: () => onSessionSelected(session.sessionId),
+        );
+      },
+    );
+  }
+}
+
+/// Public chat body widget for mobile UI (reuses _HistoryChatView internally)
+class MobileChatBody extends ConsumerWidget {
+  const MobileChatBody({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Directly use the private _HistoryChatView which handles all chat logic
+    return const _HistoryChatView();
+  }
+}
+
+/// Mobile action button for message bubble actions
+class _MobileActionButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onPressed;
+
+  const _MobileActionButton({
+    required this.icon,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 36,
+      height: 36,
+      child: IconButton(
+        padding: EdgeInsets.zero,
+        icon: Icon(icon, size: 18, color: Colors.grey[600]),
+        onPressed: onPressed,
+      ),
+    );
+  }
+}

@@ -342,6 +342,9 @@ final sessionsProvider = StateNotifierProvider<SessionsNotifier, SessionsState>(
 final selectedHistorySessionIdProvider = StateProvider<String?>((ref) => null);
 final isHistorySidebarVisibleProvider = StateProvider<bool>((ref) => true);
 
+// Search query for filtering sessions
+final sessionSearchQueryProvider = StateProvider<String>((ref) => '');
+
 // History Chat Provider - specific to the selected history session
 final historyChatProvider = StateNotifierProvider<ChatNotifier, ChatState>((ref) {
   final service = ref.watch(llmServiceProvider);

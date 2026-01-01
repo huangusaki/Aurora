@@ -136,53 +136,31 @@ class MyApp extends ConsumerWidget {
       materialMode = ThemeMode.system;
     }
 
-    if (Platform.isWindows) {
-      return fluent.FluentApp(
-        title: 'Aurora',
-        debugShowCheckedModeBanner: false,
-        themeMode: fluentMode,
-        theme: fluent.FluentThemeData(
-          fontFamily: Platform.isWindows ? 'Microsoft YaHei' : null,
-          accentColor: fluent.Colors.blue,
-          brightness: fluent.Brightness.light,
-          scaffoldBackgroundColor: fluent.Colors.white,
-          cardColor: fluent.Colors.white,
-          navigationPaneTheme: fluent.NavigationPaneThemeData(
-            backgroundColor: fluent.Colors.grey[20], // Light grey for nav pane
-          ),
+    return fluent.FluentApp(
+      title: 'Aurora',
+      debugShowCheckedModeBanner: false,
+      themeMode: fluentMode,
+      theme: fluent.FluentThemeData(
+        fontFamily: Platform.isWindows ? 'Microsoft YaHei' : null,
+        accentColor: fluent.Colors.blue,
+        brightness: fluent.Brightness.light,
+        scaffoldBackgroundColor: fluent.Colors.white,
+        cardColor: fluent.Colors.white,
+        navigationPaneTheme: fluent.NavigationPaneThemeData(
+          backgroundColor: fluent.Colors.grey[20], // Light grey for nav pane
         ),
-        darkTheme: fluent.FluentThemeData(
-          fontFamily: Platform.isWindows ? 'Microsoft YaHei' : null,
-          accentColor: fluent.Colors.blue,
-          brightness: fluent.Brightness.dark,
-          scaffoldBackgroundColor: const Color(0xFF202020),
-          cardColor: const Color(0xFF2D2D2D),
-          navigationPaneTheme: const fluent.NavigationPaneThemeData(
-            backgroundColor: Color(0xFF181818), // Darker grey for nav pane
-          ),
+      ),
+      darkTheme: fluent.FluentThemeData(
+        fontFamily: Platform.isWindows ? 'Microsoft YaHei' : null,
+        accentColor: fluent.Colors.blue,
+        brightness: fluent.Brightness.dark,
+        scaffoldBackgroundColor: const Color(0xFF202020),
+        cardColor: const Color(0xFF2D2D2D),
+        navigationPaneTheme: const fluent.NavigationPaneThemeData(
+          backgroundColor: Color(0xFF181818), // Darker grey for nav pane
         ),
-        home: const ChatScreen(),
-      );
-    } else {
-      return MaterialApp(
-        title: 'Aurora',
-        debugShowCheckedModeBanner: false,
-        themeMode: materialMode,
-        theme: ThemeData(
-          fontFamily: Platform.isWindows ? 'Microsoft YaHei' : null,
-          useMaterial3: true,
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-        ),
-        darkTheme: ThemeData(
-          fontFamily: Platform.isWindows ? 'Microsoft YaHei' : null,
-          useMaterial3: true,
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: Colors.blue,
-            brightness: Brightness.dark,
-          ),
-        ),
-        home: const ChatScreen(),
-      );
-    }
+      ),
+      home: const ChatScreen(),
+    );
   }
 }

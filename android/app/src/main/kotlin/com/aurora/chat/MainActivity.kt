@@ -1,4 +1,4 @@
-package com.example.llm_trans
+package com.aurora.chat
 
 import io.flutter.embedding.android.FlutterActivity
 

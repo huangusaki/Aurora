@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:fluent_ui/fluent_ui.dart' as fluent;
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart'; // Added for kIsWeb
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../domain/message.dart';
 import 'chat_provider.dart';
@@ -9,6 +10,9 @@ import 'package:file_selector/file_selector.dart';
 import 'package:window_manager/window_manager.dart';
 import '../../settings/presentation/settings_content.dart'; 
 import '../../settings/presentation/settings_provider.dart';
+import '../../settings/presentation/mobile_settings_page.dart';
+import '../../settings/presentation/mobile_user_page.dart';
+import 'mobile_translation_page.dart';
 import '../../history/presentation/history_content.dart';
 import 'widgets/reasoning_display.dart';
 import 'widgets/chat_image_bubble.dart';
@@ -27,335 +31,512 @@ class ChatScreen extends ConsumerStatefulWidget {
 
 class _ChatScreenState extends ConsumerState<ChatScreen> {
   int _selectedIndex = 0;
-  fluent.PaneDisplayMode _displayMode = fluent.PaneDisplayMode.compact;
-  bool _isRailExtended = false;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   Widget build(BuildContext context) {
-    if (Platform.isWindows) {
-      final theme = fluent.FluentTheme.of(context);
-      final isExpanded = _displayMode == fluent.PaneDisplayMode.open;
-      
-      // Navigation Items Data (Order: History, Translate, Settings)
-      final navItems = [
-        (icon: fluent.FluentIcons.history, label: '历史', body: const HistoryContent()),
-        (icon: fluent.FluentIcons.translate, label: '翻译', body: const _TranslationContent()),
-        (icon: fluent.FluentIcons.settings, label: '设置', body: const SettingsContent()),
-      ];
-      
-      return Column(
-        children: [
-          // Custom Top Bar
-          // Custom Top Bar
-          Container(
-            height: 32,
-            color: theme.navigationPaneTheme.backgroundColor,
-            child: Row(
-              children: [
-                const SizedBox(width: 8),
-                // Hamburger Toggle
-                fluent.IconButton(
-                  icon: const fluent.Icon(fluent.FluentIcons.global_nav_button, size: 16),
-                  onPressed: () {
-                     setState(() {
-                       _displayMode = isExpanded 
-                          ? fluent.PaneDisplayMode.compact 
-                          : fluent.PaneDisplayMode.open;
-                     });
-                  },
-                ),
-                const SizedBox(width: 12),
-                // Title Removed
-                // const DragToMoveArea(
-                //   child: Align(
-                //     alignment: Alignment.centerLeft,
-                //     child: fluent.Text('LLM Trans', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                //   ),
-                // ),
-                // const SizedBox(width: 12), // Removed extra space before selector
-                const _ModelSelector(isWindows: true),
-                Expanded(child: DragToMoveArea(child: Container(color: Colors.transparent))),
-                const _WindowButtons(),
-              ],
+    final isWindows = !kIsWeb && Platform.isWindows;
+    final isMobile = !isWindows;
+    
+    if (isMobile) {
+      return _buildMobileLayout(context);
+    }
+    
+    // --- Windows Layout (NavigationView) ---
+    final theme = fluent.FluentTheme.of(context);
+    
+    final List<fluent.NavigationPaneItem> items = [
+      fluent.PaneItem(
+        icon: const Icon(fluent.FluentIcons.history),
+        title: const Text('历史'),
+        body: const SizedBox.shrink(),
+      ),
+      fluent.PaneItem(
+        icon: const Icon(fluent.FluentIcons.translate),
+        title: const Text('翻译'),
+        body: const SizedBox.shrink(),
+      ),
+      fluent.PaneItem(
+        icon: const Icon(fluent.FluentIcons.settings),
+        title: const Text('设置'),
+        body: const SizedBox.shrink(),
+      ),
+    ];
+
+    return fluent.NavigationView(
+      appBar: fluent.NavigationAppBar(
+        automaticallyImplyLeading: false,
+        title: () {
+          final titleWidget = const Padding(
+              padding: EdgeInsets.only(left: 12),
+              child: Text('Aurora', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          );
+          return DragToMoveArea(
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: titleWidget,
             ),
-          ),
-          
-          // Main Content: Custom Sidebar + Body
-          Expanded(
-            child: Row(
-              children: [
-                // Custom Sidebar with Fixed Item Positions
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  curve: Curves.easeInOut,
-                  width: isExpanded ? 200 : 50,
-                  decoration: BoxDecoration(
-                    color: theme.navigationPaneTheme.backgroundColor,
-                    border: Border(right: BorderSide(color: theme.resources.dividerStrokeColorDefault)),
-                  ),
-                  child: Column(
-                    children: [
-                      // Navigation Items - Fixed Position (Render all except Settings)
-                      ...navItems.take(navItems.length - 1).toList().asMap().entries.map((entry) {
-                        final index = entry.key;
-                        final item = entry.value;
-                        final isSelected = _selectedIndex == index;
-                        
-                        return fluent.HoverButton(
-                          onPressed: () {
-                            if (index == 0) {
-                               // History Tab (index 0) - Toggle Sidebar
-                               if (_selectedIndex == 0) {
-                                  ref.read(isHistorySidebarVisibleProvider.notifier).update((state) => !state);
-                               } else {
-                                  setState(() => _selectedIndex = 0);
-                                  ref.read(isHistorySidebarVisibleProvider.notifier).state = true;
-                               }
-                            } else {
-                               setState(() => _selectedIndex = index);
-                            }
-                          },
-                          builder: (context, states) {
-                            return Container(
-                              height: 40,
-                              margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: isSelected 
-                                  ? theme.accentColor.withOpacity(0.1)
-                                  : states.isHovering ? theme.resources.subtleFillColorSecondary : Colors.transparent,
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Row(
-                                children: [
-                                  // Icon - Always Centered
-                                  SizedBox(
-                                    width: 40,
-                                    child: Center(
-                                      child: fluent.Icon(
-                                        item.icon, 
-                                        size: 18,
-                                        color: isSelected ? theme.accentColor : null,
-                                      ),
-                                    ),
-                                  ),
-                                  // Label - Show/Hide based on expanded state
-                                  if (isExpanded)
-                                    Expanded(
-                                      child: Text(
-                                        item.label,
-                                        style: TextStyle(
-                                          color: isSelected ? theme.accentColor : null,
-                                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            );
-                          },
-                        );
-                      }),
-                      
-                        const Spacer(),
+          );
+        }(),
+        actions: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const _ModelSelector(isWindows: true), 
+            const _WindowButtons(),
+          ],
+        ),
+      ),
+      pane: fluent.NavigationPane(
+        selected: _selectedIndex,
+        onChanged: (index) {
+          if (index == 0) {
+             if (_selectedIndex == 0) {
+                ref.read(isHistorySidebarVisibleProvider.notifier).update((state) => !state);
+             } else {
+                ref.read(isHistorySidebarVisibleProvider.notifier).state = true;
+             }
+          }
+          setState(() => _selectedIndex = index);
+        },
+        displayMode: fluent.PaneDisplayMode.auto, 
+        size: const fluent.NavigationPaneSize(openWidth: 200),
+        items: items,
+        footerItems: [
+           fluent.PaneItemAction(
+             icon: Consumer(builder: (_, ref, __) {
+                final mode = ref.watch(settingsProvider).themeMode;
+                final isDark = mode == 'dark' || (mode == 'system' && MediaQuery.platformBrightnessOf(context) == Brightness.dark);
+                return Icon(isDark ? fluent.FluentIcons.clear_night : fluent.FluentIcons.sunny);
+             }),
+             title: const Text('切换主题'),
+             onTap: () {
+               ref.read(settingsProvider.notifier).toggleThemeMode();
+             },
+           ),
+        ],
+      ),
+      content: IndexedStack(
+        index: _selectedIndex,
+        children: const [
+           HistoryContent(),
+           _TranslationContent(),
+           SettingsContent(),
+        ],
+      ),
+    );
+  }
 
-                        // Settings Button (Moved to Bottom)
-                        Builder(
-                          builder: (context) {
-                            final index = navItems.length - 1; // Last item is Settings
-                            final item = navItems[index];
-                            final isSelected = _selectedIndex == index;
+  // --- Mobile Chat-First Layout ---
+  Widget _buildMobileLayout(BuildContext context) {
+    final settingsState = ref.watch(settingsProvider);
+    final selectedSessionId = ref.watch(selectedHistorySessionIdProvider);
+    final sessionsState = ref.watch(sessionsProvider);
+    
+    // Determine session title
+    String sessionTitle = '新对话';
+    if (selectedSessionId != null && selectedSessionId != 'new_chat' && sessionsState.sessions.isNotEmpty) {
+      final sessionMatch = sessionsState.sessions.where((s) => s.sessionId == selectedSessionId);
+      if (sessionMatch.isNotEmpty) {
+        sessionTitle = sessionMatch.first.title;
+      }
+    }
 
-                            return fluent.HoverButton(
-                              onPressed: () => setState(() => _selectedIndex = index),
-                              builder: (context, states) {
-                                return Container(
-                                  height: 40,
-                                  margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: isSelected 
-                                      ? theme.accentColor.withOpacity(0.1)
-                                      : states.isHovering ? theme.resources.subtleFillColorSecondary : Colors.transparent,
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      SizedBox(
-                                        width: 40,
-                                        child: Center(
-                                          child: fluent.Icon(
-                                            item.icon, 
-                                            size: 18,
-                                            color: isSelected ? theme.accentColor : null,
-                                          ),
-                                        ),
-                                      ),
-                                      if (isExpanded)
-                                        Expanded(
-                                          child: Text(
-                                            item.label,
-                                            style: TextStyle(
-                                              color: isSelected ? theme.accentColor : null,
-                                              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                                            ),
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                );
-                              },
-                            );
-                          }
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Scaffold(
+      key: _scaffoldKey,
+      extendBodyBehindAppBar: !isDark,
+      backgroundColor: isDark ? fluent.FluentTheme.of(context).scaffoldBackgroundColor : Colors.transparent,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent, // No Material 3 tint
+        elevation: 0,
+        toolbarHeight: 64, // Taller for mobile
+        leading: IconButton(
+          icon: const Icon(Icons.menu, size: 26),
+          onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+        ),
+        titleSpacing: 0,
+        title: GestureDetector(
+          onTap: _openModelSwitcher,
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      sessionTitle,
+                      style: TextStyle(
+                        fontSize: 18, // Larger
+                        fontWeight: FontWeight.w600,
+                        color: Theme.of(context).textTheme.bodyLarge?.color,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            settingsState.selectedModel ?? '未选择模型',
+                            style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                        const SizedBox(height: 4),
-                        // Theme Toggle using Consumer for reliable state updates
-                        Consumer(
-                          builder: (context, ref, child) {
-                            final currentTheme = ref.watch(settingsProvider).themeMode;
-                            
-                            // Determine the ACTUAL effective brightness
-                            final bool isActuallyDark;
-                            if (currentTheme == 'dark') {
-                              isActuallyDark = true;
-                            } else if (currentTheme == 'light') {
-                              isActuallyDark = false;
-                            } else {
-                              // System mode - check actual platform brightness
-                              isActuallyDark = MediaQuery.platformBrightnessOf(context) == Brightness.dark;
-                            }
-                            
-                            // Icon and label based on effective brightness
-                            final IconData icon = isActuallyDark ? fluent.FluentIcons.clear_night : fluent.FluentIcons.sunny;
-                            final String label = currentTheme == 'system' 
-                                ? '跟随系统' 
-                                : (isActuallyDark ? '夜间模式' : '日间模式');
-                            
-                            return fluent.HoverButton(
-                              onPressed: () {
-                                ref.read(settingsProvider.notifier).toggleThemeMode();
-                              },
-                              builder: (context, states) {
-                                return AnimatedContainer(
-                                  duration: const Duration(milliseconds: 200),
-                                  height: 40,
-                                  margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: states.isHovering ? theme.resources.subtleFillColorSecondary : Colors.transparent,
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      SizedBox(
-                                        width: 40,
-                                        child: Center(
-                                          child: AnimatedSwitcher(
-                                            duration: const Duration(milliseconds: 200),
-                                            child: fluent.Icon(
-                                              icon,
-                                              key: ValueKey(isActuallyDark),
-                                              size: 18,
-                                              color: theme.typography.body?.color,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                      if (isExpanded)
-                                        Expanded(
-                                          child: Text(
-                                            label,
-                                            style: const TextStyle(fontWeight: FontWeight.normal),
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                );
-                              },
-                            );
-                          },
-                        ),
-                        const SizedBox(height: 8),
-                    ],
-                  ),
+                        Icon(Icons.arrow_drop_down, size: 18, color: Colors.grey[600]),
+                      ],
+                    ),
+                  ],
                 ),
-                
-                // Body Content - with proper background
-                Expanded(
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add_circle_outline, size: 26),
+            tooltip: '新对话',
+            onPressed: () {
+              ref.read(selectedHistorySessionIdProvider.notifier).state = 'new_chat';
+            },
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
+      drawer: Drawer(
+        backgroundColor: fluent.FluentTheme.of(context).scaffoldBackgroundColor, // Solid background from FluentTheme
+        child: SafeArea(
+          child: Column(
+            children: [
+              // Search bar area (functional)
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: TextField(
+                          onChanged: (value) {
+                            ref.read(sessionSearchQueryProvider.notifier).state = value;
+                          },
+                          decoration: InputDecoration(
+                            hintText: '搜索聊天记录',
+                            hintStyle: TextStyle(color: Colors.grey[600], fontSize: 14),
+                            prefixIcon: Icon(Icons.search, size: 20, color: Colors.grey[600]),
+                            border: InputBorder.none,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          ),
+                          style: const TextStyle(fontSize: 14),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      icon: const Icon(Icons.close, size: 22),
+                      onPressed: () {
+                        ref.read(sessionSearchQueryProvider.notifier).state = '';
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              
+              // "New Chat" Button
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                child: InkWell(
+                  onTap: () {
+                    ref.read(selectedHistorySessionIdProvider.notifier).state = 'new_chat';
+                    Navigator.pop(context);
+                  },
+                  borderRadius: BorderRadius.circular(8),
                   child: Container(
-                    color: theme.scaffoldBackgroundColor,
-                    child: _FadeIndexedStack(
-                      index: _selectedIndex,
-                      children: navItems.map((item) => item.body).toList(),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.add_circle_outline, size: 20, color: Theme.of(context).colorScheme.primary),
+                        const SizedBox(width: 10),
+                        Text('新对话', style: TextStyle(fontSize: 15, color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w500)),
+                      ],
                     ),
                   ),
                 ),
-              ],
-            ),
+              ),
+              
+              const SizedBox(height: 4),
+              
+              // Session List
+              Expanded(
+                child: SessionListWidget(
+                  sessionsState: sessionsState,
+                  selectedSessionId: selectedSessionId,
+                  onSessionSelected: (sessionId) {
+                    ref.read(selectedHistorySessionIdProvider.notifier).state = sessionId;
+                    Navigator.pop(context);
+                  },
+                  onSessionDeleted: (sessionId) {
+                    ref.read(sessionsProvider.notifier).deleteSession(sessionId);
+                    if (sessionId == selectedSessionId) {
+                      ref.read(selectedHistorySessionIdProvider.notifier).state = 'new_chat';
+                    }
+                  },
+                ),
+              ),
+              
+              // Bottom Navigation Grid (2 rows x 3 columns)
+              Container(
+                decoration: BoxDecoration(
+                  color: fluent.FluentTheme.of(context).scaffoldBackgroundColor,
+                  border: Border(top: BorderSide(color: fluent.FluentTheme.of(context).resources.dividerStrokeColorDefault)),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Row 1: 用户 翻译 主题
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          _MobileDrawerNavItem(
+                            icon: Icons.person_outline,
+                            label: '用户',
+                            onTap: () {
+                              Navigator.pop(context);
+                              Navigator.push(context, MaterialPageRoute(builder: (_) => const MobileUserPage()));
+                            },
+                          ),
+                          _MobileDrawerNavItem(
+                            icon: Icons.translate,
+                            label: '翻译',
+                            onTap: () {
+                              Navigator.pop(context);
+                              Navigator.push(context, MaterialPageRoute(builder: (_) => const MobileTranslationPage()));
+                            },
+                          ),
+                          _MobileDrawerNavItem(
+                            icon: _getThemeIcon(ref.watch(settingsProvider).themeMode),
+                            label: '主题',
+                            onTap: () {
+                              _cycleTheme();
+                            },
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      // Row 2: 供应商 其它 关于
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          _MobileDrawerNavItem(
+                            icon: Icons.cloud_outlined,
+                            label: '模型',
+                            onTap: () {
+                              Navigator.pop(context);
+                              Navigator.push(context, MaterialPageRoute(builder: (_) => const MobileSettingsPage()));
+                            },
+                          ),
+                          _MobileDrawerNavItem(
+                            icon: Icons.link_outlined,
+                            label: '其它',
+                            onTap: () {
+                              // Placeholder for future GitHub, project info etc
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('敬请期待'), duration: Duration(seconds: 1)),
+                              );
+                            },
+                          ),
+                          _MobileDrawerNavItem(
+                            icon: Icons.info_outline,
+                            label: '关于',
+                            onTap: () {
+                              Navigator.pop(context);
+                              _showAboutDialog();
+                            },
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      body: Container(
+        decoration: !isDark ? const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFFE0F7FA), Color(0xFFF1F8E9)],
+          ),
+        ) : null,
+        child: Padding(
+          padding: EdgeInsets.only(top: !isDark ? 64 + MediaQuery.of(context).padding.top : 0),
+          child: const MobileChatBody(),
+        ),
+      ),
+    );
+  }
+
+  void _openModelSwitcher() {
+    final settingsState = ref.read(settingsProvider);
+    final provider = settingsState.activeProvider;
+    if (provider == null || provider.models.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('请先在设置中配置模型')),
+      );
+      return;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text('选择模型', style: Theme.of(context).textTheme.titleMedium),
+              ),
+              const Divider(height: 1),
+              ConstrainedBox(
+                constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.5),
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: provider.models.length,
+                  itemBuilder: (context, index) {
+                    final model = provider.models[index];
+                    final isSelected = model == settingsState.selectedModel;
+                    return ListTile(
+                      leading: Icon(
+                        isSelected ? Icons.check_circle : Icons.circle_outlined,
+                        color: isSelected ? Theme.of(context).primaryColor : null,
+                      ),
+                      title: Text(model),
+                      onTap: () {
+                        ref.read(settingsProvider.notifier).updateProvider(
+                          id: provider.id,
+                          selectedModel: model,
+                        );
+                        ref.read(settingsProvider.notifier).selectProvider(provider.id);
+                        Navigator.pop(ctx);
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  IconData _getThemeIcon(String themeMode) {
+    switch (themeMode) {
+      case 'dark':
+        return Icons.dark_mode;
+      case 'light':
+        return Icons.light_mode;
+      default:
+        return Icons.brightness_auto;
+    }
+  }
+
+  void _cycleTheme() {
+    final current = ref.read(settingsProvider).themeMode;
+    String next;
+    switch (current) {
+      case 'system':
+        next = 'light';
+        break;
+      case 'light':
+        next = 'dark';
+        break;
+      default:
+        next = 'system';
+    }
+    ref.read(settingsProvider.notifier).setThemeMode(next);
+    
+    final message = next == 'light' ? '浅色模式' : (next == 'dark' ? '深色模式' : '跟随系统');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('已切换到$message'), duration: const Duration(seconds: 1)),
+    );
+  }
+
+  void _showAboutDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.stars, color: Theme.of(context).primaryColor),
+            const SizedBox(width: 8),
+            const Text('Aurora'),
+          ],
+        ),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('版本: v1.0.0'),
+            SizedBox(height: 8),
+            Text('一款优雅的跨平台 AI 对话助手'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('确定'),
           ),
         ],
-      );
-    } else {
-      // Mobile / Android Layout
-      return Scaffold(
-        appBar: AppBar(
-          title: const Text('LLM Trans'),
-          // Android Toggle
-          leading: IconButton(
-            icon: const Icon(Icons.menu),
-            onPressed: () => setState(() => _isRailExtended = !_isRailExtended),
-          ),
-          actions: const [
-             _ModelSelector(isWindows: false),
-             SizedBox(width: 8),
-          ],
-        ),
-        body: Row(
+      ),
+    );
+  }
+}
+
+// Mobile drawer bottom navigation item
+class _MobileDrawerNavItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const _MobileDrawerNavItem({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            NavigationRail(
-              extended: _isRailExtended, // Toggle width
-              selectedIndex: _selectedIndex,
-              onDestinationSelected: (index) {
-                 setState(() => _selectedIndex = index);
-              },
-              
-              // Only show labels when extended to keep compact mode clean
-              labelType: _isRailExtended ? NavigationRailLabelType.none : NavigationRailLabelType.all,
-              
-              destinations: const [
-                NavigationRailDestination(
-                  icon: Icon(Icons.history), 
-                  selectedIcon: Icon(Icons.history, color: Colors.blue),
-                  label: Text('历史')
-                ),
-                NavigationRailDestination(
-                  icon: Icon(Icons.translate), 
-                  selectedIcon: Icon(Icons.translate, color: Colors.blue),
-                  label: Text('翻译')
-                ),
-                NavigationRailDestination(
-                  icon: Icon(Icons.settings), 
-                  selectedIcon: Icon(Icons.settings, color: Colors.blue),
-                  label: Text('设置')
-                ),
-              ],
-            ),
-            const VerticalDivider(thickness: 1, width: 1),
-            Expanded(
-              child: _FadeIndexedStack(
-                index: _selectedIndex,
-                children: const [
-                  HistoryContent(),
-                  _TranslationContent(),
-                  SettingsContent(),
-                ],
-              ),
-            ),
+            Icon(icon, size: 24),
+            const SizedBox(height: 4),
+            Text(label, style: const TextStyle(fontSize: 12)),
           ],
         ),
-      );
-    }
+      ),
+    );
   }
 }
 
@@ -439,12 +620,162 @@ class __TranslationContentState extends ConsumerState<_TranslationContent> {
     });
   }
 
+  Widget _buildSourceInput(fluent.FluentThemeData theme, bool isWindows) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      color: theme.scaffoldBackgroundColor,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              fluent.Text('原文', style: TextStyle(color: theme.resources.textFillColorSecondary)),
+              if (_sourceController.text.isNotEmpty)
+                fluent.IconButton(
+                  icon: const Icon(fluent.FluentIcons.clear),
+                  onPressed: () => _sourceController.clear(),
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Expanded(
+            child: fluent.TextBox(
+              controller: _sourceController,
+              focusNode: _focusNode,
+              maxLines: null,
+              expands: true,
+              placeholder: '在此输入要翻译的文本...',
+              decoration: null,
+              highlightColor: Colors.transparent,
+              unfocusedColor: Colors.transparent,
+              style: TextStyle(
+                fontSize: 16, 
+                height: 1.5, 
+                fontFamily: isWindows ? 'Microsoft YaHei' : null,
+                color: theme.typography.body?.color
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTargetOutput(fluent.FluentThemeData theme, bool isWindows, ChatState chatState, Message? aiMessage) {
+    return Container(
+      padding: const EdgeInsets.all(0),
+      color: theme.scaffoldBackgroundColor,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                 fluent.Text(_showComparison ? '双语对照' : '译文', style: TextStyle(color: theme.resources.textFillColorSecondary)),
+                 fluent.IconButton(
+                   icon: const Icon(fluent.FluentIcons.copy),
+                   onPressed: () {
+                     final text = aiMessage?.content;
+                     if (text != null && text.isNotEmpty) {
+                        final item = DataWriterItem();
+                        item.add(Formats.plainText(text));
+                        SystemClipboard.instance?.write([item]);
+                     }
+                   },
+                 ),
+              ],
+            ),
+          ),
+          Container(height: 1, color: theme.resources.dividerStrokeColorDefault),
+          Expanded(
+            child: Builder(
+              builder: (context) {
+                if (aiMessage == null && !chatState.isLoading) {
+                   return const Center(child: Text('翻译结果将显示在这里', style: TextStyle(color: Colors.grey)));
+                }
+                
+                String sourceText = _sourceController.text;
+                if (sourceText.isEmpty && chatState.messages.isNotEmpty) {
+                   final lastUserMsg = chatState.messages.lastWhere((m) => m.isUser, orElse: () => Message(content: '', isUser: true, id: '', timestamp: DateTime.now()));
+                   sourceText = lastUserMsg.content;
+                }
+
+                final sourceLines = sourceText.split('\n');
+                final targetText = aiMessage?.content ?? '';
+                final targetLines = targetText.split('\n');
+                
+                if (chatState.isLoading && targetText.isEmpty) {
+                   return const Center(child: Text('正在翻译...', style: TextStyle(fontStyle: FontStyle.italic, color: Colors.grey)));
+                }
+                
+                final int itemCount = _showComparison 
+                    ? (sourceLines.length > targetLines.length ? sourceLines.length : targetLines.length)
+                    : targetLines.length;
+                
+                return ListView.separated(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: itemCount,
+                  separatorBuilder: (c, i) => const SizedBox(height: 16),
+                  itemBuilder: (context, index) {
+                    final tgt = index < targetLines.length ? targetLines[index] : '';
+                    
+                    if (!_showComparison) {
+                       return SelectableText(
+                          tgt,
+                          style: TextStyle(
+                            fontSize: 16,
+                            height: 1.5,
+                            fontFamily: isWindows ? 'Microsoft YaHei' : null
+                          ),
+                       );
+                    }
+                    
+                    final src = index < sourceLines.length ? sourceLines[index] : '';
+                    
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (src.isNotEmpty)
+                          SelectableText(
+                            src,
+                            style: TextStyle(
+                              color: theme.resources.textFillColorSecondary, 
+                              fontSize: 14,
+                              height: 1.4,
+                              fontFamily: isWindows ? 'Microsoft YaHei' : null
+                            ),
+                          ),
+                        if (src.isNotEmpty && tgt.isNotEmpty)
+                          const SizedBox(height: 4),
+                        if (tgt.isNotEmpty)
+                          SelectableText(
+                            tgt,
+                            style: TextStyle(
+                              fontSize: 16, 
+                              fontWeight: FontWeight.w500,
+                              height: 1.5,
+                              fontFamily: isWindows ? 'Microsoft YaHei' : null
+                            ),
+                          ),
+                      ],
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Listen for state changes to handle async restoration
     ref.listen<ChatState>(translationProvider, (prev, next) {
       if (!_hasRestored && next.messages.isNotEmpty) {
-        // We found data, try to restore
         final lastUserMsg = next.messages.lastWhere(
            (m) => m.isUser, 
            orElse: () => Message(content: '', isUser: true, id: '', timestamp: DateTime.now())
@@ -457,10 +788,9 @@ class __TranslationContentState extends ConsumerState<_TranslationContent> {
     });
 
     final chatState = ref.watch(translationProvider);
-    final isWindows = Platform.isWindows;
+    final isWindows = !kIsWeb && Platform.isWindows;
     final theme = fluent.FluentTheme.of(context);
     
-    // Find the latest AI response
     final aiMessage = chatState.messages.isNotEmpty && !chatState.messages.last.isUser 
         ? chatState.messages.last 
         : null;
@@ -479,7 +809,6 @@ class __TranslationContentState extends ConsumerState<_TranslationContent> {
                fluent.Text('文本翻译', style: const TextStyle(fontWeight: FontWeight.bold)),
                const SizedBox(width: 24),
                
-               // Language Selectors
                fluent.ComboBox<String>(
                  value: _sourceLang,
                  items: _sourceLanguages.map((e) => fluent.ComboBoxItem(child: Text(e), value: e)).toList(),
@@ -523,59 +852,32 @@ class __TranslationContentState extends ConsumerState<_TranslationContent> {
           ), 
         ),
 
-        // Split Editor Area
+        // Responsive Area
         Expanded(
           child: LayoutBuilder(
             builder: (context, constraints) {
+              if (constraints.maxWidth < 600) {
+                 // Mobile: Vertical Column
+                 return Column(
+                    children: [
+                       Expanded(child: _buildSourceInput(theme, isWindows)),
+                       Container(height: 1, color: theme.resources.dividerStrokeColorDefault),
+                       Expanded(child: _buildTargetOutput(theme, isWindows, chatState, aiMessage)),
+                    ],
+                 );
+              }
+              
+              // Desktop: Resizable Row
               final width = constraints.maxWidth;
               final leftWidth = width * _leftRatio;
-              final rightWidth = width - leftWidth - 16; // 16 for divider handle
+              // final rightWidth = width - leftWidth - 16; 
               
               return Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Left: Source Input
                   SizedBox(
-                    width: leftWidth < 100 ? 100 : leftWidth, // Min width constraint
-                    child: Container(
-                      padding: const EdgeInsets.all(16),
-                      color: theme.scaffoldBackgroundColor,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              fluent.Text('原文', style: TextStyle(color: theme.resources.textFillColorSecondary)),
-                              if (_sourceController.text.isNotEmpty)
-                                fluent.IconButton(
-                                  icon: const Icon(fluent.FluentIcons.clear),
-                                  onPressed: () => _sourceController.clear(),
-                                ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Expanded(
-                            child: fluent.TextBox(
-                              controller: _sourceController,
-                              focusNode: _focusNode,
-                              maxLines: null,
-                              expands: true,
-                              placeholder: '在此输入要翻译的文本...',
-                              decoration: null,
-                              highlightColor: Colors.transparent,
-                              unfocusedColor: Colors.transparent,
-                              style: TextStyle(
-                                fontSize: 16, 
-                                height: 1.5, 
-                                fontFamily: isWindows ? 'Microsoft YaHei' : null,
-                                color: theme.typography.body?.color
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    width: leftWidth < 100 ? 100 : leftWidth,
+                    child: _buildSourceInput(theme, isWindows),
                   ),
 
                   // Draggable Divider
@@ -592,7 +894,7 @@ class __TranslationContentState extends ConsumerState<_TranslationContent> {
                       },
                       child: Container(
                         width: 16,
-                        color: Colors.transparent, // Invisible area for easier grabbing
+                        color: Colors.transparent,
                         child: Center(
                           child: Container(
                              width: 1, 
@@ -603,116 +905,8 @@ class __TranslationContentState extends ConsumerState<_TranslationContent> {
                     ),
                   ),
 
-                  // Right: Target Output (Line-by-Line / Vertical Stack)
                   Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.all(0),
-                      color: theme.scaffoldBackgroundColor, // Same as left panel
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                 fluent.Text(_showComparison ? '双语对照' : '译文', style: TextStyle(color: theme.resources.textFillColorSecondary)),
-                                 fluent.IconButton(
-                                   icon: const Icon(fluent.FluentIcons.copy),
-                                   onPressed: () {
-                                     // Copy logic
-                                   },
-                                 ),
-                              ],
-                            ),
-                          ),
-                          Container(height: 1, color: theme.resources.dividerStrokeColorDefault),
-                          Expanded(
-                            child: Builder(
-                              builder: (context) {
-                                if (aiMessage == null && !chatState.isLoading) {
-                                   return const Center(child: Text('翻译结果将显示在这里', style: TextStyle(color: Colors.grey)));
-                                }
-                                
-                                // 1. Prepare Data
-                                // Use controller text first, if empty (e.g. sync lag?), try to find last user message.
-                                String sourceText = _sourceController.text;
-                                if (sourceText.isEmpty && chatState.messages.isNotEmpty) {
-                                   final lastUserMsg = chatState.messages.lastWhere((m) => m.isUser, orElse: () => Message(content: '', isUser: true, id: '', timestamp: DateTime.now()));
-                                   sourceText = lastUserMsg.content;
-                                }
-
-                                final sourceLines = sourceText.split('\n');
-                                final targetText = aiMessage?.content ?? '';
-                                final targetLines = targetText.split('\n');
-                                
-                                // If loading and no content yet
-                                if (chatState.isLoading && targetText.isEmpty) {
-                                   return const Center(child: Text('正在翻译...', style: TextStyle(fontStyle: FontStyle.italic, color: Colors.grey)));
-                                }
-                                
-                                // 2. Display Strategy
-                                final int itemCount = _showComparison 
-                                    ? (sourceLines.length > targetLines.length ? sourceLines.length : targetLines.length)
-                                    : targetLines.length;
-                                
-                                return ListView.separated(
-                                  padding: const EdgeInsets.all(16),
-                                  itemCount: itemCount,
-                                  separatorBuilder: (c, i) => const SizedBox(height: 16),
-                                  itemBuilder: (context, index) {
-                                    final tgt = index < targetLines.length ? targetLines[index] : '';
-                                    
-                                    if (!_showComparison) {
-                                       return SelectableText(
-                                          tgt,
-                                          style: TextStyle(
-                                            fontSize: 16,
-                                            height: 1.5,
-                                            fontFamily: isWindows ? 'Microsoft YaHei' : null
-                                          ),
-                                       );
-                                    }
-                                    
-                                    final src = index < sourceLines.length ? sourceLines[index] : '';
-                                    
-                                    // Vertical Stack with Source (Brighter) -> Target
-                                    return Column(
-                                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                                      children: [
-                                        if (src.isNotEmpty)
-                                          SelectableText(
-                                            src,
-                                            style: TextStyle(
-                                              // Improve visibility: lighter grey or secondary text color, not dark grey
-                                              color: theme.resources.textFillColorSecondary, 
-                                              fontSize: 14,
-                                              height: 1.4,
-                                              fontFamily: isWindows ? 'Microsoft YaHei' : null
-                                            ),
-                                          ),
-                                        if (src.isNotEmpty && tgt.isNotEmpty)
-                                          const SizedBox(height: 4),
-                                        if (tgt.isNotEmpty)
-                                          SelectableText(
-                                            tgt,
-                                            style: TextStyle(
-                                              fontSize: 16, 
-                                              fontWeight: FontWeight.w500,
-                                              height: 1.5,
-                                              fontFamily: isWindows ? 'Microsoft YaHei' : null
-                                            ),
-                                          ),
-                                      ],
-                                    );
-                                  },
-                                );
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    child: _buildTargetOutput(theme, isWindows, chatState, aiMessage),
                   ),
                 ],
               );
