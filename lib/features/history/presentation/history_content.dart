@@ -87,38 +87,42 @@ class _HistoryContentState extends ConsumerState<HistoryContent> {
         final isSidebarVisible = ref.watch(isHistorySidebarVisibleProvider);
         return Row(
           children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 250),
-              curve: Curves.easeInOut,
-              width: isSidebarVisible ? 250 : 0,
-              child: ClipRect(
-                child: OverflowBox(
-                  minWidth: 250,
-                  maxWidth: 250,
-                  alignment: Alignment.centerLeft,
-                  child: Container(
-                    width: 250,
-                    decoration: BoxDecoration(
-                      border: Border(
-                          right: BorderSide(
-                              color: fluent.FluentTheme.of(context)
-                                  .resources
-                                  .dividerStrokeColorDefault)),
-                      color: fluent.FluentTheme.of(context).cardColor,
-                    ),
-                    child: _SessionList(
-                      sessionsState: sessionsState,
-                      selectedSessionId: selectedSessionId,
-                      isMobile: false,
+            RepaintBoundary(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                curve: Curves.easeOut,
+                width: isSidebarVisible ? 250 : 0,
+                child: ClipRect(
+                  child: OverflowBox(
+                    minWidth: 250,
+                    maxWidth: 250,
+                    alignment: Alignment.centerLeft,
+                    child: Container(
+                      width: 250,
+                      decoration: BoxDecoration(
+                        border: Border(
+                            right: BorderSide(
+                                color: fluent.FluentTheme.of(context)
+                                    .resources
+                                    .dividerStrokeColorDefault)),
+                        color: fluent.FluentTheme.of(context).cardColor,
+                      ),
+                      child: _SessionList(
+                        sessionsState: sessionsState,
+                        selectedSessionId: selectedSessionId,
+                        isMobile: false,
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
             Expanded(
-              child: selectedSessionId == null
-                  ? const Center(child: Text('请选择或新建一个话题'))
-                  : const ChatView(),
+              child: RepaintBoundary(
+                child: selectedSessionId == null
+                    ? const Center(child: Text('请选择或新建一个话题'))
+                    : const ChatView(),
+              ),
             ),
           ],
         );

@@ -738,15 +738,12 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
                         decoration: BoxDecoration(
                           color: _isEditing
                               ? fluent.Colors.transparent
-                              : (isUser ? theme.accentColor : theme.cardColor),
+                              : theme.cardColor,
                           borderRadius: BorderRadius.circular(12),
                           border: _isEditing
                               ? null
                               : Border.all(
-                                  color: isUser
-                                      ? theme.accentColor
-                                      : theme
-                                          .resources.dividerStrokeColorDefault),
+                                  color: theme.resources.dividerStrokeColorDefault),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -948,17 +945,11 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
                                       p: TextStyle(
                                         fontSize: 14,
                                         height: 1.5,
-                                        color: isUser
-                                            ? Colors.white
-                                            : theme.typography.body!.color,
+                                        color: theme.typography.body!.color,
                                       ),
                                       code: TextStyle(
-                                        backgroundColor: isUser
-                                            ? Colors.white.withOpacity(0.2)
-                                            : theme.micaBackgroundColor,
-                                        color: isUser
-                                            ? Colors.white
-                                            : theme.typography.body!.color,
+                                        backgroundColor: theme.micaBackgroundColor,
+                                        color: theme.typography.body!.color,
                                       ),
                                     ),
                                   ),

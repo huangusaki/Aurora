@@ -116,31 +116,39 @@ class MyApp extends ConsumerWidget {
       fluentMode = fluent.ThemeMode.system;
       materialMode = ThemeMode.system;
     }
-    return fluent.FluentApp(
-      title: 'Aurora',
-      debugShowCheckedModeBanner: false,
-      themeMode: fluentMode,
-      theme: fluent.FluentThemeData(
-        fontFamily: Platform.isWindows ? 'Microsoft YaHei' : null,
-        accentColor: fluent.Colors.blue,
-        brightness: fluent.Brightness.light,
-        scaffoldBackgroundColor: fluent.Colors.white,
-        cardColor: fluent.Colors.white,
-        navigationPaneTheme: fluent.NavigationPaneThemeData(
-          backgroundColor: fluent.Colors.grey[20],
-        ),
+    final String? fontFamily = Platform.isWindows ? 'Microsoft YaHei' : null;
+    
+    return Theme(
+      data: ThemeData(
+        fontFamily: fontFamily,
+        brightness: materialMode == ThemeMode.dark ? Brightness.dark : Brightness.light,
       ),
-      darkTheme: fluent.FluentThemeData(
-        fontFamily: Platform.isWindows ? 'Microsoft YaHei' : null,
-        accentColor: fluent.Colors.blue,
-        brightness: fluent.Brightness.dark,
-        scaffoldBackgroundColor: const Color(0xFF202020),
-        cardColor: const Color(0xFF2D2D2D),
-        navigationPaneTheme: const fluent.NavigationPaneThemeData(
-          backgroundColor: Color(0xFF181818),
+      child: fluent.FluentApp(
+        title: 'Aurora',
+        debugShowCheckedModeBanner: false,
+        themeMode: fluentMode,
+        theme: fluent.FluentThemeData(
+          fontFamily: fontFamily,
+          accentColor: fluent.Colors.blue,
+          brightness: fluent.Brightness.light,
+          scaffoldBackgroundColor: fluent.Colors.white,
+          cardColor: fluent.Colors.white,
+          navigationPaneTheme: fluent.NavigationPaneThemeData(
+            backgroundColor: fluent.Colors.grey[20],
+          ),
         ),
+        darkTheme: fluent.FluentThemeData(
+          fontFamily: fontFamily,
+          accentColor: fluent.Colors.blue,
+          brightness: fluent.Brightness.dark,
+          scaffoldBackgroundColor: const Color(0xFF202020),
+          cardColor: const Color(0xFF2D2D2D),
+          navigationPaneTheme: const fluent.NavigationPaneThemeData(
+            backgroundColor: Color(0xFF181818),
+          ),
+        ),
+        home: const ChatScreen(),
       ),
-      home: const ChatScreen(),
     );
   }
 }
