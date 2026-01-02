@@ -40,7 +40,7 @@ dependencies:
   isar: ^3.1.0+1
   isar_flutter_libs: ^3.1.0+1
   path_provider: ^2.1.5
-  fluent_ui: ^4.10.0
+  fluent_ui: ^4.13.0
   flutter_markdown: ^0.7.4
   google_fonts: ^6.2.1
   super_sliver_list: ^0.4.1
@@ -50,6 +50,7 @@ dependencies:
   super_clipboard: ^0.9.1
   super_native_extensions: ^0.9.1
   pasteboard: ^0.4.0
+  flutter_displaymode: ^0.6.0
 
 dev_dependencies:
   flutter_test:

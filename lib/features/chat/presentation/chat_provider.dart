@@ -18,28 +18,28 @@ class ChatState {
   final String? error;
   final bool hasUnreadResponse;
   final bool isAutoScrollEnabled;
-  final double? scrollOffset;
-  const ChatState(
-      {this.messages = const [],
-      this.isLoading = false,
-      this.error,
-      this.hasUnreadResponse = false,
-      this.isAutoScrollEnabled = true,
-      this.scrollOffset});
-  ChatState copyWith(
-      {List<Message>? messages,
-      bool? isLoading,
-      String? error,
-      bool? hasUnreadResponse,
-      bool? isAutoScrollEnabled,
-      double? scrollOffset}) {
+
+  const ChatState({
+    this.messages = const [],
+    this.isLoading = false,
+    this.error,
+    this.hasUnreadResponse = false,
+    this.isAutoScrollEnabled = true,
+  });
+
+  ChatState copyWith({
+    List<Message>? messages,
+    bool? isLoading,
+    String? error,
+    bool? hasUnreadResponse,
+    bool? isAutoScrollEnabled,
+  }) {
     return ChatState(
       messages: messages ?? this.messages,
       isLoading: isLoading ?? this.isLoading,
       error: error,
       hasUnreadResponse: hasUnreadResponse ?? this.hasUnreadResponse,
       isAutoScrollEnabled: isAutoScrollEnabled ?? this.isAutoScrollEnabled,
-      scrollOffset: scrollOffset ?? this.scrollOffset,
     );
   }
 }
@@ -51,6 +51,7 @@ class ChatNotifier extends StateNotifier<ChatState> {
   final void Function(String newId)? onSessionCreated;
   final void Function()? onStateChanged;
   bool _isAborted = false;
+  double? _savedScrollOffset;
   
   ChatNotifier({
     required Ref ref,
@@ -75,15 +76,21 @@ class ChatNotifier extends StateNotifier<ChatState> {
   
   /// Public getter for current state (avoids protected member access)
   ChatState get currentState => state;
+
+  /// Public getter for saved scroll offset
+  double? get savedScrollOffset => _savedScrollOffset;
   
   void setAutoScrollEnabled(bool enabled) {
     if (state.isAutoScrollEnabled != enabled) {
       state = state.copyWith(isAutoScrollEnabled: enabled);
     }
   }
+
+
   
-  void updateScrollOffset(double offset) {
-    state = state.copyWith(scrollOffset: offset);
+  void saveScrollOffset(double offset) {
+    _savedScrollOffset = offset;
+    // No state update to prevent rebuilds
   }
   
   void abortGeneration() {
@@ -138,74 +145,99 @@ class ChatNotifier extends StateNotifier<ChatState> {
       final currentModel = settings.activeProvider?.selectedModel;
       final currentProvider = settings.activeProvider?.name;
       
-      final responseStream = llmService.streamResponse(
-        messagesForApi,
-        attachments: attachments,
-      );
       var aiMsg = Message.ai('', model: currentModel, provider: currentProvider);
       state = state.copyWith(messages: [...state.messages, aiMsg]);
       
-      DateTime? reasoningStartTime;
-      
-      await for (final chunk in responseStream) {
-        if (_isAborted || !mounted) break; // Check abort flag and mounted state
+      // Check stream mode (from global settings) BEFORE making API call
+      if (settings.isStreamEnabled) {
+        // Streaming mode - call streamResponse
+        final responseStream = llmService.streamResponse(
+          messagesForApi,
+          attachments: attachments,
+        );
         
-        // Track reasoning start
-        if (chunk.reasoning != null && chunk.reasoning!.isNotEmpty) {
-          reasoningStartTime ??= DateTime.now();
+        DateTime? reasoningStartTime;
+        
+        await for (final chunk in responseStream) {
+          if (_isAborted || !mounted) break; // Check abort flag and mounted state
+          
+          // Track reasoning start
+          if (chunk.reasoning != null && chunk.reasoning!.isNotEmpty) {
+            reasoningStartTime ??= DateTime.now();
+          }
+          
+          // Calculate duration if reasoning finished (content started)
+          double? duration = aiMsg.reasoningDurationSeconds;
+          if (duration == null && 
+              reasoningStartTime != null && 
+              chunk.content != null && 
+              chunk.content!.isNotEmpty) {
+            duration = DateTime.now().difference(reasoningStartTime).inMilliseconds / 1000.0;
+          }
+
+          aiMsg = Message(
+            id: aiMsg.id,
+            content: aiMsg.content + (chunk.content ?? ''),
+            reasoningContent:
+                (aiMsg.reasoningContent ?? '') + (chunk.reasoning ?? ''),
+            isUser: false,
+            timestamp: aiMsg.timestamp,
+            attachments: aiMsg.attachments,
+            images: [...aiMsg.images, ...chunk.images],
+            model: aiMsg.model,
+            provider: aiMsg.provider,
+            reasoningDurationSeconds: duration,
+          );
+          final newMessages = List<Message>.from(state.messages);
+          newMessages.removeLast();
+          newMessages.add(aiMsg);
+          if (mounted) state = state.copyWith(messages: newMessages);
         }
         
-        // Calculate duration if reasoning finished (content started)
-        double? duration = aiMsg.reasoningDurationSeconds;
-        if (duration == null && 
-            reasoningStartTime != null && 
-            chunk.content != null && 
-            chunk.content!.isNotEmpty) {
-          duration = DateTime.now().difference(reasoningStartTime).inMilliseconds / 1000.0;
+        if (!mounted) return aiMsg.id;
+
+        // If reasoning finished but duration wasn't set (e.g. stream ended without content or pure reasoning)
+        if (aiMsg.reasoningDurationSeconds == null && reasoningStartTime != null) {
+           final duration = DateTime.now().difference(reasoningStartTime).inMilliseconds / 1000.0;
+           aiMsg = Message(
+            id: aiMsg.id,
+            content: aiMsg.content,
+            reasoningContent: aiMsg.reasoningContent,
+            isUser: false,
+            timestamp: aiMsg.timestamp,
+            attachments: aiMsg.attachments,
+            images: aiMsg.images,
+            model: aiMsg.model,
+            provider: aiMsg.provider,
+            reasoningDurationSeconds: duration,
+          );
+          final newMessages = List<Message>.from(state.messages);
+          newMessages.removeLast();
+          newMessages.add(aiMsg);
+          if (mounted) state = state.copyWith(messages: newMessages);
         }
-
-        aiMsg = Message(
-          id: aiMsg.id,
-          content: aiMsg.content + (chunk.content ?? ''),
-          reasoningContent:
-              (aiMsg.reasoningContent ?? '') + (chunk.reasoning ?? ''),
-          isUser: false,
-          timestamp: aiMsg.timestamp,
-          attachments: aiMsg.attachments,
-          images: [...aiMsg.images, ...chunk.images],
-          model: aiMsg.model,
-          provider: aiMsg.provider,
-          reasoningDurationSeconds: duration,
-        );
-        final newMessages = List<Message>.from(state.messages);
-        newMessages.removeLast();
-        newMessages.add(aiMsg);
-        if (mounted) state = state.copyWith(messages: newMessages);
-      }
-      
-      if (!mounted) return aiMsg.id;
-
-      // If reasoning finished ...
-      
-      // If reasoning finished but duration wasn't set (e.g. stream ended without content or pure reasoning)
-      if (aiMsg.reasoningDurationSeconds == null && reasoningStartTime != null) {
-         final duration = DateTime.now().difference(reasoningStartTime).inMilliseconds / 1000.0;
-         aiMsg = Message(
-          id: aiMsg.id,
-          content: aiMsg.content,
-          reasoningContent: aiMsg.reasoningContent,
-          isUser: false,
-          timestamp: aiMsg.timestamp,
-          attachments: aiMsg.attachments,
-          images: aiMsg.images,
-          model: aiMsg.model,
-          provider: aiMsg.provider,
-          reasoningDurationSeconds: duration,
-        );
-        final newMessages = List<Message>.from(state.messages);
-        newMessages.removeLast();
-        newMessages.add(aiMsg);
-        if (mounted) state = state.copyWith(messages: newMessages);
+      } else {
+        // Non-streaming mode - call getResponse (with stream: false)
+        final response = await llmService.getResponse(messagesForApi, attachments: attachments);
+        if (!_isAborted && mounted) {
+          aiMsg = Message(
+            id: aiMsg.id,
+            content: response.content ?? '',
+            reasoningContent: response.reasoning,
+            isUser: false,
+            timestamp: aiMsg.timestamp,
+            attachments: aiMsg.attachments,
+            images: response.images,
+            model: aiMsg.model,
+            provider: aiMsg.provider,
+            // Cannot accurately track reasoning duration in non-stream without timestamps in response, 
+            // but we can estimate or leave null. OpenAI doesn't give reasoning duration in API.
+          );
+          final newMessages = List<Message>.from(state.messages);
+          newMessages.removeLast();
+          newMessages.add(aiMsg);
+          state = state.copyWith(messages: newMessages);
+        }
       }
 
       if (!_isAborted) {
@@ -327,6 +359,7 @@ class ChatNotifier extends StateNotifier<ChatState> {
     await _storage.clearSessionMessages(_sessionId);
     state = const ChatState();
   }
+
 }
 
 final chatStorageProvider = Provider<ChatStorage>((ref) {
@@ -356,7 +389,40 @@ class SessionsNotifier extends StateNotifier<SessionsState> {
   Future<void> loadSessions() async {
     state = SessionsState(sessions: state.sessions, isLoading: true);
     final sessions = await _storage.loadSessions();
+    final order = await _storage.loadSessionOrder();
+    
+    if (order.isNotEmpty) {
+      final orderMap = {for (var i = 0; i < order.length; i++) order[i]: i};
+      sessions.sort((a, b) {
+        final idxA = orderMap[a.sessionId];
+        final idxB = orderMap[b.sessionId];
+        // Both ordered: obey order
+        if (idxA != null && idxB != null) return idxA.compareTo(idxB);
+        // A ordered, B unordered: B comes first (Top)
+        if (idxA != null) return 1;
+        // A unordered, B ordered: A comes first
+        if (idxB != null) return -1;
+        // Both unordered: Sort by time desc
+        return b.lastMessageTime.compareTo(a.lastMessageTime);
+      });
+    }
+    
     state = SessionsState(sessions: sessions, isLoading: false);
+  }
+
+  Future<void> reorderSession(int oldIndex, int newIndex) async {
+    if (oldIndex < newIndex) {
+      newIndex -= 1;
+    }
+    final items = List<SessionEntity>.from(state.sessions);
+    final item = items.removeAt(oldIndex);
+    items.insert(newIndex, item);
+    
+    state = SessionsState(sessions: items, isLoading: false);
+    
+    // Save new order (of all items)
+    final newOrder = items.map((s) => s.sessionId).toList();
+    await _storage.saveSessionOrder(newOrder);
   }
 
   Future<String> createNewSession(String title) async {
@@ -430,6 +496,12 @@ class ChatSessionManager {
 
 /// Trigger for rebuilding UI when any cached session state changes
 final chatStateUpdateTriggerProvider = StateProvider<int>((ref) => 0);
+
+/// Global provider for Desktop Sidebar state
+final isSidebarExpandedProvider = StateProvider<bool>((ref) => false);
+
+/// Global provider for Desktop Active Tab Index
+final desktopActiveTabProvider = StateProvider<int>((ref) => 0);
 
 final chatSessionManagerProvider = Provider<ChatSessionManager>((ref) {
   // Do not watch settings/service to avoid rebuilds

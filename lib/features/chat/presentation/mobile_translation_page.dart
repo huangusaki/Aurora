@@ -6,7 +6,8 @@ import 'chat_provider.dart';
 import '../../settings/presentation/settings_provider.dart';
 
 class MobileTranslationPage extends ConsumerStatefulWidget {
-  const MobileTranslationPage({super.key});
+  final VoidCallback? onBack;
+  const MobileTranslationPage({super.key, this.onBack});
   @override
   ConsumerState<MobileTranslationPage> createState() =>
       _MobileTranslationPageState();
@@ -170,6 +171,12 @@ class _MobileTranslationPageState extends ConsumerState<MobileTranslationPage> {
       appBar: AppBar(
         backgroundColor: fluentTheme.scaffoldBackgroundColor,
         elevation: 0,
+        leading: widget.onBack != null
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: widget.onBack,
+              )
+            : null,
         titleSpacing: 0,
         title: GestureDetector(
           onTap: _openModelSwitcher,

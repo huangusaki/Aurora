@@ -19,12 +19,15 @@ class DesktopChatScreen extends ConsumerStatefulWidget {
 }
 
 class _DesktopChatScreenState extends ConsumerState<DesktopChatScreen> {
-  int _selectedIndex = 0;
-  bool _isExpanded = false;
+
+
+
 
   @override
   Widget build(BuildContext context) {
     final theme = fluent.FluentTheme.of(context);
+    final isExpanded = ref.watch(isSidebarExpandedProvider);
+    final selectedIndex = ref.watch(desktopActiveTabProvider);
     
     final navItems = [
       (icon: fluent.FluentIcons.history, label: '历史', body: const HistoryContent()),
@@ -43,9 +46,7 @@ class _DesktopChatScreenState extends ConsumerState<DesktopChatScreen> {
               fluent.IconButton(
                 icon: const fluent.Icon(fluent.FluentIcons.global_nav_button, size: 16),
                 onPressed: () {
-                   setState(() {
-                     _isExpanded = !_isExpanded;
-                   });
+                   ref.read(isSidebarExpandedProvider.notifier).update((state) => !state);
                 },
               ),
               const SizedBox(width: 12),
@@ -57,36 +58,38 @@ class _DesktopChatScreenState extends ConsumerState<DesktopChatScreen> {
         ),
         
         Expanded(
-          child: Row(
-            children: [
-              // Sidebar with RepaintBoundary to isolate repaints
-              RepaintBoundary(
-                child: AnimatedContainer(
+          child: Container(
+            color: theme.navigationPaneTheme.backgroundColor, // background mask
+            child: Row(
+              children: [
+                // Sidebar
+                AnimatedContainer(
                   duration: const Duration(milliseconds: 150),
                   curve: Curves.easeOut,
-                  width: _isExpanded ? 200 : 50,
-                  decoration: BoxDecoration(
-                    color: theme.navigationPaneTheme.backgroundColor,
-                    border: Border(right: BorderSide(color: theme.resources.dividerStrokeColorDefault)),
-                  ),
-                  child: Column(
+                  // Use antiAlias for smoother edges
+                  clipBehavior: Clip.antiAlias, 
+                  width: isExpanded ? 200 : 50,
+                decoration: BoxDecoration(
+                  color: theme.navigationPaneTheme.backgroundColor,
+                ),
+                child: Column(
                     children: [
                       ...navItems.take(navItems.length - 1).toList().asMap().entries.map((entry) {
                          final index = entry.key;
                          final item = entry.value;
-                         final isSelected = _selectedIndex == index;
+                         final isSelected = selectedIndex == index;
                          return fluent.HoverButton(
                            onPressed: () {
-                               if (index == 0) {
-                                  if (_selectedIndex == 0) {
-                                     ref.read(isHistorySidebarVisibleProvider.notifier).update((state) => !state);
+                                  if (index == 0) {
+                                     if (selectedIndex == 0) {
+                                        ref.read(isHistorySidebarVisibleProvider.notifier).update((state) => !state);
+                                     } else {
+                                        ref.read(desktopActiveTabProvider.notifier).state = 0;
+                                        ref.read(isHistorySidebarVisibleProvider.notifier).state = true;
+                                     }
                                   } else {
-                                     setState(() => _selectedIndex = 0);
-                                     ref.read(isHistorySidebarVisibleProvider.notifier).state = true;
+                                     ref.read(desktopActiveTabProvider.notifier).state = index;
                                   }
-                               } else {
-                                  setState(() => _selectedIndex = index);
-                               }
                            },
                            builder: (context, states) {
                               return Container(
@@ -96,17 +99,17 @@ class _DesktopChatScreenState extends ConsumerState<DesktopChatScreen> {
                                   color: isSelected 
                                     ? theme.accentColor.withOpacity(0.1)
                                     : states.isHovering ? theme.resources.subtleFillColorSecondary : Colors.transparent,
-                                  borderRadius: BorderRadius.circular(4),
+                                  borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Row(
                                   children: [
                                     SizedBox(
                                       width: 40,
                                       child: Center(
-                                        child: fluent.Icon(item.icon, size: 18, color: isSelected ? theme.accentColor : null),
+                                        child: fluent.Icon(item.icon, size: 20, color: isSelected ? theme.accentColor : null), // Slightly larger icon
                                       ),
                                     ),
-                                    if (_isExpanded)
+                                    if (isExpanded)
                                       Expanded(
                                         child: Padding(
                                           padding: const EdgeInsets.only(left: 8.0),
@@ -124,9 +127,9 @@ class _DesktopChatScreenState extends ConsumerState<DesktopChatScreen> {
                       Builder(builder: (context) {
                          final index = navItems.length - 1;
                          final item = navItems[index];
-                         final isSelected = _selectedIndex == index;
-                         return fluent.HoverButton(
-                           onPressed: () => setState(() => _selectedIndex = index),
+                          final isSelected = selectedIndex == index;
+                          return fluent.HoverButton(
+                            onPressed: () => ref.read(desktopActiveTabProvider.notifier).state = index,
                            builder: (context, states) {
                               return Container(
                                 height: 40,
@@ -135,7 +138,7 @@ class _DesktopChatScreenState extends ConsumerState<DesktopChatScreen> {
                                   color: isSelected 
                                     ? theme.accentColor.withOpacity(0.1)
                                     : states.isHovering ? theme.resources.subtleFillColorSecondary : Colors.transparent,
-                                  borderRadius: BorderRadius.circular(4),
+                                  borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Row(
                                   children: [
@@ -145,7 +148,7 @@ class _DesktopChatScreenState extends ConsumerState<DesktopChatScreen> {
                                         child: fluent.Icon(item.icon, size: 18, color: isSelected ? theme.accentColor : null),
                                       ),
                                     ),
-                                    if (_isExpanded)
+                                    if (isExpanded)
                                        Expanded(child: Padding(padding: const EdgeInsets.only(left: 8.0), child: Text(item.label, style: TextStyle(color: isSelected ? theme.accentColor : null, fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal), overflow: TextOverflow.ellipsis))),
                                   ],
                                 ),
@@ -169,7 +172,7 @@ class _DesktopChatScreenState extends ConsumerState<DesktopChatScreen> {
                                     margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                                     decoration: BoxDecoration(
                                       color: states.isHovering ? theme.resources.subtleFillColorSecondary : Colors.transparent,
-                                      borderRadius: BorderRadius.circular(4),
+                                      borderRadius: BorderRadius.circular(6),
                                     ),
                                     child: Row(
                                       children: [
@@ -179,7 +182,7 @@ class _DesktopChatScreenState extends ConsumerState<DesktopChatScreen> {
                                             child: fluent.Icon(icon, size: 18, color: theme.typography.body?.color),
                                           ),
                                         ),
-                                        if (_isExpanded)
+                                        if (isExpanded)
                                           Expanded(
                                             child: Padding(
                                               padding: const EdgeInsets.only(left: 8.0),
@@ -197,14 +200,13 @@ class _DesktopChatScreenState extends ConsumerState<DesktopChatScreen> {
                     ],
                   ),
                 ),
-              ),
               // Main content area with RepaintBoundary
               Expanded(
                 child: RepaintBoundary(
                   child: Container(
                     color: theme.scaffoldBackgroundColor,
                     child: FadeIndexedStack(
-                      index: _selectedIndex,
+                      index: selectedIndex,
                       children: navItems.map((item) => item.body).toList(),
                     ),
                   ),
@@ -213,6 +215,7 @@ class _DesktopChatScreenState extends ConsumerState<DesktopChatScreen> {
             ],
           ),
         ),
+      ),
       ],
     );
   }

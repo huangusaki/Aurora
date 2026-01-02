@@ -11,5 +11,6 @@ class LLMResponseChunk {
 abstract class LLMService {
   Stream<LLMResponseChunk> streamResponse(List<Message> messages,
       {List<String>? attachments});
-  Future<String> getResponse(List<Message> messages);
+  Future<LLMResponseChunk> getResponse(List<Message> messages,
+      {List<String>? attachments});
 }

@@ -8,6 +8,7 @@ import 'features/chat/presentation/chat_screen.dart';
 import 'features/settings/data/settings_storage.dart';
 import 'features/settings/presentation/settings_provider.dart';
 import 'shared/utils/windows_injector.dart';
+import 'package:flutter_displaymode/flutter_displaymode.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,6 +27,10 @@ void main() async {
       await windowManager.setMinimumSize(const Size(800, 600));
     });
     WindowsInjector.instance.injectKeyData();
+  } else if (Platform.isAndroid) {
+    try {
+      await FlutterDisplayMode.setHighRefreshRate();
+    } catch (_) {}
   }
   final storage = SettingsStorage();
   await storage.init();
@@ -138,6 +143,11 @@ class MyApp extends ConsumerWidget {
             backgroundColor: fluent.Colors.grey[20],
           ),
         ),
+        builder: (context, child) {
+          return ScaffoldMessenger(
+            child: child ?? const SizedBox.shrink(),
+          );
+        },
         darkTheme: fluent.FluentThemeData(
           fontFamily: fontFamily,
           accentColor: fluent.Colors.blue,

@@ -9,7 +9,18 @@ import 'llm_service.dart';
 class OpenAILLMService implements LLMService {
   final Dio _dio;
   final SettingsState _settings;
-  OpenAILLMService(this._settings) : _dio = Dio();
+  
+  OpenAILLMService(this._settings) : _dio = Dio(BaseOptions(
+    // Timeouts to prevent infinite waits and CF 524 errors
+    connectTimeout: const Duration(seconds: 30),
+    receiveTimeout: const Duration(seconds: 300), // 5 minutes for image generation
+    sendTimeout: const Duration(seconds: 60),
+    // Headers that some proxies/CDNs require
+    headers: {
+      'Connection': 'keep-alive',
+      'User-Agent': 'Aurora/1.0 (Flutter; Dio)',
+    },
+  ));
   @override
   Stream<LLMResponseChunk> streamResponse(List<Message> messages,
       {List<String>? attachments}) async* {
@@ -248,11 +259,87 @@ class OpenAILLMService implements LLMService {
   }
 
   @override
-  Future<String> getResponse(List<Message> messages) async {
-    final buffer = StringBuffer();
-    await for (final chunk in streamResponse(messages)) {
-      if (chunk.content != null) buffer.write(chunk.content);
+  Future<LLMResponseChunk> getResponse(List<Message> messages,
+      {List<String>? attachments}) async {
+    final provider = _settings.activeProvider;
+    final model = _settings.selectedModel ?? 'gpt-3.5-turbo';
+    final apiKey = provider.apiKey;
+    final baseUrl = provider.baseUrl.endsWith('/')
+        ? provider.baseUrl
+        : '${provider.baseUrl}/';
+
+    if (apiKey.isEmpty) {
+      return const LLMResponseChunk(
+          content:
+              'Error: API Key is not configured. Please check your settings.');
     }
-    return buffer.toString();
+
+    try {
+      final List<Map<String, dynamic>> apiMessages =
+          _buildApiMessages(messages, attachments);
+      final Map<String, dynamic> requestData = {
+        'model': model,
+        'messages': apiMessages,
+        'stream': false,
+      };
+      requestData.addAll(provider.customParameters);
+      if (provider.modelSettings.containsKey(model)) {
+        requestData.addAll(provider.modelSettings[model]!);
+      }
+
+      final response = await _dio.post(
+        '${baseUrl}chat/completions',
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $apiKey',
+            'Content-Type': 'application/json',
+          },
+        ),
+        data: requestData,
+      );
+
+      final data = response.data;
+      final choices = data['choices'] as List;
+      if (choices.isNotEmpty) {
+        final message = choices[0]['message'];
+        final String? content = message['content'];
+        // Handle deepseek reasoning (often in reasoning_content)
+        final String? reasoning = (message['reasoning_content'] ?? message['reasoning'])?.toString();
+        
+        // Extract images from response
+        List<String> images = [];
+        
+        // Check for images in message
+        if (message['images'] != null && message['images'] is List) {
+          for (final img in message['images']) {
+            if (img is String) {
+              images.add(img.startsWith('data:') || img.startsWith('http') 
+                  ? img 
+                  : 'data:image/png;base64,$img');
+            } else if (img is Map) {
+              final url = img['url'] ?? img['image_url']?['url'];
+              if (url != null) images.add(url.toString());
+            }
+          }
+        }
+        
+        // Check for content as list (multimodal response)
+        if (message['content'] is List) {
+          for (final item in message['content']) {
+            if (item is Map && item['type'] == 'image_url') {
+              final url = item['image_url']?['url'];
+              if (url != null) images.add(url);
+            }
+          }
+        }
+        
+        return LLMResponseChunk(content: content, reasoning: reasoning, images: images);
+      }
+      return const LLMResponseChunk(content: '');
+    } on DioException catch (e) {
+      return LLMResponseChunk(content: 'Connection Error: ${e.message}');
+    } catch (e) {
+      return LLMResponseChunk(content: 'Unexpected Error: $e');
+    }
   }
 }

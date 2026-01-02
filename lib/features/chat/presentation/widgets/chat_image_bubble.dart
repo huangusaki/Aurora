@@ -5,7 +5,17 @@ import 'package:file_selector/file_selector.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/material.dart' as material show CircularProgressIndicator, InteractiveViewer, Scaffold, AppBar, IconButton, Icons;
 import 'package:super_clipboard/super_clipboard.dart';
+import 'package:flutter/foundation.dart';
 import 'windows_image_viewer.dart';
+
+// Top-level function for compute
+Uint8List? _decodeBase64Isolate(String imageUrl) {
+  final commaIndex = imageUrl.indexOf(',');
+  if (commaIndex != -1) {
+    return base64Decode(imageUrl.substring(commaIndex + 1));
+  }
+  return null;
+}
 
 class ChatImageBubble extends StatefulWidget {
   final String imageUrl;
@@ -24,11 +34,18 @@ class _ChatImageBubbleState extends State<ChatImageBubble> {
   bool get _isBase64 => widget.imageUrl.startsWith('data:');
   bool get _isLocalFile => !widget.imageUrl.startsWith('http') && !_isBase64;
   String? _mimeType;
+  final FlyoutController _flyoutController = FlyoutController();
 
   @override
   void initState() {
     super.initState();
     _decodeImage();
+  }
+
+  @override
+  void dispose() {
+    _flyoutController.dispose();
+    super.dispose();
   }
 
   @override
@@ -39,24 +56,42 @@ class _ChatImageBubbleState extends State<ChatImageBubble> {
     }
   }
 
-  void _decodeImage() {
+  Future<void> _decodeImage() async {
     if (_isBase64) {
-      try {
-        final commaIndex = widget.imageUrl.indexOf(',');
-        if (commaIndex != -1) {
-          final bytes = base64Decode(widget.imageUrl.substring(commaIndex + 1));
-          setState(() {
-            _cachedBytes = bytes;
-          });
-          return;
+      if (mounted) {
+        try {
+          // Only use isolate for large images (>50KB) to avoid isolate startup overhead
+          // for small icons/images which causes jank on mobile.
+          if (widget.imageUrl.length > 50 * 1024) {
+            final bytes = await compute(_decodeBase64Isolate, widget.imageUrl);
+            if (mounted && bytes != null) {
+              setState(() {
+                _cachedBytes = bytes;
+              });
+            }
+          } else {
+             // Synchronous decode for small images (fast)
+             final commaIndex = widget.imageUrl.indexOf(',');
+             final bytes = (commaIndex != -1) 
+                 ? base64Decode(widget.imageUrl.substring(commaIndex + 1))
+                 : base64Decode(widget.imageUrl);
+             if (mounted) {
+               setState(() {
+                 _cachedBytes = bytes;
+               });
+             }
+          }
+        } catch (e) {
+          debugPrint('Failed to decode base64 image: $e');
         }
-      } catch (e) {
-        debugPrint('Failed to decode base64 image: $e');
+      }
+    } else {
+      if (mounted) {
+        setState(() {
+          _cachedBytes = null;
+        });
       }
     }
-    setState(() {
-      _cachedBytes = null;
-    });
   }
 
   Future<void> _handleCopy(BuildContext context) async {
@@ -181,15 +216,14 @@ class _ChatImageBubbleState extends State<ChatImageBubble> {
     if (_isBase64) {
       final bytes = _cachedBytes;
       if (bytes == null) return Icon(FluentIcons.error, color: Colors.red);
-      final flyoutController = FlyoutController();
       return FlyoutTarget(
-        controller: flyoutController,
+        controller: _flyoutController,
         child: MouseRegion(
           cursor: SystemMouseCursors.click,
           child: GestureDetector(
             onTap: () => _showFullImage(context),
             onSecondaryTapUp: (details) {
-              flyoutController.showFlyout(
+              _flyoutController.showFlyout(
                 position: details.globalPosition,
                 builder: (context) {
                   return MenuFlyout(

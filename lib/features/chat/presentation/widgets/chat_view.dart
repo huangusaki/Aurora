@@ -37,13 +37,14 @@ class ChatViewState extends ConsumerState<ChatView> {
     _scrollController.addListener(_onScroll);
   }
 
-  void _restoreScrollPosition(ChatState state) {
+  void _restoreScrollPosition() {
+    final state = ref.read(historyChatProvider).currentState;
     if (_hasRestoredPosition || state.messages.isEmpty) return;
     
     // If we have messages and haven't restored yet
     _hasRestoredPosition = true;
     
-    final savedOffset = state.scrollOffset;
+    final savedOffset = ref.read(historyChatProvider).savedScrollOffset;
     final isAutoScroll = state.isAutoScrollEnabled;
     
     if (savedOffset != null || isAutoScroll) {
@@ -299,6 +300,7 @@ class ChatViewState extends ConsumerState<ChatView> {
     final finalSessionId = await ref
         .read(historyChatProvider)
         .sendMessage(text, attachments: attachmentsCopy);
+    if (!mounted) return; // Widget disposed during async operation
     if (currentSessionId == 'new_chat' && finalSessionId != 'new_chat') {
       ref.read(selectedHistorySessionIdProvider.notifier).state =
           finalSessionId;
@@ -308,9 +310,10 @@ class ChatViewState extends ConsumerState<ChatView> {
   @override
   Widget build(BuildContext context) {
     final chatState = ref.watch(historyChatStateProvider);
+    final settings = ref.watch(settingsProvider);
     
     // Attempt to restore scroll position if needed
-    _restoreScrollPosition(chatState);
+    _restoreScrollPosition();
     
 
     
@@ -331,30 +334,124 @@ class ChatViewState extends ConsumerState<ChatView> {
                   ref
                       .read(chatSessionManagerProvider)
                       .getOrCreate(_sessionId!)
-                      .updateScrollOffset(_scrollController.offset);
+                      .saveScrollOffset(_scrollController.offset);
                 }
               }
               return false;
             },
-            child: ListView.builder(
-              key: ValueKey(ref.watch(selectedHistorySessionIdProvider)),
-              controller: _scrollController,
-              reverse: true, // Reverse mode for bottom anchoring
-              padding: const EdgeInsets.all(16),
-              itemCount: chatState.messages.length,
-              itemBuilder: (context, index) {
-                // Invert index because of reverse mode
-                final reversedIndex = chatState.messages.length - 1 - index;
-                final msg = chatState.messages[reversedIndex];
-                final isLatest = index == 0;
-                final isGenerating = isLatest && !msg.isUser && chatState.isLoading;
-                return MessageBubble(
-                    key: ValueKey(msg.id), 
-                    message: msg, 
-                    isLast: isLatest,
-                    isGenerating: isGenerating);
-              },
-            ),
+            child: Platform.isWindows
+                ? Padding(
+                    padding: const EdgeInsets.only(right: 4.0, top: 2.0, bottom: 2.0),
+                    child: fluent.Scrollbar(
+                      controller: _scrollController,
+                      thumbVisibility: true,
+                      style: const fluent.ScrollbarThemeData(
+                        thickness: 6,
+                        hoveringThickness: 10,
+                      ),
+                      child: ScrollConfiguration(
+                        behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+                        child: ListView.builder(
+                          cacheExtent: 2000,
+                          key: ValueKey(ref.watch(selectedHistorySessionIdProvider)),
+                          controller: _scrollController,
+                          reverse: true,
+                          padding: const EdgeInsets.all(16),
+                          itemCount: chatState.messages.length,
+                          itemBuilder: (context, index) {
+                            final reversedIndex = chatState.messages.length - 1 - index;
+                            final msg = chatState.messages[reversedIndex];
+                            final isLatest = index == 0;
+                            final isGenerating = isLatest && !msg.isUser && chatState.isLoading;
+
+                            if (index == 0) {
+                              return TweenAnimationBuilder<double>(
+                                tween: Tween(begin: 0.0, end: 1.0),
+                                duration: const Duration(milliseconds: 300),
+                                curve: Curves.easeOutCubic,
+                                builder: (context, value, child) {
+                                  return Opacity(
+                                    opacity: value,
+                                    child: Transform.translate(
+                                      offset: Offset(0, 20 * (1 - value)),
+                                      child: child,
+                                    ),
+                                  );
+                                },
+                                child: RepaintBoundary(
+                                  child: MessageBubble(
+                                      key: ValueKey(msg.id),
+                                      message: msg,
+                                      isLast: isLatest,
+                                      isGenerating: isGenerating),
+                                ),
+                              );
+                            } else {
+                              return RepaintBoundary(
+                                child: MessageBubble(
+                                    key: ValueKey(msg.id),
+                                    message: msg,
+                                    isLast: isLatest,
+                                    isGenerating: isGenerating),
+                              );
+                            }
+                          },
+                          physics: const ClampingScrollPhysics(),
+                        ),
+                      ),
+                    ),
+                  )
+                : Scrollbar(
+                    controller: _scrollController,
+                    child: ListView.builder(
+                      cacheExtent: 2000,
+                      key: ValueKey(ref.watch(selectedHistorySessionIdProvider)),
+                      controller: _scrollController,
+                      reverse: true,
+                      padding: const EdgeInsets.all(16),
+                      itemCount: chatState.messages.length,
+                      itemBuilder: (context, index) {
+                        final reversedIndex = chatState.messages.length - 1 - index;
+                        final msg = chatState.messages[reversedIndex];
+                        final isLatest = index == 0;
+                        final isGenerating = isLatest && !msg.isUser && chatState.isLoading;
+
+                        if (index == 0) {
+                          return TweenAnimationBuilder<double>(
+                            tween: Tween(begin: 0.0, end: 1.0),
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeOutCubic,
+                            builder: (context, value, child) {
+                              return Opacity(
+                                opacity: value,
+                                child: Transform.translate(
+                                  offset: Offset(0, 20 * (1 - value)),
+                                  child: child,
+                                ),
+                              );
+                            },
+                            child: RepaintBoundary(
+                              child: MessageBubble(
+                                  key: ValueKey(msg.id),
+                                  message: msg,
+                                  isLast: isLatest,
+                                  isGenerating: isGenerating),
+                            ),
+                          );
+                        } else {
+                          return RepaintBoundary(
+                            child: MessageBubble(
+                                key: ValueKey(msg.id),
+                                message: msg,
+                                isLast: isLatest,
+                                isGenerating: isGenerating),
+                          );
+                        }
+                      },
+                      physics: const BouncingScrollPhysics(
+                          parent: AlwaysScrollableScrollPhysics()),
+                    ),
+                  ),
           ),
         ),
         if (_attachments.isNotEmpty)
@@ -400,211 +497,372 @@ class ChatViewState extends ConsumerState<ChatView> {
             ),
           ),
         Container(
-          padding: EdgeInsets.all(Platform.isWindows ? 12 : 8),
-          decoration: BoxDecoration(
-            border: Border(
-                top: BorderSide(
-                    color: fluent.FluentTheme.of(context)
-                        .resources
-                        .dividerStrokeColorDefault)),
-            color: Platform.isWindows
-                ? fluent.FluentTheme.of(context).cardColor
-                : Theme.of(context).scaffoldBackgroundColor,
+          padding: EdgeInsets.fromLTRB(
+            Platform.isWindows ? 12 : 0, 
+            Platform.isWindows ? 0 : 0,  // Top: 0 on Windows (gap reduction)
+            Platform.isWindows ? 12 : 0, 
+            Platform.isWindows ? 12 : 0// Mobile padding handled by margin
           ),
+
           child: Platform.isWindows
-              ? _buildDesktopInputArea(chatState)
-              : _buildMobileInputArea(chatState),
+              ? _buildDesktopInputArea(chatState, settings)
+              : _buildMobileInputArea(chatState, settings),
         ),
       ],
     );
   }
 
-  Widget _buildDesktopInputArea(ChatState chatState) {
-    return Column(
-      children: [
-        Focus(
-          onKeyEvent: (node, event) {
-            if (event is! KeyDownEvent) return KeyEventResult.ignored;
-            final isControl = HardwareKeyboard.instance.isControlPressed;
-            final isShift = HardwareKeyboard.instance.isShiftPressed;
-            if ((isControl && event.logicalKey == LogicalKeyboardKey.keyV) ||
-                (isShift && event.logicalKey == LogicalKeyboardKey.insert)) {
-              _handlePaste();
-              return KeyEventResult.handled;
-            }
-            if (isControl && event.logicalKey == LogicalKeyboardKey.enter) {
-              _sendMessage();
-              return KeyEventResult.handled;
-            }
-            return KeyEventResult.ignored;
-          },
-          child: fluent.TextBox(
-            controller: _controller,
-            placeholder: '输入消息 (Enter 换行，Ctrl + Enter 发送)',
-            maxLines: 3,
-            minLines: 1,
-            decoration:
-                const fluent.WidgetStatePropertyAll(fluent.BoxDecoration()),
-            style: const TextStyle(fontSize: 14),
+  OverlayEntry? _streamToastEntry;
+
+  void _showStreamToast(bool isEnabled) {
+    if (Platform.isWindows) {
+      // Remove existing toast immediately to prevent stacking/overlap
+      _streamToastEntry?.remove();
+      _streamToastEntry = null;
+
+      final entry = OverlayEntry(
+        builder: (context) {
+          return Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: _StreamToastWidget(
+              isEnabled: isEnabled,
+              onClose: () {
+                _streamToastEntry?.remove();
+                _streamToastEntry = null;
+              },
+            ),
+          );
+        },
+      );
+
+      Overlay.of(context).insert(entry);
+      _streamToastEntry = entry;
+    } else {
+      ScaffoldMessenger.of(context).clearSnackBars();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(isEnabled ? '已开启流式输出' : '已关闭流式输出'),
+          duration: const Duration(milliseconds: 1500),
+          behavior: SnackBarBehavior.floating,
+          width: 200,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        ),
+      );
+    }
+  }
+
+  Widget _buildDesktopInputArea(ChatState chatState, SettingsState settings) {
+    final theme = fluent.FluentTheme.of(context);
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.cardColor,
+        borderRadius: BorderRadius.circular(20), // Matches capsule look
+        border: Border.all(
+          color: theme.resources.dividerStrokeColorDefault,
+        ),
+      ),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8), // Tighter vertical padding
+      child: Column(
+        children: [
+          Focus(
+            onKeyEvent: (node, event) {
+              if (event is! KeyDownEvent) return KeyEventResult.ignored;
+              final isControl = HardwareKeyboard.instance.isControlPressed;
+              final isShift = HardwareKeyboard.instance.isShiftPressed;
+              if ((isControl && event.logicalKey == LogicalKeyboardKey.keyV) ||
+                  (isShift && event.logicalKey == LogicalKeyboardKey.insert)) {
+                _handlePaste();
+                return KeyEventResult.handled;
+              }
+              if (isControl && event.logicalKey == LogicalKeyboardKey.enter) {
+                _sendMessage();
+                return KeyEventResult.handled;
+              }
+              return KeyEventResult.ignored;
+            },
+            child: fluent.TextBox(
+              controller: _controller,
+              placeholder: '随便输入点什么吧 (Enter 换行，Ctrl + Enter 发送)',
+              maxLines: 5,
+              minLines: 1,
+              // Completely transparent decoration to avoid "nested box" look
+              decoration: const fluent.WidgetStatePropertyAll(fluent.BoxDecoration(
+                color: Colors.transparent,
+                border: Border.fromBorderSide(BorderSide.none),
+              )),
+              highlightColor: Colors.transparent,
+              unfocusedColor: Colors.transparent,
+              cursorColor: theme.accentColor,
+              style: const TextStyle(fontSize: 14),
+              foregroundDecoration: const fluent.WidgetStatePropertyAll(fluent.BoxDecoration(
+                border: Border.fromBorderSide(BorderSide.none),
+              )),
+            ),
           ),
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            fluent.IconButton(
-              icon: const fluent.Icon(fluent.FluentIcons.attach),
-              onPressed: _pickFiles,
-            ),
-            const SizedBox(width: 8),
-            fluent.IconButton(
-              icon: const fluent.Icon(fluent.FluentIcons.add),
-              onPressed: () {
-                ref.read(selectedHistorySessionIdProvider.notifier).state =
-                    'new_chat';
-              },
-            ),
-            const SizedBox(width: 8),
-            fluent.IconButton(
-              icon: const fluent.Icon(fluent.FluentIcons.paste),
-              onPressed: _handlePaste,
-            ),
-            const SizedBox(width: 8),
-            fluent.IconButton(
-              icon: const fluent.Icon(fluent.FluentIcons.broom),
-              onPressed: () {
-                showDialog(
-                  context: context,
-                  builder: (ctx) => fluent.ContentDialog(
-                    title: const Text('清空上下文'),
-                    content: const Text('确定要清空当前对话的历史记录吗？此操作不可撤销。'),
-                    actions: [
-                      fluent.Button(
-                        child: const Text('取消'),
-                        onPressed: () => Navigator.pop(ctx),
-                      ),
-                      fluent.FilledButton(
-                        child: const Text('确定'),
-                        onPressed: () {
-                          Navigator.pop(ctx);
-                          ref.read(historyChatProvider).clearContext();
-                        },
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-            const Spacer(),
-            if (chatState.isLoading)
+          const SizedBox(height: 4),
+          Row(
+            children: [
               fluent.IconButton(
-                icon: const fluent.Icon(fluent.FluentIcons.stop_solid, size: 20),
-                onPressed: () => ref.read(historyChatProvider).abortGeneration(),
-              )
-            else
-              fluent.IconButton(
-                icon: const fluent.Icon(fluent.FluentIcons.send),
-                onPressed: _sendMessage,
+                icon: const Icon(fluent.FluentIcons.attach, size: 16),
+                style: fluent.ButtonStyle(
+                  foregroundColor: fluent.WidgetStatePropertyAll(theme.resources.textFillColorSecondary),
+                ),
+                onPressed: _pickFiles,
               ),
-          ],
-        ),
-      ],
+              const SizedBox(width: 4),
+              fluent.IconButton(
+                icon: const Icon(fluent.FluentIcons.add, size: 16),
+                style: fluent.ButtonStyle(
+                  foregroundColor: fluent.WidgetStatePropertyAll(theme.resources.textFillColorSecondary),
+                ),
+                onPressed: () {
+                  ref.read(selectedHistorySessionIdProvider.notifier).state =
+                      'new_chat';
+                },
+              ),
+              const SizedBox(width: 4),
+              fluent.IconButton(
+                icon: const Icon(fluent.FluentIcons.paste, size: 16),
+                style: fluent.ButtonStyle(
+                  foregroundColor: fluent.WidgetStatePropertyAll(theme.resources.textFillColorSecondary),
+                ),
+                onPressed: _handlePaste,
+              ),
+              
+              const Spacer(),
+              
+              // Feature Toggles (Stream / Clear) - Monochrome, reduced visual noise
+              // Feature Toggles (Stream / Clear) - Monochrome, reduced visual noise
+              fluent.IconButton(
+                icon: Icon(
+                  fluent.FluentIcons.lightning_bolt, 
+                  size: 16,
+                  color: settings.isStreamEnabled 
+                      ? theme.accentColor 
+                      : theme.resources.textFillColorSecondary,
+                ),
+                onPressed: () {
+                  final newState = !settings.isStreamEnabled;
+                  ref.read(settingsProvider.notifier).toggleStreamEnabled();
+                  _showStreamToast(newState);
+                },
+                style: fluent.ButtonStyle(
+                  backgroundColor: fluent.WidgetStateProperty.resolveWith((states) {
+                     if (settings.isStreamEnabled) return theme.accentColor.withOpacity(0.1);
+                     return Colors.transparent;
+                  }),
+                ),
+              ),
+              const SizedBox(width: 4),
+              fluent.IconButton(
+                icon: const Icon(fluent.FluentIcons.broom, size: 16),
+                style: fluent.ButtonStyle(
+                  foregroundColor: fluent.WidgetStatePropertyAll(theme.resources.textFillColorSecondary),
+                ),
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (ctx) => fluent.ContentDialog(
+                      title: const Text('清空上下文'),
+                      content: const Text('确定要清空当前对话的历史记录吗？此操作不可撤销。'),
+                      actions: [
+                        fluent.Button(
+                          child: const Text('取消'),
+                          onPressed: () => Navigator.pop(ctx),
+                        ),
+                        fluent.FilledButton(
+                          child: const Text('确定'),
+                          onPressed: () {
+                            Navigator.pop(ctx);
+                            ref.read(historyChatProvider).clearContext();
+                          },
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+              
+              const SizedBox(width: 8),
+              
+              if (chatState.isLoading)
+                fluent.IconButton(
+                  icon: const Icon(fluent.FluentIcons.stop_solid, size: 16, color: Colors.red),
+                  onPressed: () => ref.read(historyChatProvider).abortGeneration(),
+                )
+              else
+                fluent.IconButton(
+                  icon: Icon(fluent.FluentIcons.send, size: 16, color: theme.accentColor),
+                  onPressed: _sendMessage,
+                  style: fluent.ButtonStyle(
+                    backgroundColor: fluent.WidgetStateProperty.resolveWith((states) {
+                       if (states.isHovered || states.isPressed) return theme.accentColor.withOpacity(0.1);
+                       return Colors.transparent;
+                    }),
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildMobileInputArea(ChatState chatState) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-            IconButton(
-              icon: const Icon(Icons.attach_file, size: 22),
-              onPressed: _pickFiles,
-              tooltip: '添加附件',
-            ),
-            IconButton(
-              icon: const Icon(Icons.add_circle_outline, size: 22),
-              onPressed: () {
-                ref.read(selectedHistorySessionIdProvider.notifier).state =
-                    'new_chat';
-              },
-              tooltip: '新对话',
-            ),
-            IconButton(
-              icon: const Icon(Icons.cleaning_services_outlined, size: 22),
-              onPressed: () {
-                showDialog(
-                  context: context,
-                  builder: (ctx) => AlertDialog(
-                    title: const Text('清空上下文'),
-                    content: const Text('确定要清空当前对话的历史记录吗？此操作不可撤销。'),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(ctx),
-                        child: const Text('取消'),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.pop(ctx);
-                          ref.read(historyChatProvider).clearContext();
-                        },
-                        child: const Text('确定'),
-                      ),
-                    ],
-                  ),
-                );
-              },
-              tooltip: '清空上下文',
-            ),
-          ],
+  Widget _buildMobileInputArea(ChatState chatState, SettingsState settings) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+      padding: const EdgeInsets.fromLTRB(16, 12, 8, 8),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(26),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.5),
         ),
-        const SizedBox(height: 4),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Expanded(
-              child: Container(
-                constraints: const BoxConstraints(maxHeight: 120),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                child: TextField(
-                  controller: _controller,
-                  maxLines: 4,
-                  minLines: 1,
-                  decoration: const InputDecoration(
-                    hintText: '输入消息...',
-                    border: InputBorder.none,
-                    contentPadding:
-                        EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 1. Text Field
+          Container(
+            constraints: const BoxConstraints(maxHeight: 120),
+            child: TextField(
+              controller: _controller,
+              maxLines: 5,
+              minLines: 1,
+              decoration: const InputDecoration(
+                hintText: '随便输入点什么吧',
+                hintStyle: TextStyle(fontSize: 15, color: Colors.grey),
+                border: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                errorBorder: InputBorder.none,
+                disabledBorder: InputBorder.none,
+                isDense: true,
+                contentPadding: EdgeInsets.zero,
+              ),
+              style: const TextStyle(fontSize: 16),
+              textInputAction: TextInputAction.newline,
+            ),
+          ),
+          const SizedBox(height: 12),
+          
+          // 2. Action Icons Row
+          Row(
+            children: [
+              // Left Side: Feature Toggles
+              
+              // Stream Toggle
+              InkWell(
+                onTap: () {
+                  final newState = !settings.isStreamEnabled;
+                  ref.read(settingsProvider.notifier).toggleStreamEnabled();
+                  _showStreamToast(newState);
+                },
+                borderRadius: BorderRadius.circular(20),
+                child: Padding(
+                  padding: const EdgeInsets.all(6.0),
+                  child: Icon(
+                    settings.isStreamEnabled ? Icons.bolt : Icons.article_outlined,
+                    color: settings.isStreamEnabled 
+                        ? Theme.of(context).colorScheme.primary 
+                        : Colors.grey,
+                    size: 24,
                   ),
-                  style: const TextStyle(fontSize: 16),
-                  textInputAction: TextInputAction.newline,
                 ),
               ),
-            ),
-            const SizedBox(width: 8),
-            chatState.isLoading
-                ? IconButton(
-                    icon: Icon(Icons.stop_circle,
-                        color: Theme.of(context).colorScheme.error),
-                    iconSize: 26,
-                    onPressed: () => ref.read(historyChatProvider).abortGeneration(),
-                    padding: const EdgeInsets.all(8),
-                    tooltip: '停止生成',
-                  )
-                : IconButton(
-                    icon: Icon(Icons.send,
-                        color: Theme.of(context).colorScheme.primary),
-                    iconSize: 26,
-                    onPressed: _sendMessage,
-                    padding: const EdgeInsets.all(8),
+              
+              const SizedBox(width: 4),
+              
+              // Clear Context
+              InkWell(
+                onTap: () {
+                  showDialog(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      title: const Text('清空上下文'),
+                      content: const Text('确定要清空当前对话的历史记录吗？此操作不可撤销。'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          child: const Text('取消'),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            Navigator.pop(ctx);
+                            ref.read(historyChatProvider).clearContext();
+                          },
+                          child: const Text('确定'),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+                borderRadius: BorderRadius.circular(20),
+                child: const Padding(
+                  padding: EdgeInsets.all(6.0),
+                  child: Icon(
+                    Icons.cleaning_services_outlined,
+                    color: Colors.grey,
+                    size: 22,
                   ),
-          ],
-        ),
-      ],
+                ),
+              ),
+
+              const Spacer(),
+
+              // Right Side: Actions
+              
+              // New Chat (+)
+              IconButton(
+                icon: const Icon(Icons.add, size: 24, color: Colors.grey),
+                onPressed: () {
+                  ref.read(selectedHistorySessionIdProvider.notifier).state =
+                      'new_chat';
+                },
+                tooltip: '新对话',
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
+              
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: IconButton(
+                    icon: const Icon(Icons.attach_file, size: 22, color: Colors.grey),
+                    onPressed: _pickFiles,
+                    tooltip: '添加附件',
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+              ),
+              
+              // Send/Stop Button (Circular)
+              Material(
+                color: chatState.isLoading 
+                    ? Colors.red.withOpacity(0.1) 
+                    : Theme.of(context).colorScheme.surfaceContainerHighest,
+                shape: const CircleBorder(),
+                clipBehavior: Clip.antiAlias,
+                child: InkWell(
+                  onTap: chatState.isLoading
+                      ? () => ref.read(historyChatProvider).abortGeneration()
+                      : _sendMessage,
+                  child: Container(
+                    width: 36,
+                    height: 36,
+                    alignment: Alignment.center,
+                    child: chatState.isLoading
+                        ? const Icon(Icons.stop_rounded, color: Colors.red, size: 24)
+                        : const Icon(Icons.arrow_upward, size: 20),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
@@ -786,8 +1044,8 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
     final settingsState = ref.watch(settingsProvider);
     final theme = fluent.FluentTheme.of(context);
     return MouseRegion(
-      onEnter: (_) => setState(() => _isHovering = true),
-      onExit: (_) => setState(() => _isHovering = false),
+      onEnter: (_) => Platform.isWindows ? setState(() => _isHovering = true) : null,
+      onExit: (_) => Platform.isWindows ? setState(() => _isHovering = false) : null,
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 8),
         child: Column(
@@ -909,9 +1167,7 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
                                     decoration: BoxDecoration(
                                       color: theme.cardColor,
                                       borderRadius: BorderRadius.circular(24),
-                                      border: Border.all(
-                                          color: theme.resources
-                                              .dividerStrokeColorDefault),
+                                      // Removed border to avoid "grey rectangle" look
                                     ),
                                     child: Column(
                                       crossAxisAlignment:
@@ -929,11 +1185,17 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
                                             maxLines: null,
                                             minLines: 1,
                                             placeholder: '编辑消息...',
-                                            decoration: null,
+                                            decoration: const fluent.WidgetStatePropertyAll(fluent.BoxDecoration(
+                                              color: Colors.transparent,
+                                              border: Border.fromBorderSide(BorderSide.none),
+                                            )),
                                             highlightColor:
                                                 fluent.Colors.transparent,
                                             unfocusedColor:
                                                 fluent.Colors.transparent,
+                                            foregroundDecoration: const fluent.WidgetStatePropertyAll(fluent.BoxDecoration(
+                                              border: Border.fromBorderSide(BorderSide.none),
+                                            )),
                                             style: TextStyle(
                                                 fontSize: 14,
                                                 height: 1.5,
@@ -1070,6 +1332,15 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
                                     ],
                                   ),
                                 ],
+                              )
+                            else if (isUser)
+                              SelectableText(
+                                message.content,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  height: 1.5,
+                                  color: theme.typography.body!.color,
+                                ),
                               )
                             else
                               fluent.FluentTheme(
@@ -1306,3 +1577,108 @@ class MobileActionButton extends StatelessWidget {
   }
 }
 
+
+class _StreamToastWidget extends StatefulWidget {
+  final bool isEnabled;
+  final VoidCallback onClose;
+
+  const _StreamToastWidget({
+    required this.isEnabled,
+    required this.onClose,
+  });
+
+  @override
+  State<_StreamToastWidget> createState() => _StreamToastWidgetState();
+}
+
+class _StreamToastWidgetState extends State<_StreamToastWidget>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _opacity;
+  late Animation<Offset> _slide;
+  Timer? _closeTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    
+    _opacity = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
+    _slide = Tween<Offset>(begin: const Offset(0, -0.5), end: Offset.zero)
+        .animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutBack));
+        
+    _controller.forward();
+
+    // Auto-close countdown (shorter for minimalist feel)
+    _closeTimer = Timer(const Duration(milliseconds: 1500), _startClosing);
+  }
+
+  void _startClosing() {
+    if (!mounted) return;
+    _controller.reverse().then((_) {
+      if (mounted) widget.onClose();
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _closeTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = fluent.FluentTheme.of(context);
+    // Minimalist Apple-style toast
+    return SlideTransition(
+      position: _slide,
+      child: FadeTransition(
+        opacity: _opacity,
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: Container(
+            margin: const EdgeInsets.only(top: 20),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              color: theme.brightness == Brightness.dark 
+                  ? Colors.white.withOpacity(0.9) 
+                  : Colors.black.withOpacity(0.8),
+              borderRadius: BorderRadius.circular(30),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  widget.isEnabled ? fluent.FluentIcons.lightning_bolt : fluent.FluentIcons.clear, 
+                  size: 14, 
+                  color: theme.brightness == Brightness.dark ? Colors.black : Colors.white
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  widget.isEnabled ? '流式输出 On' : '流式输出 Off',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: theme.brightness == Brightness.dark ? Colors.black : Colors.white,
+                    decoration: TextDecoration.none,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

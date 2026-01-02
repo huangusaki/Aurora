@@ -7,7 +7,8 @@ import 'package:file_selector/file_selector.dart';
 import 'settings_provider.dart';
 
 class MobileSettingsPage extends ConsumerStatefulWidget {
-  const MobileSettingsPage({super.key});
+  final VoidCallback? onBack;
+  const MobileSettingsPage({super.key, this.onBack});
   @override
   ConsumerState<MobileSettingsPage> createState() => _MobileSettingsPageState();
 }
@@ -34,6 +35,12 @@ class _MobileSettingsPageState extends ConsumerState<MobileSettingsPage> {
       appBar: AppBar(
         title: const Text('设置'),
         backgroundColor: fluentTheme.scaffoldBackgroundColor,
+        leading: widget.onBack != null
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: widget.onBack,
+              )
+            : null,
         elevation: 0,
       ),
       body: ListView(

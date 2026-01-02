@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'dart:io';
 import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
 import 'provider_config_entity.dart';
@@ -48,6 +50,7 @@ class SettingsStorage {
     String? llmName,
     String? llmAvatar,
     String? themeMode,
+    bool? isStreamEnabled,
   }) async {
     final existing = await loadAppSettings();
     final settings = AppSettingsEntity()
@@ -58,7 +61,8 @@ class SettingsStorage {
       ..userAvatar = userAvatar ?? existing?.userAvatar
       ..llmName = llmName ?? existing?.llmName ?? 'Assistant'
       ..llmAvatar = llmAvatar ?? existing?.llmAvatar
-      ..themeMode = themeMode ?? existing?.themeMode ?? 'system';
+      ..themeMode = themeMode ?? existing?.themeMode ?? 'system'
+      ..isStreamEnabled = isStreamEnabled ?? existing?.isStreamEnabled ?? true;
     await _isar.writeTxn(() async {
       await _isar.appSettingsEntitys.clear();
       await _isar.appSettingsEntitys.put(settings);
@@ -90,5 +94,33 @@ class SettingsStorage {
       await _isar.appSettingsEntitys.clear();
       await _isar.appSettingsEntitys.put(settings);
     });
+  }
+
+  Future<File> get _orderFile async {
+    final dir = await getApplicationDocumentsDirectory();
+    return File('${dir.path}/session_order.json');
+  }
+
+  Future<List<String>> loadSessionOrder() async {
+    try {
+      final file = await _orderFile;
+      if (await file.exists()) {
+        final content = await file.readAsString();
+        final List<dynamic> json = jsonDecode(content);
+        return json.cast<String>();
+      }
+    } catch (e) {
+      // ignore error
+    }
+    return [];
+  }
+
+  Future<void> saveSessionOrder(List<String> order) async {
+    try {
+      final file = await _orderFile;
+      await file.writeAsString(jsonEncode(order));
+    } catch (e) {
+      // ignore error
+    }
   }
 }

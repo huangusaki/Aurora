@@ -6,7 +6,8 @@ import '../domain/message.dart';
 
 class ChatStorage {
   final Isar _isar;
-  ChatStorage(SettingsStorage settingsStorage) : _isar = settingsStorage.isar;
+  final SettingsStorage _settingsStorage;
+  ChatStorage(this._settingsStorage) : _isar = _settingsStorage.isar;
   Future<void> saveMessage(Message message, String sessionId) async {
     final entity = MessageEntity()
       ..timestamp = message.timestamp
@@ -134,4 +135,19 @@ class ChatStorage {
           .deleteAll();
     });
   }
+  Future<void> updateSessionTitle(String sessionId, String newTitle) async {
+    await _isar.writeTxn(() async {
+      final session = await _isar.sessionEntitys
+          .filter()
+          .sessionIdEqualTo(sessionId)
+          .findFirst();
+      if (session != null) {
+        session.title = newTitle;
+        await _isar.sessionEntitys.put(session);
+      }
+    });
+  }
+
+  Future<List<String>> loadSessionOrder() => _settingsStorage.loadSessionOrder();
+  Future<void> saveSessionOrder(List<String> order) => _settingsStorage.saveSessionOrder(order);
 }

@@ -6,7 +6,8 @@ import 'package:file_selector/file_selector.dart';
 import 'settings_provider.dart';
 
 class MobileUserPage extends ConsumerStatefulWidget {
-  const MobileUserPage({super.key});
+  final VoidCallback? onBack;
+  const MobileUserPage({super.key, this.onBack});
   @override
   ConsumerState<MobileUserPage> createState() => _MobileUserPageState();
 }
@@ -21,6 +22,12 @@ class _MobileUserPageState extends ConsumerState<MobileUserPage> {
       appBar: AppBar(
         title: const Text('用户设置'),
         backgroundColor: fluentTheme.scaffoldBackgroundColor,
+        leading: widget.onBack != null
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: widget.onBack,
+              )
+            : null,
         elevation: 0,
       ),
       body: ListView(

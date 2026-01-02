@@ -59,6 +59,7 @@ class SettingsState {
   final String llmName;
   final String? llmAvatar;
   final String themeMode;
+  final bool isStreamEnabled;
   SettingsState({
     required this.providers,
     required this.activeProviderId,
@@ -70,6 +71,7 @@ class SettingsState {
     this.llmName = 'Assistant',
     this.llmAvatar,
     this.themeMode = 'system',
+    this.isStreamEnabled = true,
   });
   ProviderConfig get activeProvider =>
       providers.firstWhere((p) => p.id == activeProviderId);
@@ -89,6 +91,7 @@ class SettingsState {
     String? llmName,
     String? llmAvatar,
     String? themeMode,
+    bool? isStreamEnabled,
   }) {
     return SettingsState(
       providers: providers ?? this.providers,
@@ -101,6 +104,7 @@ class SettingsState {
       llmName: llmName ?? this.llmName,
       llmAvatar: llmAvatar ?? this.llmAvatar,
       themeMode: themeMode ?? this.themeMode,
+      isStreamEnabled: isStreamEnabled ?? this.isStreamEnabled,
     );
   }
 }
@@ -116,6 +120,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     String llmName = 'Assistant',
     String? llmAvatar,
     String themeMode = 'system',
+    bool isStreamEnabled = true,
   })  : _storage = storage,
         super(SettingsState(
           providers: initialProviders,
@@ -126,6 +131,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
           llmName: llmName,
           llmAvatar: llmAvatar,
           themeMode: themeMode,
+          isStreamEnabled: isStreamEnabled,
         ));
   void viewProvider(String id) {
     if (state.viewingProviderId != id) {
@@ -330,6 +336,15 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     final current = state.themeMode;
     final next = current == 'light' ? 'dark' : 'light';
     await setThemeMode(next);
+  }
+
+  Future<void> toggleStreamEnabled() async {
+    final newValue = !state.isStreamEnabled;
+    state = state.copyWith(isStreamEnabled: newValue);
+    await _storage.saveAppSettings(
+      activeProviderId: state.activeProviderId,
+      isStreamEnabled: newValue,
+    );
   }
 }
 

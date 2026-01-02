@@ -28,4 +28,5 @@ class AppSettingsEntity {
   String llmName = 'Assistant';
   String? llmAvatar;
   String themeMode = 'system';
+  bool isStreamEnabled = true;
 }

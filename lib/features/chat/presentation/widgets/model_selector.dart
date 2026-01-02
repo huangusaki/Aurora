@@ -2,6 +2,9 @@ import 'package:fluent_ui/fluent_ui.dart' as fluent;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../settings/presentation/settings_provider.dart';
+import 'custom_dropdown_overlay.dart';
+
+import '../chat_provider.dart';
 
 class ModelSelector extends ConsumerStatefulWidget {
   final bool isWindows;
@@ -11,11 +14,115 @@ class ModelSelector extends ConsumerStatefulWidget {
 }
 
 class _ModelSelectorState extends ConsumerState<ModelSelector> {
-  final fluent.FlyoutController _flyoutController = fluent.FlyoutController();
+  // Use LayerLink for precise positioning ensuring the dropdown anchors to the button
+  final LayerLink _layerLink = LayerLink();
+  OverlayEntry? _overlayEntry;
+  bool _isOpen = false;
+
   @override
   void dispose() {
-    _flyoutController.dispose();
+    _removeOverlay();
     super.dispose();
+  }
+
+  void _removeOverlay() {
+    _overlayEntry?.remove();
+    _overlayEntry = null;
+    if (mounted) {
+      setState(() => _isOpen = false);
+    }
+  }
+
+  void _toggleDropdown() {
+    if (_isOpen) {
+      _removeOverlay();
+    } else {
+      _showOverlay();
+    }
+  }
+
+  void _showOverlay() {
+    final overlay = Overlay.of(context);
+    final theme = fluent.FluentTheme.of(context);
+    
+    // Create the overlay entry
+    _overlayEntry = OverlayEntry(
+      builder: (context) => CustomDropdownOverlay(
+        onDismiss: _removeOverlay,
+        layerLink: _layerLink,
+        offset: const Offset(0, 36), // Shifted down to clear button height
+        child: AnimatedDropdownList(
+          backgroundColor: theme.menuColor,
+          borderColor: theme.resources.surfaceStrokeColorDefault,
+          width: 280,
+          items: _buildDropdownItems(theme),
+        ),
+      ),
+    );
+
+    overlay.insert(_overlayEntry!);
+    setState(() => _isOpen = true);
+  }
+
+  List<fluent.CommandBarItem> _buildDropdownItems(fluent.FluentThemeData theme) {
+    final settingsState = ref.watch(settingsProvider);
+    final selected = settingsState.selectedModel;
+    final activeProvider = settingsState.activeProvider;
+    final providers = settingsState.providers;
+    
+    final List<fluent.CommandBarItem> items = [];
+
+    Future<void> switchModel(String providerId, String model) async {
+       _removeOverlay(); // Close immediately
+       // Defer state change to avoid conflicts
+       WidgetsBinding.instance.addPostFrameCallback((_) async {
+         await ref.read(settingsProvider.notifier).selectProvider(providerId);
+         await ref.read(settingsProvider.notifier).setSelectedModel(model);
+       });
+    }
+
+    for (final provider in providers) {
+      if (provider.models.isEmpty) continue;
+      
+      // Provider Header (Disabled Button styled as label)
+      items.add(fluent.CommandBarButton(
+        onPressed: () {}, 
+        label: Text(
+          provider.name,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: theme.typography.caption?.color ?? fluent.Colors.grey,
+            fontSize: 12,
+          ),
+        ),
+      ));
+
+      for (final model in provider.models) {
+        final isSelected = activeProvider.id == provider.id && selected == model;
+        items.add(fluent.CommandBarButton(
+          onPressed: () => switchModel(provider.id, model),
+          label: fluent.Padding(
+             padding: const EdgeInsets.only(left: 12),
+             child: Text(
+               model,
+               style: TextStyle(
+                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                 color: isSelected ? theme.accentColor : theme.typography.body?.color,
+               ),
+             )
+          ),
+          icon: isSelected ? fluent.Icon(fluent.FluentIcons.check_mark, size: 12, color: theme.accentColor) : null,
+        ));
+      }
+      
+      if (provider != providers.last &&
+          providers.any((p) =>
+              providers.indexOf(p) > providers.indexOf(provider) &&
+              p.models.isNotEmpty)) {
+        items.add(const fluent.CommandBarSeparator());
+      }
+    }
+    return items;
   }
 
   @override
@@ -34,56 +141,17 @@ class _ModelSelectorState extends ConsumerState<ModelSelector> {
     }
 
     if (widget.isWindows) {
-      final List<fluent.MenuFlyoutItemBase> items = [];
-      for (final provider in providers) {
-        if (provider.models.isEmpty) continue;
-        items.add(fluent.MenuFlyoutItem(
-          text: fluent.Text(provider.name,
-              style: const TextStyle(
-                  fontWeight: FontWeight.bold, color: fluent.Colors.grey)),
-          onPressed: null,
-        ));
-        for (final model in provider.models) {
-          items.add(fluent.MenuFlyoutItem(
-            text: fluent.Padding(
-              padding: const EdgeInsets.only(left: 12),
-              child: fluent.Text(model),
-            ),
-            onPressed: () => switchModel(provider.id, model),
-            trailing: (activeProvider.id == provider.id && selected == model)
-                ? const fluent.Icon(fluent.FluentIcons.check_mark, size: 12)
-                : null,
-          ));
-        }
-        if (provider != providers.last &&
-            providers.any((p) =>
-                providers.indexOf(p) > providers.indexOf(provider) &&
-                p.models.isNotEmpty)) {
-          items.add(const fluent.MenuFlyoutSeparator());
-        }
-      }
       final theme = fluent.FluentTheme.of(context);
-      return fluent.FlyoutTarget(
-        controller: _flyoutController,
+      
+      return CompositedTransformTarget(
+        link: _layerLink,
         child: fluent.HoverButton(
-          onPressed: () {
-            _flyoutController.showFlyout(
-              autoModeConfiguration: fluent.FlyoutAutoConfiguration(
-                preferredMode: fluent.FlyoutPlacementMode.bottomCenter,
-              ),
-              barrierDismissible: true,
-              dismissOnPointerMoveAway: false,
-              dismissWithEsc: true,
-              builder: (context) {
-                return fluent.MenuFlyout(items: items);
-              },
-            );
-          },
+          onPressed: _toggleDropdown,
           builder: (context, states) {
             return Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: states.isHovering
+                color: _isOpen || states.isHovering
                     ? theme.resources.subtleFillColorSecondary
                     : fluent.Colors.transparent,
                 borderRadius: BorderRadius.circular(4),
@@ -91,35 +159,38 @@ class _ModelSelectorState extends ConsumerState<ModelSelector> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  fluent.Icon(fluent.FluentIcons.auto_enhance_on,
-                      color: fluent.Colors.yellow, size: 14),
-                  const SizedBox(width: 8),
-                  Container(
-                    constraints: const BoxConstraints(maxWidth: 160),
-                    child: fluent.Text(
-                      selected ?? '选择模型',
-                      style: const TextStyle(fontWeight: FontWeight.w500),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  if (activeProvider.name.isNotEmpty) ...[
-                    const SizedBox(width: 8),
-                    fluent.Text('|',
-                        style: TextStyle(
-                            color: fluent.Colors.grey.withOpacity(0.5))),
-                    const SizedBox(width: 8),
-                    fluent.Text(
-                      activeProvider.name.toUpperCase(),
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: fluent.Colors.grey,
-                        fontSize: 10,
-                      ),
-                    ),
-                  ],
-                  const SizedBox(width: 4),
-                  fluent.Icon(fluent.FluentIcons.chevron_down,
-                      size: 8, color: theme.typography.caption?.color),
+                   fluent.Icon(fluent.FluentIcons.auto_enhance_on,
+                       color: fluent.Colors.yellow, size: 14),
+                   const SizedBox(width: 8),
+                   Container(
+                     constraints: const BoxConstraints(maxWidth: 160),
+                     child: fluent.Text(
+                       selected ?? '选择模型',
+                       style: const TextStyle(fontWeight: FontWeight.w500),
+                       overflow: TextOverflow.ellipsis,
+                     ),
+                   ),
+                   if (activeProvider.name.isNotEmpty) ...[
+                     const SizedBox(width: 8),
+                     fluent.Text('|',
+                         style: TextStyle(
+                             color: fluent.Colors.grey.withOpacity(0.5))),
+                     const SizedBox(width: 8),
+                     fluent.Text(
+                       activeProvider.name.toUpperCase(),
+                       style: TextStyle(
+                         fontWeight: FontWeight.bold,
+                         color: fluent.Colors.grey,
+                         fontSize: 10,
+                       ),
+                     ),
+                   ],
+                   const SizedBox(width: 4),
+                   fluent.Icon(
+                     _isOpen ? fluent.FluentIcons.chevron_up : fluent.FluentIcons.chevron_down,
+                     size: 8, 
+                     color: theme.typography.caption?.color
+                   ),
                 ],
               ),
             );
