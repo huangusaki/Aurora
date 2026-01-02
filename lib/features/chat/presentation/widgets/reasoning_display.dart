@@ -1,15 +1,21 @@
 import 'package:fluent_ui/fluent_ui.dart' as fluent;
 import 'package:flutter/material.dart';
+import 'dart:async';
 
 class ReasoningDisplay extends StatefulWidget {
   final String content;
   final bool isWindows;
   final bool isRunning;
+  final double? duration;
+  final DateTime? startTime;
+
   const ReasoningDisplay({
     super.key,
     required this.content,
     required this.isWindows,
     this.isRunning = false,
+    this.duration,
+    this.startTime,
   });
   @override
   State<ReasoningDisplay> createState() => _ReasoningDisplayState();
@@ -18,13 +24,51 @@ class ReasoningDisplay extends StatefulWidget {
 class _ReasoningDisplayState extends State<ReasoningDisplay>
     with SingleTickerProviderStateMixin {
   bool _isExpanded = false;
+  
+  Timer? _timer;
+  double _currentDuration = 0;
+  
+  @override
+  void initState() {
+    super.initState();
+    if (widget.isRunning) {
+      _isExpanded = true;
+      _startTimer();
+    }
+  }
+  
+  void _startTimer() {
+    _timer?.cancel();
+    if (widget.startTime != null) {
+      _timer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+        if (mounted) {
+          setState(() {
+            _currentDuration = DateTime.now()
+                    .difference(widget.startTime!)
+                    .inMilliseconds
+                    .toDouble() /
+                1000.0;
+          });
+        }
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+  
   @override
   void didUpdateWidget(ReasoningDisplay oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.isRunning && !oldWidget.isRunning) {
       setState(() => _isExpanded = true);
+      _startTimer();
     }
     if (!widget.isRunning && oldWidget.isRunning) {
+      _timer?.cancel();
       setState(() => _isExpanded = false);
     }
   }
@@ -74,7 +118,11 @@ class _ReasoningDisplayState extends State<ReasoningDisplay>
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    widget.isRunning ? '思考中...' : '思维链',
+                    widget.isRunning
+                        ? '深度思考中... (${_currentDuration.toStringAsFixed(1)}s)'
+                        : (widget.duration != null
+                            ? '已深度思考 (用时 ${widget.duration!.toStringAsFixed(1)} 秒)'
+                            : '思维链'),
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,

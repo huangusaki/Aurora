@@ -1,4 +1,13 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
 part of 'message_entity.dart';
+
+// **************************************************************************
+// IsarCollectionGenerator
+// **************************************************************************
+
+// coverage:ignore-file
+// ignore_for_file: duplicate_ignore, non_constant_identifier_names, constant_identifier_names, invalid_use_of_protected_member, unnecessary_cast, prefer_const_constructors, lines_longer_than_80_chars, require_trailing_commas, inference_failure_on_function_invocation, unnecessary_parenthesis, unnecessary_raw_strings, unnecessary_null_checks, join_return_with_assignment, prefer_final_locals, avoid_js_rounded_ints, avoid_positional_boolean_parameters, always_specify_types
 
 extension GetMessageEntityCollection on Isar {
   IsarCollection<MessageEntity> get messageEntitys => this.collection();
@@ -43,13 +52,18 @@ const MessageEntitySchema = CollectionSchema(
       name: r'reasoningContent',
       type: IsarType.string,
     ),
-    r'sessionId': PropertySchema(
+    r'reasoningDurationSeconds': PropertySchema(
       id: 7,
+      name: r'reasoningDurationSeconds',
+      type: IsarType.double,
+    ),
+    r'sessionId': PropertySchema(
+      id: 8,
       name: r'sessionId',
       type: IsarType.string,
     ),
     r'timestamp': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'timestamp',
       type: IsarType.dateTime,
     )
@@ -94,6 +108,7 @@ const MessageEntitySchema = CollectionSchema(
   attach: _messageEntityAttach,
   version: '3.1.0+1',
 );
+
 int _messageEntityEstimateSize(
   MessageEntity object,
   List<int> offsets,
@@ -155,8 +170,9 @@ void _messageEntitySerialize(
   writer.writeString(offsets[4], object.model);
   writer.writeString(offsets[5], object.provider);
   writer.writeString(offsets[6], object.reasoningContent);
-  writer.writeString(offsets[7], object.sessionId);
-  writer.writeDateTime(offsets[8], object.timestamp);
+  writer.writeDouble(offsets[7], object.reasoningDurationSeconds);
+  writer.writeString(offsets[8], object.sessionId);
+  writer.writeDateTime(offsets[9], object.timestamp);
 }
 
 MessageEntity _messageEntityDeserialize(
@@ -174,8 +190,9 @@ MessageEntity _messageEntityDeserialize(
   object.model = reader.readStringOrNull(offsets[4]);
   object.provider = reader.readStringOrNull(offsets[5]);
   object.reasoningContent = reader.readStringOrNull(offsets[6]);
-  object.sessionId = reader.readStringOrNull(offsets[7]);
-  object.timestamp = reader.readDateTime(offsets[8]);
+  object.reasoningDurationSeconds = reader.readDoubleOrNull(offsets[7]);
+  object.sessionId = reader.readStringOrNull(offsets[8]);
+  object.timestamp = reader.readDateTime(offsets[9]);
   return object;
 }
 
@@ -201,8 +218,10 @@ P _messageEntityDeserializeProp<P>(
     case 6:
       return (reader.readStringOrNull(offset)) as P;
     case 7:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 8:
+      return (reader.readStringOrNull(offset)) as P;
+    case 9:
       return (reader.readDateTime(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -1586,6 +1605,90 @@ extension MessageEntityQueryFilter
   }
 
   QueryBuilder<MessageEntity, MessageEntity, QAfterFilterCondition>
+      reasoningDurationSecondsIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'reasoningDurationSeconds',
+      ));
+    });
+  }
+
+  QueryBuilder<MessageEntity, MessageEntity, QAfterFilterCondition>
+      reasoningDurationSecondsIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'reasoningDurationSeconds',
+      ));
+    });
+  }
+
+  QueryBuilder<MessageEntity, MessageEntity, QAfterFilterCondition>
+      reasoningDurationSecondsEqualTo(
+    double? value, {
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'reasoningDurationSeconds',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<MessageEntity, MessageEntity, QAfterFilterCondition>
+      reasoningDurationSecondsGreaterThan(
+    double? value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'reasoningDurationSeconds',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<MessageEntity, MessageEntity, QAfterFilterCondition>
+      reasoningDurationSecondsLessThan(
+    double? value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'reasoningDurationSeconds',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<MessageEntity, MessageEntity, QAfterFilterCondition>
+      reasoningDurationSecondsBetween(
+    double? lower,
+    double? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'reasoningDurationSeconds',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<MessageEntity, MessageEntity, QAfterFilterCondition>
       sessionIdIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
@@ -1867,6 +1970,20 @@ extension MessageEntityQuerySortBy
     });
   }
 
+  QueryBuilder<MessageEntity, MessageEntity, QAfterSortBy>
+      sortByReasoningDurationSeconds() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'reasoningDurationSeconds', Sort.asc);
+    });
+  }
+
+  QueryBuilder<MessageEntity, MessageEntity, QAfterSortBy>
+      sortByReasoningDurationSecondsDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'reasoningDurationSeconds', Sort.desc);
+    });
+  }
+
   QueryBuilder<MessageEntity, MessageEntity, QAfterSortBy> sortBySessionId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'sessionId', Sort.asc);
@@ -1971,6 +2088,20 @@ extension MessageEntityQuerySortThenBy
     });
   }
 
+  QueryBuilder<MessageEntity, MessageEntity, QAfterSortBy>
+      thenByReasoningDurationSeconds() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'reasoningDurationSeconds', Sort.asc);
+    });
+  }
+
+  QueryBuilder<MessageEntity, MessageEntity, QAfterSortBy>
+      thenByReasoningDurationSecondsDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'reasoningDurationSeconds', Sort.desc);
+    });
+  }
+
   QueryBuilder<MessageEntity, MessageEntity, QAfterSortBy> thenBySessionId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'sessionId', Sort.asc);
@@ -2048,6 +2179,13 @@ extension MessageEntityQueryWhereDistinct
     });
   }
 
+  QueryBuilder<MessageEntity, MessageEntity, QDistinct>
+      distinctByReasoningDurationSeconds() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'reasoningDurationSeconds');
+    });
+  }
+
   QueryBuilder<MessageEntity, MessageEntity, QDistinct> distinctBySessionId(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -2111,6 +2249,13 @@ extension MessageEntityQueryProperty
       reasoningContentProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'reasoningContent');
+    });
+  }
+
+  QueryBuilder<MessageEntity, double?, QQueryOperations>
+      reasoningDurationSecondsProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'reasoningDurationSeconds');
     });
   }
 

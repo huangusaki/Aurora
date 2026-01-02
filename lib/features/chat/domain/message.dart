@@ -8,6 +8,8 @@ class Message {
   final List<String> images;
   final String? model;
   final String? provider;
+  final double? reasoningDurationSeconds;
+
   const Message({
     required this.id,
     required this.content,
@@ -18,7 +20,9 @@ class Message {
     this.images = const [],
     this.model,
     this.provider,
+    this.reasoningDurationSeconds,
   });
+
   factory Message.user(String content, {List<String> attachments = const []}) {
     return Message(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -28,11 +32,13 @@ class Message {
       attachments: attachments,
     );
   }
+
   factory Message.ai(String content,
       {String? reasoningContent,
       List<String> images = const [],
       String? model,
-      String? provider}) {
+      String? provider,
+      double? reasoningDurationSeconds}) {
     return Message(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       content: content,
@@ -42,6 +48,7 @@ class Message {
       images: images,
       model: model,
       provider: provider,
+      reasoningDurationSeconds: reasoningDurationSeconds,
     );
   }
 }

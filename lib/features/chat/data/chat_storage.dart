@@ -17,6 +17,7 @@ class ChatStorage {
       ..images = message.images
       ..model = message.model
       ..provider = message.provider
+      ..reasoningDurationSeconds = message.reasoningDurationSeconds
       ..sessionId = sessionId;
     await _isar.writeTxn(() async {
       await _isar.messageEntitys.put(entity);
@@ -39,6 +40,7 @@ class ChatStorage {
             ..images = m.images
             ..model = m.model
             ..provider = m.provider
+            ..reasoningDurationSeconds = m.reasoningDurationSeconds
             ..sessionId = sessionId)
           .toList();
       await _isar.messageEntitys.putAll(entities);
@@ -62,6 +64,7 @@ class ChatStorage {
               images: e.images,
               model: e.model,
               provider: e.provider,
+              reasoningDurationSeconds: e.reasoningDurationSeconds,
             ))
         .toList();
   }
@@ -86,6 +89,7 @@ class ChatStorage {
         existing.attachments = message.attachments;
         existing.model = message.model;
         existing.provider = message.provider;
+        existing.reasoningDurationSeconds = message.reasoningDurationSeconds;
         await _isar.messageEntitys.put(existing);
       }
     });

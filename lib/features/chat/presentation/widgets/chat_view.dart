@@ -24,10 +24,69 @@ class ChatView extends ConsumerStatefulWidget {
 
 class ChatViewState extends ConsumerState<ChatView> {
   final TextEditingController _controller = TextEditingController();
+  late final ScrollController _scrollController;
   List<String> _attachments = [];
+  String? _sessionId;
+  bool _hasRestoredPosition = false;
+  
+  @override
+  void initState() {
+    super.initState();
+    _sessionId = ref.read(selectedHistorySessionIdProvider);
+    _scrollController = ScrollController();
+    _scrollController.addListener(_onScroll);
+  }
+
+  void _restoreScrollPosition(ChatState state) {
+    if (_hasRestoredPosition || state.messages.isEmpty) return;
+    
+    // If we have messages and haven't restored yet
+    _hasRestoredPosition = true;
+    
+    final savedOffset = state.scrollOffset;
+    final isAutoScroll = state.isAutoScrollEnabled;
+    
+    if (savedOffset != null || isAutoScroll) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_scrollController.hasClients) {
+          // Prioritize saved offset if user was significantly scrolled up (> 100px),
+          // ignoring stale auto-scroll flag to prevent unwanted jumps.
+          if (savedOffset != null && savedOffset > 100) {
+            _scrollController.jumpTo(savedOffset);
+          } else if (isAutoScroll) {
+            _scrollController.jumpTo(0); // 0 is bottom
+          } else if (savedOffset != null) {
+            _scrollController.jumpTo(savedOffset);
+          }
+        }
+      });
+    }
+  }
+  
+  void _onScroll() {
+    // Do not update state if we haven't restored position (or initial load)
+    // or if the list is effectively empty
+    if (!_hasRestoredPosition) return;
+    if (!_scrollController.hasClients) return;
+    
+    // In reverse mode, offset 0 is bottom
+    final currentScroll = _scrollController.position.pixels;
+    
+    // Re-enable auto-scroll if close to bottom (0)
+    final autoScroll = currentScroll < 100;
+      
+    // Update state via notifier
+    if (_sessionId != null) {
+      ref.read(historyChatProvider).setAutoScrollEnabled(autoScroll);
+    }
+  }
+  
+
+  
   @override
   void dispose() {
     _controller.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -52,7 +111,7 @@ class ChatViewState extends ConsumerState<ChatView> {
     if (!reader.canProvide(Formats.png) &&
         !reader.canProvide(Formats.jpeg) &&
         !reader.canProvide(Formats.fileUri)) {
-      // Retry logic
+      // Retry logic for images
       for (int i = 0; i < 5; i++) {
         await Future.delayed(const Duration(milliseconds: 200));
         final newReader = await clipboard.read();
@@ -63,7 +122,7 @@ class ChatViewState extends ConsumerState<ChatView> {
           return;
         }
       }
-      // Pasteboard fallback
+      // Pasteboard fallback for images
       try {
         final imageBytes = await Pasteboard.image;
         if (imageBytes != null && imageBytes.isNotEmpty) {
@@ -81,9 +140,10 @@ class ChatViewState extends ConsumerState<ChatView> {
       } catch (e) {
         debugPrint('Pasteboard fallback failed: $e');
       }
+      // No image found, try to handle as text
+      await _processReader(reader);
     } else {
       await _processReader(reader);
-      return;
     }
   }
 
@@ -214,13 +274,31 @@ class ChatViewState extends ConsumerState<ChatView> {
     final text = _controller.text;
     if (text.trim().isEmpty && _attachments.isEmpty) return;
     final currentSessionId = ref.read(selectedHistorySessionIdProvider);
-    final finalSessionId = await ref
-        .read(historyChatProvider.notifier)
-        .sendMessage(text, attachments: List.from(_attachments));
-    _controller.clear();
+    
+    // Capture attachments before clearing
+    final attachmentsCopy = List<String>.from(_attachments);
+    
+    // Clear input immediately before async operation
     setState(() {
+      _controller.clear();
       _attachments.clear();
     });
+    
+    // Enable auto-scroll when sending message
+    ref.read(historyChatProvider).setAutoScrollEnabled(true);
+    
+    // Explicitly scroll to bottom (0)
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
+    
+    final finalSessionId = await ref
+        .read(historyChatProvider)
+        .sendMessage(text, attachments: attachmentsCopy);
     if (currentSessionId == 'new_chat' && finalSessionId != 'new_chat') {
       ref.read(selectedHistorySessionIdProvider.notifier).state =
           finalSessionId;
@@ -229,26 +307,52 @@ class ChatViewState extends ConsumerState<ChatView> {
 
   @override
   Widget build(BuildContext context) {
-    final chatState = ref.watch(historyChatProvider);
+    final chatState = ref.watch(historyChatStateProvider);
+    
+    // Attempt to restore scroll position if needed
+    _restoreScrollPosition(chatState);
+    
+
+    
+    // Mark as read if displaying unread content
+    if (chatState.hasUnreadResponse) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(historyChatProvider).markAsRead();
+      });
+    }
+    
     return Column(
       children: [
         Expanded(
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 300),
-            switchInCurve: Curves.easeOut,
-            switchOutCurve: Curves.easeIn,
-            transitionBuilder: (Widget child, Animation<double> animation) {
-              return FadeTransition(opacity: animation, child: child);
+          child: NotificationListener<ScrollNotification>(
+            onNotification: (notification) {
+              if (notification is ScrollEndNotification) {
+                if (_sessionId != null && _scrollController.hasClients) {
+                  ref
+                      .read(chatSessionManagerProvider)
+                      .getOrCreate(_sessionId!)
+                      .updateScrollOffset(_scrollController.offset);
+                }
+              }
+              return false;
             },
             child: ListView.builder(
               key: ValueKey(ref.watch(selectedHistorySessionIdProvider)),
+              controller: _scrollController,
+              reverse: true, // Reverse mode for bottom anchoring
               padding: const EdgeInsets.all(16),
               itemCount: chatState.messages.length,
               itemBuilder: (context, index) {
-                final msg = chatState.messages[index];
-                final isLast = index == chatState.messages.length - 1;
+                // Invert index because of reverse mode
+                final reversedIndex = chatState.messages.length - 1 - index;
+                final msg = chatState.messages[reversedIndex];
+                final isLatest = index == 0;
+                final isGenerating = isLatest && !msg.isUser && chatState.isLoading;
                 return MessageBubble(
-                    key: ValueKey(msg.id), message: msg, isLast: isLast);
+                    key: ValueKey(msg.id), 
+                    message: msg, 
+                    isLast: isLatest,
+                    isGenerating: isGenerating);
               },
             ),
           ),
@@ -382,7 +486,7 @@ class ChatViewState extends ConsumerState<ChatView> {
                         child: const Text('确定'),
                         onPressed: () {
                           Navigator.pop(ctx);
-                          ref.read(historyChatProvider.notifier).clearContext();
+                          ref.read(historyChatProvider).clearContext();
                         },
                       ),
                     ],
@@ -392,8 +496,10 @@ class ChatViewState extends ConsumerState<ChatView> {
             ),
             const Spacer(),
             if (chatState.isLoading)
-              const fluent.ProgressRing(
-                  strokeWidth: 2, activeColor: Colors.blue)
+              fluent.IconButton(
+                icon: const fluent.Icon(fluent.FluentIcons.stop_solid, size: 20),
+                onPressed: () => ref.read(historyChatProvider).abortGeneration(),
+              )
             else
               fluent.IconButton(
                 icon: const fluent.Icon(fluent.FluentIcons.send),
@@ -441,7 +547,7 @@ class ChatViewState extends ConsumerState<ChatView> {
                       TextButton(
                         onPressed: () {
                           Navigator.pop(ctx);
-                          ref.read(historyChatProvider.notifier).clearContext();
+                          ref.read(historyChatProvider).clearContext();
                         },
                         child: const Text('确定'),
                       ),
@@ -481,12 +587,13 @@ class ChatViewState extends ConsumerState<ChatView> {
             ),
             const SizedBox(width: 8),
             chatState.isLoading
-                ? const Padding(
-                    padding: EdgeInsets.all(8),
-                    child: SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(strokeWidth: 2)),
+                ? IconButton(
+                    icon: Icon(Icons.stop_circle,
+                        color: Theme.of(context).colorScheme.error),
+                    iconSize: 26,
+                    onPressed: () => ref.read(historyChatProvider).abortGeneration(),
+                    padding: const EdgeInsets.all(8),
+                    tooltip: '停止生成',
                   )
                 : IconButton(
                     icon: Icon(Icons.send,
@@ -505,8 +612,9 @@ class ChatViewState extends ConsumerState<ChatView> {
 class MessageBubble extends ConsumerStatefulWidget {
   final Message message;
   final bool isLast;
+  final bool isGenerating;
   const MessageBubble(
-      {super.key, required this.message, required this.isLast});
+      {super.key, required this.message, required this.isLast, this.isGenerating = false});
   @override
   ConsumerState<MessageBubble> createState() =>
       MessageBubbleState();
@@ -637,7 +745,7 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
 
   void _handleAction(String action) {
     final msg = widget.message;
-    final notifier = ref.read(historyChatProvider.notifier);
+    final notifier = ref.read(historyChatProvider);
     switch (action) {
       case 'retry':
         notifier.regenerateResponse(msg.id);
@@ -662,7 +770,7 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
 
   void _saveEdit() {
     if (_editController.text.trim().isNotEmpty) {
-      ref.read(historyChatProvider.notifier).editMessage(
+      ref.read(historyChatProvider).editMessage(
           widget.message.id, _editController.text,
           newAttachments: _newAttachments);
     }
@@ -731,23 +839,51 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
                           ],
                         ),
                       ),
-                      Container(
-                        padding: _isEditing
-                            ? EdgeInsets.zero
-                            : const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: _isEditing
-                              ? fluent.Colors.transparent
-                              : theme.cardColor,
-                          borderRadius: BorderRadius.circular(12),
-                          border: _isEditing
-                              ? null
-                              : Border.all(
-                                  color: theme.resources.dividerStrokeColorDefault),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(minWidth: 0),
+                        child: Container(
+                          padding: _isEditing
+                              ? EdgeInsets.zero
+                              : const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: _isEditing
+                                ? fluent.Colors.transparent
+                                : theme.cardColor,
+                            borderRadius: BorderRadius.circular(12),
+                            border: _isEditing
+                                ? null
+                                : Border.all(
+                                    color: theme.resources.dividerStrokeColorDefault),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                            // Show loading indicator or reasoning content when generating
+                            if (!message.isUser && widget.isGenerating && 
+                                message.content.isEmpty && 
+                                (message.reasoningContent == null || message.reasoningContent!.isEmpty))
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 8.0),
+                                child: Row(
+                                  children: [
+                                    SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: Platform.isWindows
+                                          ? const fluent.ProgressRing(strokeWidth: 2)
+                                          : const CircularProgressIndicator(strokeWidth: 2),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      '思考中...',
+                                      style: TextStyle(
+                                        color: theme.typography.body?.color?.withOpacity(0.6),
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             if (!message.isUser &&
                                 message.reasoningContent != null &&
                                 message.reasoningContent!.isNotEmpty)
@@ -757,8 +893,10 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
                                     : const EdgeInsets.only(bottom: 8.0),
                                 child: ReasoningDisplay(
                                   content: message.reasoningContent!,
-                                  isWindows: true,
-                                  isRunning: false,
+                                  isWindows: Platform.isWindows,
+                                  isRunning: widget.isGenerating,
+                                  duration: message.reasoningDurationSeconds,
+                                  startTime: message.timestamp,
                                 ),
                               ),
                             if (_isEditing)
@@ -779,11 +917,39 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
+                                        CallbackShortcuts(
+                                          bindings: {
+                                            const SingleActivator(
+                                                LogicalKeyboardKey.keyV,
+                                                control: true): _handlePaste,
+                                          },
+                                          child: fluent.TextBox(
+                                            controller: _editController,
+                                            focusNode: _focusNode,
+                                            maxLines: null,
+                                            minLines: 1,
+                                            placeholder: '编辑消息...',
+                                            decoration: null,
+                                            highlightColor:
+                                                fluent.Colors.transparent,
+                                            unfocusedColor:
+                                                fluent.Colors.transparent,
+                                            style: TextStyle(
+                                                fontSize: 14,
+                                                height: 1.5,
+                                                color: theme
+                                                    .typography.body?.color),
+                                            cursorColor: theme.accentColor,
+                                            textInputAction:
+                                                TextInputAction.send,
+                                            onSubmitted: (_) => _saveEdit(),
+                                          ),
+                                        ),
                                         if (_newAttachments.isNotEmpty)
                                           Container(
                                             height: 40,
                                             margin: const EdgeInsets.only(
-                                                bottom: 8),
+                                                top: 8),
                                             child: ListView.builder(
                                               scrollDirection: Axis.horizontal,
                                               itemCount: _newAttachments.length,
@@ -855,34 +1021,6 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
                                               ),
                                             ),
                                           ),
-                                        CallbackShortcuts(
-                                          bindings: {
-                                            const SingleActivator(
-                                                LogicalKeyboardKey.keyV,
-                                                control: true): _handlePaste,
-                                          },
-                                          child: fluent.TextBox(
-                                            controller: _editController,
-                                            focusNode: _focusNode,
-                                            maxLines: null,
-                                            minLines: 1,
-                                            placeholder: '编辑消息...',
-                                            decoration: null,
-                                            highlightColor:
-                                                fluent.Colors.transparent,
-                                            unfocusedColor:
-                                                fluent.Colors.transparent,
-                                            style: TextStyle(
-                                                fontSize: 14,
-                                                height: 1.5,
-                                                color: theme
-                                                    .typography.body?.color),
-                                            cursorColor: theme.accentColor,
-                                            textInputAction:
-                                                TextInputAction.send,
-                                            onSubmitted: (_) => _saveEdit(),
-                                          ),
-                                        ),
                                       ],
                                     ),
                                   ),
@@ -924,8 +1062,7 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
                                             onPressed: () {
                                               _saveEdit();
                                               ref
-                                                  .read(historyChatProvider
-                                                      .notifier)
+                                                  .read(historyChatProvider)
                                                   .regenerateResponse(
                                                       message.id);
                                             }),
@@ -941,6 +1078,7 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
                                   child: MarkdownBody(
                                     data: message.content,
                                     selectable: false,
+                                    softLineBreak: true,
                                     styleSheet: MarkdownStyleSheet(
                                       p: TextStyle(
                                         fontSize: 14,
@@ -955,6 +1093,42 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
                                   ),
                                 ),
                               ),
+                            // Display attachments for user messages (image files)
+                            if (isUser && message.attachments.isNotEmpty && !_isEditing) ...[
+                              const SizedBox(height: 8),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: message.attachments
+                                    .where((path) {
+                                      final ext = path.toLowerCase();
+                                      return ext.endsWith('.png') || 
+                                             ext.endsWith('.jpg') || 
+                                             ext.endsWith('.jpeg') ||
+                                             ext.endsWith('.webp') ||
+                                             ext.endsWith('.gif');
+                                    })
+                                    .map((path) => Container(
+                                      width: 60,
+                                      height: 60,
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(color: Colors.grey.withOpacity(0.3)),
+                                      ),
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(8),
+                                        child: Image.file(
+                                          File(path),
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (ctx, err, stack) =>
+                                              const Icon(fluent.FluentIcons.error),
+                                        ),
+                                      ),
+                                    ))
+                                    .toList(),
+                              ),
+                            ],
+                            // Display AI-generated images
                             if (message.images.isNotEmpty &&
                                 !(isUser && _isEditing)) ...[
                               const SizedBox(height: 8),
@@ -971,6 +1145,7 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
                           ],
                         ),
                       ),
+                    ),
                     ],
                   ),
                 ),
@@ -1130,3 +1305,4 @@ class MobileActionButton extends StatelessWidget {
     );
   }
 }
+

@@ -15,4 +15,5 @@ class MessageEntity {
   String? sessionId;
   String? model;
   String? provider;
+  double? reasoningDurationSeconds;
 }

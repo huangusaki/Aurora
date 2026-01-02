@@ -3,7 +3,9 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:file_selector/file_selector.dart';
 import 'package:fluent_ui/fluent_ui.dart';
+import 'package:flutter/material.dart' as material show CircularProgressIndicator, InteractiveViewer, Scaffold, AppBar, IconButton, Icons;
 import 'package:super_clipboard/super_clipboard.dart';
+import 'windows_image_viewer.dart';
 
 class ChatImageBubble extends StatefulWidget {
   final String imageUrl;
@@ -21,6 +23,8 @@ class _ChatImageBubbleState extends State<ChatImageBubble> {
   Uint8List? _cachedBytes;
   bool get _isBase64 => widget.imageUrl.startsWith('data:');
   bool get _isLocalFile => !widget.imageUrl.startsWith('http') && !_isBase64;
+  String? _mimeType;
+
   @override
   void initState() {
     super.initState();
@@ -40,9 +44,9 @@ class _ChatImageBubbleState extends State<ChatImageBubble> {
       try {
         final commaIndex = widget.imageUrl.indexOf(',');
         if (commaIndex != -1) {
+          final bytes = base64Decode(widget.imageUrl.substring(commaIndex + 1));
           setState(() {
-            _cachedBytes =
-                base64Decode(widget.imageUrl.substring(commaIndex + 1));
+            _cachedBytes = bytes;
           });
           return;
         }
@@ -101,13 +105,14 @@ class _ChatImageBubbleState extends State<ChatImageBubble> {
   Future<void> _handleSave(BuildContext context) async {
     final bytes = _cachedBytes;
     if (bytes == null) return;
+    
     final FileSaveLocation? result = await getSaveLocation(
       suggestedName:
           'generated_image_${DateTime.now().millisecondsSinceEpoch}.png',
       acceptedTypeGroups: [
         const XTypeGroup(
           label: 'Images',
-          extensions: ['png', 'jpg', 'jpeg'],
+          extensions: ['png'],
         ),
       ],
     );
@@ -118,34 +123,57 @@ class _ChatImageBubbleState extends State<ChatImageBubble> {
   }
 
   void _showFullImage(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return ContentDialog(
-          constraints: const BoxConstraints(maxWidth: 800, maxHeight: 600),
-          content: _isBase64
-              ? (_cachedBytes != null
-                  ? Image.memory(_cachedBytes!, fit: BoxFit.contain)
-                  : const Icon(FluentIcons.error))
-              : (_isLocalFile
-                  ? Image.file(File(widget.imageUrl), fit: BoxFit.contain)
-                  : Image.network(widget.imageUrl, fit: BoxFit.contain)),
-          actions: [
-            Button(
-              child: const Text('Close'),
-              onPressed: () => Navigator.pop(context),
-            ),
-            Button(
-              child: const Text('Save'),
-              onPressed: () {
-                _handleSave(context);
-                Navigator.pop(context);
-              },
-            ),
-          ],
-        );
-      },
-    );
+    final bytes = _cachedBytes;
+    if (bytes == null) return;
+    
+    if (Platform.isWindows) {
+      // Windows: Full-featured image viewer
+      Navigator.of(context).push(
+        PageRouteBuilder(
+          opaque: false,
+          pageBuilder: (context, animation, secondaryAnimation) {
+            return WindowsImageViewer(
+              imageBytes: bytes,
+              onClose: () => Navigator.pop(context),
+            );
+          },
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+        ),
+      );
+    } else {
+      // Mobile: Simple zoomable viewer
+      Navigator.of(context).push(
+        PageRouteBuilder(
+          opaque: true,
+          pageBuilder: (context, animation, secondaryAnimation) {
+            return material.Scaffold(
+              backgroundColor: Colors.black,
+              appBar: material.AppBar(
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                leading: material.IconButton(
+                  icon: const Icon(material.Icons.close, color: Colors.white),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ),
+              extendBodyBehindAppBar: true,
+              body: Center(
+                child: material.InteractiveViewer(
+                  minScale: 0.5,
+                  maxScale: 4.0,
+                  child: Image.memory(bytes, fit: BoxFit.contain),
+                ),
+              ),
+            );
+          },
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+        ),
+      );
+    }
   }
 
   @override

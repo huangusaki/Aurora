@@ -316,7 +316,7 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
         child: Padding(
           padding: EdgeInsets.only(
               top: !isDark ? 64 + MediaQuery.of(context).padding.top : 0),
-          child: const ChatView(),
+          child: ChatView(key: ValueKey(selectedSessionId)),
         ),
       ),
     );

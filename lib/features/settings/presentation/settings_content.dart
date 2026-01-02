@@ -297,23 +297,29 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
                     const SizedBox(height: 24),
                     Row(
                       children: [
-                        fluent.Text('可用模型',
-                            style: fluent.FluentTheme.of(context)
-                                .typography
-                                .subtitle),
-                        const Spacer(),
-                        fluent.Button(
-                          onPressed: settingsState.isLoadingModels
-                              ? null
-                              : () => ref
-                                  .read(settingsProvider.notifier)
-                                  .fetchModels(),
-                          child: settingsState.isLoadingModels
-                              ? const SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: fluent.ProgressRing())
-                              : const fluent.Text('获取模型列表'),
+                        Expanded(
+                          child: fluent.Text('可用模型',
+                              overflow: TextOverflow.ellipsis,
+                              style: fluent.FluentTheme.of(context)
+                                  .typography
+                                  .subtitle),
+                        ),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: fluent.Button(
+                            onPressed: settingsState.isLoadingModels
+                                ? null
+                                : () => ref
+                                    .read(settingsProvider.notifier)
+                                    .fetchModels(),
+                            child: settingsState.isLoadingModels
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: fluent.ProgressRing())
+                                : const fluent.Text('刷新列表',
+                                    overflow: TextOverflow.ellipsis),
+                          ),
                         ),
                       ],
                     ),
@@ -338,24 +344,11 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
                           final isSelected =
                               model == viewingProvider.selectedModel;
                           final theme = fluent.FluentTheme.of(context);
+
+
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 8.0),
-                            child: fluent.Button(
-                              style: fluent.ButtonStyle(
-                                padding: fluent.ButtonState.all(
-                                    const EdgeInsets.symmetric(
-                                        horizontal: 12, vertical: 12)),
-                                backgroundColor:
-                                    fluent.ButtonState.resolveWith((states) {
-                                  if (isSelected)
-                                    return theme.accentColor.withOpacity(0.1);
-                                  if (states.isHovering)
-                                    return theme.typography.body?.color
-                                            ?.withOpacity(0.05) ??
-                                        Colors.transparent;
-                                  return Colors.transparent;
-                                }),
-                              ),
+                            child: fluent.HoverButton(
                               onPressed: () async {
                                 await ref
                                     .read(settingsProvider.notifier)
@@ -366,32 +359,51 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
                                     .read(settingsProvider.notifier)
                                     .selectProvider(viewingProvider.id);
                               },
-                              child: Row(
-                                children: [
-                                  Icon(fluent.FluentIcons.org,
-                                      size: 16,
-                                      color: isSelected
-                                          ? theme.accentColor
-                                          : theme.typography.body?.color
-                                              ?.withOpacity(0.7)),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                      child: Text(model,
-                                          overflow: TextOverflow.ellipsis)),
-                                  if (isSelected)
-                                    Icon(fluent.FluentIcons.check_mark,
-                                        size: 14, color: theme.accentColor),
-                                  fluent.IconButton(
-                                    icon: const fluent.Icon(
-                                        fluent.FluentIcons.settings,
-                                        size: 14),
-                                    onPressed: () => _openModelSettings(
-                                        viewingProvider, model),
+                              builder: (context, states) {
+                                return Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 12),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(4),
+                                    color: isSelected
+                                        ? theme.accentColor.withOpacity(0.1)
+                                        : states.isHovering
+                                            ? theme.typography.body?.color
+                                                    ?.withOpacity(0.05) ??
+                                                Colors.transparent
+                                            : Colors.transparent,
                                   ),
-                                ],
-                              ),
+                                  width: double.infinity,
+                                  alignment: Alignment.centerLeft,
+                                  child: Row(
+                                    children: [
+                                      Icon(fluent.FluentIcons.org,
+                                          size: 16,
+                                          color: isSelected
+                                              ? theme.accentColor
+                                              : theme.typography.body?.color
+                                                  ?.withOpacity(0.7)),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                          child: Text(model,
+                                              overflow: TextOverflow.ellipsis)),
+                                      if (isSelected)
+                                        Icon(fluent.FluentIcons.check_mark,
+                                            size: 14, color: theme.accentColor),
+                                      fluent.IconButton(
+                                        icon: const fluent.Icon(
+                                            fluent.FluentIcons.settings,
+                                            size: 14),
+                                        onPressed: () => _openModelSettings(
+                                            viewingProvider, model),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
                             ),
                           );
+
                         },
                       )
                     : Container(

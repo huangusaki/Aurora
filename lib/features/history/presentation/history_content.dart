@@ -121,7 +121,7 @@ class _HistoryContentState extends ConsumerState<HistoryContent> {
               child: RepaintBoundary(
                 child: selectedSessionId == null
                     ? const Center(child: Text('请选择或新建一个话题'))
-                    : const ChatView(),
+                    : ChatView(key: ValueKey(selectedSessionId)),
               ),
             ),
           ],
@@ -142,6 +142,10 @@ class _SessionList extends ConsumerWidget {
   });
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final manager = ref.watch(chatSessionManagerProvider);
+    // Watch trigger to rebuild when any session state changes
+    ref.watch(chatStateUpdateTriggerProvider);
+    
     return Column(
       children: [
         Padding(
@@ -172,6 +176,22 @@ class _SessionList extends ConsumerWidget {
                   itemBuilder: (context, index) {
                     final session = sessionsState.sessions[index];
                     final isSelected = session.sessionId == selectedSessionId;
+                    
+                    // Get session state for status indicator - only show if in cache
+                    final sessionState = manager.getState(session.sessionId);
+                    final Color? statusColor;
+                    if (sessionState == null) {
+                      statusColor = null; // Not in cache = no indicator
+                    } else if (sessionState.error != null) {
+                      statusColor = Colors.red; // Error
+                    } else if (sessionState.isLoading) {
+                      statusColor = Colors.orange; // Loading
+                    } else if (sessionState.hasUnreadResponse) {
+                      statusColor = Colors.green; // Unread check complete
+                    } else {
+                      statusColor = null; // Complete and read = no indicator
+                    }
+                    
                     return GestureDetector(
                       onTap: () {
                         ref
@@ -184,31 +204,50 @@ class _SessionList extends ConsumerWidget {
                                 .accentColor
                                 .withOpacity(0.1)
                             : Colors.transparent,
-                        child: fluent.ListTile(
-                          title: Text(session.title,
-                              maxLines: 1, overflow: TextOverflow.ellipsis),
-                          subtitle: Text(DateFormat('MM/dd HH:mm')
-                              .format(session.lastMessageTime)),
-                          onPressed: () {
-                            ref
-                                .read(selectedHistorySessionIdProvider.notifier)
-                                .state = session.sessionId;
-                          },
-                          trailing: fluent.IconButton(
-                            icon: const fluent.Icon(fluent.FluentIcons.delete,
-                                size: 12),
-                            onPressed: () {
-                              ref
-                                  .read(sessionsProvider.notifier)
-                                  .deleteSession(session.sessionId);
-                              if (isSelected) {
-                                ref
-                                    .read(selectedHistorySessionIdProvider
-                                        .notifier)
-                                    .state = null;
-                              }
-                            },
-                          ),
+                        child: Row(
+                          children: [
+                            // Status indicator dot - only show if session is loading/error
+                            if (statusColor != null)
+                              Padding(
+                                padding: const EdgeInsets.only(left: 8),
+                                child: Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: BoxDecoration(
+                                    color: statusColor,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                              ),
+                            Expanded(
+                              child: fluent.ListTile(
+                                title: Text(session.title,
+                                    maxLines: 1, overflow: TextOverflow.ellipsis),
+                                subtitle: Text(DateFormat('MM/dd HH:mm')
+                                    .format(session.lastMessageTime)),
+                                onPressed: () {
+                                  ref
+                                      .read(selectedHistorySessionIdProvider.notifier)
+                                      .state = session.sessionId;
+                                },
+                                trailing: fluent.IconButton(
+                                  icon: const fluent.Icon(fluent.FluentIcons.delete,
+                                      size: 12),
+                                  onPressed: () {
+                                    ref
+                                        .read(sessionsProvider.notifier)
+                                        .deleteSession(session.sessionId);
+                                    if (isSelected) {
+                                      ref
+                                          .read(selectedHistorySessionIdProvider
+                                              .notifier)
+                                          .state = null;
+                                    }
+                                  },
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     );
