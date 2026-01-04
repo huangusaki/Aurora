@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:window_manager/window_manager.dart';
 import 'features/chat/presentation/chat_screen.dart';
+import 'features/chat/presentation/chat_provider.dart';
 import 'features/settings/data/settings_storage.dart';
 import 'features/settings/presentation/settings_provider.dart';
 import 'shared/utils/windows_injector.dart';
@@ -72,12 +73,13 @@ void main() async {
         modelSettings: modelSettings,
         models: e.savedModels,
         selectedModel: e.lastSelectedModel,
+        isEnabled: e.isEnabled,
       );
     }).toList();
-    if (!initialProviders.any((p) => p.id == 'openai')) {
-      initialProviders.insert(
-          0, ProviderConfig(id: 'openai', name: 'OpenAI', isCustom: false));
-    }
+    // if (!initialProviders.any((p) => p.id == 'openai')) {
+    //   initialProviders.insert(
+    //       0, ProviderConfig(id: 'openai', name: 'OpenAI', isCustom: false));
+    // }
     if (!initialProviders.any((p) => p.id == 'custom')) {
       initialProviders
           .add(ProviderConfig(id: 'custom', name: 'Custom', isCustom: true));
@@ -97,6 +99,9 @@ void main() async {
           llmName: appSettings?.llmName ?? 'Assistant',
           llmAvatar: appSettings?.llmAvatar,
           themeMode: appSettings?.themeMode ?? 'system',
+          isStreamEnabled: appSettings?.isStreamEnabled ?? true,
+          isSearchEnabled: appSettings?.isSearchEnabled ?? false,
+          searchEngine: appSettings?.searchEngine ?? 'duckduckgo',
         );
       }),
     ],
@@ -108,8 +113,13 @@ class MyApp extends ConsumerWidget {
   const MyApp({super.key});
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final settings = ref.watch(settingsProvider);
-    final themeModeStr = settings.themeMode;
+    ref.listen<String?>(selectedHistorySessionIdProvider, (prev, next) {
+      if (next != null && next != 'new_chat' && next != 'translation') {
+        ref.read(settingsStorageProvider).saveLastSessionId(next);
+      }
+    });
+
+    final themeModeStr = ref.watch(settingsProvider.select((value) => value.themeMode));
     fluent.ThemeMode fluentMode;
     ThemeMode materialMode;
     if (themeModeStr == 'light') {

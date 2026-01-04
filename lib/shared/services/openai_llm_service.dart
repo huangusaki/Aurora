@@ -23,7 +23,9 @@ class OpenAILLMService implements LLMService {
   ));
   @override
   Stream<LLMResponseChunk> streamResponse(List<Message> messages,
-      {List<String>? attachments}) async* {
+      {List<String>? attachments,
+      List<Map<String, dynamic>>? tools,
+      String? toolChoice}) async* {
     final provider = _settings.activeProvider;
     final model = _settings.selectedModel ?? 'gpt-3.5-turbo';
     final apiKey = provider.apiKey;
@@ -44,10 +46,46 @@ class OpenAILLMService implements LLMService {
         'messages': apiMessages,
         'stream': true,
       };
+      if (tools != null) {
+        print('DEBUG: streamResponse - attaching ${tools.length} tools to request');
+        requestData['tools'] = tools;
+        if (toolChoice != null) {
+          requestData['tool_choice'] = toolChoice;
+        }
+        // Force System Prompt for Tools
+        final now = DateTime.now();
+        final dateStr = now.toIso8601String().split('T')[0]; // YYYY-MM-DD
+        final systemInstruction = 'Current Date: $dateStr. Today is ${now.year}. Use this date for all searches.';
+        
+        final systemMsgIndex = apiMessages.indexWhere((m) => m['role'] == 'system');
+        if (systemMsgIndex != -1) {
+             final oldContent = apiMessages[systemMsgIndex]['content'];
+             apiMessages[systemMsgIndex]['content'] = '$systemInstruction\n\n$oldContent';
+        } else {
+           apiMessages.insert(0, {
+             'role': 'system', 
+             'content': '''$systemInstruction
+## Tools
+You have access to a `search_web` tool. Use it when the user asks for real-time information, news, or specific technical documentation.
+
+## Citation Format (CRITICAL)
+Search results include an `index` and `link`. You MUST cite your sources using Markdown links in the format `[index](link)`.
+- **Placement**: Citations must immediately follow the relevant information.
+- **Do not** list all citations at the end.
+- **Example**: "Google released Gemini in 2023.[1](https://google.com/gemini) It competes with GPT-4.[2](https://openai.com)"
+
+## Response Style
+- Summarize the search results directly.
+- Do not say "Based on the search results" repeatedly.
+- If results are conflicting, mention the discrepancy.'''
+           });
+        }
+      }
       requestData.addAll(provider.customParameters);
       if (provider.modelSettings.containsKey(model)) {
         requestData.addAll(provider.modelSettings[model]!);
       }
+      
       final response = await _dio.post(
         '${baseUrl}chat/completions',
         options: Options(
@@ -88,6 +126,36 @@ class OpenAILLMService implements LLMService {
                 if (content != null || reasoning != null) {
                   yield LLMResponseChunk(
                       content: content, reasoning: reasoning);
+                }
+                
+                // Handle Tool Calls (Stream)
+                final toolCalls = delta['tool_calls'];
+                if (toolCalls != null && toolCalls is List) {
+                   for (final toolCall in toolCalls) {
+                     final int? index = toolCall['index'];
+                     final String? id = toolCall['id'];
+                     final String? type = toolCall['type'];
+                     final Map? function = toolCall['function'];
+                     
+                     if (function != null) {
+                       final String? name = function['name'];
+                       final String? arguments = function['arguments'];
+                       if (name != null || arguments != null) {
+                          print('DEBUG: Stream received tool call chunk: index=$index name=$name args=$arguments');
+                       }
+                       yield LLMResponseChunk(
+                         toolCalls: [
+                           ToolCallChunk(
+                             index: index, 
+                             id: id, 
+                             type: type, 
+                             name: name, 
+                             arguments: arguments
+                           )
+                         ]
+                       );
+                     }
+                   }
                 }
                 String? imageUrl;
                 if (choices[0]['b64_json'] != null) {
@@ -215,6 +283,29 @@ class OpenAILLMService implements LLMService {
   List<Map<String, dynamic>> _buildApiMessages(
       List<Message> messages, List<String>? currentAttachments) {
     return messages.map((m) {
+      if (m.role == 'tool') {
+        // Tool Output Message
+        return {
+          'role': 'tool',
+          'tool_call_id': m.toolCallId,
+          'content': m.content,
+        };
+      }
+      if (m.role == 'assistant' && m.toolCalls != null && m.toolCalls!.isNotEmpty) {
+        // Assistant Message with Tool Calls
+        return {
+          'role': 'assistant',
+          'content': m.content.isEmpty ? null : m.content,
+          'tool_calls': m.toolCalls!.map((tc) => {
+            'id': tc.id,
+            'type': 'function',
+            'function': {
+              'name': tc.name,
+              'arguments': tc.arguments
+            }
+          }).toList(),
+        };
+      }
       final hasAttachments = m.attachments.isNotEmpty;
       if (!hasAttachments) {
         return {
@@ -260,7 +351,9 @@ class OpenAILLMService implements LLMService {
 
   @override
   Future<LLMResponseChunk> getResponse(List<Message> messages,
-      {List<String>? attachments}) async {
+      {List<String>? attachments,
+      List<Map<String, dynamic>>? tools,
+      String? toolChoice}) async {
     final provider = _settings.activeProvider;
     final model = _settings.selectedModel ?? 'gpt-3.5-turbo';
     final apiKey = provider.apiKey;
@@ -282,6 +375,29 @@ class OpenAILLMService implements LLMService {
         'messages': apiMessages,
         'stream': false,
       };
+      if (tools != null) {
+        print('DEBUG: getResponse - attaching ${tools.length} tools to request');
+        requestData['tools'] = tools;
+        if (toolChoice != null) {
+           requestData['tool_choice'] = toolChoice;
+        }
+        // Force System Prompt for Tools
+        // Force System Prompt for Tools
+        final systemMsgIndex = apiMessages.indexWhere((m) => m['role'] == 'system');
+        final now = DateTime.now();
+        final dateStr = now.toIso8601String().split('T')[0];
+        final systemInstruction = 'Current Date: $dateStr. Today is ${now.year}. Use this date for all searches.';
+        
+        if (systemMsgIndex != -1) {
+           final oldContent = apiMessages[systemMsgIndex]['content'];
+           apiMessages[systemMsgIndex]['content'] = '$systemInstruction\n\n$oldContent';
+        } else {
+           apiMessages.insert(0, {
+             'role': 'system', 
+             'content': '$systemInstruction\nYou are a helpful assistant with access to a web search tool. Use it for current information.'
+           });
+        }
+      }
       requestData.addAll(provider.customParameters);
       if (provider.modelSettings.containsKey(model)) {
         requestData.addAll(provider.modelSettings[model]!);
@@ -299,13 +415,27 @@ class OpenAILLMService implements LLMService {
       );
 
       final data = response.data;
+      // print('DEBUG: raw response data: $data'); // Too verbose?
       final choices = data['choices'] as List;
       if (choices.isNotEmpty) {
         final message = choices[0]['message'];
+        print('DEBUG: getResponse - Model: $model - Raw tool_calls: ${message['tool_calls']}');
         final String? content = message['content'];
         // Handle deepseek reasoning (often in reasoning_content)
         final String? reasoning = (message['reasoning_content'] ?? message['reasoning'])?.toString();
         
+        List<ToolCall>? toolCalls;
+        if (message['tool_calls'] != null) {
+          toolCalls = (message['tool_calls'] as List).map((tc) {
+            return ToolCall(
+              id: tc['id'],
+              type: tc['type'],
+              name: tc['function']['name'],
+              arguments: tc['function']['arguments'],
+            );
+          }).toList();
+        }
+
         // Extract images from response
         List<String> images = [];
         
@@ -333,7 +463,7 @@ class OpenAILLMService implements LLMService {
           }
         }
         
-        return LLMResponseChunk(content: content, reasoning: reasoning, images: images);
+        return LLMResponseChunk(content: content, reasoning: reasoning, images: images, toolCalls: toolCalls != null ? toolCalls.map((tc) => ToolCallChunk.fromToolCall(tc)).toList() : null);
       }
       return const LLMResponseChunk(content: '');
     } on DioException catch (e) {

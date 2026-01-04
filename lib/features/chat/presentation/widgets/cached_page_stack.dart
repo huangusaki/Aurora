@@ -20,29 +20,9 @@ class CachedPageStack extends StatefulWidget {
 
 class _CachedPageStackState extends State<CachedPageStack> {
   // Ordered list of keys (LRU: end is most recently used, start is least)
-  // Actually usually easier: remove from list and append to end on use.
   final List<String> _keys = [];
-  // Map of built widgets
-  // We keep the Widget instances. To preserve state, they need to stay in the Element tree.
-  // So we will render a Stack of ALL cached items, wrapping non-selected ones in Offstage.
-  // HOWEVER, for transition animations, we need the "exiting" widget to be visible during transition.
-  
-  // To support AnimatedSwitcher-like transitions WITH state preservation, it's tricky.
-  // Standard AnimatedSwitcher destroys the "old" child.
-  // To preserve state, we must keep the widget in the tree.
-  
-  // Hybrid approach:
-  // Use indexed stack-like approach with custom animations?
-  // Or simply: 
-  // The "Stack" contains all cached keys.
-  // Only the `selectedKey` is visible (opacity 1, transform identity).
-  // Others are hidden (Offstage or opacity 0).
-  // BUT user wants animation.
-  // So when `selectedKey` changes:
-  // 1. Old key moves from "Active" to "Background" (animate out).
-  // 2. New key moves from "Background/New" to "Active" (animate in).
-  
-  // Let's implement a custom layout that manages this.
+  // Cache of built widgets - only call itemBuilder once per key
+  final Map<String, Widget> _cachedWidgets = {};
   
   @override
   void initState() {
@@ -66,40 +46,35 @@ class _CachedPageStackState extends State<CachedPageStack> {
     } else {
       // New key
       if (_keys.length >= widget.cacheSize) {
-        // Remove LRU (first item)
-        _keys.removeAt(0);
+        // Remove LRU (first item) and its cached widget
+        final removedKey = _keys.removeAt(0);
+        _cachedWidgets.remove(removedKey);
       }
       _keys.add(newKey);
     }
     // Force rebuild to update stack
     setState(() {});
   }
+  
+  Widget _getOrBuildWidget(BuildContext context, String key) {
+    if (!_cachedWidgets.containsKey(key)) {
+      _cachedWidgets[key] = widget.itemBuilder(context, key);
+    }
+    return _cachedWidgets[key]!;
+  }
 
   @override
   Widget build(BuildContext context) {
-    // We utilize a Stack so all cached widgets are physically present.
-    // We control visibility via AnimatedOpacity/Offstage.
-    // Specially, we need the "transition" effect.
-    
     return Stack(
       fit: StackFit.expand,
       children: _keys.map((key) {
         final isSelected = key == widget.selectedKey;
-        // If not selected, we want it hidden BUT after animation.
-        // Simple AnimatedOpacity handles the "fade" part.
-        // For "Slide", we can use AnimatedPositioned or AnimatedSlide.
         
-        // Performance note: Keeping 10 text fields/lists active in Stack might be heavy on GPU if they all paint?
-        // Offstage prevents painting. We should use Offstage for items that are NOT selected AND NOT animating.
-        // But detecting "animating" status is hard in declarative UI without a controller.
-        // However, standard implicit animations (AnimatedOpacity) have an 'onEnd'.
-        
-        // Let's use a wrapper that handles "Visible -> Animate -> Offstage".
         return _CachedPageItem(
           key: ValueKey(key), // Important: Keep state
           isVisible: isSelected,
           duration: widget.transitionDuration,
-          child: widget.itemBuilder(context, key),
+          child: _getOrBuildWidget(context, key), // Use cached widget
         );
       }).toList(),
     );

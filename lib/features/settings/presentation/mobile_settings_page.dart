@@ -43,152 +43,243 @@ class _MobileSettingsPageState extends ConsumerState<MobileSettingsPage> {
             : null,
         elevation: 0,
       ),
-      body: ListView(
-        children: [
-          _SectionHeader(title: '模型提供', icon: Icons.cloud_outlined),
-          ListTile(
-            leading: const Icon(Icons.business),
-            title: const Text('当前供应商'),
-            subtitle: Text(activeProvider?.name ?? '未配置'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => _showProviderPicker(context, settingsState),
-          ),
-          ListTile(
-            leading: const Icon(Icons.key),
-            title: const Text('API Key'),
-            subtitle: Text(
-                activeProvider?.apiKey.isNotEmpty == true ? '••••••••' : '未配置'),
-            trailing: const Icon(Icons.edit),
-            onTap: () => _showApiKeyEditor(context, activeProvider),
-          ),
-          ListTile(
-            leading: const Icon(Icons.link),
-            title: const Text('API Base URL'),
-            subtitle:
-                Text(activeProvider?.baseUrl ?? 'https://api.openai.com/v1'),
-            trailing: const Icon(Icons.edit),
-            onTap: () => _showBaseUrlEditor(context, activeProvider),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      body: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
-                  '可用模型',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                _SectionHeader(title: '模型提供', icon: Icons.cloud_outlined),
+                ListTile(
+                  leading: const Icon(Icons.business),
+                  title: const Text('当前供应商'),
+                  subtitle: Text(activeProvider?.name ?? '未配置'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => _showProviderPicker(context, settingsState),
                 ),
-                OutlinedButton(
-                  onPressed: settingsState.isLoadingModels
-                      ? null
-                      : () {
-                          ref.read(settingsProvider.notifier).fetchModels();
-                        },
-                  child: settingsState.isLoadingModels
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Text('获取模型列表'),
+                ListTile(
+                  leading: const Icon(Icons.key),
+                  title: const Text('API Key'),
+                  subtitle: Text(activeProvider?.apiKey.isNotEmpty == true
+                      ? '••••••••'
+                      : '未配置'),
+                  trailing: const Icon(Icons.edit),
+                  onTap: () => _showApiKeyEditor(context, activeProvider),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.link),
+                  title: const Text('API Base URL'),
+                  subtitle: Text(
+                      activeProvider?.baseUrl ?? 'https://api.openai.com/v1'),
+                  trailing: const Icon(Icons.edit),
+                  onTap: () => _showBaseUrlEditor(context, activeProvider),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.power_settings_new),
+                  title: const Text('启用状态'),
+                  subtitle:
+                      Text(activeProvider?.isEnabled == true ? '已启用' : '已禁用'),
+                  trailing: Switch(
+                    value: activeProvider?.isEnabled == true,
+                    onChanged: (v) {
+                      if (activeProvider != null) {
+                        ref
+                            .read(settingsProvider.notifier)
+                            .toggleProviderEnabled(activeProvider.id);
+                      }
+                    },
+                  ),
+                  onTap: () {
+                    if (activeProvider != null) {
+                      ref
+                          .read(settingsProvider.notifier)
+                          .toggleProviderEnabled(activeProvider.id);
+                    }
+                  },
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        '可用模型',
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      OutlinedButton(
+                        onPressed: settingsState.isLoadingModels
+                            ? null
+                            : () {
+                                ref
+                                    .read(settingsProvider.notifier)
+                                    .fetchModels();
+                              },
+                        child: settingsState.isLoadingModels
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2))
+                            : const Text('获取模型列表'),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
           ),
           if (activeProvider != null && activeProvider.models.isNotEmpty)
-            ...activeProvider.models.map((model) {
-              final isSelected = model == settingsState.selectedModel;
-              return ListTile(
-                leading: const Icon(Icons.account_tree_outlined),
-                title: Text(model),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (isSelected)
-                      Icon(Icons.check, color: Theme.of(context).primaryColor),
-                    const SizedBox(width: 8),
-                    IconButton(
-                      icon: const Icon(Icons.settings_outlined),
-                      onPressed: () => _showModelConfigDialog(
-                          context, activeProvider, model),
-                    ),
-                  ],
-                ),
-                tileColor: isSelected
-                    ? Theme.of(context).primaryColor.withOpacity(0.1)
-                    : null,
-                onTap: () {
-                  ref.read(settingsProvider.notifier).updateProvider(
-                        id: activeProvider.id,
-                        selectedModel: model,
-                      );
-                  ref
-                      .read(settingsProvider.notifier)
-                      .selectProvider(activeProvider.id);
-                },
-              );
-            }).toList()
+            SliverList.builder(
+              itemCount: activeProvider.models.length,
+              itemBuilder: (context, index) {
+                final model = activeProvider.models[index];
+                final isSelected = model == settingsState.selectedModel;
+                return ListTile(
+                  leading: const Icon(Icons.account_tree_outlined),
+                  title: Text(model),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (isSelected)
+                        Icon(Icons.check,
+                            color: Theme.of(context).primaryColor),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        icon: const Icon(Icons.settings_outlined),
+                        onPressed: () => _showModelConfigDialog(
+                            context, activeProvider, model),
+                      ),
+                    ],
+                  ),
+                  tileColor: isSelected
+                      ? Theme.of(context).primaryColor.withOpacity(0.1)
+                      : null,
+                  onTap: () {
+                    ref.read(settingsProvider.notifier).updateProvider(
+                          id: activeProvider.id,
+                          selectedModel: model,
+                        );
+                    ref
+                        .read(settingsProvider.notifier)
+                        .selectProvider(activeProvider.id);
+                  },
+                );
+              },
+            )
           else if (activeProvider != null)
-            const Padding(
-              padding: EdgeInsets.all(16),
-              child:
-                  Text('暂无模型，请点击右上角获取', style: TextStyle(color: Colors.grey)),
+            const SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.all(16),
+                child:
+                    Text('暂无模型，请点击右上角获取', style: TextStyle(color: Colors.grey)),
+              ),
             ),
-          const SizedBox(height: 8),
-          const SizedBox(height: 16),
+          const SliverToBoxAdapter(child: SizedBox(height: 16)),
         ],
       ),
     );
   }
 
-  void _showProviderPicker(BuildContext context, SettingsState state) {
+  void _showProviderPicker(BuildContext context, SettingsState paramState) {
     showModalBottomSheet(
       context: context,
       builder: (ctx) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Padding(
-                padding: EdgeInsets.all(16),
-                child: Text('选择供应商',
-                    style:
-                        TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              ),
-              const Divider(height: 1),
-              ...state.providers.map((p) => ListTile(
-                    leading: Icon(
-                      p.id == state.activeProviderId
-                          ? Icons.check_circle
-                          : Icons.circle_outlined,
-                      color: p.id == state.activeProviderId
-                          ? Theme.of(context).primaryColor
-                          : null,
-                    ),
-                    title: Text(p.name),
-                    subtitle: Text(p.selectedModel ?? '未选择模型'),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.edit_outlined, size: 20),
-                      onPressed: () {
-                        Navigator.pop(ctx);
-                        _showProviderRenameDialog(context, p);
-                      },
-                    ),
+        return Consumer(
+          builder: (context, ref, _) {
+            final state = ref.watch(settingsProvider);
+            return SafeArea(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Text('选择供应商',
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold)),
+                  ),
+                  const Divider(height: 1),
+                  ...state.providers.map((p) => ListTile(
+                        leading: Icon(
+                          p.id == state.activeProviderId
+                              ? Icons.check_circle
+                              : Icons.circle_outlined,
+                          color: p.id == state.activeProviderId
+                              ? Theme.of(context).primaryColor
+                              : null,
+                        ),
+                        title: Text(p.name),
+                        subtitle: Text(p.selectedModel ?? '未选择模型'),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.delete_outline, size: 20),
+                              onPressed: () {
+                                Navigator.pop(ctx);
+                                showDialog(
+                                    context: context,
+                                    builder: (context) {
+                                      return AlertDialog(
+                                        title: const Text('删除供应商'),
+                                        content:
+                                            const Text('确定要删除此供应商配置吗？此操作无法撤销。'),
+                                        actions: [
+                                          TextButton(
+                                            child: const Text('取消'),
+                                            onPressed: () =>
+                                                Navigator.pop(context),
+                                          ),
+                                          TextButton(
+                                            child: const Text('删除'),
+                                            onPressed: () {
+                                              Navigator.pop(context);
+                                              ref
+                                                  .read(settingsProvider.notifier)
+                                                  .deleteProvider(p.id);
+                                            },
+                                          ),
+                                        ],
+                                      );
+                                    });
+                              },
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.edit_outlined, size: 20),
+                              onPressed: () {
+                                Navigator.pop(ctx);
+                                _showProviderRenameDialog(context, p);
+                              },
+                            ),
+                          ],
+                        ),
+                        onTap: () {
+                          if (!p.isEnabled) {
+                             // Optional: Show toast "Cannot select disabled provider"
+                             // But for now just allow selecting (and user sees no models)
+                             // Or maybe auto-enable?
+                             // User requirement says "disabled provider models not in dropdown".
+                             // It doesn't strictly say "cannot select provider".
+                             // But it's better if I enable it if selected.
+                             // But let's just Stick to the plan.
+                          }
+                          ref.read(settingsProvider.notifier).selectProvider(p.id);
+                          Navigator.pop(ctx);
+                        },
+                      )),
+                  const Divider(),
+                  ListTile(
+                    leading: const Icon(Icons.add),
+                    title: const Text('添加供应商'),
                     onTap: () {
-                      ref.read(settingsProvider.notifier).selectProvider(p.id);
                       Navigator.pop(ctx);
+                      ref.read(settingsProvider.notifier).addProvider();
                     },
-                  )),
-              const Divider(),
-              ListTile(
-                leading: const Icon(Icons.add),
-                title: const Text('添加供应商'),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  ref.read(settingsProvider.notifier).addProvider();
-                },
+                  ),
+                ],
               ),
-            ],
-          ),
+            );
+          },
         );
       },
     );

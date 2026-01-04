@@ -22,17 +22,29 @@ class ReasoningDisplay extends StatefulWidget {
 }
 
 class _ReasoningDisplayState extends State<ReasoningDisplay>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, AutomaticKeepAliveClientMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
   bool _isExpanded = false;
   
   Timer? _timer;
   double _currentDuration = 0;
   
   @override
+  bool get wantKeepAlive => true; // Keep state alive to prevent scroll jumps and state loss
+
+  @override
   void initState() {
     super.initState();
+    _controller = AnimationController(
+       duration: const Duration(milliseconds: 300),
+       vsync: this,
+    );
+    _animation = CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
+
     if (widget.isRunning) {
       _isExpanded = true;
+      _controller.value = 1.0; // Start expanded
       _startTimer();
     }
   }
@@ -57,6 +69,7 @@ class _ReasoningDisplayState extends State<ReasoningDisplay>
   @override
   void dispose() {
     _timer?.cancel();
+    _controller.dispose();
     super.dispose();
   }
   
@@ -65,22 +78,30 @@ class _ReasoningDisplayState extends State<ReasoningDisplay>
     super.didUpdateWidget(oldWidget);
     if (widget.isRunning && !oldWidget.isRunning) {
       setState(() => _isExpanded = true);
+      _controller.forward();
       _startTimer();
     }
     if (!widget.isRunning && oldWidget.isRunning) {
       _timer?.cancel();
-      setState(() => _isExpanded = false);
+      // Keep expanded state but stop timer? Or collapse? 
+      // Usually we keep it as is. User can collapse manually.
     }
   }
 
   void _toggleExpand() {
     setState(() {
       _isExpanded = !_isExpanded;
+      if (_isExpanded) {
+        _controller.forward();
+      } else {
+        _controller.reverse();
+      }
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     if (widget.content.isEmpty) return const SizedBox.shrink();
     final isDark = widget.isWindows
         ? fluent.FluentTheme.of(context).brightness == fluent.Brightness.dark
@@ -89,6 +110,7 @@ class _ReasoningDisplayState extends State<ReasoningDisplay>
         isDark ? const Color(0xFF2D2D2D) : const Color(0xFFF5F5F5);
     final textColor = isDark ? Colors.white70 : Colors.black87;
     final iconColor = isDark ? Colors.white54 : Colors.black54;
+
     return Container(
       decoration: BoxDecoration(
         color: backgroundColor,
@@ -130,53 +152,57 @@ class _ReasoningDisplayState extends State<ReasoningDisplay>
                     ),
                   ),
                   const Spacer(),
-                  Icon(
-                    _isExpanded
-                        ? (widget.isWindows
-                            ? fluent.FluentIcons.chevron_up
-                            : Icons.keyboard_arrow_up)
-                        : (widget.isWindows
-                            ? fluent.FluentIcons.chevron_down
-                            : Icons.keyboard_arrow_down),
-                    size: 16,
-                    color: iconColor,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          AnimatedCrossFade(
-            firstChild: const SizedBox.shrink(),
-            secondChild: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-              decoration: BoxDecoration(
-                  border: Border(
-                      top: BorderSide(
-                color: isDark ? Colors.white10 : Colors.black12,
-                width: 0.5,
-              ))),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 8),
-                  SelectableText(
-                    widget.content,
-                    style: TextStyle(
-                      fontSize: 13,
-                      height: 1.5,
-                      fontFamily: 'Consolas',
-                      color: isDark ? Colors.white60 : Colors.black54,
+                  RotationTransition(
+                    turns: Tween(begin: 0.0, end: 0.5).animate(_controller),
+                    child: Icon(
+                      widget.isWindows
+                          ? fluent.FluentIcons.chevron_down
+                          : Icons.keyboard_arrow_down,
+                      size: 16,
+                      color: iconColor,
                     ),
                   ),
                 ],
               ),
             ),
-            crossFadeState: _isExpanded
-                ? CrossFadeState.showSecond
-                : CrossFadeState.showFirst,
-            duration: const Duration(milliseconds: 300),
-            alignment: Alignment.topLeft,
+          ),
+          AnimatedBuilder(
+            animation: _controller,
+            builder: (context, _) {
+              // Don't build SelectableText at all when fully collapsed
+              if (_controller.isDismissed) {
+                return const SizedBox.shrink();
+              }
+              return SizeTransition(
+                sizeFactor: _animation,
+                axisAlignment: -1.0,
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                  decoration: BoxDecoration(
+                      border: Border(
+                          top: BorderSide(
+                    color: isDark ? Colors.white10 : Colors.black12,
+                    width: 0.5,
+                  ))),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 8),
+                      SelectableText(
+                        widget.content,
+                        style: TextStyle(
+                          fontSize: 13,
+                          height: 1.5,
+                          fontFamily: 'Consolas',
+                          color: isDark ? Colors.white60 : Colors.black54,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
           ),
         ],
       ),

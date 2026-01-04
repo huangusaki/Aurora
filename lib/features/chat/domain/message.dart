@@ -1,3 +1,46 @@
+class ToolCall {
+  final String id;
+  final String type;
+  final String name;
+  final String arguments;
+
+  const ToolCall({
+    required this.id,
+    this.type = 'function',
+    required this.name,
+    required this.arguments,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'type': type,
+    'function': {
+      'name': name,
+      'arguments': arguments,
+    }
+  };
+}
+
+class ToolCallChunk {
+  final String? id;
+  final String? type;
+  final String? name;
+  final String? arguments;
+  final int? index;
+
+  const ToolCallChunk({
+    this.id,
+    this.type,
+    this.name,
+    this.arguments,
+    this.index,
+  });
+  
+  static ToolCallChunk fromToolCall(ToolCall tc) {
+      return ToolCallChunk(id: tc.id, type: tc.type, name: tc.name, arguments: tc.arguments);
+  }
+}
+
 class Message {
   final String id;
   final String content;
@@ -9,6 +52,11 @@ class Message {
   final String? model;
   final String? provider;
   final double? reasoningDurationSeconds;
+  
+  // New fields for Function Calling
+  final List<ToolCall>? toolCalls;
+  final String? toolCallId; // For 'tool' role messages
+  final String role; // explicit role helper
 
   const Message({
     required this.id,
@@ -21,7 +69,10 @@ class Message {
     this.model,
     this.provider,
     this.reasoningDurationSeconds,
-  });
+    this.toolCalls,
+    this.toolCallId,
+    String? role,
+  }) : role = role ?? (isUser ? 'user' : (toolCallId != null ? 'tool' : 'assistant'));
 
   factory Message.user(String content, {List<String> attachments = const []}) {
     return Message(
@@ -30,6 +81,7 @@ class Message {
       isUser: true,
       timestamp: DateTime.now(),
       attachments: attachments,
+      role: 'user',
     );
   }
 
@@ -38,7 +90,8 @@ class Message {
       List<String> images = const [],
       String? model,
       String? provider,
-      double? reasoningDurationSeconds}) {
+      double? reasoningDurationSeconds,
+      List<ToolCall>? toolCalls}) {
     return Message(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       content: content,
@@ -49,6 +102,51 @@ class Message {
       model: model,
       provider: provider,
       reasoningDurationSeconds: reasoningDurationSeconds,
+      toolCalls: toolCalls,
+      role: 'assistant',
+    );
+  }
+  
+  factory Message.tool(String content, {required String toolCallId}) {
+    return Message(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      content: content,
+      isUser: false, // Tool messages are not user messages
+      timestamp: DateTime.now(),
+      toolCallId: toolCallId,
+      role: 'tool',
+    );
+  }
+
+  Message copyWith({
+    String? id,
+    String? content,
+    String? reasoningContent,
+    bool? isUser,
+    DateTime? timestamp,
+    List<String>? attachments,
+    List<String>? images,
+    String? model,
+    String? provider,
+    double? reasoningDurationSeconds,
+    List<ToolCall>? toolCalls,
+    String? toolCallId,
+    String? role,
+  }) {
+    return Message(
+      id: id ?? this.id,
+      content: content ?? this.content,
+      reasoningContent: reasoningContent ?? this.reasoningContent,
+      isUser: isUser ?? this.isUser,
+      timestamp: timestamp ?? this.timestamp,
+      attachments: attachments ?? this.attachments,
+      images: images ?? this.images,
+      model: model ?? this.model,
+      provider: provider ?? this.provider,
+      reasoningDurationSeconds: reasoningDurationSeconds ?? this.reasoningDurationSeconds,
+      toolCalls: toolCalls ?? this.toolCalls,
+      toolCallId: toolCallId ?? this.toolCallId,
+      role: role ?? this.role,
     );
   }
 }

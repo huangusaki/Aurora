@@ -43,28 +43,33 @@ const ProviderConfigEntitySchema = CollectionSchema(
       name: r'isCustom',
       type: IsarType.bool,
     ),
-    r'lastSelectedModel': PropertySchema(
+    r'isEnabled': PropertySchema(
       id: 5,
+      name: r'isEnabled',
+      type: IsarType.bool,
+    ),
+    r'lastSelectedModel': PropertySchema(
+      id: 6,
       name: r'lastSelectedModel',
       type: IsarType.string,
     ),
     r'modelSettingsJson': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'modelSettingsJson',
       type: IsarType.string,
     ),
     r'name': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'name',
       type: IsarType.string,
     ),
     r'providerId': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'providerId',
       type: IsarType.string,
     ),
     r'savedModels': PropertySchema(
-      id: 9,
+      id: 10,
       name: r'savedModels',
       type: IsarType.stringList,
     )
@@ -146,11 +151,12 @@ void _providerConfigEntitySerialize(
   writer.writeString(offsets[2], object.customParametersJson);
   writer.writeBool(offsets[3], object.isActive);
   writer.writeBool(offsets[4], object.isCustom);
-  writer.writeString(offsets[5], object.lastSelectedModel);
-  writer.writeString(offsets[6], object.modelSettingsJson);
-  writer.writeString(offsets[7], object.name);
-  writer.writeString(offsets[8], object.providerId);
-  writer.writeStringList(offsets[9], object.savedModels);
+  writer.writeBool(offsets[5], object.isEnabled);
+  writer.writeString(offsets[6], object.lastSelectedModel);
+  writer.writeString(offsets[7], object.modelSettingsJson);
+  writer.writeString(offsets[8], object.name);
+  writer.writeString(offsets[9], object.providerId);
+  writer.writeStringList(offsets[10], object.savedModels);
 }
 
 ProviderConfigEntity _providerConfigEntityDeserialize(
@@ -166,11 +172,12 @@ ProviderConfigEntity _providerConfigEntityDeserialize(
   object.id = id;
   object.isActive = reader.readBool(offsets[3]);
   object.isCustom = reader.readBool(offsets[4]);
-  object.lastSelectedModel = reader.readStringOrNull(offsets[5]);
-  object.modelSettingsJson = reader.readStringOrNull(offsets[6]);
-  object.name = reader.readString(offsets[7]);
-  object.providerId = reader.readString(offsets[8]);
-  object.savedModels = reader.readStringList(offsets[9]) ?? [];
+  object.isEnabled = reader.readBool(offsets[5]);
+  object.lastSelectedModel = reader.readStringOrNull(offsets[6]);
+  object.modelSettingsJson = reader.readStringOrNull(offsets[7]);
+  object.name = reader.readString(offsets[8]);
+  object.providerId = reader.readString(offsets[9]);
+  object.savedModels = reader.readStringList(offsets[10]) ?? [];
   return object;
 }
 
@@ -192,14 +199,16 @@ P _providerConfigEntityDeserializeProp<P>(
     case 4:
       return (reader.readBool(offset)) as P;
     case 5:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 6:
       return (reader.readStringOrNull(offset)) as P;
     case 7:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 8:
       return (reader.readString(offset)) as P;
     case 9:
+      return (reader.readString(offset)) as P;
+    case 10:
       return (reader.readStringList(offset) ?? []) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -908,6 +917,16 @@ extension ProviderConfigEntityQueryFilter on QueryBuilder<ProviderConfigEntity,
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'isCustom',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity,
+      QAfterFilterCondition> isEnabledEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'isEnabled',
         value: value,
       ));
     });
@@ -1808,6 +1827,20 @@ extension ProviderConfigEntityQuerySortBy
   }
 
   QueryBuilder<ProviderConfigEntity, ProviderConfigEntity, QAfterSortBy>
+      sortByIsEnabled() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isEnabled', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity, QAfterSortBy>
+      sortByIsEnabledDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isEnabled', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity, QAfterSortBy>
       sortByLastSelectedModel() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'lastSelectedModel', Sort.asc);
@@ -1951,6 +1984,20 @@ extension ProviderConfigEntityQuerySortThenBy
   }
 
   QueryBuilder<ProviderConfigEntity, ProviderConfigEntity, QAfterSortBy>
+      thenByIsEnabled() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isEnabled', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity, QAfterSortBy>
+      thenByIsEnabledDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isEnabled', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity, QAfterSortBy>
       thenByLastSelectedModel() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'lastSelectedModel', Sort.asc);
@@ -2046,6 +2093,13 @@ extension ProviderConfigEntityQueryWhereDistinct
   }
 
   QueryBuilder<ProviderConfigEntity, ProviderConfigEntity, QDistinct>
+      distinctByIsEnabled() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'isEnabled');
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity, QDistinct>
       distinctByLastSelectedModel({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'lastSelectedModel',
@@ -2126,6 +2180,13 @@ extension ProviderConfigEntityQueryProperty on QueryBuilder<
     });
   }
 
+  QueryBuilder<ProviderConfigEntity, bool, QQueryOperations>
+      isEnabledProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isEnabled');
+    });
+  }
+
   QueryBuilder<ProviderConfigEntity, String?, QQueryOperations>
       lastSelectedModelProperty() {
     return QueryBuilder.apply(this, (query) {
@@ -2182,33 +2243,53 @@ const AppSettingsEntitySchema = CollectionSchema(
       name: r'availableModels',
       type: IsarType.stringList,
     ),
-    r'llmAvatar': PropertySchema(
+    r'isSearchEnabled': PropertySchema(
       id: 2,
+      name: r'isSearchEnabled',
+      type: IsarType.bool,
+    ),
+    r'isStreamEnabled': PropertySchema(
+      id: 3,
+      name: r'isStreamEnabled',
+      type: IsarType.bool,
+    ),
+    r'lastSessionId': PropertySchema(
+      id: 4,
+      name: r'lastSessionId',
+      type: IsarType.string,
+    ),
+    r'llmAvatar': PropertySchema(
+      id: 5,
       name: r'llmAvatar',
       type: IsarType.string,
     ),
     r'llmName': PropertySchema(
-      id: 3,
+      id: 6,
       name: r'llmName',
       type: IsarType.string,
     ),
+    r'searchEngine': PropertySchema(
+      id: 7,
+      name: r'searchEngine',
+      type: IsarType.string,
+    ),
     r'selectedModel': PropertySchema(
-      id: 4,
+      id: 8,
       name: r'selectedModel',
       type: IsarType.string,
     ),
     r'themeMode': PropertySchema(
-      id: 5,
+      id: 9,
       name: r'themeMode',
       type: IsarType.string,
     ),
     r'userAvatar': PropertySchema(
-      id: 6,
+      id: 10,
       name: r'userAvatar',
       type: IsarType.string,
     ),
     r'userName': PropertySchema(
-      id: 7,
+      id: 11,
       name: r'userName',
       type: IsarType.string,
     )
@@ -2242,12 +2323,19 @@ int _appSettingsEntityEstimateSize(
     }
   }
   {
+    final value = object.lastSessionId;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
     final value = object.llmAvatar;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
     }
   }
   bytesCount += 3 + object.llmName.length * 3;
+  bytesCount += 3 + object.searchEngine.length * 3;
   {
     final value = object.selectedModel;
     if (value != null) {
@@ -2273,12 +2361,16 @@ void _appSettingsEntitySerialize(
 ) {
   writer.writeString(offsets[0], object.activeProviderId);
   writer.writeStringList(offsets[1], object.availableModels);
-  writer.writeString(offsets[2], object.llmAvatar);
-  writer.writeString(offsets[3], object.llmName);
-  writer.writeString(offsets[4], object.selectedModel);
-  writer.writeString(offsets[5], object.themeMode);
-  writer.writeString(offsets[6], object.userAvatar);
-  writer.writeString(offsets[7], object.userName);
+  writer.writeBool(offsets[2], object.isSearchEnabled);
+  writer.writeBool(offsets[3], object.isStreamEnabled);
+  writer.writeString(offsets[4], object.lastSessionId);
+  writer.writeString(offsets[5], object.llmAvatar);
+  writer.writeString(offsets[6], object.llmName);
+  writer.writeString(offsets[7], object.searchEngine);
+  writer.writeString(offsets[8], object.selectedModel);
+  writer.writeString(offsets[9], object.themeMode);
+  writer.writeString(offsets[10], object.userAvatar);
+  writer.writeString(offsets[11], object.userName);
 }
 
 AppSettingsEntity _appSettingsEntityDeserialize(
@@ -2291,12 +2383,16 @@ AppSettingsEntity _appSettingsEntityDeserialize(
   object.activeProviderId = reader.readString(offsets[0]);
   object.availableModels = reader.readStringList(offsets[1]) ?? [];
   object.id = id;
-  object.llmAvatar = reader.readStringOrNull(offsets[2]);
-  object.llmName = reader.readString(offsets[3]);
-  object.selectedModel = reader.readStringOrNull(offsets[4]);
-  object.themeMode = reader.readString(offsets[5]);
-  object.userAvatar = reader.readStringOrNull(offsets[6]);
-  object.userName = reader.readString(offsets[7]);
+  object.isSearchEnabled = reader.readBool(offsets[2]);
+  object.isStreamEnabled = reader.readBool(offsets[3]);
+  object.lastSessionId = reader.readStringOrNull(offsets[4]);
+  object.llmAvatar = reader.readStringOrNull(offsets[5]);
+  object.llmName = reader.readString(offsets[6]);
+  object.searchEngine = reader.readString(offsets[7]);
+  object.selectedModel = reader.readStringOrNull(offsets[8]);
+  object.themeMode = reader.readString(offsets[9]);
+  object.userAvatar = reader.readStringOrNull(offsets[10]);
+  object.userName = reader.readString(offsets[11]);
   return object;
 }
 
@@ -2312,16 +2408,24 @@ P _appSettingsEntityDeserializeProp<P>(
     case 1:
       return (reader.readStringList(offset) ?? []) as P;
     case 2:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 3:
-      return (reader.readString(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 4:
       return (reader.readStringOrNull(offset)) as P;
     case 5:
-      return (reader.readString(offset)) as P;
-    case 6:
       return (reader.readStringOrNull(offset)) as P;
+    case 6:
+      return (reader.readString(offset)) as P;
     case 7:
+      return (reader.readString(offset)) as P;
+    case 8:
+      return (reader.readStringOrNull(offset)) as P;
+    case 9:
+      return (reader.readString(offset)) as P;
+    case 10:
+      return (reader.readStringOrNull(offset)) as P;
+    case 11:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -2844,6 +2948,180 @@ extension AppSettingsEntityQueryFilter
   }
 
   QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      isSearchEnabledEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'isSearchEnabled',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      isStreamEnabledEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'isStreamEnabled',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      lastSessionIdIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'lastSessionId',
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      lastSessionIdIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'lastSessionId',
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      lastSessionIdEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'lastSessionId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      lastSessionIdGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'lastSessionId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      lastSessionIdLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'lastSessionId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      lastSessionIdBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'lastSessionId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      lastSessionIdStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'lastSessionId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      lastSessionIdEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'lastSessionId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      lastSessionIdContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'lastSessionId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      lastSessionIdMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'lastSessionId',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      lastSessionIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'lastSessionId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      lastSessionIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'lastSessionId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
       llmAvatarIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
@@ -3128,6 +3406,142 @@ extension AppSettingsEntityQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.greaterThan(
         property: r'llmName',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      searchEngineEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'searchEngine',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      searchEngineGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'searchEngine',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      searchEngineLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'searchEngine',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      searchEngineBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'searchEngine',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      searchEngineStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'searchEngine',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      searchEngineEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'searchEngine',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      searchEngineContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'searchEngine',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      searchEngineMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'searchEngine',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      searchEngineIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'searchEngine',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      searchEngineIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'searchEngine',
         value: '',
       ));
     });
@@ -3737,6 +4151,48 @@ extension AppSettingsEntityQuerySortBy
   }
 
   QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      sortByIsSearchEnabled() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSearchEnabled', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      sortByIsSearchEnabledDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSearchEnabled', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      sortByIsStreamEnabled() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isStreamEnabled', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      sortByIsStreamEnabledDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isStreamEnabled', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      sortByLastSessionId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSessionId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      sortByLastSessionIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSessionId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
       sortByLlmAvatar() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'llmAvatar', Sort.asc);
@@ -3761,6 +4217,20 @@ extension AppSettingsEntityQuerySortBy
       sortByLlmNameDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'llmName', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      sortBySearchEngine() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'searchEngine', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      sortBySearchEngineDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'searchEngine', Sort.desc);
     });
   }
 
@@ -3851,6 +4321,48 @@ extension AppSettingsEntityQuerySortThenBy
   }
 
   QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      thenByIsSearchEnabled() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSearchEnabled', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      thenByIsSearchEnabledDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSearchEnabled', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      thenByIsStreamEnabled() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isStreamEnabled', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      thenByIsStreamEnabledDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isStreamEnabled', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      thenByLastSessionId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSessionId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      thenByLastSessionIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSessionId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
       thenByLlmAvatar() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'llmAvatar', Sort.asc);
@@ -3875,6 +4387,20 @@ extension AppSettingsEntityQuerySortThenBy
       thenByLlmNameDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'llmName', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      thenBySearchEngine() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'searchEngine', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      thenBySearchEngineDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'searchEngine', Sort.desc);
     });
   }
 
@@ -3953,6 +4479,28 @@ extension AppSettingsEntityQueryWhereDistinct
   }
 
   QueryBuilder<AppSettingsEntity, AppSettingsEntity, QDistinct>
+      distinctByIsSearchEnabled() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'isSearchEnabled');
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QDistinct>
+      distinctByIsStreamEnabled() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'isStreamEnabled');
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QDistinct>
+      distinctByLastSessionId({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'lastSessionId',
+          caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QDistinct>
       distinctByLlmAvatar({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'llmAvatar', caseSensitive: caseSensitive);
@@ -3963,6 +4511,13 @@ extension AppSettingsEntityQueryWhereDistinct
       distinctByLlmName({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'llmName', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QDistinct>
+      distinctBySearchEngine({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'searchEngine', caseSensitive: caseSensitive);
     });
   }
 
@@ -4018,6 +4573,27 @@ extension AppSettingsEntityQueryProperty
     });
   }
 
+  QueryBuilder<AppSettingsEntity, bool, QQueryOperations>
+      isSearchEnabledProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isSearchEnabled');
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, bool, QQueryOperations>
+      isStreamEnabledProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isStreamEnabled');
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, String?, QQueryOperations>
+      lastSessionIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'lastSessionId');
+    });
+  }
+
   QueryBuilder<AppSettingsEntity, String?, QQueryOperations>
       llmAvatarProperty() {
     return QueryBuilder.apply(this, (query) {
@@ -4028,6 +4604,13 @@ extension AppSettingsEntityQueryProperty
   QueryBuilder<AppSettingsEntity, String, QQueryOperations> llmNameProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'llmName');
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, String, QQueryOperations>
+      searchEngineProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'searchEngine');
     });
   }
 

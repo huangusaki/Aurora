@@ -196,39 +196,34 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
                             .read(settingsProvider.notifier)
                             .viewProvider(provider.id);
                       },
-                      trailing: provider.id != 'openai'
-                          ? fluent.IconButton(
-                              icon: const Icon(fluent.FluentIcons.delete),
-                              onPressed: () {
-                                showDialog(
-                                    context: context,
-                                    builder: (context) {
-                                      return fluent.ContentDialog(
-                                        title: const Text('删除供应商'),
-                                        content:
-                                            const Text('确定要删除此供应商配置吗？此操作无法撤销。'),
-                                        actions: [
-                                          fluent.Button(
-                                            child: const Text('取消'),
-                                            onPressed: () =>
-                                                Navigator.pop(context),
-                                          ),
-                                          fluent.FilledButton(
-                                            child: const Text('删除'),
-                                            onPressed: () {
-                                              Navigator.pop(context);
-                                              ref
-                                                  .read(
-                                                      settingsProvider.notifier)
-                                                  .deleteProvider(provider.id);
-                                            },
-                                          ),
-                                        ],
-                                      );
-                                    });
-                              },
-                            )
-                          : null,
+                      trailing: fluent.IconButton(
+                        icon: const Icon(fluent.FluentIcons.delete),
+                        onPressed: () {
+                          showDialog(
+                              context: context,
+                              builder: (context) {
+                                return fluent.ContentDialog(
+                                  title: const Text('删除供应商'),
+                                  content: const Text('确定要删除此供应商配置吗？此操作无法撤销。'),
+                                  actions: [
+                                    fluent.Button(
+                                      child: const Text('取消'),
+                                      onPressed: () => Navigator.pop(context),
+                                    ),
+                                    fluent.FilledButton(
+                                      child: const Text('删除'),
+                                      onPressed: () {
+                                        Navigator.pop(context);
+                                        ref
+                                            .read(settingsProvider.notifier)
+                                            .deleteProvider(provider.id);
+                                      },
+                                    ),
+                                  ],
+                                );
+                              });
+                        },
+                      ),
                     );
                   },
                 ),
@@ -292,6 +287,24 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
                           ref.read(settingsProvider.notifier).updateProvider(
                               id: viewingProvider.id, baseUrl: value);
                         },
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    fluent.InfoLabel(
+                      label: '启用状态',
+                      child: Row(
+                        children: [
+                          fluent.ToggleSwitch(
+                            checked: viewingProvider.isEnabled,
+                            onChanged: (v) {
+                              ref
+                                  .read(settingsProvider.notifier)
+                                  .toggleProviderEnabled(viewingProvider.id);
+                            },
+                            content: fluent.Text(
+                                viewingProvider.isEnabled ? '已启用' : '已禁用'),
+                          ),
+                        ],
                       ),
                     ),
                     const SizedBox(height: 24),

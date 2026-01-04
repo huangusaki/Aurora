@@ -9,6 +9,7 @@ import '../../../settings/presentation/mobile_settings_page.dart';
 import '../../../settings/presentation/mobile_user_page.dart';
 import '../mobile_translation_page.dart';
 import '../widgets/cached_page_stack.dart';
+import 'mobile_navigation_drawer.dart';
 
 class MobileChatScreen extends ConsumerStatefulWidget {
   const MobileChatScreen({super.key});
@@ -118,14 +119,16 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
         Scaffold(
           key: _scaffoldKey,
           backgroundColor: Colors.transparent, // Let gradient show through
-          // Only show AppBar and Drawer when we are in a Session View
-          // When in Settings/Trans, they provide their own Scaffolds.
-          // BUT CachedPageStack needs to take the WHOLE body.
-          // So we should wrapping the Session View in a Scaffold-like structure or 
-          // have the outer Scaffold ALWAYS present but hide AppBar/Drawer?
-          // No, Settings Page has its own AppBar.
-          
-          drawer: _buildDrawer(context, sessionsState, selectedSessionId),
+          drawer: MobileNavigationDrawer(
+            sessionsState: sessionsState,
+            selectedSessionId: selectedSessionId,
+            onNewChat: () {
+               ref.read(sessionsProvider.notifier).startNewSession();
+            },
+            onNavigate: _navigateTo,
+            onThemeCycle: _cycleTheme,
+            onAbout: _showAboutDialog,
+          ),
           body:  fluent.NavigationPaneTheme(
               data: fluent.NavigationPaneThemeData(
                  backgroundColor: isDark ? fluent.FluentTheme.of(context).scaffoldBackgroundColor : Colors.transparent,
@@ -217,8 +220,7 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
             icon: const Icon(Icons.add_circle_outline, size: 26),
             tooltip: '新对话',
             onPressed: () {
-              ref.read(selectedHistorySessionIdProvider.notifier).state =
-                  'new_chat';
+              ref.read(sessionsProvider.notifier).startNewSession();
             },
           ),
           const SizedBox(width: 8),
@@ -227,206 +229,9 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
       body: Padding(
         padding: EdgeInsets.only(
             top: !isDark ? 64 + MediaQuery.of(context).padding.top : 0),
-        child: ChatView(key: ValueKey(sessionId)),
+        child: ChatView(key: ValueKey(sessionId), sessionId: sessionId),
       ),
     );
-  }
-
-  Widget _buildDrawer(BuildContext context, SessionsState sessionsState, String? selectedSessionId) {
-     return Drawer(
-        backgroundColor: fluent.FluentTheme.of(context).scaffoldBackgroundColor,
-        child: SafeArea(
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(12),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .surfaceContainerHighest,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: TextField(
-                          onChanged: (value) {
-                            ref
-                                .read(sessionSearchQueryProvider.notifier)
-                                .state = value;
-                          },
-                          decoration: InputDecoration(
-                            hintText: '搜索聊天记录',
-                            hintStyle: TextStyle(
-                                color: Colors.grey[600], fontSize: 14),
-                            prefixIcon: Icon(Icons.search,
-                                size: 20, color: Colors.grey[600]),
-                            border: InputBorder.none,
-                            contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 10),
-                          ),
-                          style: const TextStyle(fontSize: 14),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    IconButton(
-                      icon: const Icon(Icons.close, size: 22),
-                      onPressed: () {
-                        ref.read(sessionSearchQueryProvider.notifier).state =
-                            '';
-                      },
-                    ),
-                  ],
-                ),
-              ),
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                child: InkWell(
-                  onTap: () {
-                    ref.read(selectedHistorySessionIdProvider.notifier).state =
-                        'new_chat';
-                     Navigator.pop(context);
-                  },
-                  borderRadius: BorderRadius.circular(8),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .primaryContainer
-                          .withOpacity(0.3),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.add_circle_outline,
-                            size: 20,
-                            color: Theme.of(context).colorScheme.primary),
-                        const SizedBox(width: 10),
-                        Text('新对话',
-                            style: TextStyle(
-                                fontSize: 15,
-                                color: Theme.of(context).colorScheme.primary,
-                                fontWeight: FontWeight.w500)),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 4),
-              Expanded(
-                child: SessionListWidget(
-                  sessionsState: sessionsState,
-                  selectedSessionId: selectedSessionId,
-                  onSessionSelected: (sessionId) {
-                     // Update provider
-                    ref.read(selectedHistorySessionIdProvider.notifier).state =
-                        sessionId;
-                    // Note: The listener in build() will handle the view switch, 
-                    // but we also need to close drawer.
-                    Navigator.pop(context);
-                  },
-                  onSessionDeleted: (sessionId) {
-                    ref
-                        .read(sessionsProvider.notifier)
-                        .deleteSession(sessionId);
-                    if (sessionId == selectedSessionId) {
-                      ref
-                          .read(selectedHistorySessionIdProvider.notifier)
-                          .state = 'new_chat';
-                    }
-                  },
-                ),
-              ),
-              Container(
-                decoration: BoxDecoration(
-                  color: fluent.FluentTheme.of(context).scaffoldBackgroundColor,
-                  border: Border(
-                      top: BorderSide(
-                          color: fluent.FluentTheme.of(context)
-                              .resources
-                              .dividerStrokeColorDefault)),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          _MobileDrawerNavItem(
-                            icon: Icons.person_outline,
-                            label: '用户',
-                            onTap: () {
-                                _navigateTo(keyUser);
-                            }
-                          ),
-                          _MobileDrawerNavItem(
-                            icon: Icons.translate,
-                            label: '翻译',
-                            onTap: () {
-                                _navigateTo(keyTranslation);
-                            }
-                          ),
-                          _MobileDrawerNavItem(
-                            icon: _getThemeIcon(
-                                ref.watch(settingsProvider).themeMode),
-                            label: '主题',
-                            onTap: () {
-                              _cycleTheme();
-                            },
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          _MobileDrawerNavItem(
-                            icon: Icons.cloud_outlined,
-                            label: '模型',
-                            onTap: () {
-                                _navigateTo(keySettings);
-                            }
-                          ),
-                          _MobileDrawerNavItem(
-                            icon: Icons.link_outlined,
-                            label: '其它',
-                            onTap: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                    content: Text('敬请期待'),
-                                    duration: Duration(seconds: 1)),
-                              );
-                            },
-                          ),
-                          _MobileDrawerNavItem(
-                            icon: Icons.info_outline,
-                            label: '关于',
-                            onTap: () async {
-                              FocusManager.instance.primaryFocus?.unfocus();
-                              Navigator.pop(context);
-                              await Future.delayed(
-                                  const Duration(milliseconds: 100));
-                              _showAboutDialog();
-                            },
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
   }
 
   void _openModelSwitcher() {
@@ -491,17 +296,6 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
     );
   }
 
-  IconData _getThemeIcon(String themeMode) {
-    switch (themeMode) {
-      case 'dark':
-        return Icons.dark_mode;
-      case 'light':
-        return Icons.light_mode;
-      default:
-        return Icons.brightness_auto;
-    }
-  }
-
   void _cycleTheme() {
     final current = ref.read(settingsProvider).themeMode;
     String next;
@@ -555,31 +349,3 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
   }
 }
 
-class _MobileDrawerNavItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-  const _MobileDrawerNavItem({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 24),
-            const SizedBox(height: 4),
-            Text(label, style: const TextStyle(fontSize: 12)),
-          ],
-        ),
-      ),
-    );
-  }
-}

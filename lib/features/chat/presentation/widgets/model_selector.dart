@@ -82,7 +82,7 @@ class _ModelSelectorState extends ConsumerState<ModelSelector> {
     }
 
     for (final provider in providers) {
-      if (provider.models.isEmpty) continue;
+      if (!provider.isEnabled || provider.models.isEmpty) continue;
       
       // Provider Header (Disabled Button styled as label)
       items.add(fluent.CommandBarButton(
@@ -200,7 +200,7 @@ class _ModelSelectorState extends ConsumerState<ModelSelector> {
     } else {
       final List<PopupMenuEntry<String>> items = [];
       for (final provider in providers) {
-        if (provider.models.isEmpty) continue;
+        if (!provider.isEnabled || provider.models.isEmpty) continue;
         items.add(PopupMenuItem<String>(
           enabled: false,
           child: Text(provider.name,

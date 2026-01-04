@@ -63,141 +63,168 @@ class _DesktopChatScreenState extends ConsumerState<DesktopChatScreen> {
             child: Row(
               children: [
                 // Sidebar
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 150),
-                  curve: Curves.easeOut,
-                  // Use antiAlias for smoother edges
-                  clipBehavior: Clip.antiAlias, 
-                  width: isExpanded ? 200 : 50,
-                decoration: BoxDecoration(
-                  color: theme.navigationPaneTheme.backgroundColor,
-                ),
-                child: Column(
-                    children: [
-                      ...navItems.take(navItems.length - 1).toList().asMap().entries.map((entry) {
-                         final index = entry.key;
-                         final item = entry.value;
-                         final isSelected = selectedIndex == index;
-                         return fluent.HoverButton(
-                           onPressed: () {
-                                  if (index == 0) {
-                                     if (selectedIndex == 0) {
+                // Sidebar
+                RepaintBoundary(
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    curve: Curves.easeOut,
+                    width: isExpanded ? 200 : 50,
+                    child: ClipRect(
+                      child: OverflowBox(
+                        minWidth: 200,
+                        maxWidth: 200,
+                        alignment: Alignment.centerLeft,
+                        child: Container(
+                          width: 200,
+                          decoration: BoxDecoration(
+                            color: theme.navigationPaneTheme.backgroundColor,
+                          ),
+                          child: Column(
+                            children: [
+                              ...navItems.take(navItems.length - 1).toList().asMap().entries.map((entry) {
+                                final index = entry.key;
+                                final item = entry.value;
+                                final isSelected = selectedIndex == index;
+                                return fluent.HoverButton(
+                                  onPressed: () {
+                                    if (index == 0) {
+                                      if (selectedIndex == 0) {
                                         ref.read(isHistorySidebarVisibleProvider.notifier).update((state) => !state);
-                                     } else {
+                                      } else {
                                         ref.read(desktopActiveTabProvider.notifier).state = 0;
                                         ref.read(isHistorySidebarVisibleProvider.notifier).state = true;
-                                     }
-                                  } else {
-                                     ref.read(desktopActiveTabProvider.notifier).state = index;
-                                  }
-                           },
-                           builder: (context, states) {
-                              return Container(
-                                height: 40,
-                                margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: isSelected 
-                                    ? theme.accentColor.withOpacity(0.1)
-                                    : states.isHovering ? theme.resources.subtleFillColorSecondary : Colors.transparent,
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Row(
-                                  children: [
-                                    SizedBox(
-                                      width: 40,
-                                      child: Center(
-                                        child: fluent.Icon(item.icon, size: 20, color: isSelected ? theme.accentColor : null), // Slightly larger icon
+                                      }
+                                    } else {
+                                      ref.read(desktopActiveTabProvider.notifier).state = index;
+                                    }
+                                  },
+                                  builder: (context, states) {
+                                    return Container(
+                                      height: 40,
+                                      margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: isSelected 
+                                          ? theme.accentColor.withOpacity(0.1)
+                                          : states.isHovering ? theme.resources.subtleFillColorSecondary : Colors.transparent,
+                                        borderRadius: BorderRadius.circular(6),
                                       ),
-                                    ),
-                                    if (isExpanded)
-                                      Expanded(
-                                        child: Padding(
-                                          padding: const EdgeInsets.only(left: 8.0),
-                                          child: Text(item.label, style: TextStyle(color: isSelected ? theme.accentColor : null, fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal), overflow: TextOverflow.ellipsis),
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                              );
-                           },
-                         );
-                      }),
-                      const Spacer(),
-                      
-                      Builder(builder: (context) {
-                         final index = navItems.length - 1;
-                         final item = navItems[index];
-                          final isSelected = selectedIndex == index;
-                          return fluent.HoverButton(
-                            onPressed: () => ref.read(desktopActiveTabProvider.notifier).state = index,
-                           builder: (context, states) {
-                              return Container(
-                                height: 40,
-                                margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: isSelected 
-                                    ? theme.accentColor.withOpacity(0.1)
-                                    : states.isHovering ? theme.resources.subtleFillColorSecondary : Colors.transparent,
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Row(
-                                  children: [
-                                    SizedBox(
-                                      width: 40,
-                                      child: Center(
-                                        child: fluent.Icon(item.icon, size: 18, color: isSelected ? theme.accentColor : null),
-                                      ),
-                                    ),
-                                    if (isExpanded)
-                                       Expanded(child: Padding(padding: const EdgeInsets.only(left: 8.0), child: Text(item.label, style: TextStyle(color: isSelected ? theme.accentColor : null, fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal), overflow: TextOverflow.ellipsis))),
-                                  ],
-                                ),
-                              );
-                           },
-                         );
-                      }),
-                      const SizedBox(height: 4),
-
-                      Consumer(
-                            builder: (context, ref, child) {
-                              final currentTheme = ref.watch(settingsProvider).themeMode;
-                              final bool isActuallyDark = (currentTheme == 'dark') || (currentTheme == 'system' && MediaQuery.platformBrightnessOf(context) == Brightness.dark);
-                              final IconData icon = isActuallyDark ? fluent.FluentIcons.clear_night : fluent.FluentIcons.sunny;
-                              
-                              return fluent.HoverButton(
-                                onPressed: () => ref.read(settingsProvider.notifier).toggleThemeMode(),
-                                builder: (context, states) {
-                                  return Container(
-                                    height: 40,
-                                    margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: states.isHovering ? theme.resources.subtleFillColorSecondary : Colors.transparent,
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        SizedBox(
-                                          width: 40,
-                                          child: Center(
-                                            child: fluent.Icon(icon, size: 18, color: theme.typography.body?.color),
+                                      child: Row(
+                                        children: [
+                                          SizedBox(
+                                            width: 40,
+                                            child: Center(
+                                              child: fluent.Icon(item.icon, size: 20, color: isSelected ? theme.accentColor : null),
+                                            ),
                                           ),
-                                        ),
-                                        if (isExpanded)
                                           Expanded(
                                             child: Padding(
                                               padding: const EdgeInsets.only(left: 8.0),
-                                              child: Text('主题', style: const TextStyle(fontWeight: FontWeight.normal), overflow: TextOverflow.ellipsis),
+                                              child: Text(
+                                                item.label, 
+                                                style: TextStyle(
+                                                  color: isSelected ? theme.accentColor : null, 
+                                                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal
+                                                ), 
+                                                overflow: TextOverflow.ellipsis
+                                              ),
                                             ),
                                           ),
-                                      ],
-                                    ),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                                );
+                              }),
+                              const Spacer(),
+                              
+                              Builder(builder: (context) {
+                                final index = navItems.length - 1;
+                                final item = navItems[index];
+                                final isSelected = selectedIndex == index;
+                                return fluent.HoverButton(
+                                  onPressed: () => ref.read(desktopActiveTabProvider.notifier).state = index,
+                                  builder: (context, states) {
+                                    return Container(
+                                      height: 40,
+                                      margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: isSelected 
+                                          ? theme.accentColor.withOpacity(0.1)
+                                          : states.isHovering ? theme.resources.subtleFillColorSecondary : Colors.transparent,
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          SizedBox(
+                                            width: 40,
+                                            child: Center(
+                                              child: fluent.Icon(item.icon, size: 18, color: isSelected ? theme.accentColor : null),
+                                            ),
+                                          ),
+                                          Expanded(
+                                            child: Padding(
+                                              padding: const EdgeInsets.only(left: 8.0),
+                                              child: Text(
+                                                item.label, 
+                                                style: TextStyle(
+                                                  color: isSelected ? theme.accentColor : null, 
+                                                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal
+                                                ), 
+                                                overflow: TextOverflow.ellipsis
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                                );
+                              }),
+                              const SizedBox(height: 4),
+
+                              Consumer(
+                                builder: (context, ref, child) {
+                                  final currentTheme = ref.watch(settingsProvider).themeMode;
+                                  final bool isActuallyDark = (currentTheme == 'dark') || (currentTheme == 'system' && MediaQuery.platformBrightnessOf(context) == Brightness.dark);
+                                  final IconData icon = isActuallyDark ? fluent.FluentIcons.clear_night : fluent.FluentIcons.sunny;
+                                  
+                                  return fluent.HoverButton(
+                                    onPressed: () => ref.read(settingsProvider.notifier).toggleThemeMode(),
+                                    builder: (context, states) {
+                                      return Container(
+                                        height: 40,
+                                        margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: states.isHovering ? theme.resources.subtleFillColorSecondary : Colors.transparent,
+                                          borderRadius: BorderRadius.circular(6),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            SizedBox(
+                                              width: 40,
+                                              child: Center(
+                                                child: fluent.Icon(icon, size: 18, color: theme.typography.body?.color),
+                                              ),
+                                            ),
+                                            Expanded(
+                                              child: Padding(
+                                                padding: const EdgeInsets.only(left: 8.0),
+                                                child: Text('主题', style: const TextStyle(fontWeight: FontWeight.normal), overflow: TextOverflow.ellipsis),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    },
                                   );
                                 },
-                              );
-                            },
+                              ),
+                              const SizedBox(height: 8),
+                            ],
                           ),
-                          const SizedBox(height: 8),
-                    ],
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               // Main content area with RepaintBoundary

@@ -15,6 +15,7 @@ class ProviderConfigEntity {
   List<String> savedModels = [];
   String? lastSelectedModel;
   bool isActive = false;
+  bool isEnabled = true;
 }
 
 @collection
@@ -29,4 +30,7 @@ class AppSettingsEntity {
   String? llmAvatar;
   String themeMode = 'system';
   bool isStreamEnabled = true;
+  bool isSearchEnabled = false;
+  String searchEngine = 'duckduckgo';
+  String? lastSessionId;
 }

@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:convert';
+import 'dart:math' as math;
 import 'package:fluent_ui/fluent_ui.dart' as fluent;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -9,6 +11,7 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:super_clipboard/super_clipboard.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pasteboard/pasteboard.dart';
+import 'package:image_picker/image_picker.dart';
 import '../chat_provider.dart';
 import '../../domain/message.dart';
 import 'reasoning_display.dart';
@@ -17,7 +20,9 @@ import '../../../settings/presentation/settings_provider.dart';
 import '../../../history/presentation/widgets/hover_image_preview.dart';
 
 class ChatView extends ConsumerStatefulWidget {
-  const ChatView({super.key});
+  final String sessionId;
+  
+  const ChatView({super.key, required this.sessionId});
   @override
   ConsumerState<ChatView> createState() => ChatViewState();
 }
@@ -26,25 +31,205 @@ class ChatViewState extends ConsumerState<ChatView> {
   final TextEditingController _controller = TextEditingController();
   late final ScrollController _scrollController;
   List<String> _attachments = [];
-  String? _sessionId;
+  
+  // Use the widget's sessionId
+  String get _sessionId => widget.sessionId;
+  
+  // Toast State
+  bool _toastVisible = false;
+  String _toastMessage = '';
+  IconData? _toastIcon;
+  Timer? _toastTimer;
+
+  void _showPillToast(String message, IconData icon) {
+    _toastTimer?.cancel();
+    setState(() {
+      _toastMessage = message;
+      _toastIcon = icon;
+      _toastVisible = true;
+    });
+    _toastTimer = Timer(const Duration(seconds: 2), () {
+      if (mounted) setState(() => _toastVisible = false);
+    });
+  }
+
+  Widget _buildPillToastWidget() {
+    final theme = fluent.FluentTheme.of(context);
+    return Positioned(
+      top: 60, // Top margin
+      left: 0,
+      right: 0,
+      child: IgnorePointer(
+        ignoring: !_toastVisible,
+        child: Center(
+          child: AnimatedOpacity(
+            opacity: _toastVisible ? 1.0 : 0.0,
+            duration: const Duration(milliseconds: 200),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(
+                color: theme.cardColor,
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.12),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+                border: Border.all(
+                    color: theme.resources.dividerStrokeColorDefault,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_toastIcon != null) ...[
+                    Icon(_toastIcon, size: 18, color: Theme.of(context).colorScheme.primary),
+                    const SizedBox(width: 10),
+                  ],
+                  Text(
+                    _toastMessage,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: theme.typography.body?.color,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+
+  Future<void> _showMobileAttachmentOptions() async {
+    final theme = fluent.FluentTheme.of(context);
+    final isDark = theme.brightness == fluent.Brightness.dark;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 8),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 20),
+              _buildAttachmentOption(
+                icon: Icons.camera_alt_outlined,
+                label: '拍照',
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  await _pickImage(ImageSource.camera);
+                },
+              ),
+              _buildAttachmentOption(
+                icon: Icons.photo_library_outlined,
+                label: '从相册选择',
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  await _pickImage(ImageSource.gallery);
+                },
+              ),
+              _buildAttachmentOption(
+                icon: Icons.folder_open_outlined,
+                label: '选择文件',
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _pickFiles();
+                },
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAttachmentOption({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        child: Row(
+          children: [
+            Icon(icon, size: 28, color: Theme.of(context).colorScheme.primary),
+            const SizedBox(width: 16),
+            Text(label, style: const TextStyle(fontSize: 17)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    final ImagePicker picker = ImagePicker();
+    try {
+      final XFile? image = await picker.pickImage(source: source);
+      if (image != null) {
+        // We'll use the path for now, consistent with how desktop file selection works
+        // If image.path is empty (web), we'd need readAsBytes. But this is mobile logic.
+        setState(() {
+           _attachments.add(image.path);
+        });
+      }
+    } catch (e) {
+      debugPrint('Error picking image: $e');
+    }
+  }
   bool _hasRestoredPosition = false;
+  ChatNotifier? _notifier;
   
   @override
   void initState() {
     super.initState();
-    _sessionId = ref.read(selectedHistorySessionIdProvider);
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
+    
+    // Subscribe to session-specific state changes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _notifier = ref.read(chatSessionManagerProvider).getOrCreate(_sessionId);
+      _notifier!.addLocalListener(_onNotifierStateChanged);
+    });
+  }
+  
+  void _onNotifierStateChanged() {
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   void _restoreScrollPosition() {
-    final state = ref.read(historyChatProvider).currentState;
+    final notifier = ref.read(chatSessionManagerProvider).getOrCreate(_sessionId);
+    final state = notifier.currentState;
     if (_hasRestoredPosition || state.messages.isEmpty) return;
     
     // If we have messages and haven't restored yet
     _hasRestoredPosition = true;
     
-    final savedOffset = ref.read(historyChatProvider).savedScrollOffset;
+    final savedOffset = notifier.savedScrollOffset;
     final isAutoScroll = state.isAutoScrollEnabled;
     
     if (savedOffset != null || isAutoScroll) {
@@ -76,16 +261,15 @@ class ChatViewState extends ConsumerState<ChatView> {
     // Re-enable auto-scroll if close to bottom (0)
     final autoScroll = currentScroll < 100;
       
-    // Update state via notifier
-    if (_sessionId != null) {
-      ref.read(historyChatProvider).setAutoScrollEnabled(autoScroll);
-    }
+    // Update state via notifier (session-specific)
+    ref.read(chatSessionManagerProvider).getOrCreate(_sessionId).setAutoScrollEnabled(autoScroll);
   }
   
 
   
   @override
   void dispose() {
+    _notifier?.removeLocalListener(_onNotifierStateChanged);
     _controller.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -273,7 +457,13 @@ class ChatViewState extends ConsumerState<ChatView> {
 
   Future<void> _sendMessage() async {
     final text = _controller.text;
-    if (text.trim().isEmpty && _attachments.isEmpty) return;
+    final settings = ref.read(settingsProvider);
+    print('DEBUG: UI _sendMessage triggered. Text: "$text", SearchEnabled: ${settings.isSearchEnabled}, Engine: ${settings.searchEngine}');
+    
+    if (text.trim().isEmpty && _attachments.isEmpty) {
+      print('DEBUG: UI _sendMessage ignored (empty)');
+      return;
+    }
     final currentSessionId = ref.read(selectedHistorySessionIdProvider);
     
     // Capture attachments before clearing
@@ -309,22 +499,92 @@ class ChatViewState extends ConsumerState<ChatView> {
 
   @override
   Widget build(BuildContext context) {
-    final chatState = ref.watch(historyChatStateProvider);
+    // Get session-specific notifier
+    final notifier = ref.read(chatSessionManagerProvider).getOrCreate(_sessionId);
+    final chatState = notifier.currentState;
+    
+    final messages = chatState.messages;
+    final isLoading = chatState.isLoading;
+    final hasUnreadResponse = chatState.hasUnreadResponse;
+    final isLoadingHistory = chatState.isLoadingHistory;
+    
     final settings = ref.watch(settingsProvider);
     
     // Attempt to restore scroll position if needed
     _restoreScrollPosition();
     
-
-    
     // Mark as read if displaying unread content
-    if (chatState.hasUnreadResponse) {
+    if (hasUnreadResponse) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        ref.read(historyChatProvider).markAsRead();
+        notifier.markAsRead();
       });
     }
     
-    return Column(
+    // Show loading indicator while history is loading
+    if (isLoadingHistory && messages.isEmpty) {
+      return Stack(
+        children: [
+          Positioned.fill(
+            child: Column(
+              children: [
+                const Expanded(
+                  child: Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                ),
+                Container(
+                  padding: EdgeInsets.fromLTRB(
+                    Platform.isWindows ? 12 : 0, 
+                    Platform.isWindows ? 0 : 0,
+                    Platform.isWindows ? 12 : 0, 
+                    Platform.isWindows ? 12 : 0
+                  ),
+                  child: Platform.isWindows
+                      ? _buildDesktopInputArea(isLoading, settings)
+                      : _buildMobileInputArea(isLoading, settings),
+                ),
+              ],
+            ),
+          ),
+          _buildPillToastWidget(),
+        ],
+      );
+    }
+    
+    // --- Grouping Logic Start ---
+    List<DisplayItem> displayItems = [];
+    MergedGroupItem? currentGroup;
+
+    // messages is [Oldest -> Newest]. Iterate from Oldest to Newest to build groups.
+    for (int i = 0; i < messages.length; i++) {
+       final msg = messages[i];
+       
+       if (msg.isUser) {
+          // Close valid group if any
+          if (currentGroup != null) {
+             displayItems.add(currentGroup);
+             currentGroup = null;
+          }
+          displayItems.add(SingleMessageItem(msg));
+       } else {
+          // Assistant or Tool
+          if (currentGroup == null) {
+             currentGroup = MergedGroupItem([msg]);
+          } else {
+             currentGroup.messages.add(msg);
+          }
+       }
+    }
+    // Add final group
+    if (currentGroup != null) {
+       displayItems.add(currentGroup);
+    }
+    // --- Grouping Logic End ---
+
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: Column(
       children: [
         Expanded(
           child: NotificationListener<ScrollNotification>(
@@ -357,44 +617,76 @@ class ChatViewState extends ConsumerState<ChatView> {
                           controller: _scrollController,
                           reverse: true,
                           padding: const EdgeInsets.all(16),
-                          itemCount: chatState.messages.length,
+                          itemCount: displayItems.length,
                           itemBuilder: (context, index) {
-                            final reversedIndex = chatState.messages.length - 1 - index;
-                            final msg = chatState.messages[reversedIndex];
-                            final isLatest = index == 0;
-                            final isGenerating = isLatest && !msg.isUser && chatState.isLoading;
+                             // index 0 is BOTTOM (Latest Item)
+                             // displayItems is [Oldest, ..., Newest]
+                             // So reversedIndex = displayItems.length - 1 - index
+                             final reversedIndex = displayItems.length - 1 - index;
+                             final item = displayItems[reversedIndex];
+                             
+                             final isLatest = index == 0;
+                             final isGenerating = isLatest && isLoading;
 
-                            if (index == 0) {
-                              return TweenAnimationBuilder<double>(
-                                tween: Tween(begin: 0.0, end: 1.0),
-                                duration: const Duration(milliseconds: 300),
-                                curve: Curves.easeOutCubic,
-                                builder: (context, value, child) {
-                                  return Opacity(
-                                    opacity: value,
-                                    child: Transform.translate(
-                                      offset: Offset(0, 20 * (1 - value)),
-                                      child: child,
-                                    ),
-                                  );
-                                },
-                                child: RepaintBoundary(
-                                  child: MessageBubble(
-                                      key: ValueKey(msg.id),
-                                      message: msg,
-                                      isLast: isLatest,
-                                      isGenerating: isGenerating),
-                                ),
-                              );
-                            } else {
-                              return RepaintBoundary(
-                                child: MessageBubble(
+                             if (item is MergedGroupItem) {
+                                return MergedMessageBubble(
+                                   key: ValueKey(item.id),
+                                   group: item,
+                                   isLast: isLatest,
+                                   isGenerating: isGenerating,
+                                );
+                             } else if (item is SingleMessageItem) {
+                                final msg = item.message;
+                                
+                                // Merge Logic for Users (User vs User)
+                                bool mergeTop = false;
+                                if (reversedIndex > 0) {
+                                  final prevItem = displayItems[reversedIndex - 1];
+                                  if (prevItem is SingleMessageItem && prevItem.message.isUser) {
+                                     mergeTop = true;
+                                  }
+                                }
+                                bool mergeBottom = false;
+                                if (reversedIndex < displayItems.length - 1) {
+                                   final nextItem = displayItems[reversedIndex + 1];
+                                   if (nextItem is SingleMessageItem && nextItem.message.isUser) {
+                                      mergeBottom = true;
+                                   }
+                                }
+                                
+                                bool showAvatar = !mergeTop;
+
+                                final bubble = MessageBubble(
                                     key: ValueKey(msg.id),
                                     message: msg,
                                     isLast: isLatest,
-                                    isGenerating: isGenerating),
-                              );
-                            }
+                                    isGenerating: false, // User messages don't generate
+                                    showAvatar: showAvatar,
+                                    mergeTop: mergeTop,
+                                    mergeBottom: mergeBottom
+                                );
+                                
+                                // Animation only for latest?
+                                if (isLatest) {
+                                  return TweenAnimationBuilder<double>(
+                                    tween: Tween(begin: 0.0, end: 1.0),
+                                    duration: const Duration(milliseconds: 300),
+                                    curve: Curves.easeOutCubic,
+                                    builder: (context, value, child) {
+                                      return Opacity(
+                                        opacity: value,
+                                        child: Transform.translate(
+                                          offset: Offset(0, 20 * (1 - value)),
+                                          child: child,
+                                        ),
+                                      );
+                                    },
+                                    child: bubble,
+                                  );
+                                }
+                                return bubble;
+                             }
+                             return const SizedBox.shrink();
                           },
                           physics: const ClampingScrollPhysics(),
                         ),
@@ -404,54 +696,75 @@ class ChatViewState extends ConsumerState<ChatView> {
                 : Scrollbar(
                     controller: _scrollController,
                     child: ListView.builder(
-                      cacheExtent: 2000,
-                      key: ValueKey(ref.watch(selectedHistorySessionIdProvider)),
-                      controller: _scrollController,
-                      reverse: true,
-                      padding: const EdgeInsets.all(16),
-                      itemCount: chatState.messages.length,
-                      itemBuilder: (context, index) {
-                        final reversedIndex = chatState.messages.length - 1 - index;
-                        final msg = chatState.messages[reversedIndex];
-                        final isLatest = index == 0;
-                        final isGenerating = isLatest && !msg.isUser && chatState.isLoading;
+                          cacheExtent: 2000,
+                          key: ValueKey(ref.watch(selectedHistorySessionIdProvider)),
+                          controller: _scrollController,
+                          reverse: true,
+                          padding: const EdgeInsets.all(16),
+                          itemCount: displayItems.length,
+                          itemBuilder: (context, index) {
+                             final reversedIndex = displayItems.length - 1 - index;
+                             final item = displayItems[reversedIndex];
+                             final isLatest = index == 0;
+                             final isGenerating = isLatest && isLoading;
 
-                        if (index == 0) {
-                          return TweenAnimationBuilder<double>(
-                            tween: Tween(begin: 0.0, end: 1.0),
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeOutCubic,
-                            builder: (context, value, child) {
-                              return Opacity(
-                                opacity: value,
-                                child: Transform.translate(
-                                  offset: Offset(0, 20 * (1 - value)),
-                                  child: child,
-                                ),
-                              );
-                            },
-                            child: RepaintBoundary(
-                              child: MessageBubble(
-                                  key: ValueKey(msg.id),
-                                  message: msg,
-                                  isLast: isLatest,
-                                  isGenerating: isGenerating),
-                            ),
-                          );
-                        } else {
-                          return RepaintBoundary(
-                            child: MessageBubble(
-                                key: ValueKey(msg.id),
-                                message: msg,
-                                isLast: isLatest,
-                                isGenerating: isGenerating),
-                          );
-                        }
-                      },
-                      physics: const BouncingScrollPhysics(
-                          parent: AlwaysScrollableScrollPhysics()),
-                    ),
+                             if (item is MergedGroupItem) {
+                                return MergedMessageBubble(
+                                   key: ValueKey(item.id),
+                                   group: item,
+                                   isLast: isLatest,
+                                   isGenerating: isGenerating,
+                                );
+                             } else if (item is SingleMessageItem) {
+                                final msg = item.message;
+                                
+                                bool mergeTop = false;
+                                if (reversedIndex > 0) {
+                                  final prevItem = displayItems[reversedIndex - 1];
+                                  if (prevItem is SingleMessageItem && prevItem.message.isUser) mergeTop = true;
+                                }
+                                bool mergeBottom = false;
+                                if (reversedIndex < displayItems.length - 1) {
+                                   final nextItem = displayItems[reversedIndex + 1];
+                                   if (nextItem is SingleMessageItem && nextItem.message.isUser) mergeBottom = true;
+                                }
+                                bool showAvatar = !mergeTop;
+
+                                final bubble = MessageBubble(
+                                    key: ValueKey(msg.id),
+                                    message: msg,
+                                    isLast: isLatest,
+                                    isGenerating: false,
+                                    showAvatar: showAvatar,
+                                    mergeTop: mergeTop,
+                                    mergeBottom: mergeBottom,
+                                );
+                                
+                                if (isLatest) {
+                                  return TweenAnimationBuilder<double>(
+                                    tween: Tween(begin: 0.0, end: 1.0),
+                                    duration: const Duration(milliseconds: 300),
+                                    curve: Curves.easeOutCubic,
+                                    builder: (context, value, child) {
+                                      return Opacity(
+                                        opacity: value,
+                                        child: Transform.translate(
+                                          offset: Offset(0, 20 * (1 - value)),
+                                          child: child,
+                                        ),
+                                      );
+                                    },
+                                    child: bubble,
+                                  );
+                                }
+                                return bubble;
+                             }
+                             return const SizedBox.shrink();
+                          },
+                          physics: const BouncingScrollPhysics(
+                              parent: AlwaysScrollableScrollPhysics()),
                   ),
+                ),
           ),
         ),
         if (_attachments.isNotEmpty)
@@ -505,55 +818,20 @@ class ChatViewState extends ConsumerState<ChatView> {
           ),
 
           child: Platform.isWindows
-              ? _buildDesktopInputArea(chatState, settings)
-              : _buildMobileInputArea(chatState, settings),
+              ? _buildDesktopInputArea(isLoading, settings)
+              : _buildMobileInputArea(isLoading, settings),
         ),
       ],
-    );
-  }
-
-  OverlayEntry? _streamToastEntry;
-
-  void _showStreamToast(bool isEnabled) {
-    if (Platform.isWindows) {
-      // Remove existing toast immediately to prevent stacking/overlap
-      _streamToastEntry?.remove();
-      _streamToastEntry = null;
-
-      final entry = OverlayEntry(
-        builder: (context) {
-          return Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: _StreamToastWidget(
-              isEnabled: isEnabled,
-              onClose: () {
-                _streamToastEntry?.remove();
-                _streamToastEntry = null;
-              },
             ),
-          );
-        },
+          ),
+          _buildPillToastWidget(),
+        ],
       );
-
-      Overlay.of(context).insert(entry);
-      _streamToastEntry = entry;
-    } else {
-      ScaffoldMessenger.of(context).clearSnackBars();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(isEnabled ? '已开启流式输出' : '已关闭流式输出'),
-          duration: const Duration(milliseconds: 1500),
-          behavior: SnackBarBehavior.floating,
-          width: 200,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        ),
-      );
-    }
   }
 
-  Widget _buildDesktopInputArea(ChatState chatState, SettingsState settings) {
+
+
+  Widget _buildDesktopInputArea(bool isLoading, SettingsState settings) {
     final theme = fluent.FluentTheme.of(context);
     return Container(
       decoration: BoxDecoration(
@@ -630,32 +908,9 @@ class ChatViewState extends ConsumerState<ChatView> {
                 ),
                 onPressed: _handlePaste,
               ),
-              
-              const Spacer(),
-              
-              // Feature Toggles (Stream / Clear) - Monochrome, reduced visual noise
-              // Feature Toggles (Stream / Clear) - Monochrome, reduced visual noise
-              fluent.IconButton(
-                icon: Icon(
-                  fluent.FluentIcons.lightning_bolt, 
-                  size: 16,
-                  color: settings.isStreamEnabled 
-                      ? theme.accentColor 
-                      : theme.resources.textFillColorSecondary,
-                ),
-                onPressed: () {
-                  final newState = !settings.isStreamEnabled;
-                  ref.read(settingsProvider.notifier).toggleStreamEnabled();
-                  _showStreamToast(newState);
-                },
-                style: fluent.ButtonStyle(
-                  backgroundColor: fluent.WidgetStateProperty.resolveWith((states) {
-                     if (settings.isStreamEnabled) return theme.accentColor.withOpacity(0.1);
-                     return Colors.transparent;
-                  }),
-                ),
-              ),
               const SizedBox(width: 4),
+
+              // Clear Context
               fluent.IconButton(
                 icon: const Icon(fluent.FluentIcons.broom, size: 16),
                 style: fluent.ButtonStyle(
@@ -684,10 +939,58 @@ class ChatViewState extends ConsumerState<ChatView> {
                   );
                 },
               ),
+
+              const SizedBox(width: 4),
+
+              // Stream Toggle
+              fluent.IconButton(
+                icon: Icon(
+                  fluent.FluentIcons.lightning_bolt, 
+                  size: 16,
+                  color: settings.isStreamEnabled 
+                      ? theme.accentColor 
+                      : theme.resources.textFillColorSecondary,
+                ),
+                onPressed: () {
+                  final newState = !settings.isStreamEnabled;
+                  ref.read(settingsProvider.notifier).toggleStreamEnabled();
+                  _showPillToast(newState ? '已开启流式传输' : '已关闭流式传输', fluent.FluentIcons.lightning_bolt);
+                },
+                style: fluent.ButtonStyle(
+                  backgroundColor: fluent.WidgetStateProperty.resolveWith((states) {
+                     if (settings.isStreamEnabled) return theme.accentColor.withOpacity(0.1);
+                     return Colors.transparent;
+                  }),
+                ),
+              ),
+
+              const SizedBox(width: 4),
+
+              // Search Toggle (Simplified)
+              fluent.IconButton(
+                icon: Icon(
+                  fluent.FluentIcons.globe,
+                  size: 16,
+                  color: settings.isSearchEnabled 
+                      ? theme.accentColor 
+                      : theme.resources.textFillColorSecondary,
+                ),
+                onPressed: () {
+                   final newState = !settings.isSearchEnabled;
+                   ref.read(historyChatProvider).toggleSearch();
+                   _showPillToast(newState ? '已开启联网搜索' : '已关闭联网搜索', fluent.FluentIcons.globe);
+                },
+                style: fluent.ButtonStyle(
+                  backgroundColor: fluent.WidgetStateProperty.resolveWith((states) {
+                     if (settings.isSearchEnabled) return theme.accentColor.withOpacity(0.1);
+                     return Colors.transparent;
+                  }),
+                ),
+              ),
               
-              const SizedBox(width: 8),
+              const Spacer(),
               
-              if (chatState.isLoading)
+              if (isLoading)
                 fluent.IconButton(
                   icon: const Icon(fluent.FluentIcons.stop_solid, size: 16, color: Colors.red),
                   onPressed: () => ref.read(historyChatProvider).abortGeneration(),
@@ -710,7 +1013,7 @@ class ChatViewState extends ConsumerState<ChatView> {
     );
   }
 
-  Widget _buildMobileInputArea(ChatState chatState, SettingsState settings) {
+  Widget _buildMobileInputArea(bool isLoading, SettingsState settings) {
     return Container(
       margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
       padding: const EdgeInsets.fromLTRB(16, 12, 8, 8),
@@ -754,28 +1057,22 @@ class ChatViewState extends ConsumerState<ChatView> {
             children: [
               // Left Side: Feature Toggles
               
-              // Stream Toggle
+              // Attachment Button
               InkWell(
-                onTap: () {
-                  final newState = !settings.isStreamEnabled;
-                  ref.read(settingsProvider.notifier).toggleStreamEnabled();
-                  _showStreamToast(newState);
-                },
+                onTap: _showMobileAttachmentOptions,
                 borderRadius: BorderRadius.circular(20),
                 child: Padding(
                   padding: const EdgeInsets.all(6.0),
                   child: Icon(
-                    settings.isStreamEnabled ? Icons.bolt : Icons.article_outlined,
-                    color: settings.isStreamEnabled 
-                        ? Theme.of(context).colorScheme.primary 
-                        : Colors.grey,
-                    size: 24,
+                    fluent.FluentIcons.attach,
+                    color: Theme.of(context).colorScheme.outline,
+                    size: 26,
                   ),
                 ),
               ),
-              
+
               const SizedBox(width: 4),
-              
+
               // Clear Context
               InkWell(
                 onTap: () {
@@ -786,79 +1083,91 @@ class ChatViewState extends ConsumerState<ChatView> {
                       content: const Text('确定要清空当前对话的历史记录吗？此操作不可撤销。'),
                       actions: [
                         TextButton(
-                          onPressed: () => Navigator.pop(ctx),
                           child: const Text('取消'),
+                          onPressed: () => Navigator.pop(ctx),
                         ),
-                        TextButton(
+                        FilledButton(
+                          child: const Text('确定'),
                           onPressed: () {
                             Navigator.pop(ctx);
                             ref.read(historyChatProvider).clearContext();
                           },
-                          child: const Text('确定'),
                         ),
                       ],
                     ),
                   );
                 },
                 borderRadius: BorderRadius.circular(20),
-                child: const Padding(
-                  padding: EdgeInsets.all(6.0),
+                child: Padding(
+                  padding: const EdgeInsets.all(6.0),
                   child: Icon(
-                    Icons.cleaning_services_outlined,
-                    color: Colors.grey,
-                    size: 22,
+                    fluent.FluentIcons.broom,
+                    color: Theme.of(context).colorScheme.outline,
+                    size: 24,
                   ),
                 ),
               ),
 
-              const Spacer(),
+              const SizedBox(width: 4),
 
-              // Right Side: Actions
-              
-              // New Chat (+)
-              IconButton(
-                icon: const Icon(Icons.add, size: 24, color: Colors.grey),
-                onPressed: () {
-                  ref.read(selectedHistorySessionIdProvider.notifier).state =
-                      'new_chat';
+              // Stream Toggle
+              InkWell(
+                onTap: () {
+                  final newState = !settings.isStreamEnabled;
+                  ref.read(settingsProvider.notifier).toggleStreamEnabled();
+                  _showPillToast(newState ? '已开启流式传输' : '已关闭流式传输', fluent.FluentIcons.lightning_bolt);
                 },
-                tooltip: '新对话',
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-              ),
-              
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                child: IconButton(
-                    icon: const Icon(Icons.attach_file, size: 22, color: Colors.grey),
-                    onPressed: _pickFiles,
-                    tooltip: '添加附件',
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                  ),
-              ),
-              
-              // Send/Stop Button (Circular)
-              Material(
-                color: chatState.isLoading 
-                    ? Colors.red.withOpacity(0.1) 
-                    : Theme.of(context).colorScheme.surfaceContainerHighest,
-                shape: const CircleBorder(),
-                clipBehavior: Clip.antiAlias,
-                child: InkWell(
-                  onTap: chatState.isLoading
-                      ? () => ref.read(historyChatProvider).abortGeneration()
-                      : _sendMessage,
-                  child: Container(
-                    width: 36,
-                    height: 36,
-                    alignment: Alignment.center,
-                    child: chatState.isLoading
-                        ? const Icon(Icons.stop_rounded, color: Colors.red, size: 24)
-                        : const Icon(Icons.arrow_upward, size: 20),
+                borderRadius: BorderRadius.circular(20),
+                child: Padding(
+                  padding: const EdgeInsets.all(6.0),
+                  child: Icon(
+                    fluent.FluentIcons.lightning_bolt,
+                    color: settings.isStreamEnabled 
+                        ? Theme.of(context).colorScheme.primary 
+                        : Colors.grey,
+                    size: 24,
                   ),
                 ),
               ),
+
+              const SizedBox(width: 4),
+
+              // Search Toggle
+               InkWell(
+                onTap: () {
+                   final newState = !settings.isSearchEnabled;
+                   ref.read(historyChatProvider).toggleSearch();
+                   _showPillToast(newState ? '已开启联网搜索' : '已关闭联网搜索', fluent.FluentIcons.globe);
+                },
+                onLongPress: () {
+                   // Todo: Show bottom sheet for engine selection
+                },
+                borderRadius: BorderRadius.circular(20),
+                child: Padding(
+                  padding: const EdgeInsets.all(6.0),
+                  child: Icon(
+                    fluent.FluentIcons.globe,
+                    color: settings.isSearchEnabled 
+                        ? Theme.of(context).colorScheme.primary 
+                        : Colors.grey,
+                    size: 24,
+                  ),
+                ),
+              ),
+              
+              const Spacer(),
+              
+              // Send Button (Action depends on loading state)
+              if (isLoading)
+                IconButton(
+                  icon: const Icon(fluent.FluentIcons.stop, color: Colors.red),
+                  onPressed: () => ref.read(historyChatProvider).abortGeneration(),
+                )
+              else
+                IconButton(
+                  icon: Icon(fluent.FluentIcons.send, color: Theme.of(context).colorScheme.primary),
+                  onPressed: _sendMessage,
+                ),
             ],
           ),
         ],
@@ -871,8 +1180,20 @@ class MessageBubble extends ConsumerStatefulWidget {
   final Message message;
   final bool isLast;
   final bool isGenerating;
-  const MessageBubble(
-      {super.key, required this.message, required this.isLast, this.isGenerating = false});
+  final bool showAvatar;
+  final bool mergeTop;
+  final bool mergeBottom;
+  
+  const MessageBubble({
+    super.key, 
+    required this.message, 
+    required this.isLast, 
+    this.isGenerating = false, 
+    this.showAvatar = true,
+    this.mergeTop = false,
+    this.mergeBottom = false,
+  });
+
   @override
   ConsumerState<MessageBubble> createState() =>
       MessageBubbleState();
@@ -1047,7 +1368,10 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
       onEnter: (_) => Platform.isWindows ? setState(() => _isHovering = true) : null,
       onExit: (_) => Platform.isWindows ? setState(() => _isHovering = false) : null,
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 8),
+        margin: EdgeInsets.only(
+          top: widget.mergeTop ? 2 : 8,
+          bottom: widget.mergeBottom ? 2 : 16, // Default was implicit separation
+        ),
         child: Column(
           crossAxisAlignment:
               isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
@@ -1058,12 +1382,15 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (!isUser) ...[
-                  _buildAvatar(
-                    avatarPath: settingsState.llmAvatar,
-                    fallbackIcon: Icons.smart_toy,
-                    backgroundColor: Colors.teal,
-                  ),
-                  const SizedBox(width: 8),
+                  if (widget.showAvatar) ...[
+                    _buildAvatar(
+                      avatarPath: settingsState.llmAvatar,
+                      fallbackIcon: Icons.smart_toy,
+                      backgroundColor: Colors.teal,
+                    ),
+                    const SizedBox(width: 8),
+                  ] else
+                    const SizedBox(width: 40),
                 ],
                 Flexible(
                   child: Column(
@@ -1071,10 +1398,11 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
                         ? CrossAxisAlignment.end
                         : CrossAxisAlignment.start,
                     children: [
-                      Padding(
-                        padding:
-                            const EdgeInsets.only(bottom: 4, left: 4, right: 4),
-                        child: Column(
+                      if (widget.showAvatar)
+                        Padding(
+                          padding:
+                              const EdgeInsets.only(bottom: 4, left: 4, right: 4),
+                          child: Column(
                           crossAxisAlignment: isUser
                               ? CrossAxisAlignment.end
                               : CrossAxisAlignment.start,
@@ -1219,18 +1547,20 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
                                                   Padding(
                                                 padding: const EdgeInsets.only(
                                                     right: 8),
-                                                child: MouseRegion(
-                                                  cursor:
-                                                      SystemMouseCursors.click,
-                                                  child: GestureDetector(
-                                                    onTap: () => setState(() =>
-                                                        _newAttachments
-                                                            .removeAt(index)),
-                                                    child: Container(
-                                                      padding: const EdgeInsets
-                                                          .symmetric(
-                                                          horizontal: 8,
-                                                          vertical: 4),
+                                                child: HoverImagePreview(
+                                                  imagePath: _newAttachments[index],
+                                                  child: MouseRegion(
+                                                    cursor:
+                                                        SystemMouseCursors.click,
+                                                    child: GestureDetector(
+                                                      onTap: () => setState(() =>
+                                                          _newAttachments
+                                                              .removeAt(index)),
+                                                      child: Container(
+                                                        padding: const EdgeInsets
+                                                            .symmetric(
+                                                            horizontal: 8,
+                                                            vertical: 4),
                                                       decoration: BoxDecoration(
                                                         color: theme.accentColor
                                                             .withOpacity(0.1),
@@ -1279,6 +1609,7 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
                                                       ),
                                                     ),
                                                   ),
+                                                ),
                                                 ),
                                               ),
                                             ),
@@ -1333,6 +1664,8 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
                                   ),
                                 ],
                               )
+                            else if (message.role == 'tool')
+                              BuildToolOutput(content: message.content)
                             else if (isUser)
                               SelectableText(
                                 message.content,
@@ -1432,7 +1765,7 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
             ),
             Platform.isWindows
                 ? Visibility(
-                    visible: _isHovering && !_isEditing,
+                    visible: !_isEditing, // Always visible on desktop, hidden when editing
                     maintainSize: true,
                     maintainAnimation: true,
                     maintainState: true,
@@ -1578,107 +1911,645 @@ class MobileActionButton extends StatelessWidget {
 }
 
 
-class _StreamToastWidget extends StatefulWidget {
-  final bool isEnabled;
-  final VoidCallback onClose;
 
-  const _StreamToastWidget({
-    required this.isEnabled,
-    required this.onClose,
-  });
+
+class BuildToolOutput extends StatefulWidget {
+  final String content;
+  const BuildToolOutput({super.key, required this.content});
 
   @override
-  State<_StreamToastWidget> createState() => _StreamToastWidgetState();
+  State<BuildToolOutput> createState() => _BuildToolOutputState();
 }
 
-class _StreamToastWidgetState extends State<_StreamToastWidget>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _opacity;
-  late Animation<Offset> _slide;
-  Timer? _closeTimer;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 300),
-    );
-    
-    _opacity = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
-    _slide = Tween<Offset>(begin: const Offset(0, -0.5), end: Offset.zero)
-        .animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutBack));
-        
-    _controller.forward();
-
-    // Auto-close countdown (shorter for minimalist feel)
-    _closeTimer = Timer(const Duration(milliseconds: 1500), _startClosing);
-  }
-
-  void _startClosing() {
-    if (!mounted) return;
-    _controller.reverse().then((_) {
-      if (mounted) widget.onClose();
-    });
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    _closeTimer?.cancel();
-    super.dispose();
-  }
+class _BuildToolOutputState extends State<BuildToolOutput> {
+  bool _isExpanded = false;
 
   @override
   Widget build(BuildContext context) {
+    // Try parse JSON
+    Map<String, dynamic>? data;
+    try {
+      data = jsonDecode(widget.content);
+    } catch (_) {}
+
     final theme = fluent.FluentTheme.of(context);
-    // Minimalist Apple-style toast
-    return SlideTransition(
-      position: _slide,
-      child: FadeTransition(
-        opacity: _opacity,
-        child: Align(
-          alignment: Alignment.topCenter,
-          child: Container(
-            margin: const EdgeInsets.only(top: 20),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: BoxDecoration(
-              color: theme.brightness == Brightness.dark 
-                  ? Colors.white.withOpacity(0.9) 
-                  : Colors.black.withOpacity(0.8),
-              borderRadius: BorderRadius.circular(30),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
+    final results = data != null ? data['results'] as List? : null;
+    final count = results?.length ?? 0;
+    final engine = data?['engine'] ?? 'Search';
+
+    if (count == 0) {
+      if (data?.containsKey('message') == true) {
+         return Text(
+           'Search Error: ${data!['message']}', 
+           style: TextStyle(color: Colors.red.withOpacity(0.8), fontSize: 13)
+         );
+      }
+      return const SizedBox.shrink(); // Hide empty
+    }
+
+    // Check for search results structure
+    if (results != null && results.isNotEmpty) {
+      return Container(
+        margin: const EdgeInsets.only(top: 8, bottom: 8),
+        decoration: BoxDecoration(
+          color: theme.cardColor,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: theme.resources.controlStrokeColorDefault),
+        ),
+        child: Material(
+          type: MaterialType.transparency,
+          child: Column(
+            children: [
+              InkWell(
+                onTap: () => setState(() => _isExpanded = !_isExpanded),
+                borderRadius: BorderRadius.circular(12),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  child: Row(
+                    children: [
+                      // Favicon Pile
+                      SizedBox(
+                        height: 20,
+                        width: 20.0 + (math.min(results.length, 3) - 1) * 12.0,
+                        child: Stack(
+                          children: List.generate(math.min(results.length, 3), (index) {
+                            final url = results[index]['link'] as String? ?? '';
+                            Uri? uri;
+                            try { uri = Uri.parse(url); } catch (_) {}
+                            final domain = uri?.host ?? '';
+                            final faviconUrl = 'https://www.google.com/s2/favicons?domain=$domain&sz=64';
+                            
+                            return Positioned(
+                              left: index * 12.0,
+                              child: Container(
+                                width: 20,
+                                height: 20,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Colors.white,
+                                  border: Border.all(
+                                    color: theme.scaffoldBackgroundColor, 
+                                    width: 2
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.1),
+                                      blurRadius: 2,
+                                      offset: const Offset(0, 1),
+                                    ),
+                                  ],
+                                ),
+                                child: ClipOval(
+                                  child: domain.isNotEmpty 
+                                    ? Image.network(
+                                        faviconUrl,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (_, __, ___) => const Icon(fluent.FluentIcons.globe, size: 12, color: Colors.grey),
+                                      )
+                                    : const Icon(fluent.FluentIcons.globe, size: 12, color: Colors.grey),
+                                ),
+                              ),
+                            );
+                          }),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        '$count 个引用内容', 
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: theme.typography.body?.color?.withOpacity(0.9),
+                        ),
+                      ),
+                      const Spacer(),
+                      Icon(
+                        _isExpanded ? fluent.FluentIcons.chevron_up : fluent.FluentIcons.chevron_down,
+                        size: 10,
+                        color: theme.typography.caption?.color,
+                      ),
+                    ],
+                  ),
                 ),
-              ],
+              ),
+              if (_isExpanded)
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border(top: BorderSide(color: theme.resources.controlStrokeColorDefault)),
+                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Column(
+                    children: List.generate(results.length, (index) {
+                      final item = results[index];
+                      final idx = item['index'] ?? (index + 1);
+                      return InkWell(
+                        onTap: () async {
+                           final link = item['link'] as String?;
+                           if (link != null) {
+                             // Try open link
+                              // Since we don't have launchUrl readily available in this context without imports checking, 
+                              // we assume specific implementation or just ignore for now as this is UI focused.
+                              // Actually, let's try to find if url_launcher is used elsewhere.
+                              // For now, simple print or ignore. The user asked for UI.
+                           }
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                width: 18, 
+                                height: 18,
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: theme.accentColor.withOpacity(0.1),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Text(
+                                  '$idx', 
+                                  style: TextStyle(
+                                    fontSize: 10, 
+                                    fontWeight: FontWeight.bold,
+                                    color: theme.accentColor,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      item['title'] ?? 'No Title',
+                                      style: const TextStyle(
+                                        fontSize: 12, 
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    if (item['link'] != null)
+                                      Text(
+                                        item['link'],
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          color: theme.typography.caption?.color,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      );
+    }
+            
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        GestureDetector(
+          onTap: () => setState(() => _isExpanded = !_isExpanded),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: theme.accentColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
-                  widget.isEnabled ? fluent.FluentIcons.lightning_bolt : fluent.FluentIcons.clear, 
-                  size: 14, 
-                  color: theme.brightness == Brightness.dark ? Colors.black : Colors.white
+                  _isExpanded ? fluent.FluentIcons.chevron_down : fluent.FluentIcons.chevron_right,
+                  size: 10,
+                  color: theme.accentColor,
                 ),
                 const SizedBox(width: 8),
+                Icon(fluent.FluentIcons.search, size: 14, color: theme.accentColor),
+                const SizedBox(width: 8),
                 Text(
-                  widget.isEnabled ? '流式输出 On' : '流式输出 Off',
+                  '$count Search Results ($engine)',
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
-                    color: theme.brightness == Brightness.dark ? Colors.black : Colors.white,
-                    decoration: TextDecoration.none,
+                    color: theme.accentColor,
                   ),
                 ),
               ],
             ),
           ),
         ),
+        if (_isExpanded) ...[
+          const SizedBox(height: 8),
+          ...results!.map((r) {
+            final title = r['title'] ?? 'No Title';
+            final link = r['link'] ?? '';
+            final snippet = r['snippet'] ?? '';
+            return Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: theme.cardColor,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: theme.resources.dividerStrokeColorDefault),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  if (link.isNotEmpty)
+                    Text(link, style: TextStyle(color: Colors.blue, fontSize: 11), maxLines: 1, overflow: TextOverflow.ellipsis),
+                  const SizedBox(height: 4),
+                  Text(snippet, style: TextStyle(fontSize: 12, color: theme.typography.body!.color!.withOpacity(0.8)), maxLines: 3, overflow: TextOverflow.ellipsis),
+                ],
+              ),
+            );
+          }).toList(),
+        ],
+      ],
+    );
+  }
+}
+
+// --- Merged Message Support ---
+
+abstract class DisplayItem {
+  String get id;
+}
+
+class SingleMessageItem extends DisplayItem {
+  final Message message;
+  SingleMessageItem(this.message);
+  @override
+  String get id => message.id;
+}
+
+class MergedGroupItem extends DisplayItem {
+  final List<Message> messages;
+  MergedGroupItem(this.messages);
+  @override
+  String get id => messages.first.id;
+  
+  Message get latestMessage => messages.last;
+}
+
+class MergedMessageBubble extends ConsumerStatefulWidget {
+  final MergedGroupItem group;
+  final bool isLast;
+  final bool isGenerating;
+
+  const MergedMessageBubble({
+    super.key,
+    required this.group,
+    this.isLast = false,
+    this.isGenerating = false,
+  });
+
+  @override
+  ConsumerState<MergedMessageBubble> createState() => _MergedMessageBubbleState();
+}
+
+class _MergedMessageBubbleState extends ConsumerState<MergedMessageBubble> with AutomaticKeepAliveClientMixin {
+  bool _isHovering = false;
+  bool _isEditing = false;
+  late TextEditingController _editController;
+  final FocusNode _focusNode = FocusNode();
+
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  void initState() {
+    super.initState();
+    final lastMsg = widget.group.messages.last;
+    _editController = TextEditingController(text: lastMsg.content);
+  }
+
+  @override
+  void dispose() {
+    _editController.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  void _handleAction(String action) {
+    final group = widget.group;
+    final notifier = ref.read(historyChatProvider);
+    // For regeneration, we start from the FIRST message in the group (the trigger)
+    // For delete, we delete ALL messages in the group
+    // For copy/edit, we target the LAST message (usually the visible text)
+    
+    switch (action) {
+      case 'retry':
+        notifier.regenerateResponse(group.messages.first.id);
+        break;
+      case 'edit':
+        setState(() {
+          _isEditing = true;
+          // Update controller with latest content just in case
+          _editController.text = group.messages.last.content;
+        });
+        WidgetsBinding.instance.addPostFrameCallback((_) => _focusNode.requestFocus());
+        break;
+      case 'copy':
+        final text = group.messages.map((m) => m.content).join('\n').trim();
+        final item = DataWriterItem();
+        item.add(Formats.plainText(text.isNotEmpty ? text : group.messages.last.content));
+        SystemClipboard.instance?.write([item]);
+        break;
+      case 'delete':
+        for (final msg in group.messages) {
+           notifier.deleteMessage(msg.id);
+        }
+        break;
+    }
+  }
+
+  void _saveEdit() {
+     final lastMsg = widget.group.messages.last;
+     if (_editController.text.trim().isNotEmpty) {
+       ref.read(historyChatProvider).editMessage(lastMsg.id, _editController.text);
+     }
+     setState(() {
+       _isEditing = false;
+     });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    final theme = fluent.FluentTheme.of(context);
+    final messages = widget.group.messages;
+    final lastMsg = messages.last;
+
+    final headerMsg = messages.firstWhere((m) => m.role != 'tool', orElse: () => messages.last);
+
+    return MouseRegion(
+      onEnter: (_) => Platform.isWindows ? setState(() => _isHovering = true) : null,
+      onExit: (_) => Platform.isWindows ? setState(() => _isHovering = false) : null,
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            Container(
+               margin: const EdgeInsets.only(top: 2),
+               width: 32,
+               height: 32,
+               decoration: BoxDecoration(
+                 color: theme.accentColor,
+                 shape: BoxShape.circle,
+               ),
+               child: const Icon(fluent.FluentIcons.robot,
+                   color: Colors.white, size: 16),
+             ),
+            const SizedBox(width: 8),
+            
+            Flexible(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(left: 4, bottom: 4),
+                    child: Row(
+                      children: [
+                         Text(
+                          '${headerMsg.model ?? 'AI'} | ${headerMsg.provider ?? 'Assistant'}',
+                          style: TextStyle(
+                              color: Colors.grey[600], fontSize: 12),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '${headerMsg.timestamp.month}/${headerMsg.timestamp.day} ${headerMsg.timestamp.hour.toString().padLeft(2, '0')}:${headerMsg.timestamp.minute.toString().padLeft(2, '0')}',
+                          style: TextStyle(
+                              color: Colors.grey[600], fontSize: 11),
+                        ),
+                      ],
+                    ),
+                  ),
+                  
+                  // Content Box
+                  Container(
+                    padding: _isEditing ? EdgeInsets.zero : const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: _isEditing ? Colors.transparent : theme.cardColor,
+                      borderRadius: BorderRadius.circular(12),
+                      border: _isEditing ? null : Border.all(
+                         color: theme.resources.dividerStrokeColorDefault),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (!_isEditing) ...[
+                          ...messages.expand((msg) {
+                            return _buildMessageParts(msg, theme);
+                          }),
+                          if (widget.isGenerating && lastMsg.role != 'tool' && lastMsg.content.isEmpty && (lastMsg.reasoningContent?.isEmpty ?? true) && (lastMsg.toolCalls == null || lastMsg.toolCalls!.isEmpty))
+                             Padding(
+                                    padding: const EdgeInsets.only(top: 8.0),
+                                    child: Row(
+                                      children: [
+                                        SizedBox(
+                                          width: 16,
+                                          height: 16,
+                                          child: Platform.isWindows
+                                              ? const fluent.ProgressRing(strokeWidth: 2)
+                                              : const CircularProgressIndicator(strokeWidth: 2),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          '思考中...',
+                                          style: TextStyle(
+                                            color: theme.typography.body?.color?.withOpacity(0.6),
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                        ],
+                        
+                        if (_isEditing)
+                           Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: theme.cardColor,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                   fluent.TextBox(
+                                      controller: _editController,
+                                      focusNode: _focusNode,
+                                      maxLines: null,
+                                      minLines: 1,
+                                      decoration: const fluent.WidgetStatePropertyAll(fluent.BoxDecoration(
+                                         color: Colors.transparent,
+                                         border: Border.fromBorderSide(BorderSide.none),
+                                      )),
+                                      highlightColor: Colors.transparent,
+                                      unfocusedColor: Colors.transparent,
+                                      style: TextStyle(fontSize: 14, height: 1.5, color: theme.typography.body?.color),
+                                      onSubmitted: (_) => _saveEdit(),
+                                   ),
+                                   const SizedBox(height: 8),
+                                   Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                         ActionButton(
+                                            icon: fluent.FluentIcons.cancel,
+                                            tooltip: 'Cancel',
+                                            onPressed: () => setState(() => _isEditing = false)),
+                                         const SizedBox(width: 4),
+                                         ActionButton(
+                                            icon: fluent.FluentIcons.save,
+                                            tooltip: 'Save',
+                                            onPressed: _saveEdit),
+                                      ],
+                                   ),
+                                ],
+                              ),
+                           ),
+                      ],
+                    ),
+                  ),
+                  
+                  // Action Buttons logic (Similar to MessageBubble)
+                  Platform.isWindows
+                  ? Visibility(
+                      visible: !_isEditing && !widget.isGenerating, // Always visible on desktop, hidden when editing or generating
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 4, left: 4),
+                        child: Row(
+                          children: [
+                            ActionButton(
+                                icon: fluent.FluentIcons.refresh,
+                                tooltip: 'Retry',
+                                onPressed: () => _handleAction('retry')),
+                            const SizedBox(width: 4),
+                            ActionButton(
+                                icon: fluent.FluentIcons.edit,
+                                tooltip: 'Edit',
+                                onPressed: () => _handleAction('edit')),
+                            const SizedBox(width: 4),
+                            ActionButton(
+                                icon: fluent.FluentIcons.copy,
+                                tooltip: 'Copy',
+                                onPressed: () => _handleAction('copy')),
+                            const SizedBox(width: 4),
+                            ActionButton(
+                                icon: fluent.FluentIcons.delete,
+                                tooltip: 'Delete',
+                                onPressed: () => _handleAction('delete')),
+                          ],
+                        ),
+                      ),
+                    )
+                  : (!_isEditing && !widget.isGenerating)
+                      ? Padding(
+                          padding: const EdgeInsets.only(top: 4, left: 4),
+                          child: Row(
+                             mainAxisSize: MainAxisSize.min,
+                             children: [
+                               MobileActionButton(
+                                 icon: Icons.refresh,
+                                 onPressed: () => _handleAction('retry'),
+                               ),
+                               MobileActionButton(
+                                 icon: Icons.edit_outlined,
+                                 onPressed: () => _handleAction('edit'),
+                               ),
+                               MobileActionButton(
+                                 icon: Icons.copy_outlined,
+                                 onPressed: () => _handleAction('copy'),
+                               ),
+                               MobileActionButton(
+                                 icon: Icons.delete_outline,
+                                 onPressed: () => _handleAction('delete'),
+                               ),
+                             ],
+                          ),
+                        )
+                      : const SizedBox.shrink(),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
+  }
+
+  List<Widget> _buildMessageParts(Message message, fluent.FluentThemeData theme) {
+     if (message.role == 'tool') {
+       return [
+         Padding(
+           padding: const EdgeInsets.symmetric(vertical: 8.0),
+           child: BuildToolOutput(content: message.content),
+         )
+       ];
+     }
+     
+     // Assistant
+     final parts = <Widget>[];
+     
+     // Reasoning
+     if (message.reasoningContent != null && message.reasoningContent!.isNotEmpty) {
+        parts.add(
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8.0),
+            child: ReasoningDisplay(
+               content: message.reasoningContent!,
+               isWindows: Platform.isWindows,
+               isRunning: widget.isGenerating && message == widget.group.messages.last,
+               duration: message.reasoningDurationSeconds,
+               startTime: message.timestamp,
+            ),
+          )
+        );
+     }
+     
+     // Content
+     if (message.content.isNotEmpty) {
+       parts.add(
+          fluent.FluentTheme(
+            data: theme,
+            child: SelectionArea(
+              child: MarkdownBody(
+                data: message.content,
+                selectable: false,
+                softLineBreak: true,
+                styleSheet: MarkdownStyleSheet(
+                  p: TextStyle(
+                    fontSize: 14,
+                    height: 1.5,
+                    color: theme.typography.body!.color,
+                    fontFamily: 'Microsoft YaHei',
+                  ),
+                  code: TextStyle(
+                    backgroundColor: theme.micaBackgroundColor,
+                    color: theme.typography.body!.color,
+                    fontFamily: 'Consolas', 
+                  ),
+                ),
+              ),
+            ),
+          )
+       );
+     }
+     
+     return parts;
   }
 }

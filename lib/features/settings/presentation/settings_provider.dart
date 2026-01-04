@@ -14,6 +14,7 @@ class ProviderConfig {
   final Map<String, Map<String, dynamic>> modelSettings;
   final List<String> models;
   final String? selectedModel;
+  final bool isEnabled;
   ProviderConfig({
     required this.id,
     required this.name,
@@ -24,6 +25,7 @@ class ProviderConfig {
     this.modelSettings = const {},
     this.models = const [],
     this.selectedModel,
+    this.isEnabled = true,
   });
   ProviderConfig copyWith({
     String? name,
@@ -33,6 +35,7 @@ class ProviderConfig {
     Map<String, Map<String, dynamic>>? modelSettings,
     List<String>? models,
     String? selectedModel,
+    bool? isEnabled,
   }) {
     return ProviderConfig(
       id: id,
@@ -44,6 +47,7 @@ class ProviderConfig {
       modelSettings: modelSettings ?? this.modelSettings,
       models: models ?? this.models,
       selectedModel: selectedModel ?? this.selectedModel,
+      isEnabled: isEnabled ?? this.isEnabled,
     );
   }
 }
@@ -60,6 +64,8 @@ class SettingsState {
   final String? llmAvatar;
   final String themeMode;
   final bool isStreamEnabled;
+  final bool isSearchEnabled;
+  final String searchEngine;
   SettingsState({
     required this.providers,
     required this.activeProviderId,
@@ -72,6 +78,8 @@ class SettingsState {
     this.llmAvatar,
     this.themeMode = 'system',
     this.isStreamEnabled = true,
+    this.isSearchEnabled = false,
+    this.searchEngine = 'duckduckgo',
   });
   ProviderConfig get activeProvider =>
       providers.firstWhere((p) => p.id == activeProviderId);
@@ -92,6 +100,8 @@ class SettingsState {
     String? llmAvatar,
     String? themeMode,
     bool? isStreamEnabled,
+    bool? isSearchEnabled,
+    String? searchEngine,
   }) {
     return SettingsState(
       providers: providers ?? this.providers,
@@ -105,6 +115,8 @@ class SettingsState {
       llmAvatar: llmAvatar ?? this.llmAvatar,
       themeMode: themeMode ?? this.themeMode,
       isStreamEnabled: isStreamEnabled ?? this.isStreamEnabled,
+      isSearchEnabled: isSearchEnabled ?? this.isSearchEnabled,
+      searchEngine: searchEngine ?? this.searchEngine,
     );
   }
 }
@@ -121,6 +133,8 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     String? llmAvatar,
     String themeMode = 'system',
     bool isStreamEnabled = true,
+    bool isSearchEnabled = false,
+    String searchEngine = 'duckduckgo',
   })  : _storage = storage,
         super(SettingsState(
           providers: initialProviders,
@@ -132,6 +146,8 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
           llmAvatar: llmAvatar,
           themeMode: themeMode,
           isStreamEnabled: isStreamEnabled,
+          isSearchEnabled: isSearchEnabled,
+          searchEngine: searchEngine,
         ));
   void viewProvider(String id) {
     if (state.viewingProviderId != id) {
@@ -175,6 +191,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     Map<String, Map<String, dynamic>>? modelSettings,
     List<String>? models,
     String? selectedModel,
+    bool? isEnabled,
   }) async {
     final newProviders = state.providers.map((p) {
       if (p.id == id) {
@@ -186,6 +203,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
           modelSettings: modelSettings,
           models: models,
           selectedModel: selectedModel,
+          isEnabled: isEnabled,
         );
       }
       return p;
@@ -201,7 +219,8 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
       ..customParametersJson = jsonEncode(updatedProvider.customParameters)
       ..modelSettingsJson = jsonEncode(updatedProvider.modelSettings)
       ..savedModels = updatedProvider.models
-      ..lastSelectedModel = updatedProvider.selectedModel;
+      ..lastSelectedModel = updatedProvider.selectedModel
+      ..isEnabled = updatedProvider.isEnabled;
     await _storage.saveProvider(entity);
   }
 
@@ -230,10 +249,15 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     await updateProvider(id: newId, name: 'New Provider');
   }
 
+  Future<void> toggleProviderEnabled(String id) async {
+      final provider = state.providers.firstWhere((p) => p.id == id);
+      await updateProvider(id: id, isEnabled: !provider.isEnabled);
+  }
+
   Future<void> deleteProvider(String id) async {
     final providerToDelete = state.providers
         .firstWhere((p) => p.id == id, orElse: () => state.providers.first);
-    if (!providerToDelete.isCustom && id == 'openai') {
+    if (!providerToDelete.isCustom && id == 'root_openai_cannot_delete') {
       return;
     }
     final newProviders = state.providers.where((p) => p.id != id).toList();
@@ -344,6 +368,23 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     await _storage.saveAppSettings(
       activeProviderId: state.activeProviderId,
       isStreamEnabled: newValue,
+    );
+  }
+
+  Future<void> toggleSearchEnabled() async {
+    final newValue = !state.isSearchEnabled;
+    state = state.copyWith(isSearchEnabled: newValue);
+    await _storage.saveAppSettings(
+      activeProviderId: state.activeProviderId,
+      isSearchEnabled: newValue,
+    );
+  }
+
+  Future<void> setSearchEngine(String engine) async {
+    state = state.copyWith(searchEngine: engine);
+    await _storage.saveAppSettings(
+      activeProviderId: state.activeProviderId,
+      searchEngine: engine,
     );
   }
 }

@@ -96,6 +96,12 @@ class _HoverImagePreviewState extends State<HoverImagePreview> {
   }
 
   @override
+  void dispose() {
+    _hidePreview();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return CompositedTransformTarget(
       link: _layerLink,

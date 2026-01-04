@@ -51,6 +51,9 @@ class SettingsStorage {
     String? llmAvatar,
     String? themeMode,
     bool? isStreamEnabled,
+    bool? isSearchEnabled,
+    String? searchEngine,
+    String? lastSessionId,
   }) async {
     final existing = await loadAppSettings();
     final settings = AppSettingsEntity()
@@ -62,7 +65,32 @@ class SettingsStorage {
       ..llmName = llmName ?? existing?.llmName ?? 'Assistant'
       ..llmAvatar = llmAvatar ?? existing?.llmAvatar
       ..themeMode = themeMode ?? existing?.themeMode ?? 'system'
-      ..isStreamEnabled = isStreamEnabled ?? existing?.isStreamEnabled ?? true;
+      ..isStreamEnabled = isStreamEnabled ?? existing?.isStreamEnabled ?? true
+      ..isSearchEnabled = isSearchEnabled ?? existing?.isSearchEnabled ?? false
+      ..searchEngine = searchEngine ?? existing?.searchEngine ?? 'duckduckgo'
+      ..lastSessionId = lastSessionId ?? existing?.lastSessionId;
+    await _isar.writeTxn(() async {
+      await _isar.appSettingsEntitys.clear();
+      await _isar.appSettingsEntitys.put(settings);
+    });
+  }
+
+  Future<void> saveLastSessionId(String sessionId) async {
+    final existing = await loadAppSettings();
+    if (existing == null) return;
+    final settings = AppSettingsEntity()
+      ..activeProviderId = existing.activeProviderId
+      ..selectedModel = existing.selectedModel
+      ..availableModels = existing.availableModels
+      ..userName = existing.userName
+      ..userAvatar = existing.userAvatar
+      ..llmName = existing.llmName
+      ..llmAvatar = existing.llmAvatar
+      ..themeMode = existing.themeMode
+      ..isStreamEnabled = existing.isStreamEnabled
+      ..isSearchEnabled = existing.isSearchEnabled
+      ..searchEngine = existing.searchEngine
+      ..lastSessionId = sessionId;
     await _isar.writeTxn(() async {
       await _isar.appSettingsEntitys.clear();
       await _isar.appSettingsEntitys.put(settings);
@@ -89,7 +117,10 @@ class SettingsStorage {
       ..userAvatar = userAvatar ?? existing.userAvatar
       ..llmName = llmName ?? existing.llmName
       ..llmAvatar = llmAvatar ?? existing.llmAvatar
-      ..themeMode = existing.themeMode;
+      ..themeMode = existing.themeMode
+      ..isStreamEnabled = existing.isStreamEnabled
+      ..isSearchEnabled = existing.isSearchEnabled
+      ..searchEngine = existing.searchEngine;
     await _isar.writeTxn(() async {
       await _isar.appSettingsEntitys.clear();
       await _isar.appSettingsEntitys.put(settings);

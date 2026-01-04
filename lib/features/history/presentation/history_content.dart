@@ -18,131 +18,136 @@ class _HistoryContentState extends ConsumerState<HistoryContent> {
   void initState() {
     super.initState();
     Future.microtask(() async {
+      // SessionsNotifier handles restoration or default selection
       await ref.read(sessionsProvider.notifier).loadSessions();
-      if (ref.read(selectedHistorySessionIdProvider) == null) {
-        final sessions = ref.read(sessionsProvider).sessions;
-        if (sessions.isNotEmpty) {
-          ref.read(selectedHistorySessionIdProvider.notifier).state =
-              sessions.first.sessionId;
-        } else {
-          ref.read(selectedHistorySessionIdProvider.notifier).state =
-              'new_chat';
-        }
-      }
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final sessionsState = ref.watch(sessionsProvider);
-    final selectedSessionId = ref.watch(selectedHistorySessionIdProvider);
+    if (Platform.isWindows) {
+      return _buildDesktopLayout(context, ref);
+    }
+
     return LayoutBuilder(
       builder: (context, constraints) {
-        // Enforce desktop layout on Windows, regardless of width
-        final isMobile = !Platform.isWindows && constraints.maxWidth < 600;
+        final isMobile = constraints.maxWidth < 600;
         if (isMobile) {
-          if (selectedSessionId != null && selectedSessionId != '') {
-            return Column(
-              children: [
-                Container(
-                  height: 48,
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  decoration: BoxDecoration(
-                    border: Border(
-                        bottom: BorderSide(
-                            color: fluent.FluentTheme.of(context)
-                                .resources
-                                .dividerStrokeColorDefault)),
-                    color: fluent.FluentTheme.of(context)
-                        .navigationPaneTheme
-                        .backgroundColor,
-                  ),
-                  child: Row(
-                    children: [
-                      fluent.IconButton(
-                        icon: const Icon(Icons.arrow_back),
-                        onPressed: () {
-                          ref
-                              .read(selectedHistorySessionIdProvider.notifier)
-                              .state = null;
-                        },
-                      ),
-                      const SizedBox(width: 8),
-                      const Text('会话详情',
-                          style: TextStyle(fontWeight: FontWeight.bold)),
-                    ],
-                  ),
-                ),
-                const Expanded(child: ChatView()),
-              ],
-            );
-          } else {
-            return _SessionList(
-              sessionsState: sessionsState,
-              selectedSessionId: selectedSessionId,
-              isMobile: true,
-            );
-          }
+          return _buildMobileLayout(context, ref);
         }
-        final isSidebarVisible = ref.watch(isHistorySidebarVisibleProvider);
-        return Container(
-          color: fluent.FluentTheme.of(context).navigationPaneTheme.backgroundColor,
-          child: Row(
-            children: [
-              RepaintBoundary(
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 150),
-                  curve: Curves.easeOut,
-                  width: isSidebarVisible ? 250 : 0,
-                  child: ClipRect(
-                    child: OverflowBox(
-                      minWidth: 250,
-                      maxWidth: 250,
-                      alignment: Alignment.centerLeft,
-                      child: Container(
-                        width: 250,
-                        decoration: BoxDecoration(
-                          // Removed right border for cleaner look
-                          color: fluent.FluentTheme.of(context).navigationPaneTheme.backgroundColor,
-                        ),
-                        child: _SessionList(
-                          sessionsState: sessionsState,
-                          selectedSessionId: selectedSessionId,
-                          isMobile: false,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              Expanded(
-                child: Container(
-                  margin: const EdgeInsets.only(top: 8, right: 8, bottom: 8),
-                  decoration: BoxDecoration(
-                    color: fluent.FluentTheme.of(context).cardColor,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.04), // Subtle shadow for depth
-                        blurRadius: 10,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: RepaintBoundary(
-                      child: selectedSessionId == null
-                          ? const Center(child: Text('请选择或新建一个话题'))
-                          : ChatView(key: ValueKey(selectedSessionId)),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
+        return _buildDesktopLayout(context, ref);
       },
+    );
+  }
+
+  Widget _buildMobileLayout(BuildContext context, WidgetRef ref) {
+    final selectedSessionId = ref.watch(selectedHistorySessionIdProvider);
+    final sessionsState = ref.watch(sessionsProvider);
+
+    if (selectedSessionId != null && selectedSessionId != '') {
+      return Column(
+        children: [
+          Container(
+            height: 48,
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            decoration: BoxDecoration(
+              border: Border(
+                  bottom: BorderSide(
+                      color: fluent.FluentTheme.of(context)
+                          .resources
+                          .dividerStrokeColorDefault)),
+              color: fluent.FluentTheme.of(context)
+                  .navigationPaneTheme
+                  .backgroundColor,
+            ),
+            child: Row(
+              children: [
+                fluent.IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  onPressed: () {
+                    ref
+                        .read(selectedHistorySessionIdProvider.notifier)
+                        .state = null;
+                  },
+                ),
+                const SizedBox(width: 8),
+                const Text('会话详情',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+              ],
+            ),
+          ),
+          Expanded(child: ChatView(sessionId: selectedSessionId)),
+        ],
+      );
+    } else {
+      return _SessionList(
+        sessionsState: sessionsState,
+        selectedSessionId: selectedSessionId,
+        isMobile: true,
+      );
+    }
+  }
+
+  Widget _buildDesktopLayout(BuildContext context, WidgetRef ref) {
+    final isSidebarVisible = ref.watch(isHistorySidebarVisibleProvider);
+    final sessionsState = ref.watch(sessionsProvider);
+    final selectedSessionId = ref.watch(selectedHistorySessionIdProvider);
+
+    return Container(
+      color: fluent.FluentTheme.of(context).navigationPaneTheme.backgroundColor,
+      child: Row(
+        children: [
+          RepaintBoundary(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              curve: Curves.easeOut,
+              width: isSidebarVisible ? 250 : 0,
+              child: ClipRect(
+                child: OverflowBox(
+                  minWidth: 250,
+                  maxWidth: 250,
+                  alignment: Alignment.centerLeft,
+                  child: Container(
+                    width: 250,
+                    decoration: BoxDecoration(
+                      color: fluent.FluentTheme.of(context).navigationPaneTheme.backgroundColor,
+                    ),
+                    child: _SessionList(
+                      sessionsState: sessionsState,
+                      selectedSessionId: selectedSessionId,
+                      isMobile: false,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: Container(
+              margin: const EdgeInsets.only(top: 8, right: 8, bottom: 8),
+              decoration: BoxDecoration(
+                color: fluent.FluentTheme.of(context).cardColor,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.04), // Subtle shadow for depth
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: RepaintBoundary(
+                  child: selectedSessionId == null
+                      ? const Center(child: Text('请选择或新建一个话题'))
+                      : ChatView(key: ValueKey(selectedSessionId), sessionId: selectedSessionId),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -168,8 +173,7 @@ class _SessionList extends ConsumerWidget {
           padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
           child: fluent.HoverButton(
             onPressed: () {
-              ref.read(selectedHistorySessionIdProvider.notifier).state =
-                  'new_chat';
+              ref.read(sessionsProvider.notifier).startNewSession();
             },
             builder: (context, states) {
               final theme = fluent.FluentTheme.of(context);
@@ -232,106 +236,142 @@ class _SessionList extends ConsumerWidget {
                     final session = sessionsState.sessions[index];
                     final isSelected = session.sessionId == selectedSessionId;
                     
-                    // Get session state for status indicator - only show if in cache
+                    // Get session state for status indicator
                     final sessionState = manager.getState(session.sessionId);
                     final Color? statusColor;
                     if (sessionState == null) {
-                      statusColor = null; // Not in cache = no indicator
+                      statusColor = null;
                     } else if (sessionState.error != null) {
-                      statusColor = Colors.red; // Error
+                      statusColor = Colors.red;
                     } else if (sessionState.isLoading) {
-                      statusColor = Colors.orange; // Loading
+                      statusColor = Colors.orange;
                     } else if (sessionState.hasUnreadResponse) {
-                      statusColor = Colors.green; // Unread check complete
+                      statusColor = Colors.green;
                     } else {
-                      statusColor = null; // Complete and read = no indicator
+                      statusColor = null;
                     }
                     
-                    return Listener(
+                    return ReorderableDragStartListener(
                       key: Key(session.sessionId),
-                      behavior: HitTestBehavior.translucent,
-                      child: ReorderableDelayedDragStartListener(
-                        index: index,
-                        child: _TapDetector(
+                      index: index,
+                      child: _SessionItem(
+                        session: session,
+                        isSelected: isSelected,
+                        statusColor: statusColor,
                         onTap: () {
                           ref
                               .read(selectedHistorySessionIdProvider.notifier)
                               .state = session.sessionId;
                         },
-                        child: Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 2), // Improved vertical spacing and aligned margins
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? fluent.FluentTheme.of(context)
-                                    .accentColor
-                                    .withOpacity(0.1)
-                                : Colors.transparent,
-                            borderRadius: BorderRadius.circular(6), // Standard Fluent radius
-                          ),
-                          child: fluent.Padding( // Manual padding for control
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                            child: Row(
-                              children: [
-                                // Status indicator dot
-                                if (statusColor != null)
-                                  Padding(
-                                    padding: const EdgeInsets.only(right: 8),
-                                    child: Container(
-                                      width: 6,
-                                      height: 6,
-                                      decoration: BoxDecoration(
-                                        color: statusColor,
-                                        shape: BoxShape.circle,
-                                      ),
-                                    ),
-                                  ),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(session.title,
-                                          style: TextStyle(
-                                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                                            fontSize: 13, // Slightly compact
-                                          ),
-                                          maxLines: 1, overflow: TextOverflow.ellipsis),
-                                      const SizedBox(height: 2),
-                                      Text(DateFormat('MM/dd HH:mm')
-                                          .format(session.lastMessageTime),
-                                          style: TextStyle(
-                                              fontSize: 10,
-                                              color: fluent.FluentTheme.of(context).resources.textFillColorSecondary
-                                          )),
-                                    ],
-                                  ),
-                                ),
-                                if (isSelected) // Only show delete on selection or hover (simplified to selection for now)
-                                  fluent.IconButton(
-                                    icon: const fluent.Icon(fluent.FluentIcons.delete,
-                                        size: 14), // Smaller icon
-                                    onPressed: () {
-                                      ref
-                                          .read(sessionsProvider.notifier)
-                                          .deleteSession(session.sessionId);
-                                      if (isSelected) {
-                                        ref
-                                            .read(selectedHistorySessionIdProvider
-                                                .notifier)
-                                            .state = null;
-                                      }
-                                    },
-                                  ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        ),
+                        onDelete: () {
+                          ref
+                              .read(sessionsProvider.notifier)
+                              .deleteSession(session.sessionId);
+                          if (isSelected) {
+                            ref
+                                .read(selectedHistorySessionIdProvider.notifier)
+                                .state = null;
+                          }
+                        },
                       ),
                     );
                   },
                 ),
         ),
       ],
+    );
+  }
+}
+
+class _SessionItem extends StatefulWidget {
+  final dynamic session; // Using dynamic to avoid import issues if Session model isn't exported here, but ideally should be typed
+  final bool isSelected;
+  final Color? statusColor;
+  final VoidCallback onTap;
+  final VoidCallback onDelete;
+
+  const _SessionItem({
+    required this.session,
+    required this.isSelected,
+    required this.statusColor,
+    required this.onTap,
+    required this.onDelete,
+  });
+
+  @override
+  State<_SessionItem> createState() => _SessionItemState();
+}
+
+class _SessionItemState extends State<_SessionItem> {
+  bool _isHovering = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = fluent.FluentTheme.of(context);
+    
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovering = true),
+      onExit: (_) => setState(() => _isHovering = false),
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+          decoration: BoxDecoration(
+            color: widget.isSelected
+                ? theme.accentColor.withOpacity(0.1)
+                : (_isHovering 
+                    ? theme.resources.subtleFillColorSecondary 
+                    : Colors.transparent),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: fluent.Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Row(
+              children: [
+                if (widget.statusColor != null)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: Container(
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: widget.statusColor,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(widget.session.title,
+                          style: TextStyle(
+                            fontWeight: widget.isSelected ? FontWeight.w600 : FontWeight.normal,
+                            fontSize: 13,
+                          ),
+                          maxLines: 1, overflow: TextOverflow.ellipsis),
+                      const SizedBox(height: 2),
+                      Text(DateFormat('MM/dd HH:mm')
+                          .format(widget.session.lastMessageTime),
+                          style: TextStyle(
+                              fontSize: 10,
+                              color: theme.resources.textFillColorSecondary
+                          )),
+                    ],
+                  ),
+                ),
+                if (widget.isSelected || _isHovering)
+                  fluent.IconButton(
+                    icon: const fluent.Icon(fluent.FluentIcons.delete,
+                        size: 14),
+                    onPressed: widget.onDelete,
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -371,32 +411,34 @@ class SessionListWidget extends ConsumerWidget {
         return ReorderableDelayedDragStartListener(
           key: Key(session.sessionId),
           index: index,
-          child: _TapDetector(
-            onTap: () => onSessionSelected(session.sessionId),
-            child: ListTile(
-              selected: isSelected,
-              selectedTileColor:
-                  Theme.of(context).colorScheme.primaryContainer.withOpacity(0.5),
-              leading: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  const Icon(Icons.chat_bubble_outline, size: 20),
-                  Positioned(
-                    top: -1,
-                    right: -1,
-                    child: _SessionStatusIndicator(sessionId: session.sessionId),
-                  ),
-                ],
-              ),
-              title: Text(session.title,
-                  maxLines: 1, overflow: TextOverflow.ellipsis),
-              subtitle: Text(
-                DateFormat('MM/dd HH:mm').format(session.lastMessageTime),
-                style: const TextStyle(fontSize: 12),
-              ),
-              trailing: IconButton(
-                icon: const Icon(Icons.delete_outline, size: 20),
-                onPressed: () => onSessionDeleted(session.sessionId),
+          child: RepaintBoundary( // Isolate item painting
+            child: _TapDetector(
+              onTap: () => onSessionSelected(session.sessionId),
+              child: ListTile(
+                selected: isSelected,
+                selectedTileColor:
+                    Theme.of(context).colorScheme.primaryContainer.withOpacity(0.5),
+                leading: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    const Icon(Icons.chat_bubble_outline, size: 20),
+                    Positioned(
+                      top: -1,
+                      right: -1,
+                      child: _SessionStatusIndicator(sessionId: session.sessionId),
+                    ),
+                  ],
+                ),
+                title: Text(session.title,
+                    maxLines: 1, overflow: TextOverflow.ellipsis),
+                subtitle: Text(
+                  DateFormat('MM/dd HH:mm').format(session.lastMessageTime),
+                  style: const TextStyle(fontSize: 12),
+                ),
+                trailing: IconButton(
+                  icon: const Icon(Icons.delete_outline, size: 20),
+                  onPressed: () => onSessionDeleted(session.sessionId),
+                ),
               ),
             ),
           ),
@@ -411,8 +453,9 @@ class _SessionStatusIndicator extends ConsumerWidget {
   const _SessionStatusIndicator({required this.sessionId});
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Watch the trigger to rebuild this specific dot when chat state changes
-    ref.watch(chatStateUpdateTriggerProvider);
+    // Read (not watch) the manager to avoid cascading rebuilds of ALL items
+    // when any session state changes. Each indicator only needs to show
+    // the current state at render time - it will re-render when the list itself rebuilds.
     final manager = ref.read(chatSessionManagerProvider);
     
     final sessionState = manager.getState(sessionId);

@@ -16,4 +16,7 @@ class MessageEntity {
   String? model;
   String? provider;
   double? reasoningDurationSeconds;
+  String? role;
+  String? toolCallId;
+  String? toolCallsJson;
 }
