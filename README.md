@@ -1,14 +1,23 @@
 # Aurora
 
-基于 Flutter 开发的跨平台 LLM 聊天客户端，支持 Windows 和 Android。目前项目处于早期开发阶段。
-
-![Screenshot](https://via.placeholder.com/800x400?text=Aurora+Screenshot)
+基于 Flutter 开发的跨平台 LLM 聊天客户端，支持 Windows 和 Android，简洁流畅为主要开发目的。
 
 ## 简介
 
 Aurora 旨在提供简洁、原生的多平台使用体验。
 *   **Windows**: 遵循 Fluent Design 设计规范，支持 Mica 效果。
 *   **Android**: 适配移动端交互体验。
+
+## 界面预览
+
+<p align="center">
+  <img src="docs/images/defc395b-3baa-4ed9-8095-f7e1e485e644.png" width="45%" />
+  <img src="docs/images/fd02b90e-4a3f-41c0-8300-9d99d8ca0435.png" width="45%" />
+</p>
+<p align="center">
+  <img src="docs/images/85d78b54cd085042a5e38051d1efa379_720.jpg" width="45%" />
+  <img src="docs/images/85f5e391d226c60a7cf575c3e21fb41e_720.jpg" width="45%" />
+</p>
 
 ## 功能
 
@@ -67,9 +76,7 @@ Aurora 旨在提供简洁、原生的多平台使用体验。
 
 *   **API Key**：填入对应服务的 API Key。
 *   **Base URL**：
-    *   OpenAI: `https://api.openai.com/v1`
-    *   本地 Ollama: `http://localhost:11434/v1` (Android 模拟器中使用 `http://10.0.2.2:11434/v1`)
-    *   其他兼容 OpenAI 接口的服务均可使用。
+    *   兼容 OpenAI 接口的服务均可使用。
 
 ## License
 
