@@ -2,7 +2,8 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:file_selector/file_selector.dart';
+import 'package:gal/gal.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:super_clipboard/super_clipboard.dart';
 
 class MobileImageViewer extends StatefulWidget {
@@ -99,30 +100,37 @@ class _MobileImageViewerState extends State<MobileImageViewer>
   }
 
   Future<void> _handleSave(BuildContext context) async {
-    // For mobile, we might want to use different saving logic (e.g. image_gallery_saver),
-    // but sticking to file_selector for consistency with existing code first. 
-    // Note: file_selector on mobile (Android/iOS) might not act as "Save As", 
-    // it often shares/saves depending on implementation.
-    // If specific gallery saving is needed, we would need a new package.
-    // Assuming file_selector works "okay" or user accepts file picker behavior.
-    
-    final String fileName = 'image_${DateTime.now().millisecondsSinceEpoch}.png';
-    final FileSaveLocation? result = await getSaveLocation(
-      suggestedName: fileName,
-      acceptedTypeGroups: [
-        const XTypeGroup(label: 'Images', extensions: ['png']),
-      ],
-    );
-
-    if (result != null) {
-      final File file = File(result.path);
-      await file.writeAsBytes(widget.imageBytes);
+    // Use gal package for mobile gallery saving
+    try {
+      // Gal requires a file path, so we save to temp first
+      final tempDir = await getTemporaryDirectory();
+      final tempPath = '${tempDir.path}/image_${DateTime.now().millisecondsSinceEpoch}.png';
+      final tempFile = File(tempPath);
+      await tempFile.writeAsBytes(widget.imageBytes);
+      
+      // Save to gallery
+      await Gal.putImage(tempPath);
+      
+      // Cleanup temp file
+      await tempFile.delete();
+      
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-           SnackBar(
-            content: Text('已保存到 ${result.path}'),
+          const SnackBar(
+            content: Text('已保存到相册'),
             behavior: SnackBarBehavior.floating,
-             duration: const Duration(seconds: 2),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Save error: $e');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('保存失败: $e'),
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 2),
           ),
         );
       }

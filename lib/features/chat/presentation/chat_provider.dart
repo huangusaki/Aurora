@@ -169,7 +169,13 @@ class ChatNotifier extends StateNotifier<ChatState> {
 
   Future<String> sendMessage(String? text,
       {List<String> attachments = const [], String? apiContent}) async {
-    print('DEBUG: sendMessage called - text: $text');
+    print('DEBUG: sendMessage called - text: $text - sessionId: $_sessionId');
+    
+    // Concurrent control: if already loading, don't start another one for this session
+    if (state.isLoading && text != null) {
+      print('DEBUG: sendMessage ignored because already loading');
+      return _sessionId;
+    }
     
     // If new text provided, validate it
     if (text != null && text.trim().isEmpty && attachments.isEmpty) return _sessionId;
@@ -519,6 +525,12 @@ class ChatNotifier extends StateNotifier<ChatState> {
   Future<void> regenerateResponse(String rootMessageId) async {
     final index = state.messages.indexWhere((m) => m.id == rootMessageId);
     if (index == -1) return;
+    
+    // Safety: Abort any current generation before starting a new one
+    abortGeneration();
+    // Allow a tiny bit of time for the loop to break if it was running
+    await Future.delayed(const Duration(milliseconds: 100));
+    
     _isAborted = false; // Reset abort flag
     final rootMsg = state.messages[index];
     List<Message> historyToKeep;

@@ -191,9 +191,11 @@ class ChatViewState extends ConsumerState<ChatView> {
       if (image != null) {
         // We'll use the path for now, consistent with how desktop file selection works
         // If image.path is empty (web), we'd need readAsBytes. But this is mobile logic.
-        setState(() {
-           _attachments.add(image.path);
-        });
+        if (!_attachments.contains(image.path)) {
+          setState(() {
+             _attachments.add(image.path);
+          });
+        }
       }
     } catch (e) {
       debugPrint('Error picking image: $e');
@@ -283,9 +285,16 @@ class ChatViewState extends ConsumerState<ChatView> {
     final List<XFile> files =
         await openFiles(acceptedTypeGroups: <XTypeGroup>[typeGroup]);
     if (files.isEmpty) return;
-    setState(() {
-      _attachments.addAll(files.map((e) => e.path));
-    });
+    final newPaths = files
+        .map((e) => e.path)
+        .where((path) => !_attachments.contains(path))
+        .toList();
+    
+    if (newPaths.isNotEmpty) {
+      setState(() {
+        _attachments.addAll(newPaths);
+      });
+    }
   }
 
   Future<void> _handlePaste() async {
@@ -317,9 +326,11 @@ class ChatViewState extends ConsumerState<ChatView> {
               '${tempDir.path}${Platform.pathSeparator}paste_fb_${DateTime.now().millisecondsSinceEpoch}.png';
           await File(path).writeAsBytes(imageBytes);
           if (mounted) {
-            setState(() {
-              _attachments.add(path);
-            });
+            if (!_attachments.contains(path)) {
+              setState(() {
+                _attachments.add(path);
+              });
+            }
           }
           return;
         }
@@ -356,9 +367,11 @@ class ChatViewState extends ConsumerState<ChatView> {
       });
       final imagePath = await completer.future;
       if (imagePath != null && mounted) {
-        setState(() {
-          _attachments.add(imagePath);
-        });
+        if (!_attachments.contains(imagePath)) {
+          setState(() {
+            _attachments.add(imagePath);
+          });
+        }
         return;
       }
     } 
@@ -386,9 +399,11 @@ class ChatViewState extends ConsumerState<ChatView> {
       });
       final imagePath = await completer.future;
       if (imagePath != null && mounted) {
-        setState(() {
-          _attachments.add(imagePath);
-        });
+        if (!_attachments.contains(imagePath)) {
+          setState(() {
+            _attachments.add(imagePath);
+          });
+        }
         return;
       }
     }
@@ -401,9 +416,11 @@ class ChatViewState extends ConsumerState<ChatView> {
             path.toLowerCase().endsWith('.jpg') ||
             path.toLowerCase().endsWith('.jpeg') ||
             path.toLowerCase().endsWith('.webp')) {
-          setState(() {
-            _attachments.add(path);
-          });
+          if (!_attachments.contains(path)) {
+            setState(() {
+              _attachments.add(path);
+            });
+          }
           return;
         }
       }
@@ -421,9 +438,11 @@ class ChatViewState extends ConsumerState<ChatView> {
               Uri fileUri = Uri.parse(src);
               String filePath = fileUri.toFilePath();
               if (File(filePath).existsSync()) {
-                setState(() {
-                  _attachments.add(filePath);
-                });
+                if (!_attachments.contains(filePath)) {
+                  setState(() {
+                    _attachments.add(filePath);
+                  });
+                }
                 return;
               }
             }
@@ -1230,9 +1249,17 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
         label: 'images', extensions: ['jpg', 'png', 'jpeg', 'bmp', 'gif']);
     final files = await openFiles(acceptedTypeGroups: [typeGroup]);
     if (files.isEmpty) return;
-    setState(() {
-      _newAttachments.addAll(files.map((file) => file.path));
-    });
+    
+    final newPaths = files
+        .map((file) => file.path)
+        .where((path) => !_newAttachments.contains(path))
+        .toList();
+
+    if (newPaths.isNotEmpty) {
+      setState(() {
+        _newAttachments.addAll(newPaths);
+      });
+    }
   }
 
   Future<void> _handlePaste() async {
@@ -1273,9 +1300,11 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
             '${tempDir.path}${Platform.pathSeparator}paste_fb_${DateTime.now().millisecondsSinceEpoch}.png';
         await File(path).writeAsBytes(imageBytes);
         if (mounted) {
-          setState(() {
-            _newAttachments.add(path);
-          });
+          if (!_newAttachments.contains(path)) {
+            setState(() {
+              _newAttachments.add(path);
+            });
+          }
         }
         return;
       }
@@ -1305,9 +1334,11 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
       if (bytes.isNotEmpty) {
         await File(path).writeAsBytes(bytes);
         if (mounted) {
-          setState(() {
-            _newAttachments.add(path);
-          });
+          if (!_newAttachments.contains(path)) {
+            setState(() {
+              _newAttachments.add(path);
+            });
+          }
         }
       }
     } catch (e) {

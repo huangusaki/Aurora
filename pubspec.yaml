@@ -57,6 +57,7 @@ dependencies:
   permission_handler: ^11.3.1
   image_cropper: ^11.0.0
   crop_image: ^1.0.17
+  gal: ^2.3.0
 
 
 dev_dependencies:
