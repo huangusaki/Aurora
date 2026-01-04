@@ -12,6 +12,7 @@ assets/
 .svn/
 .swiftpm/
 migrate_working_dir/
+release_output/
 
 # IntelliJ related
 *.iml

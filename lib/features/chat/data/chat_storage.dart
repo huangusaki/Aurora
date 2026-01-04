@@ -96,14 +96,16 @@ class ChatStorage {
     // Check cache first
     if (_messagesCache.containsKey(sessionId)) {
       debugPrint('ChatStorage: loadHistory cache HIT for $sessionId');
-      return _messagesCache[sessionId]!;
+      // Return a COPY to prevent shared reference issues
+      return List.from(_messagesCache[sessionId]!);
     }
     
     // Cache miss - load from DB and cache
     debugPrint('ChatStorage: loadHistory cache MISS for $sessionId, loading from DB');
     final messages = await _loadHistoryFromDb(sessionId);
     _messagesCache[sessionId] = messages;
-    return messages;
+    // Return a COPY to prevent shared reference issues
+    return List.from(messages);
   }
   
   /// Internal method to load from database.
@@ -253,6 +255,21 @@ class ChatStorage {
         }
       }
     });
+  }
+
+  /// Check if a specific session is empty (has no messages) and delete it if so.
+  /// Returns true if the session was deleted.
+  Future<bool> deleteSessionIfEmpty(String sessionId) async {
+    final count = await _isar.messageEntitys
+        .filter()
+        .sessionIdEqualTo(sessionId)
+        .count();
+    if (count == 0) {
+      await deleteSession(sessionId);
+      invalidateCache(sessionId);
+      return true;
+    }
+    return false;
   }
 
   Future<List<String>> loadSessionOrder() => _settingsStorage.loadSessionOrder();

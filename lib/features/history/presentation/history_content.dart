@@ -258,7 +258,12 @@ class _SessionList extends ConsumerWidget {
                         session: session,
                         isSelected: isSelected,
                         statusColor: statusColor,
-                        onTap: () {
+                        onTap: () async {
+                          // Cleanup current session if empty before switching
+                          final currentId = ref.read(selectedHistorySessionIdProvider);
+                          if (currentId != null && currentId != session.sessionId) {
+                            await ref.read(sessionsProvider.notifier).cleanupSessionIfEmpty(currentId);
+                          }
                           ref
                               .read(selectedHistorySessionIdProvider.notifier)
                               .state = session.sessionId;

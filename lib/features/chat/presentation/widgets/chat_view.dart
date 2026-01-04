@@ -295,7 +295,8 @@ class ChatViewState extends ConsumerState<ChatView> {
     
     if (!reader.canProvide(Formats.png) &&
         !reader.canProvide(Formats.jpeg) &&
-        !reader.canProvide(Formats.fileUri)) {
+        !reader.canProvide(Formats.fileUri) &&
+        !reader.canProvide(Formats.plainText)) {
       // Retry logic for images
       for (int i = 0; i < 5; i++) {
         await Future.delayed(const Duration(milliseconds: 200));
@@ -458,7 +459,6 @@ class ChatViewState extends ConsumerState<ChatView> {
   Future<void> _sendMessage() async {
     final text = _controller.text;
     final settings = ref.read(settingsProvider);
-    print('DEBUG: UI _sendMessage triggered. Text: "$text", SearchEnabled: ${settings.isSearchEnabled}, Engine: ${settings.searchEngine}');
     
     if (text.trim().isEmpty && _attachments.isEmpty) {
       print('DEBUG: UI _sendMessage ignored (empty)');
@@ -2547,6 +2547,22 @@ class _MergedMessageBubbleState extends ConsumerState<MergedMessageBubble> with 
               ),
             ),
           )
+       );
+     }
+     
+     // Images (AI-generated)
+     if (message.images.isNotEmpty) {
+       parts.add(
+         Padding(
+           padding: const EdgeInsets.only(top: 8.0),
+           child: Wrap(
+             spacing: 8,
+             runSpacing: 8,
+             children: message.images
+                 .map((img) => ChatImageBubble(imageUrl: img))
+                 .toList(),
+           ),
+         ),
        );
      }
      

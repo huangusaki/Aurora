@@ -178,7 +178,7 @@ class ChatNotifier extends StateNotifier<ChatState> {
     
     // Session handling
     if (text != null && (_sessionId == 'chat' || _sessionId == 'new_chat')) {
-      final title = text.length > 20 ? '${text.substring(0, 20)}...' : text;
+      final title = text.length > 15 ? '${text.substring(0, 15)}...' : text;
       final realId = await _storage.createSession(title: title);
       debugPrint('Created new session: $realId with title: $title');
       if (_sessionId == 'new_chat' && onSessionCreated != null) {
@@ -187,6 +187,12 @@ class ChatNotifier extends StateNotifier<ChatState> {
       _sessionId = realId;
       // Load empty history or initialize? Usually createSession makes empty DB.
       // We don't need to reload, just update ID.
+    } else if (text != null && state.messages.isEmpty) {
+      // Logic for pre-created empty sessions (e.g. from "New Chat" button which calls startNewSession)
+      // We want to update the title from "New Chat" to the user's prompt
+       final title = text.length > 15 ? '${text.substring(0, 15)}...' : text;
+       await _storage.updateSessionTitle(_sessionId, title);
+       _ref.read(sessionsProvider.notifier).loadSessions();
     }
 
     if (text != null) {
@@ -653,9 +659,28 @@ class SessionsNotifier extends StateNotifier<SessionsState> {
   }
   
   Future<void> startNewSession() async {
+    // Before creating a new session, check if current session is empty and delete it
+    final currentId = _ref.read(selectedHistorySessionIdProvider);
+    if (currentId != null && currentId != 'new_chat') {
+      final deleted = await _storage.deleteSessionIfEmpty(currentId);
+      if (deleted) {
+        await loadSessions();
+      }
+    }
+    
     final id = await _storage.createSession(title: 'New Chat');
     await loadSessions();
     _ref.read(selectedHistorySessionIdProvider.notifier).state = id;
+  }
+  
+  /// Check if the given session is empty and delete it if so.
+  /// Used when switching away from a session.
+  Future<void> cleanupSessionIfEmpty(String? sessionId) async {
+    if (sessionId == null || sessionId == 'new_chat') return;
+    final deleted = await _storage.deleteSessionIfEmpty(sessionId);
+    if (deleted) {
+      await loadSessions();
+    }
   }
 
   Future<void> deleteSession(String id) async {
