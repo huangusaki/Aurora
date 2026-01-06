@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:convert';
 import 'package:fluent_ui/fluent_ui.dart' as fluent;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:aurora/l10n/app_localizations.dart';
@@ -128,65 +129,74 @@ class MyApp extends ConsumerWidget {
     final themeModeStr = ref.watch(settingsProvider.select((value) => value.themeMode));
     final language = ref.watch(settingsProvider.select((value) => value.language));
     fluent.ThemeMode fluentMode;
-    ThemeMode materialMode;
     if (themeModeStr == 'light') {
       fluentMode = fluent.ThemeMode.light;
-      materialMode = ThemeMode.light;
     } else if (themeModeStr == 'dark') {
       fluentMode = fluent.ThemeMode.dark;
-      materialMode = ThemeMode.dark;
     } else {
       fluentMode = fluent.ThemeMode.system;
-      materialMode = ThemeMode.system;
     }
     final locale = language == 'en' ? const Locale('en') : const Locale('zh');
     final String? fontFamily = Platform.isWindows ? 'Microsoft YaHei' : null;
     
-    return Theme(
-      data: ThemeData(
+    return fluent.FluentApp(
+      title: 'Aurora',
+      debugShowCheckedModeBanner: false,
+      themeMode: fluentMode,
+      locale: locale,
+      supportedLocales: AppLocalizations.supportedLocales,
+      localizationsDelegates: [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        fluent.FluentLocalizations.delegate,
+      ],
+      theme: fluent.FluentThemeData(
         fontFamily: fontFamily,
-        brightness: materialMode == ThemeMode.dark ? Brightness.dark : Brightness.light,
-      ),
-      child: fluent.FluentApp(
-        title: 'Aurora',
-        debugShowCheckedModeBanner: false,
-        themeMode: fluentMode,
-        locale: locale,
-        supportedLocales: AppLocalizations.supportedLocales,
-        localizationsDelegates: [
-          AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-          fluent.FluentLocalizations.delegate,
-        ],
-        theme: fluent.FluentThemeData(
-          fontFamily: fontFamily,
-          accentColor: fluent.Colors.blue,
-          brightness: fluent.Brightness.light,
-          scaffoldBackgroundColor: fluent.Colors.white,
-          cardColor: fluent.Colors.white,
-          navigationPaneTheme: fluent.NavigationPaneThemeData(
-            backgroundColor: fluent.Colors.grey[20],
-          ),
+        accentColor: fluent.Colors.blue,
+        brightness: fluent.Brightness.light,
+        scaffoldBackgroundColor: fluent.Colors.white,
+        cardColor: fluent.Colors.white,
+        navigationPaneTheme: fluent.NavigationPaneThemeData(
+          backgroundColor: fluent.Colors.grey[20],
         ),
-        builder: (context, child) {
-          return ScaffoldMessenger(
+      ),
+      builder: (context, child) {
+        final brightness = fluent.FluentTheme.of(context).brightness;
+        return Theme(
+          data: ThemeData(
+            fontFamily: fontFamily,
+            brightness: brightness == fluent.Brightness.dark ? Brightness.dark : Brightness.light,
+            appBarTheme: AppBarTheme(
+              backgroundColor: Colors.transparent,
+              systemOverlayStyle: SystemUiOverlayStyle(
+                statusBarColor: Colors.transparent,
+                statusBarIconBrightness: brightness == fluent.Brightness.dark 
+                    ? Brightness.light 
+                    : Brightness.dark,
+                statusBarBrightness: brightness == fluent.Brightness.dark 
+                    ? Brightness.dark 
+                    : Brightness.light,
+              ),
+            ),
+          ),
+          child: ScaffoldMessenger(
             child: child ?? const SizedBox.shrink(),
-          );
-        },
-        darkTheme: fluent.FluentThemeData(
-          fontFamily: fontFamily,
-          accentColor: fluent.Colors.blue,
-          brightness: fluent.Brightness.dark,
-          scaffoldBackgroundColor: const Color(0xFF202020),
-          cardColor: const Color(0xFF2D2D2D),
-          navigationPaneTheme: const fluent.NavigationPaneThemeData(
-            backgroundColor: Color(0xFF181818),
           ),
+        );
+      },
+      darkTheme: fluent.FluentThemeData(
+        fontFamily: fontFamily,
+        accentColor: fluent.Colors.blue,
+        brightness: fluent.Brightness.dark,
+        scaffoldBackgroundColor: const Color(0xFF202020),
+        cardColor: const Color(0xFF2D2D2D),
+        navigationPaneTheme: const fluent.NavigationPaneThemeData(
+          backgroundColor: Color(0xFF181818),
         ),
-        home: const ChatScreen(),
       ),
+      home: const ChatScreen(),
     );
   }
 }
