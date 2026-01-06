@@ -298,21 +298,27 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
 
   void _openModelSwitcher() {
     final settingsState = ref.read(settingsProvider);
-    final provider = settingsState.activeProvider;
-    if (provider == null || provider.models.isEmpty) {
+    final providers = settingsState.providers;
+    final activeProvider = settingsState.activeProvider;
+    final selectedModel = settingsState.selectedModel;
+    
+    // Check if any provider has models
+    final hasAnyModels = providers.any((p) => p.isEnabled && p.models.isNotEmpty);
+    if (!hasAnyModels) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('请先在设置中配置模型')),
       );
       return;
     }
+    
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true, // Allow flexible height up to limits
+      isScrollControlled: true,
       useSafeArea: true,
       builder: (ctx) {
         return Container(
           constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.7, // Max 70% height
+            maxHeight: MediaQuery.of(context).size.height * 0.7,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -323,28 +329,49 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
                     style: Theme.of(context).textTheme.titleMedium),
               ),
               const Divider(height: 1),
-              Flexible( // Use Flexible to let list adapt and scroll
-                child: ListView.builder(
-                  shrinkWrap: true, // Adapts to content size
-                  itemCount: provider.models.length,
-                  itemBuilder: (context, index) {
-                    final model = provider.models[index];
-                    final isSelected = model == settingsState.selectedModel;
-                    return ListTile(
-                      leading: Icon(
-                        isSelected ? Icons.check_circle : Icons.circle_outlined,
-                        color:
-                            isSelected ? Theme.of(context).primaryColor : null,
-                      ),
-                      title: Text(model),
-                      onTap: () {
-                        ref
-                            .read(settingsProvider.notifier)
-                            .setSelectedModel(model);
-                        Navigator.pop(ctx);
-                      },
-                    );
-                  },
+              Flexible(
+                child: ListView(
+                  shrinkWrap: true,
+                  children: [
+                    for (final provider in providers) ...[
+                      if (provider.isEnabled && provider.models.isNotEmpty) ...[
+                        // Provider header
+                        ListTile(
+                          dense: true,
+                          enabled: false,
+                          title: Text(
+                            provider.name,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ),
+                        // Models under this provider
+                        for (final model in provider.models)
+                          ListTile(
+                            contentPadding: const EdgeInsets.only(left: 32, right: 16),
+                            leading: Icon(
+                              activeProvider?.id == provider.id && selectedModel == model
+                                  ? Icons.check_circle
+                                  : Icons.circle_outlined,
+                              color: activeProvider?.id == provider.id && selectedModel == model
+                                  ? Theme.of(context).primaryColor
+                                  : null,
+                            ),
+                            title: Text(model),
+                            onTap: () async {
+                              await ref.read(settingsProvider.notifier).selectProvider(provider.id);
+                              await ref.read(settingsProvider.notifier).setSelectedModel(model);
+                              Navigator.pop(ctx);
+                            },
+                          ),
+                        // Divider after each provider (except last)
+                        if (provider != providers.where((p) => p.isEnabled && p.models.isNotEmpty).last)
+                          const Divider(),
+                      ],
+                    ],
+                  ],
                 ),
               ),
             ],

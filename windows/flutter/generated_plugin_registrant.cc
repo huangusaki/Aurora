@@ -8,7 +8,6 @@
 
 #include <file_selector_windows/file_selector_windows.h>
 #include <gal/gal_plugin_c_api.h>
-#include <hotkey_manager_windows/hotkey_manager_windows_plugin_c_api.h>
 #include <irondash_engine_context/irondash_engine_context_plugin_c_api.h>
 #include <isar_flutter_libs/isar_flutter_libs_plugin.h>
 #include <pasteboard/pasteboard_plugin.h>
@@ -23,8 +22,6 @@ void RegisterPlugins(flutter::PluginRegistry* registry) {
       registry->GetRegistrarForPlugin("FileSelectorWindows"));
   GalPluginCApiRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("GalPluginCApi"));
-  HotkeyManagerWindowsPluginCApiRegisterWithRegistrar(
-      registry->GetRegistrarForPlugin("HotkeyManagerWindowsPluginCApi"));
   IrondashEngineContextPluginCApiRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("IrondashEngineContextPluginCApi"));
   IsarFlutterLibsPluginRegisterWithRegistrar(

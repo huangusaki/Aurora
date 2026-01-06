@@ -145,14 +145,6 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "0.4.2"
-  clipboard:
-    dependency: "direct main"
-    description:
-      name: clipboard
-      sha256: "45f26eb08784c1ef11d58acd8c918ee3690ab619e286ff0ce4e4f78436f8a2b2"
-      url: "https://pub.flutter-io.cn"
-    source: hosted
-    version: "3.0.9"
   clock:
     dependency: transitive
     description:
@@ -217,14 +209,6 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "1.0.2"
-  cupertino_icons:
-    dependency: "direct main"
-    description:
-      name: cupertino_icons
-      sha256: ba631d1c7f7bef6b729a622b7b752645a2d076dba9976925b8f25725a30e1ee6
-      url: "https://pub.flutter-io.cn"
-    source: hosted
-    version: "1.0.8"
   custom_lint_core:
     dependency: transitive
     description:
@@ -492,14 +476,6 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "2.1.3"
-  google_fonts:
-    dependency: "direct main"
-    description:
-      name: google_fonts
-      sha256: ba03d03bcaa2f6cb7bd920e3b5027181db75ab524f8891c8bc3aa603885b8055
-      url: "https://pub.flutter-io.cn"
-    source: hosted
-    version: "6.3.3"
   graphs:
     dependency: transitive
     description:
@@ -508,46 +484,6 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "2.3.2"
-  hotkey_manager:
-    dependency: "direct main"
-    description:
-      name: hotkey_manager
-      sha256: "06f0655b76c8dd322fb7101dc615afbdbf39c3d3414df9e059c33892104479cd"
-      url: "https://pub.flutter-io.cn"
-    source: hosted
-    version: "0.2.3"
-  hotkey_manager_linux:
-    dependency: transitive
-    description:
-      name: hotkey_manager_linux
-      sha256: "83676bda8210a3377bc6f1977f193bc1dbdd4c46f1bdd02875f44b6eff9a8473"
-      url: "https://pub.flutter-io.cn"
-    source: hosted
-    version: "0.2.0"
-  hotkey_manager_macos:
-    dependency: transitive
-    description:
-      name: hotkey_manager_macos
-      sha256: "03b5967e64357b9ac05188ea4a5df6fe4ed4205762cb80aaccf8916ee1713c96"
-      url: "https://pub.flutter-io.cn"
-    source: hosted
-    version: "0.2.0"
-  hotkey_manager_platform_interface:
-    dependency: transitive
-    description:
-      name: hotkey_manager_platform_interface
-      sha256: "98ffca25b8cc9081552902747b2942e3bc37855389a4218c9d50ca316b653b13"
-      url: "https://pub.flutter-io.cn"
-    source: hosted
-    version: "0.2.0"
-  hotkey_manager_windows:
-    dependency: transitive
-    description:
-      name: hotkey_manager_windows
-      sha256: "0d03ced9fe563ed0b68f0a0e1b22c9ffe26eb8053cb960e401f68a4f070e0117"
-      url: "https://pub.flutter-io.cn"
-    source: hosted
-    version: "0.2.0"
   html:
     dependency: transitive
     description:
@@ -1194,21 +1130,13 @@ packages:
     source: hosted
     version: "0.9.1"
   super_native_extensions:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: super_native_extensions
       sha256: b9611dcb68f1047d6f3ef11af25e4e68a21b1a705bbcc3eb8cb4e9f5c3148569
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "0.9.1"
-  super_sliver_list:
-    dependency: "direct main"
-    description:
-      name: super_sliver_list
-      sha256: b1e1e64d08ce40e459b9bb5d9f8e361617c26b8c9f3bb967760b0f436b6e3f56
-      url: "https://pub.flutter-io.cn"
-    source: hosted
-    version: "0.4.1"
   term_glyph:
     dependency: transitive
     description:
@@ -1249,14 +1177,6 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "1.4.0"
-  uni_platform:
-    dependency: transitive
-    description:
-      name: uni_platform
-      sha256: e02213a7ee5352212412ca026afd41d269eb00d982faa552f419ffc2debfad84
-      url: "https://pub.flutter-io.cn"
-    source: hosted
-    version: "0.1.3"
   url_launcher:
     dependency: "direct main"
     description:

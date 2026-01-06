@@ -134,36 +134,15 @@ class _MobileSettingsPageState extends ConsumerState<MobileSettingsPage> {
               itemCount: activeProvider.models.length,
               itemBuilder: (context, index) {
                 final model = activeProvider.models[index];
-                final isSelected = model == settingsState.selectedModel;
                 return ListTile(
                   leading: const Icon(Icons.account_tree_outlined),
                   title: Text(model),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (isSelected)
-                        Icon(Icons.check,
-                            color: Theme.of(context).primaryColor),
-                      const SizedBox(width: 8),
-                      IconButton(
-                        icon: const Icon(Icons.settings_outlined),
-                        onPressed: () => _showModelConfigDialog(
-                            context, activeProvider, model),
-                      ),
-                    ],
+                  trailing: IconButton(
+                    icon: const Icon(Icons.settings_outlined),
+                    onPressed: () => _showModelConfigDialog(
+                        context, activeProvider, model),
                   ),
-                  tileColor: isSelected
-                      ? Theme.of(context).primaryColor.withOpacity(0.1)
-                      : null,
-                  onTap: () {
-                    ref.read(settingsProvider.notifier).updateProvider(
-                          id: activeProvider.id,
-                          selectedModel: model,
-                        );
-                    ref
-                        .read(settingsProvider.notifier)
-                        .selectProvider(activeProvider.id);
-                  },
+                  // No onTap - model selection should only be done via top dropdown
                 );
               },
             )

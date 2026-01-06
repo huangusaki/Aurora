@@ -5,6 +5,7 @@ import 'package:fluent_ui/fluent_ui.dart' as fluent;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_selector/file_selector.dart';
 import 'settings_provider.dart';
+import 'usage_stats_view.dart';
 import '../../../shared/utils/avatar_cropper.dart';
 
 class SettingsContent extends ConsumerStatefulWidget {
@@ -73,6 +74,7 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
         (icon: fluent.FluentIcons.chat, label: '对话设置'),
         (icon: fluent.FluentIcons.color, label: '显示设置'),
         (icon: fluent.FluentIcons.database, label: '数据设置'),
+        (icon: fluent.FluentIcons.analytics_view, label: '数据统计'),
       ];
       return Row(
         children: [
@@ -144,6 +146,7 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
                   _buildChatSettings(settingsState),
                   _buildDisplaySettings(),
                   _buildDataSettings(),
+                  const UsageStatsView(),
                 ],
               ),
             ),

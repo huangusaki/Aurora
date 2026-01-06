@@ -5,7 +5,6 @@
 list(APPEND FLUTTER_PLUGIN_LIST
   file_selector_windows
   gal
-  hotkey_manager_windows
   irondash_engine_context
   isar_flutter_libs
   pasteboard

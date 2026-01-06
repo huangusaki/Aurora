@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../settings/presentation/settings_provider.dart';
+import '../../settings/presentation/usage_stats_provider.dart';
 import 'package:aurora/shared/services/openai_llm_service.dart';
 import '../domain/message.dart';
 import 'package:aurora/shared/services/llm_service.dart';
@@ -475,10 +476,21 @@ class ChatNotifier extends StateNotifier<ChatState> {
           // Generation complete, mark as unread
           if (mounted) state = state.copyWith(isLoading: false, hasUnreadResponse: true);
         }
+        
+        // Track successful usage
+        if (currentModel != null && currentModel.isNotEmpty) {
+          _ref.read(usageStatsProvider.notifier).incrementUsage(currentModel, success: true);
+        }
       }
     } catch (e, stack) {
       if (_currentGenerationId == myGenerationId && mounted) {
         state = state.copyWith(isLoading: false, error: e.toString());
+        
+        // Track failed usage
+        final currentModel = _ref.read(settingsProvider).activeProvider?.selectedModel;
+        if (currentModel != null && currentModel.isNotEmpty) {
+          _ref.read(usageStatsProvider.notifier).incrementUsage(currentModel, success: false);
+        }
       }
     } finally {
       if (mounted) state = state.copyWith(isLoading: false);

@@ -4,8 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fluent_ui/fluent_ui.dart' as fluent;
 import '../chat_provider.dart';
 import '../../../settings/presentation/settings_provider.dart';
+import '../../../settings/presentation/usage_stats_view.dart';
 import '../../../history/presentation/history_content.dart';
-import '../../../../shared/widgets/custom_toast.dart';
 
 class MobileNavigationDrawer extends ConsumerWidget {
   final SessionsState sessionsState;
@@ -161,18 +161,16 @@ class MobileNavigationDrawer extends ConsumerWidget {
                             label: '模型',
                             onTap: () => onNavigate('__settings__')),
                         _MobileDrawerNavItem(
-                            icon: Icons.update,
-                            label: '更新',
-                            onTap: () async {
-                              const url = 'https://github.com/huangusaki/Aurora';
-                              final uri = Uri.parse(url);
-                              if (await canLaunchUrl(uri)) {
-                                await launchUrl(uri, mode: LaunchMode.externalApplication);
-                              } else {
-                                if (context.mounted) {
-                                  showTopToast(context, '无法打开链接: $url');
-                                }
-                              }
+                            icon: Icons.analytics_outlined,
+                            label: '统计',
+                            onTap: () {
+                              Navigator.pop(context);
+                              showModalBottomSheet(
+                                context: context,
+                                isScrollControlled: true,
+                                backgroundColor: Colors.transparent,
+                                builder: (context) => const UsageStatsMobileSheet(),
+                              );
                             }),
                         _MobileDrawerNavItem(
                             icon: Icons.info_outline,
@@ -181,7 +179,48 @@ class MobileNavigationDrawer extends ConsumerWidget {
                               FocusManager.instance.primaryFocus?.unfocus();
                               Navigator.pop(context);
                               await Future.delayed(const Duration(milliseconds: 100));
-                              onAbout();
+                              // Show about dialog with project link
+                              if (context.mounted) {
+                                showDialog(
+                                  context: context,
+                                  builder: (context) => AlertDialog(
+                                    title: const Text('关于 Aurora'),
+                                    content: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Text('一个跨平台 LLM 客户端'),
+                                        const SizedBox(height: 16),
+                                        InkWell(
+                                          onTap: () async {
+                                            const url = 'https://github.com/huangusaki/Aurora';
+                                            final uri = Uri.parse(url);
+                                            if (await canLaunchUrl(uri)) {
+                                              await launchUrl(uri, mode: LaunchMode.externalApplication);
+                                            }
+                                          },
+                                          child: const Row(
+                                            children: [
+                                              Icon(Icons.code, size: 18),
+                                              SizedBox(width: 8),
+                                              Text(
+                                                'GitHub 项目',
+                                                style: TextStyle(color: Colors.blue, decoration: TextDecoration.underline),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(context),
+                                        child: const Text('关闭'),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }
                             }),
                       ],
                     ),

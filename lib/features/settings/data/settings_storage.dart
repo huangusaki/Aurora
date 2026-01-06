@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
 import 'provider_config_entity.dart';
+import 'usage_stats_entity.dart';
 import '../../chat/data/message_entity.dart';
 import '../../chat/data/session_entity.dart';
 
@@ -17,7 +18,8 @@ class SettingsStorage {
         ProviderConfigEntitySchema,
         AppSettingsEntitySchema,
         MessageEntitySchema,
-        SessionEntitySchema
+        SessionEntitySchema,
+        UsageStatsEntitySchema,
       ],
       directory: dir.path,
     );
@@ -163,5 +165,38 @@ class SettingsStorage {
     } catch (e) {
       // ignore error
     }
+  }
+
+  // Usage Stats Methods
+  Future<void> incrementUsage(String modelName, {bool success = true}) async {
+    await _isar.writeTxn(() async {
+      var existing = await _isar.usageStatsEntitys
+          .filter()
+          .modelNameEqualTo(modelName)
+          .findFirst();
+      if (existing == null) {
+        existing = UsageStatsEntity()
+          ..modelName = modelName
+          ..successCount = success ? 1 : 0
+          ..failureCount = success ? 0 : 1;
+      } else {
+        if (success) {
+          existing.successCount++;
+        } else {
+          existing.failureCount++;
+        }
+      }
+      await _isar.usageStatsEntitys.put(existing);
+    });
+  }
+
+  Future<List<UsageStatsEntity>> loadAllUsageStats() async {
+    return await _isar.usageStatsEntitys.where().findAll();
+  }
+
+  Future<void> clearUsageStats() async {
+    await _isar.writeTxn(() async {
+      await _isar.usageStatsEntitys.clear();
+    });
   }
 }

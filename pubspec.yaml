@@ -31,9 +31,6 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # The following adds the Cupertino Icons font to your application.
-  # Use with the CupertinoIcons class for iOS style icons.
-  cupertino_icons: ^1.0.8
   flutter_riverpod: ^2.6.1
   riverpod_annotation: ^2.6.1
   dio: ^5.7.0
@@ -42,18 +39,15 @@ dependencies:
   path_provider: ^2.1.5
   fluent_ui: ^4.13.0
   flutter_markdown: ^0.7.4
-  google_fonts: ^6.2.1
-  super_sliver_list: ^0.4.1
   window_manager: ^0.4.3
-  hotkey_manager: ^0.2.1
   file_selector: ^1.1.0
   super_clipboard: ^0.9.1
-  super_native_extensions: ^0.9.1
+
   pasteboard: ^0.4.0
   flutter_displaymode: ^0.6.0
   ddgs:
     path: ./packages/aurora_search
-  clipboard: ^3.0.9
+
   image_picker: ^1.2.1
   permission_handler: ^11.3.1
   image_cropper: ^11.0.0
@@ -61,6 +55,7 @@ dependencies:
   gal: ^2.3.0
   image: ^4.5.3
   url_launcher: ^6.3.2
+
 
 
 dev_dependencies:
