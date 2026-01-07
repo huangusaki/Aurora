@@ -487,7 +487,28 @@ class ChatNotifier extends StateNotifier<ChatState> {
       }
     } catch (e, stack) {
       if (_currentGenerationId == myGenerationId && mounted) {
-        state = state.copyWith(isLoading: false, error: e.toString());
+        // Extract error message
+        String errorMessage = e.toString();
+        // Remove "Exception: " prefix if present
+        if (errorMessage.startsWith('Exception: ')) {
+          errorMessage = errorMessage.substring(11);
+        }
+        
+        // Update the last AI message with error content
+        final messages = List<Message>.from(state.messages);
+        if (messages.isNotEmpty && !messages.last.isUser) {
+          final lastMsg = messages.last;
+          messages[messages.length - 1] = Message(
+            id: lastMsg.id,
+            content: '⚠️ **请求失败**\n\n$errorMessage',
+            isUser: false,
+            timestamp: lastMsg.timestamp,
+            model: lastMsg.model,
+            provider: lastMsg.provider,
+          );
+        }
+        
+        state = state.copyWith(messages: messages, isLoading: false, error: errorMessage);
         
         // Track failed usage
         final currentModel = _ref.read(settingsProvider).activeProvider?.selectedModel;
@@ -533,7 +554,7 @@ class ChatNotifier extends StateNotifier<ChatState> {
   Future<void> deleteMessage(String id) async {
     final newMessages = state.messages.where((m) => m.id != id).toList();
     state = state.copyWith(messages: newMessages);
-    await _storage.deleteMessage(id);
+    await _storage.deleteMessage(id, sessionId: _sessionId);
   }
 
   Future<void> editMessage(String id, String newContent,
@@ -589,7 +610,7 @@ class ChatNotifier extends StateNotifier<ChatState> {
     final idsToDelete =
         oldMessages.skip(historyToKeep.length).map((m) => m.id).toList();
     for (final mid in idsToDelete) {
-      await _storage.deleteMessage(mid);
+      await _storage.deleteMessage(mid, sessionId: _sessionId);
     }
     
     // Trigger generation using existing history

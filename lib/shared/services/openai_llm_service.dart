@@ -327,8 +327,11 @@ You MUST cite your sources using the format `[index](link)`.
         }
       }
     } on DioException catch (e) {
-      // Log detailed error info including response body
-      // Try to read stream response body for error details
+      // Rethrow to let caller handle and record as failure
+      final statusCode = e.response?.statusCode;
+      String errorMsg = 'HTTP Error';
+      
+      // Try to read error details from response body
       try {
         if (e.response?.data != null) {
           final responseData = e.response?.data;
@@ -336,14 +339,65 @@ You MUST cite your sources using the format `[index](link)`.
             final stream = responseData.stream;
             final bytes = await stream.fold<List<int>>([], (prev, chunk) => prev..addAll(chunk));
             final errorBody = utf8.decode(bytes);
+            // Try to parse as JSON for better error message
+            try {
+              final json = jsonDecode(errorBody);
+              if (json is Map) {
+                final error = json['error'];
+                if (error is Map) {
+                  errorMsg = 'HTTP $statusCode: ${error['message'] ?? error}';
+                } else if (json['message'] != null) {
+                  errorMsg = 'HTTP $statusCode: ${json['message']}';
+                } else {
+                  errorMsg = 'HTTP $statusCode: $errorBody';
+                }
+              } else {
+                errorMsg = 'HTTP $statusCode: $errorBody';
+              }
+            } catch (_) {
+              errorMsg = 'HTTP $statusCode: $errorBody';
+            }
+          } else if (responseData is Map) {
+            final error = responseData['error'];
+            if (error is Map && error['message'] != null) {
+              errorMsg = 'HTTP $statusCode: ${error['message']}';
+            } else if (responseData['message'] != null) {
+              errorMsg = 'HTTP $statusCode: ${responseData['message']}';
+            } else {
+              errorMsg = 'HTTP $statusCode: $responseData';
+            }
+          } else if (responseData is String) {
+            errorMsg = 'HTTP $statusCode: $responseData';
           } else {
+            errorMsg = 'HTTP $statusCode: ${e.message}';
+          }
+        } else {
+          // No response data, use Dio's error type
+          switch (e.type) {
+            case DioExceptionType.connectionTimeout:
+              errorMsg = 'Connection Timeout';
+              break;
+            case DioExceptionType.sendTimeout:
+              errorMsg = 'Send Timeout';
+              break;
+            case DioExceptionType.receiveTimeout:
+              errorMsg = 'Receive Timeout';
+              break;
+            case DioExceptionType.connectionError:
+              errorMsg = 'Connection Error: ${e.message}';
+              break;
+            default:
+              errorMsg = 'Network Error: ${e.message}';
           }
         }
       } catch (readError) {
+        errorMsg = 'HTTP $statusCode: ${e.message}';
       }
-      yield LLMResponseChunk(content: 'Connection Error: ${e.message}');
+      
+      throw Exception(errorMsg);
     } catch (e) {
-      yield LLMResponseChunk(content: 'Unexpected Error: $e');
+      // Rethrow all other exceptions
+      rethrow;
     }
   }
 
@@ -694,9 +748,71 @@ You MUST cite your sources using the format `[index](link)`.
       }
       return const LLMResponseChunk(content: '');
     } on DioException catch (e) {
-      return LLMResponseChunk(content: 'Connection Error: ${e.message}');
+      // Rethrow to let caller handle and record as failure
+      final statusCode = e.response?.statusCode;
+      String errorMsg = 'HTTP Error';
+      
+      try {
+        if (e.response?.data != null) {
+          final data = e.response?.data;
+          if (data is Map) {
+            final error = data['error'];
+            if (error is Map && error['message'] != null) {
+              errorMsg = 'HTTP $statusCode: ${error['message']}';
+            } else if (data['message'] != null) {
+              errorMsg = 'HTTP $statusCode: ${data['message']}';
+            } else {
+              errorMsg = 'HTTP $statusCode: $data';
+            }
+          } else if (data is String) {
+            // Try to parse as JSON
+            try {
+              final json = jsonDecode(data);
+              if (json is Map) {
+                final error = json['error'];
+                if (error is Map && error['message'] != null) {
+                  errorMsg = 'HTTP $statusCode: ${error['message']}';
+                } else if (json['message'] != null) {
+                  errorMsg = 'HTTP $statusCode: ${json['message']}';
+                } else {
+                  errorMsg = 'HTTP $statusCode: $data';
+                }
+              } else {
+                errorMsg = 'HTTP $statusCode: $data';
+              }
+            } catch (_) {
+              errorMsg = 'HTTP $statusCode: $data';
+            }
+          } else {
+            errorMsg = 'HTTP $statusCode: ${e.message}';
+          }
+        } else {
+          // No response data, use Dio's error type
+          switch (e.type) {
+            case DioExceptionType.connectionTimeout:
+              errorMsg = 'Connection Timeout';
+              break;
+            case DioExceptionType.sendTimeout:
+              errorMsg = 'Send Timeout';
+              break;
+            case DioExceptionType.receiveTimeout:
+              errorMsg = 'Receive Timeout';
+              break;
+            case DioExceptionType.connectionError:
+              errorMsg = 'Connection Error: ${e.message}';
+              break;
+            default:
+              errorMsg = 'Network Error: ${e.message}';
+          }
+        }
+      } catch (_) {
+        errorMsg = 'HTTP $statusCode: ${e.message}';
+      }
+      
+      throw Exception(errorMsg);
     } catch (e) {
-      return LLMResponseChunk(content: 'Unexpected Error: $e');
+      // Rethrow all other exceptions
+      rethrow;
     }
   }
 }

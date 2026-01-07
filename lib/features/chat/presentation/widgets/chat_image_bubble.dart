@@ -9,6 +9,15 @@ import 'package:flutter/foundation.dart';
 import 'windows_image_viewer.dart';
 import 'mobile_image_viewer.dart';
 
+/// Global cache for decoded base64 images to prevent flicker on widget rebuild.
+/// Key is the hashCode of the imageUrl string.
+final Map<int, Uint8List> _imageCache = {};
+
+/// Clears the global image cache. Call this when switching chat sessions.
+void clearImageCache() {
+  _imageCache.clear();
+}
+
 // Top-level function for compute
 Uint8List? _decodeBase64Isolate(String imageUrl) {
   final commaIndex = imageUrl.indexOf(',');
@@ -59,28 +68,37 @@ class _ChatImageBubbleState extends State<ChatImageBubble> {
 
   Future<void> _decodeImage() async {
     if (_isBase64) {
+      final cacheKey = widget.imageUrl.hashCode;
+      
+      // Check cache first
+      if (_imageCache.containsKey(cacheKey)) {
+        if (mounted) {
+          setState(() => _cachedBytes = _imageCache[cacheKey]);
+        }
+        return;
+      }
+      
       if (mounted) {
         try {
+          Uint8List? bytes;
           // Only use isolate for large images (>50KB) to avoid isolate startup overhead
           // for small icons/images which causes jank on mobile.
           if (widget.imageUrl.length > 50 * 1024) {
-            final bytes = await compute(_decodeBase64Isolate, widget.imageUrl);
-            if (mounted && bytes != null) {
-              setState(() {
-                _cachedBytes = bytes;
-              });
-            }
+            bytes = await compute(_decodeBase64Isolate, widget.imageUrl);
           } else {
              // Synchronous decode for small images (fast)
              final commaIndex = widget.imageUrl.indexOf(',');
-             final bytes = (commaIndex != -1) 
+             bytes = (commaIndex != -1) 
                  ? base64Decode(widget.imageUrl.substring(commaIndex + 1))
                  : base64Decode(widget.imageUrl);
-             if (mounted) {
-               setState(() {
-                 _cachedBytes = bytes;
-               });
-             }
+          }
+          
+          if (bytes != null) {
+            // Store in global cache
+            _imageCache[cacheKey] = bytes;
+            if (mounted) {
+              setState(() => _cachedBytes = bytes);
+            }
           }
         } catch (e) {
           debugPrint('Failed to decode base64 image: $e');
@@ -95,8 +113,31 @@ class _ChatImageBubbleState extends State<ChatImageBubble> {
     }
   }
 
+  Future<Uint8List?> _getImageBytes() async {
+    if (_cachedBytes != null) return _cachedBytes;
+    
+    // Try to read from local file
+    if (_isLocalFile) {
+      try {
+        final file = File(widget.imageUrl);
+        if (await file.exists()) {
+          final bytes = await file.readAsBytes();
+          // Cache for future use
+          _imageCache[widget.imageUrl.hashCode] = bytes;
+          if (mounted) {
+            setState(() => _cachedBytes = bytes);
+          }
+          return bytes;
+        }
+      } catch (e) {
+        debugPrint('Failed to read local file: $e');
+      }
+    }
+    return null;
+  }
+
   Future<void> _handleCopy(BuildContext context) async {
-    final bytes = _cachedBytes;
+    final bytes = await _getImageBytes();
     if (bytes == null) {
       return;
     }
@@ -139,12 +180,12 @@ class _ChatImageBubbleState extends State<ChatImageBubble> {
   }
 
   Future<void> _handleSave(BuildContext context) async {
-    final bytes = _cachedBytes;
+    final bytes = await _getImageBytes();
     if (bytes == null) return;
     
     final FileSaveLocation? result = await getSaveLocation(
       suggestedName:
-          'generated_image_${DateTime.now().millisecondsSinceEpoch}.png',
+          'image_${DateTime.now().millisecondsSinceEpoch}.png',
       acceptedTypeGroups: [
         const XTypeGroup(
           label: 'Images',
@@ -158,8 +199,27 @@ class _ChatImageBubbleState extends State<ChatImageBubble> {
     }
   }
 
-  void _showFullImage(BuildContext context) {
-    final bytes = _cachedBytes;
+  void _showFullImage(BuildContext context) async {
+    Uint8List? bytes = _cachedBytes;
+    
+    // For local files, read bytes from file
+    if (bytes == null && _isLocalFile) {
+      try {
+        final file = File(widget.imageUrl);
+        if (await file.exists()) {
+          bytes = await file.readAsBytes();
+          // Cache for future use
+          _imageCache[widget.imageUrl.hashCode] = bytes;
+          if (mounted) {
+            setState(() => _cachedBytes = bytes);
+          }
+        }
+      } catch (e) {
+        debugPrint('Failed to read local file: $e');
+        return;
+      }
+    }
+    
     if (bytes == null) return;
     
     if (Platform.isWindows) {
@@ -169,7 +229,7 @@ class _ChatImageBubbleState extends State<ChatImageBubble> {
           opaque: false,
           pageBuilder: (context, animation, secondaryAnimation) {
             return WindowsImageViewer(
-              imageBytes: bytes,
+              imageBytes: bytes!,
               onClose: () => Navigator.pop(context),
             );
           },
@@ -185,7 +245,7 @@ class _ChatImageBubbleState extends State<ChatImageBubble> {
           opaque: true, // Opaque for full immersion
           pageBuilder: (context, animation, secondaryAnimation) {
             return MobileImageViewer(
-              imageBytes: bytes,
+              imageBytes: bytes!,
               onClose: () => Navigator.pop(context),
             );
           },
@@ -203,7 +263,26 @@ class _ChatImageBubbleState extends State<ChatImageBubble> {
   Widget build(BuildContext context) {
     if (_isBase64) {
       final bytes = _cachedBytes;
-      if (bytes == null) return Icon(FluentIcons.error, color: Colors.red);
+      if (bytes == null) {
+        // Show loading indicator instead of error icon
+        return Container(
+          width: 60,
+          height: 60,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.grey.withOpacity(0.3)),
+          ),
+          child: Center(
+            child: SizedBox(
+              width: 24,
+              height: 24,
+              child: Platform.isWindows
+                  ? const ProgressRing(strokeWidth: 2)
+                  : const material.CircularProgressIndicator(strokeWidth: 2),
+            ),
+          ),
+        );
+      }
       return FlyoutTarget(
         controller: _flyoutController,
         child: MouseRegion(
@@ -264,16 +343,73 @@ class _ChatImageBubbleState extends State<ChatImageBubble> {
         ),
       );
     }
-    return SizedBox(
-      width: 60,
-      height: 60,
-      child: _isLocalFile
-          ? Image.file(File(widget.imageUrl),
-              fit: BoxFit.cover,
-              errorBuilder: (ctx, err, stack) => const Icon(FluentIcons.error))
-          : Image.network(widget.imageUrl,
-              fit: BoxFit.cover,
-              errorBuilder: (ctx, err, stack) => const Icon(FluentIcons.error)),
+    // Local file or network image
+    return FlyoutTarget(
+      controller: _flyoutController,
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: GestureDetector(
+          onTap: () => _showFullImage(context),
+          onSecondaryTapUp: (details) {
+            _flyoutController.showFlyout(
+              position: details.globalPosition,
+              builder: (context) {
+                return MenuFlyout(
+                  items: [
+                    MenuFlyoutItem(
+                      leading: const Icon(FluentIcons.copy),
+                      text: const Text('Copy Image'),
+                      onPressed: () {
+                        Flyout.of(context).close();
+                        _handleCopy(context);
+                      },
+                    ),
+                    MenuFlyoutItem(
+                      leading: const Icon(FluentIcons.save),
+                      text: const Text('Save Image As...'),
+                      onPressed: () {
+                        Flyout.of(context).close();
+                        _handleSave(context);
+                      },
+                    ),
+                  ],
+                );
+              },
+            );
+          },
+          child: Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey.withOpacity(0.3)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                )
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: _isLocalFile
+                  ? Image.file(
+                      File(widget.imageUrl),
+                      fit: BoxFit.cover,
+                      errorBuilder: (ctx, err, stack) =>
+                          const Icon(FluentIcons.error),
+                    )
+                  : Image.network(
+                      widget.imageUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (ctx, err, stack) =>
+                          const Icon(FluentIcons.error),
+                    ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

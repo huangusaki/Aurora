@@ -13,6 +13,7 @@ import 'features/settings/data/settings_storage.dart';
 import 'features/settings/presentation/settings_provider.dart';
 import 'shared/utils/windows_injector.dart';
 import 'package:flutter_displaymode/flutter_displaymode.dart';
+import 'features/chat/presentation/widgets/chat_image_bubble.dart' show clearImageCache;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -121,6 +122,10 @@ class MyApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.listen<String?>(selectedHistorySessionIdProvider, (prev, next) {
+      // Clear image cache when switching sessions to free memory
+      if (prev != next) {
+        clearImageCache();
+      }
       if (next != null && next != 'new_chat' && next != 'translation') {
         ref.read(settingsStorageProvider).saveLastSessionId(next);
       }

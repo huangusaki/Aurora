@@ -176,14 +176,22 @@ class ChatStorage {
     _messagesCache.remove(sessionId);
   }
 
-  Future<void> deleteMessage(String id) async {
+  Future<void> deleteMessage(String id, {String? sessionId}) async {
     final intId = int.tryParse(id);
     if (intId == null) return;
     
-    // Fetch the message to get attachments before deleting
+    // Fetch the message to get attachments and session before deleting
     final entity = await _isar.messageEntitys.get(intId);
-    if (entity != null && entity.attachments.isNotEmpty) {
-      await _deleteAttachmentFiles(entity.attachments);
+    if (entity != null) {
+      if (entity.attachments.isNotEmpty) {
+        await _deleteAttachmentFiles(entity.attachments);
+      }
+      
+      // Update cache: remove from the session's cached messages
+      final targetSessionId = sessionId ?? entity.sessionId;
+      if (_messagesCache.containsKey(targetSessionId)) {
+        _messagesCache[targetSessionId]!.removeWhere((m) => m.id == id);
+      }
     }
     
     await _isar.writeTxn(() async {

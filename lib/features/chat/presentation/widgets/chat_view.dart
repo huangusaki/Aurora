@@ -1828,23 +1828,10 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
                                              ext.endsWith('.webp') ||
                                              ext.endsWith('.gif');
                                     })
-                                    .map((path) => Container(
-                                      width: 60,
-                                      height: 60,
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(color: Colors.grey.withOpacity(0.3)),
-                                      ),
-                                      child: ClipRRect(
-                                        borderRadius: BorderRadius.circular(8),
-                                        child: Image.file(
-                                          File(path),
-                                          fit: BoxFit.cover,
-                                          errorBuilder: (ctx, err, stack) =>
-                                              const Icon(fluent.FluentIcons.error),
-                                        ),
-                                      ),
-                                    ))
+                                    .map((path) => ChatImageBubble(
+                                          key: ValueKey(path.hashCode),
+                                          imageUrl: path,
+                                        ))
                                     .toList(),
                               ),
                             ],
@@ -1857,6 +1844,7 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
                                 runSpacing: 8,
                                 children: message.images
                                     .map((img) => ChatImageBubble(
+                                          key: ValueKey(img.hashCode),
                                           imageUrl: img,
                                         ))
                                     .toList(),
@@ -2673,7 +2661,10 @@ class _MergedMessageBubbleState extends ConsumerState<MergedMessageBubble> with 
              spacing: 8,
              runSpacing: 8,
              children: message.images
-                 .map((img) => ChatImageBubble(imageUrl: img))
+                 .map((img) => ChatImageBubble(
+                       key: ValueKey(img.hashCode),
+                       imageUrl: img,
+                     ))
                  .toList(),
            ),
          ),

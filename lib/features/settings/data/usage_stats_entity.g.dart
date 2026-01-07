@@ -36,6 +36,11 @@ const UsageStatsEntitySchema = CollectionSchema(
       id: 3,
       name: r'totalDurationMs',
       type: IsarType.long,
+    ),
+    r'validDurationCount': PropertySchema(
+      id: 4,
+      name: r'validDurationCount',
+      type: IsarType.long,
     )
   },
   estimateSize: _usageStatsEntityEstimateSize,
@@ -86,6 +91,7 @@ void _usageStatsEntitySerialize(
   writer.writeString(offsets[1], object.modelName);
   writer.writeLong(offsets[2], object.successCount);
   writer.writeLong(offsets[3], object.totalDurationMs);
+  writer.writeLong(offsets[4], object.validDurationCount);
 }
 
 UsageStatsEntity _usageStatsEntityDeserialize(
@@ -100,6 +106,7 @@ UsageStatsEntity _usageStatsEntityDeserialize(
   object.modelName = reader.readString(offsets[1]);
   object.successCount = reader.readLong(offsets[2]);
   object.totalDurationMs = reader.readLong(offsets[3]);
+  object.validDurationCount = reader.readLong(offsets[4]);
   return object;
 }
 
@@ -117,6 +124,8 @@ P _usageStatsEntityDeserializeProp<P>(
     case 2:
       return (reader.readLong(offset)) as P;
     case 3:
+      return (reader.readLong(offset)) as P;
+    case 4:
       return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -677,6 +686,62 @@ extension UsageStatsEntityQueryFilter
       ));
     });
   }
+
+  QueryBuilder<UsageStatsEntity, UsageStatsEntity, QAfterFilterCondition>
+      validDurationCountEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'validDurationCount',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<UsageStatsEntity, UsageStatsEntity, QAfterFilterCondition>
+      validDurationCountGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'validDurationCount',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<UsageStatsEntity, UsageStatsEntity, QAfterFilterCondition>
+      validDurationCountLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'validDurationCount',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<UsageStatsEntity, UsageStatsEntity, QAfterFilterCondition>
+      validDurationCountBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'validDurationCount',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
 }
 
 extension UsageStatsEntityQueryObject
@@ -740,6 +805,20 @@ extension UsageStatsEntityQuerySortBy
       sortByTotalDurationMsDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'totalDurationMs', Sort.desc);
+    });
+  }
+
+  QueryBuilder<UsageStatsEntity, UsageStatsEntity, QAfterSortBy>
+      sortByValidDurationCount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'validDurationCount', Sort.asc);
+    });
+  }
+
+  QueryBuilder<UsageStatsEntity, UsageStatsEntity, QAfterSortBy>
+      sortByValidDurationCountDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'validDurationCount', Sort.desc);
     });
   }
 }
@@ -814,6 +893,20 @@ extension UsageStatsEntityQuerySortThenBy
       return query.addSortBy(r'totalDurationMs', Sort.desc);
     });
   }
+
+  QueryBuilder<UsageStatsEntity, UsageStatsEntity, QAfterSortBy>
+      thenByValidDurationCount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'validDurationCount', Sort.asc);
+    });
+  }
+
+  QueryBuilder<UsageStatsEntity, UsageStatsEntity, QAfterSortBy>
+      thenByValidDurationCountDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'validDurationCount', Sort.desc);
+    });
+  }
 }
 
 extension UsageStatsEntityQueryWhereDistinct
@@ -843,6 +936,13 @@ extension UsageStatsEntityQueryWhereDistinct
       distinctByTotalDurationMs() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'totalDurationMs');
+    });
+  }
+
+  QueryBuilder<UsageStatsEntity, UsageStatsEntity, QDistinct>
+      distinctByValidDurationCount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'validDurationCount');
     });
   }
 }
@@ -877,6 +977,13 @@ extension UsageStatsEntityQueryProperty
       totalDurationMsProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'totalDurationMs');
+    });
+  }
+
+  QueryBuilder<UsageStatsEntity, int, QQueryOperations>
+      validDurationCountProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'validDurationCount');
     });
   }
 }

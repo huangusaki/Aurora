@@ -183,14 +183,19 @@ class SettingsStorage {
           ..modelName = modelName
           ..successCount = success ? 1 : 0
           ..failureCount = success ? 0 : 1
-          ..totalDurationMs = durationMs;
+          ..totalDurationMs = durationMs > 0 ? durationMs : 0
+          ..validDurationCount = durationMs > 0 ? 1 : 0;
       } else {
         if (success) {
           existing.successCount++;
         } else {
           existing.failureCount++;
         }
-        existing.totalDurationMs += durationMs;
+        // Only accumulate duration if it's a valid positive value
+        if (durationMs > 0) {
+          existing.totalDurationMs += durationMs;
+          existing.validDurationCount++;
+        }
       }
       await _isar.usageStatsEntitys.put(existing);
     });
