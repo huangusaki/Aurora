@@ -107,6 +107,7 @@ class SettingsStorage {
       ..enableSmartTopic = existing.enableSmartTopic
       ..topicGenerationModel = existing.topicGenerationModel
       ..lastSessionId = sessionId
+      ..lastTopicId = existing.lastTopicId
       ..language = existing.language;
     await _isar.writeTxn(() async {
       await _isar.appSettingsEntitys.clear();
@@ -140,6 +141,8 @@ class SettingsStorage {
       ..searchEngine = existing.searchEngine
       ..enableSmartTopic = existing.enableSmartTopic
       ..topicGenerationModel = existing.topicGenerationModel
+      ..lastSessionId = existing.lastSessionId
+      ..lastTopicId = existing.lastTopicId
       ..language = existing.language;
     await _isar.writeTxn(() async {
       await _isar.appSettingsEntitys.clear();

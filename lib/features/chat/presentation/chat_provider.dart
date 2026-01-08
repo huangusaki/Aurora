@@ -756,9 +756,12 @@ class SessionsNotifier extends StateNotifier<SessionsState> {
     final settings = await _ref.read(settingsStorageProvider).loadAppSettings();
     final lastId = settings?.lastSessionId;
     final lastTopicId = settings?.lastTopicId; // provider_config_entity change reflects here
+    debugPrint('Restoring session. lastId: $lastId, lastTopicId: $lastTopicId');
 
     if (lastTopicId != null) {
-      _ref.read(selectedTopicIdProvider.notifier).state = int.tryParse(lastTopicId);
+      final topicId = int.tryParse(lastTopicId);
+      _ref.read(selectedTopicIdProvider.notifier).state = topicId;
+      debugPrint('Restored topic id: $topicId');
     }
 
     if (lastId != null && state.sessions.any((s) => s.sessionId == lastId)) {

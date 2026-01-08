@@ -196,11 +196,11 @@ class _SessionList extends ConsumerWidget {
     final manager = ref.watch(chatSessionManagerProvider);
     // Watch trigger to rebuild when any session state changes
     ref.watch(chatStateUpdateTriggerProvider);
-    // Persistence Listeners
-    ref.listen(selectedTopicIdProvider, (_, next) {
-      final storage = ref.read(settingsStorageProvider);
-      storage.saveLastTopicId(next?.toString());
-    });
+    // Listened in main.dart
+    // ref.listen(selectedTopicIdProvider, (_, next) {
+    //   final storage = ref.read(settingsStorageProvider);
+    //   storage.saveLastTopicId(next?.toString());
+    // });
 
     ref.listen(selectedHistorySessionIdProvider, (_, next) {
       if (next != null) {

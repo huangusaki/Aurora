@@ -9,6 +9,7 @@ import 'package:aurora/l10n/app_localizations.dart';
 import 'package:window_manager/window_manager.dart';
 import 'features/chat/presentation/chat_screen.dart';
 import 'features/chat/presentation/chat_provider.dart';
+import 'features/chat/presentation/topic_provider.dart';
 import 'features/settings/data/settings_storage.dart';
 import 'features/settings/presentation/settings_provider.dart';
 import 'shared/utils/windows_injector.dart';
@@ -128,6 +129,12 @@ class MyApp extends ConsumerWidget {
       }
       if (next != null && next != 'new_chat' && next != 'translation') {
         ref.read(settingsStorageProvider).saveLastSessionId(next);
+      }
+    });
+
+    ref.listen<int?>(selectedTopicIdProvider, (prev, next) {
+      if (prev != next) {
+        ref.read(settingsStorageProvider).saveLastTopicId(next?.toString());
       }
     });
 
