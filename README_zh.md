@@ -13,12 +13,12 @@ Aurora 旨在提供简洁、原生的多平台使用体验。
 ## 界面预览
 
 <p align="center">
-  <img src="docs/images/defc395b-3baa-4ed9-8095-f7e1e485e644.png" width="45%" />
-  <img src="docs/images/fd02b90e-4a3f-41c0-8300-9d99d8ca0435.png" width="45%" />
+  <img src="docs/images/9ef25c4a-8e45-4b0a-9453-4b85b11a8b26.png" width="45%" />
+  <img src="docs/images/677b50b6-3211-456a-b624-47b6199a5c2b.png" width="45%" />
 </p>
 <p align="center">
-  <img src="docs/images/85d78b54cd085042a5e38051d1efa379_720.jpg" width="45%" />
-  <img src="docs/images/85f5e391d226c60a7cf575c3e21fb41e_720.jpg" width="45%" />
+  <img src="docs/images/148492afc6c30047a11846f997aa0a49.jpg" width="45%" />
+  <img src="docs/images/63196fec13f5fa7687c3797b646e2dcb.jpg" width="45%" />
 </p>
 
 ## 功能
