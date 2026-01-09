@@ -3,10 +3,97 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart'; // For compute
 import 'package:image/image.dart' as img;
 import '../../features/chat/domain/message.dart';
 import '../../features/settings/presentation/settings_provider.dart';
 import 'llm_service.dart';
+
+/// Top-level function for isolate: Compress images in the API messages
+Future<List<Map<String, dynamic>>> _compressImagesTask(List<Map<String, dynamic>> apiMessages) async {
+  // Helper to compress a single image (logic moved from class method)
+  String compressSingleImage(Uint8List bytes) {
+    try {
+      final image = img.decodeImage(bytes);
+      if (image == null) return base64Encode(bytes);
+
+      // Calculate target dimensions (max 1920x1080, maintain aspect ratio)
+      int targetWidth = image.width;
+      int targetHeight = image.height;
+
+      if (targetWidth > 1920 || targetHeight > 1080) {
+        final aspectRatio = targetWidth / targetHeight;
+        if (aspectRatio > 1920 / 1080) {
+          // Width is the limiting factor
+          targetWidth = 1920;
+          targetHeight = (1920 / aspectRatio).round();
+        } else {
+          // Height is the limiting factor
+          targetHeight = 1080;
+          targetWidth = (1080 * aspectRatio).round();
+        }
+      }
+
+      // Resize if needed
+      final resized = (targetWidth != image.width || targetHeight != image.height)
+          ? img.copyResize(image, width: targetWidth, height: targetHeight)
+          : image;
+
+      // Encode as JPG with quality 85
+      final compressed = img.encodeJpg(resized, quality: 85);
+      return base64Encode(compressed);
+    } catch (e) {
+      return base64Encode(bytes);
+    }
+  }
+
+  // Deep copy and compress images
+  final List<Map<String, dynamic>> result = [];
+  
+  for (final msg in apiMessages) {
+    final Map<String, dynamic> newMsg = Map.from(msg);
+    final content = newMsg['content'];
+    
+    if (content is List) {
+      final List<dynamic> newContentList = [];
+      for (final item in content) {
+        if (item is Map && item['type'] == 'image_url') {
+          final imageUrl = item['image_url']?['url'];
+          
+          if (imageUrl is String && imageUrl.startsWith('data:')) {
+             // Extract base64, compress, and replace
+             final parts = imageUrl.split(',');
+             if (parts.length == 2) {
+               try {
+                 final bytes = base64Decode(parts[1]);
+                 // Synchronous inside the isolate is fine
+                 final compressed = compressSingleImage(Uint8List.fromList(bytes));
+                 newContentList.add({
+                   'type': 'image_url',
+                   'image_url': {
+                     'url': 'data:image/jpeg;base64,$compressed',
+                   },
+                   // Preserve extras like thought_signature
+                   if (item.containsKey('thought_signature'))
+                    'thought_signature': item['thought_signature'],
+                 });
+                 continue; 
+               } catch (e) {
+                 // Fallback to original
+                 newContentList.add(item);
+                 continue;
+               }
+             }
+          }
+        }
+        newContentList.add(item);
+      }
+      newMsg['content'] = newContentList;
+    }
+    result.add(newMsg);
+  }
+  return result;
+}
 
 class OpenAILLMService implements LLMService {
   final Dio _dio;
@@ -83,7 +170,7 @@ class OpenAILLMService implements LLMService {
     }
     try {
       List<Map<String, dynamic>> apiMessages =
-          _buildApiMessages(messages, attachments);
+          await _buildApiMessages(messages, attachments);
       
       // Early debug: Log message count and structure
       for (int i = 0; i < apiMessages.length; i++) {
@@ -99,7 +186,7 @@ class OpenAILLMService implements LLMService {
       }
       
       // Compress images if request size exceeds threshold
-      apiMessages = _compressApiMessagesIfNeeded(apiMessages);
+      apiMessages = await _compressApiMessagesIfNeeded(apiMessages);
       // Add System Time Prompt (Always)
       final now = DateTime.now();
       final dateStr = now.toIso8601String().split('T')[0]; // YYYY-MM-DD
@@ -302,164 +389,165 @@ You MUST cite your sources using the format `[index](link)`.
           final line = lineBuffer.substring(0, nlIndex).trim();
           lineBuffer = lineBuffer.substring(nlIndex + 1);
           if (line.isEmpty) continue;
-          if (!line.startsWith('data: ')) continue;
-          final data = line.substring(6).trim();
-          if (data == '[DONE]') {
-            print('🟢 [LLM RESPONSE STREAM]: [DONE]');
-            return;
-          }
-          
-          try {
-            final json = jsonDecode(data);
-             // Log every chunk sanitized
-            _logResponse(json);
-
-            // Check for usage
-            if (json['usage'] != null) {
-              final usage = json['usage'];
-              final int? totalTokens = usage['total_tokens'];
-              if (totalTokens != null) {
-                yield LLMResponseChunk(usage: totalTokens);
-              }
+          if (line.startsWith('data: ')) {
+            final data = line.substring(6).trim();
+            if (data == '[DONE]') {
+              print('🟢 [LLM RESPONSE STREAM]: [DONE]');
+              return;
             }
+            
+            try {
+              final json = jsonDecode(data);
+               // Log every chunk sanitized
+              _logResponse(json);
 
-            final choices = json['choices'] as List;
-            if (choices.isNotEmpty) {
-              final delta = choices[0]['delta'];
-              if (delta != null) {
-                final String? content = delta['content'];
-                final String? reasoning =
-                    delta['reasoning_content'] ?? delta['reasoning'];
-                if (content != null || reasoning != null) {
-                  yield LLMResponseChunk(
-                      content: content, reasoning: reasoning);
+              // Check for usage
+              if (json['usage'] != null) {
+                final usage = json['usage'];
+                final int? totalTokens = usage['total_tokens'];
+                if (totalTokens != null) {
+                  yield LLMResponseChunk(usage: totalTokens);
                 }
-                
-                // Handle Tool Calls (Stream)
-                final toolCalls = delta['tool_calls'];
-                if (toolCalls != null && toolCalls is List) {
-                   for (final toolCall in toolCalls) {
-                     final int? index = toolCall['index'];
-                     final String? id = toolCall['id'];
-                     final String? type = toolCall['type'];
-                     final Map? function = toolCall['function'];
-                     
-                     if (function != null) {
-                       final String? name = function['name'];
-                       final String? arguments = function['arguments'];
-                       yield LLMResponseChunk(
-                         toolCalls: [
-                           ToolCallChunk(
-                             index: index, 
-                             id: id, 
-                             type: type, 
-                             name: name, 
-                             arguments: arguments
-                           )
-                         ]
-                       );
+              }
+
+              final choices = json['choices'] as List;
+              if (choices.isNotEmpty) {
+                final delta = choices[0]['delta'];
+                if (delta != null) {
+                  final String? content = delta['content'];
+                  final String? reasoning =
+                      delta['reasoning_content'] ?? delta['reasoning'];
+                  if (content != null || reasoning != null) {
+                    yield LLMResponseChunk(
+                        content: content, reasoning: reasoning);
+                  }
+                  
+                  // Handle Tool Calls (Stream)
+                  final toolCalls = delta['tool_calls'];
+                  if (toolCalls != null && toolCalls is List) {
+                     for (final toolCall in toolCalls) {
+                       final int? index = toolCall['index'];
+                       final String? id = toolCall['id'];
+                       final String? type = toolCall['type'];
+                       final Map? function = toolCall['function'];
+                       
+                       if (function != null) {
+                         final String? name = function['name'];
+                         final String? arguments = function['arguments'];
+                         yield LLMResponseChunk(
+                           toolCalls: [
+                             ToolCallChunk(
+                               index: index, 
+                               id: id, 
+                               type: type, 
+                               name: name, 
+                               arguments: arguments
+                             )
+                           ]
+                         );
+                       }
                      }
-                   }
-                }
-                String? imageUrl;
-                if (choices[0]['b64_json'] != null) {
-                  imageUrl = 'data:image/png;base64,${choices[0]['b64_json']}';
-                } else if (choices[0]['url'] != null) {
-                  imageUrl = choices[0]['url'];
-                }
-                if (imageUrl == null) {
-                  if (delta['b64_json'] != null) {
-                    imageUrl = 'data:image/png;base64,${delta['b64_json']}';
-                  } else if (delta['url'] != null) {
-                    imageUrl = delta['url'];
-                  } else if (delta['image'] != null) {
-                    final imgVal = delta['image'];
-                    if (imgVal.toString().startsWith('http')) {
-                      imageUrl = imgVal;
-                    } else {
-                      imageUrl = 'data:image/png;base64,$imgVal';
-                    }
-                  } else if (delta['inline_data'] != null) {
-                    final inlineData = delta['inline_data'];
-                    if (inlineData is Map) {
-                      final mimeType = inlineData['mime_type'] ?? 'image/png';
-                      final data = inlineData['data'];
-                      if (data != null) {
-                        imageUrl = 'data:$mimeType;base64,$data';
+                  }
+                  String? imageUrl;
+                  if (choices[0]['b64_json'] != null) {
+                    imageUrl = 'data:image/png;base64,${choices[0]['b64_json']}';
+                  } else if (choices[0]['url'] != null) {
+                    imageUrl = choices[0]['url'];
+                  }
+                  if (imageUrl == null) {
+                    if (delta['b64_json'] != null) {
+                      imageUrl = 'data:image/png;base64,${delta['b64_json']}';
+                    } else if (delta['url'] != null) {
+                      imageUrl = delta['url'];
+                    } else if (delta['image'] != null) {
+                      final imgVal = delta['image'];
+                      if (imgVal.toString().startsWith('http')) {
+                        imageUrl = imgVal;
+                      } else {
+                        imageUrl = 'data:image/png;base64,$imgVal';
                       }
-                    }
-                  } else if (delta['parts'] != null && delta['parts'] is List) {
-                    final parts = delta['parts'] as List;
-                    for (final part in parts) {
-                      if (part is Map && part['inline_data'] != null) {
-                        final inlineData = part['inline_data'];
-                        if (inlineData is Map) {
-                          final mimeType =
-                              inlineData['mime_type'] ?? 'image/png';
-                          final data = inlineData['data'];
-                          if (data != null) {
-                            imageUrl = 'data:$mimeType;base64,$data';
-                            break;
+                    } else if (delta['inline_data'] != null) {
+                      final inlineData = delta['inline_data'];
+                      if (inlineData is Map) {
+                        final mimeType = inlineData['mime_type'] ?? 'image/png';
+                        final data = inlineData['data'];
+                        if (data != null) {
+                          imageUrl = 'data:$mimeType;base64,$data';
+                        }
+                      }
+                    } else if (delta['parts'] != null && delta['parts'] is List) {
+                      final parts = delta['parts'] as List;
+                      for (final part in parts) {
+                        if (part is Map && part['inline_data'] != null) {
+                          final inlineData = part['inline_data'];
+                          if (inlineData is Map) {
+                            final mimeType =
+                                inlineData['mime_type'] ?? 'image/png';
+                            final data = inlineData['data'];
+                            if (data != null) {
+                              imageUrl = 'data:$mimeType;base64,$data';
+                              break;
+                            }
                           }
                         }
                       }
-                    }
-                  } else if (delta['images'] != null &&
-                      delta['images'] is List) {
-                    final images = delta['images'] as List;
-                    final List<String> parsedImages = [];
-                    
-                    for (final imgData in images) {
-                      if (imgData is String) {
-                        if (imgData.startsWith('http')) {
-                          parsedImages.add(imgData);
-                        } else if (imgData.startsWith('data:image')) {
-                          parsedImages.add(imgData);
-                        } else {
-                          parsedImages.add('data:image/png;base64,$imgData');
-                        }
-                      } else if (imgData is Map) {
-                        if (imgData['url'] != null) {
-                          final url = imgData['url'].toString();
-                          parsedImages.add(
-                              url.startsWith('http') || url.startsWith('data:')
-                                  ? url
-                                  : 'data:image/png;base64,$url');
-                        } else if (imgData['data'] != null) {
-                          parsedImages.add('data:image/png;base64,${imgData['data']}');
-                        } else if (imgData['image_url'] != null) {
-                          final imgUrlObj = imgData['image_url'];
-                          if (imgUrlObj is Map && imgUrlObj['url'] != null) {
-                             parsedImages.add(imgUrlObj['url'].toString());
-                          } else if (imgUrlObj is String) {
-                             parsedImages.add(imgUrlObj);
+                    } else if (delta['images'] != null &&
+                        delta['images'] is List) {
+                      final images = delta['images'] as List;
+                      final List<String> parsedImages = [];
+                      
+                      for (final imgData in images) {
+                        if (imgData is String) {
+                          if (imgData.startsWith('http')) {
+                            parsedImages.add(imgData);
+                          } else if (imgData.startsWith('data:image')) {
+                            parsedImages.add(imgData);
+                          } else {
+                            parsedImages.add('data:image/png;base64,$imgData');
+                          }
+                        } else if (imgData is Map) {
+                          if (imgData['url'] != null) {
+                            final url = imgData['url'].toString();
+                            parsedImages.add(
+                                url.startsWith('http') || url.startsWith('data:')
+                                    ? url
+                                    : 'data:image/png;base64,$url');
+                          } else if (imgData['data'] != null) {
+                            parsedImages.add('data:image/png;base64,${imgData['data']}');
+                          } else if (imgData['image_url'] != null) {
+                            final imgUrlObj = imgData['image_url'];
+                            if (imgUrlObj is Map && imgUrlObj['url'] != null) {
+                               parsedImages.add(imgUrlObj['url'].toString());
+                            } else if (imgUrlObj is String) {
+                               parsedImages.add(imgUrlObj);
+                            }
                           }
                         }
                       }
-                    }
-                    if (parsedImages.isNotEmpty) {
-                       yield LLMResponseChunk(content: '', images: parsedImages);
-                    }
-                  }
-                }
-                if (delta['content'] is List) {
-                  final contentList = delta['content'] as List;
-                  for (final item in contentList) {
-                    if (item is Map && item['type'] == 'image_url') {
-                      final url = item['image_url']?['url'];
-                      if (url != null) {
-                        yield LLMResponseChunk(content: '', images: [url]);
+                      if (parsedImages.isNotEmpty) {
+                         yield LLMResponseChunk(content: '', images: parsedImages);
                       }
                     }
                   }
-                }
-                if (imageUrl != null) {
-                  yield LLMResponseChunk(content: '', images: [imageUrl]);
+                  if (delta['content'] is List) {
+                    final contentList = delta['content'] as List;
+                    for (final item in contentList) {
+                      if (item is Map && item['type'] == 'image_url') {
+                        final url = item['image_url']?['url'];
+                        if (url != null) {
+                          yield LLMResponseChunk(content: '', images: [url]);
+                        }
+                      }
+                    }
+                  }
+                  if (imageUrl != null) {
+                    yield LLMResponseChunk(content: '', images: [imageUrl]);
+                  }
                 }
               }
+            } catch (e) {
+              print('LLM Stream Parse Error: $e');
             }
-          } catch (e) {
-            print('LLM Stream Parse Error: $e');
           }
         }
       }
@@ -552,20 +640,24 @@ You MUST cite your sources using the format `[index](link)`.
     return 'image/jpeg';
   }
 
-  List<Map<String, dynamic>> _buildApiMessages(
-      List<Message> messages, List<String>? currentAttachments) {
-    return messages.map((m) {
+  Future<List<Map<String, dynamic>>> _buildApiMessages(
+      List<Message> messages, List<String>? currentAttachments) async {
+    // We need to use a loop or Future.wait for async processing
+    final List<Map<String, dynamic>> result = [];
+    
+    for (final m in messages) {
       if (m.role == 'tool') {
         // Tool Output Message
-        return {
+        result.add({
           'role': 'tool',
           'tool_call_id': m.toolCallId,
           'content': m.content,
-        };
+        });
+        continue;
       }
       if (m.role == 'assistant' && m.toolCalls != null && m.toolCalls!.isNotEmpty) {
         // Assistant Message with Tool Calls
-        return {
+        result.add({
           'role': 'assistant',
           'content': m.content.isEmpty ? null : m.content,
           'tool_calls': m.toolCalls!.map((tc) => {
@@ -576,17 +668,19 @@ You MUST cite your sources using the format `[index](link)`.
               'arguments': tc.arguments
             }
           }).toList(),
-        };
+        });
+        continue;
       }
       final hasAttachments = m.attachments.isNotEmpty;
       final hasImages = m.images.isNotEmpty;
       
       // If no attachments and no model-generated images, return simple message
       if (!hasAttachments && !hasImages) {
-        return {
+        result.add({
           'role': m.isUser ? 'user' : 'assistant',
           'content': m.content,
-        };
+        });
+        continue;
       }
       
       // Build multipart content with text, attachments, and/or model-generated images
@@ -611,8 +705,8 @@ You MUST cite your sources using the format `[index](link)`.
         for (final path in m.attachments) {
           try {
             final file = File(path);
-            if (file.existsSync()) {
-              final bytes = file.readAsBytesSync();
+            if (await file.exists()) {
+              final bytes = await file.readAsBytes();
               final base64Image = base64Encode(bytes);
               final mimeType = _getMimeType(path);
               contentList.add({
@@ -656,49 +750,13 @@ You MUST cite your sources using the format `[index](link)`.
             }
           }
         }
-        return {
+        result.add({
           'role': m.isUser ? 'user' : 'assistant',
           'content': contentList,
-        };
+        });
       }
-    }).toList();
-  }
-
-  /// Compress image bytes to 1080p JPG format
-  /// Returns compressed base64 string or original if compression fails
-  String _compressImageToBase64(Uint8List bytes) {
-    try {
-      final image = img.decodeImage(bytes);
-      if (image == null) return base64Encode(bytes);
-      
-      // Calculate target dimensions (max 1920x1080, maintain aspect ratio)
-      int targetWidth = image.width;
-      int targetHeight = image.height;
-      
-      if (targetWidth > 1920 || targetHeight > 1080) {
-        final aspectRatio = targetWidth / targetHeight;
-        if (aspectRatio > 1920 / 1080) {
-          // Width is the limiting factor
-          targetWidth = 1920;
-          targetHeight = (1920 / aspectRatio).round();
-        } else {
-          // Height is the limiting factor
-          targetHeight = 1080;
-          targetWidth = (1080 * aspectRatio).round();
-        }
-      }
-      
-      // Resize if needed
-      final resized = (targetWidth != image.width || targetHeight != image.height)
-          ? img.copyResize(image, width: targetWidth, height: targetHeight)
-          : image;
-      
-      // Encode as JPG with quality 85
-      final compressed = img.encodeJpg(resized, quality: 85);
-      return base64Encode(compressed);
-    } catch (e) {
-      return base64Encode(bytes);
     }
+    return result;
   }
 
   /// Estimate the size of the request payload in bytes
@@ -712,8 +770,8 @@ You MUST cite your sources using the format `[index](link)`.
   }
 
   /// Compress images in API messages if total size exceeds threshold (4MB)
-  List<Map<String, dynamic>> _compressApiMessagesIfNeeded(
-      List<Map<String, dynamic>> apiMessages) {
+  Future<List<Map<String, dynamic>>> _compressApiMessagesIfNeeded(
+      List<Map<String, dynamic>> apiMessages) async {
     const maxSizeBytes = 4 * 1024 * 1024; // 4MB threshold
     
     final currentSize = _estimateRequestSize(apiMessages);
@@ -721,40 +779,15 @@ You MUST cite your sources using the format `[index](link)`.
       return apiMessages; // No compression needed
     }
     
-    
-    // Deep copy and compress images
-    return apiMessages.map((msg) {
-      final content = msg['content'];
-      if (content is List) {
-        final compressedContent = content.map((item) {
-          if (item is Map && item['type'] == 'image_url') {
-            final imageUrl = item['image_url']?['url'];
-            if (imageUrl is String && imageUrl.startsWith('data:')) {
-              // Extract base64 data and compress
-              final parts = imageUrl.split(',');
-              if (parts.length == 2) {
-                try {
-                  final bytes = base64Decode(parts[1]);
-                  final compressed = _compressImageToBase64(Uint8List.fromList(bytes));
-                  return {
-                    'type': 'image_url',
-                    'image_url': {
-                      'url': 'data:image/jpeg;base64,$compressed',
-                    },
-                  };
-                } catch (e) {
-                }
-              }
-            }
-          }
-          return item;
-        }).toList();
-        return {...msg, 'content': compressedContent};
-      }
-      return msg;
-    }).toList();
+    // Offload compression to background isolate to avoid UI freeze
+    try {
+      return await compute(_compressImagesTask, apiMessages);
+    } catch (e) {
+      print('Element compression in background failed: $e. Falling back to original.');
+      // If execute failed, return original (but it will fail due to size, though better than crashing)
+      return apiMessages;
+    }
   }
-
 
   @override
   Future<LLMResponseChunk> getResponse(List<Message> messages,
@@ -776,9 +809,9 @@ You MUST cite your sources using the format `[index](link)`.
 
     try {
       List<Map<String, dynamic>> apiMessages =
-          _buildApiMessages(messages, attachments);
+          await _buildApiMessages(messages, attachments);
       // Compress images if request size exceeds threshold
-      apiMessages = _compressApiMessagesIfNeeded(apiMessages);
+      apiMessages = await _compressApiMessagesIfNeeded(apiMessages);
       // Add System Time Prompt (Always)
       final now = DateTime.now();
       final dateStr = now.toIso8601String().split('T')[0]; // YYYY-MM-DD
