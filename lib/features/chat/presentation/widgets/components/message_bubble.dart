@@ -1,0 +1,845 @@
+import 'dart:async';
+import 'dart:io';
+import 'package:fluent_ui/fluent_ui.dart' as fluent;
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:super_clipboard/super_clipboard.dart';
+import 'package:pasteboard/pasteboard.dart';
+import 'package:file_selector/file_selector.dart';
+
+import '../../chat_provider.dart';
+import '../../../domain/message.dart';
+import '../chat_image_bubble.dart';
+import '../reasoning_display.dart';
+import '../../../../settings/presentation/settings_provider.dart';
+import '../../../../history/presentation/widgets/hover_image_preview.dart';
+import 'package:aurora/l10n/app_localizations.dart';
+import 'chat_utils.dart';
+import 'tool_output.dart';
+
+class MessageBubble extends ConsumerStatefulWidget {
+  final Message message;
+  final bool isLast;
+  final bool isGenerating;
+  final bool showAvatar;
+  final bool mergeTop;
+  final bool mergeBottom;
+  
+  const MessageBubble({
+    super.key, 
+    required this.message, 
+    required this.isLast, 
+    this.isGenerating = false, 
+    this.showAvatar = true,
+    this.mergeTop = false,
+    this.mergeBottom = false,
+  });
+
+  @override
+  ConsumerState<MessageBubble> createState() =>
+      MessageBubbleState();
+}
+
+class MessageBubbleState extends ConsumerState<MessageBubble> {
+  bool _isHovering = false;
+  bool _isEditing = false;
+  late TextEditingController _editController;
+  final FocusNode _focusNode = FocusNode();
+  late List<String> _newAttachments;
+  @override
+  void initState() {
+    super.initState();
+    _editController = TextEditingController(text: widget.message.content);
+    _newAttachments = List.from(widget.message.attachments);
+  }
+
+  @override
+  void didUpdateWidget(MessageBubble oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.message.content != widget.message.content) {
+      _editController.text = widget.message.content;
+    }
+    if (oldWidget.message.attachments != widget.message.attachments) {
+      if (!_isEditing) {
+        _newAttachments = List.from(widget.message.attachments);
+      }
+    }
+  }
+
+  bool _isPasting = false;
+
+  Future<void> _pickFiles() async {
+    const typeGroup = XTypeGroup(
+        label: 'images', extensions: ['jpg', 'png', 'jpeg', 'bmp', 'gif']);
+    final files = await openFiles(acceptedTypeGroups: [typeGroup]);
+    if (files.isEmpty) return;
+    
+    final newPaths = files
+        .map((file) => file.path)
+        .where((path) => !_newAttachments.contains(path))
+        .toList();
+
+    if (newPaths.isNotEmpty) {
+      setState(() {
+        _newAttachments.addAll(newPaths);
+      });
+    }
+  }
+
+  Future<void> _handlePaste() async {
+    if (_isPasting) {
+      return;
+    }
+    _isPasting = true;
+    try {
+      final clipboard = SystemClipboard.instance;
+      if (clipboard == null) {
+        return;
+      }
+      final reader = await clipboard.read();
+      if (reader.canProvide(Formats.png) ||
+          reader.canProvide(Formats.jpeg) ||
+          reader.canProvide(Formats.fileUri)) {
+        await _processReader(reader);
+        return;
+      }
+      if (reader.canProvide(Formats.plainText)) {
+        final text = await reader.readValue(Formats.plainText);
+        if (text != null && text.isNotEmpty) {
+          final selection = _editController.selection;
+          final currentText = _editController.text;
+          if (selection.isValid) {
+            final newText =
+                currentText.replaceRange(selection.start, selection.end, text);
+            _editController.value = TextEditingValue(
+              text: newText,
+              selection:
+                  TextSelection.collapsed(offset: selection.start + text.length),
+            );
+          } else {
+            _editController.text += text;
+          }
+        }
+        return;
+      }
+      // Pasteboard fallback
+      try {
+        final imageBytes = await Pasteboard.image;
+        if (imageBytes != null && imageBytes.isNotEmpty) {
+          final attachDir = await getAttachmentsDir();
+          final path =
+              '${attachDir.path}${Platform.pathSeparator}paste_fb_${DateTime.now().millisecondsSinceEpoch}.png';
+          await File(path).writeAsBytes(imageBytes);
+          if (mounted) {
+            if (!_newAttachments.contains(path)) {
+              setState(() {
+                _newAttachments.add(path);
+              });
+            } else {
+            }
+          }
+          return;
+        }
+      } catch (e) {
+        debugPrint('Pasteboard Fallback Error: $e');
+      }
+    } finally {
+      _isPasting = false;
+    }
+  }
+
+  Future<void> _processReader(ClipboardReader reader) async {
+    final completer = Completer<void>();
+    
+    if (reader.canProvide(Formats.png)) {
+      reader.getFile(Formats.png, (file) async {
+        await _saveClipImage(file);
+        if (!completer.isCompleted) completer.complete();
+      });
+    } else if (reader.canProvide(Formats.jpeg)) {
+      reader.getFile(Formats.jpeg, (file) async {
+        await _saveClipImage(file);
+        if (!completer.isCompleted) completer.complete();
+      });
+    } else if (reader.canProvide(Formats.fileUri)) {
+      final uri = await reader.readValue(Formats.fileUri);
+      if (uri != null) {
+        final path = uri.toFilePath();
+        // Check extensions
+        final ext = path.split('.').last.toLowerCase();
+        if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].contains(ext)) {
+             if (mounted && !_newAttachments.contains(path)) {
+                setState(() {
+                  _newAttachments.add(path);
+                });
+             } else {
+             }
+        }
+      }
+      if (!completer.isCompleted) completer.complete();
+    } else {
+      if (!completer.isCompleted) completer.complete();
+    }
+    
+    // Wait for the file operation to complete, with a timeout to prevent hanging
+    try {
+      await completer.future.timeout(const Duration(seconds: 2));
+    } catch (e) {
+      debugPrint('Paste completion timeout: $e');
+    }
+  }
+
+  Future<void> _saveClipImage(file) async {
+    try {
+      final attachDir = await getAttachmentsDir();
+      final path =
+          '${attachDir.path}${Platform.pathSeparator}paste_${DateTime.now().millisecondsSinceEpoch}.png';
+      final stream = file.getStream();
+      final List<int> bytes = [];
+      await for (final chunk in stream) {
+        bytes.addAll(chunk as List<int>);
+      }
+      if (bytes.isNotEmpty) {
+        await File(path).writeAsBytes(bytes);
+        if (mounted) {
+          if (!_newAttachments.contains(path)) {
+            setState(() {
+              _newAttachments.add(path);
+            });
+          } else {
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Paste Error: $e');
+    }
+  }
+
+  @override
+  void dispose() {
+    _editController.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  void _handleAction(String action) {
+    final msg = widget.message;
+    final notifier = ref.read(historyChatProvider);
+    switch (action) {
+      case 'retry':
+        notifier.regenerateResponse(msg.id);
+        break;
+      case 'edit':
+        setState(() {
+          _isEditing = true;
+        });
+        WidgetsBinding.instance
+            .addPostFrameCallback((_) => _focusNode.requestFocus());
+        break;
+      case 'copy':
+        final item = DataWriterItem();
+        item.add(Formats.plainText(msg.content));
+        SystemClipboard.instance?.write([item]);
+        break;
+      case 'delete':
+        notifier.deleteMessage(msg.id);
+        break;
+    }
+  }
+
+  Future<void> _saveEdit() async {
+    if (_editController.text.trim().isNotEmpty) {
+      await ref.read(historyChatProvider).editMessage(
+          widget.message.id, _editController.text,
+          newAttachments: _newAttachments);
+    }
+    if (mounted) {
+      setState(() {
+        _isEditing = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final message = widget.message;
+    final isUser = message.isUser;
+    final settingsState = ref.watch(settingsProvider);
+    final theme = fluent.FluentTheme.of(context);
+    return MouseRegion(
+      onEnter: (_) => Platform.isWindows ? setState(() => _isHovering = true) : null,
+      onExit: (_) => Platform.isWindows ? setState(() => _isHovering = false) : null,
+      child: Container(
+        margin: EdgeInsets.only(
+          top: widget.mergeTop ? 2 : 8,
+          bottom: widget.mergeBottom ? 2 : 16, // Default was implicit separation
+        ),
+        child: Column(
+          crossAxisAlignment:
+              isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment:
+                  isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (!isUser) ...[
+                  if (widget.showAvatar) ...[
+                    _buildAvatar(
+                      avatarPath: settingsState.llmAvatar,
+                      fallbackIcon: Icons.smart_toy,
+                      backgroundColor: Colors.teal,
+                    ),
+                    const SizedBox(width: 8),
+                  ] else
+                    const SizedBox(width: 40),
+                ],
+                Flexible(
+                  child: Column(
+                    crossAxisAlignment: isUser
+                        ? CrossAxisAlignment.end
+                        : CrossAxisAlignment.start,
+                    children: [
+                      if (widget.showAvatar)
+                        Padding(
+                          padding:
+                              const EdgeInsets.only(bottom: 4, left: 4, right: 4),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.baseline,
+                            textBaseline: TextBaseline.alphabetic,
+                            children: [
+                              if (isUser) ...[
+                                Text(
+                                  '${message.timestamp.month}/${message.timestamp.day} ${message.timestamp.hour.toString().padLeft(2, '0')}:${message.timestamp.minute.toString().padLeft(2, '0')}',
+                                  style: TextStyle(
+                                      color: Colors.grey[600], fontSize: 11),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  settingsState.userName.isNotEmpty
+                                      ? settingsState.userName
+                                      : AppLocalizations.of(context)!.user,
+                                  style: TextStyle(
+                                      color: Colors.grey[600], fontSize: 12),
+                                ),
+                              ] else ...[
+                                Text(
+                                  '${message.model ?? settingsState.selectedModel} | ${message.provider ?? settingsState.activeProvider?.name ?? 'AI'}',
+                                  style: TextStyle(
+                                      color: Colors.grey[600], fontSize: 12),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  '${message.timestamp.month}/${message.timestamp.day} ${message.timestamp.hour.toString().padLeft(2, '0')}:${message.timestamp.minute.toString().padLeft(2, '0')}',
+                                  style: TextStyle(
+                                      color: Colors.grey[600], fontSize: 11),
+                                ),
+                              ],
+                            ],
+                          ),
+                      ),
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(minWidth: 0),
+                        child: Container(
+                          padding: _isEditing
+                              ? EdgeInsets.zero
+                              : const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: _isEditing
+                                ? fluent.Colors.transparent
+                                : theme.cardColor,
+                            borderRadius: BorderRadius.circular(12),
+                            border: _isEditing
+                                ? null
+                                : Border.all(
+                                    color: theme.resources.dividerStrokeColorDefault),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                            // Show loading indicator or reasoning content when generating
+                            if (!message.isUser && widget.isGenerating && 
+                                message.content.isEmpty && 
+                                (message.reasoningContent == null || message.reasoningContent!.isEmpty))
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 8.0),
+                                child: Row(
+                                  children: [
+                                    SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: Platform.isWindows
+                                          ? const fluent.ProgressRing(strokeWidth: 2)
+                                          : const CircularProgressIndicator(strokeWidth: 2),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      '${AppLocalizations.of(context)!.thinking}...',
+                                      style: TextStyle(
+                                        color: theme.typography.body?.color?.withOpacity(0.6),
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            if (!message.isUser &&
+                                message.reasoningContent != null &&
+                                message.reasoningContent!.isNotEmpty)
+                              Padding(
+                                padding: _isEditing
+                                    ? const EdgeInsets.fromLTRB(12, 0, 12, 8)
+                                    : const EdgeInsets.only(bottom: 8.0),
+                                child: ReasoningDisplay(
+                                  content: message.reasoningContent!,
+                                  isWindows: Platform.isWindows,
+                                  isRunning: widget.isGenerating,
+                                  duration: message.reasoningDurationSeconds,
+                                  startTime: message.timestamp,
+                                ),
+                              ),
+                            if (_isEditing)
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 12, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: theme.cardColor,
+                                      borderRadius: BorderRadius.circular(24),
+                                      // Removed border to avoid "grey rectangle" look
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        CallbackShortcuts(
+                                          bindings: {
+                                            const SingleActivator(
+                                                LogicalKeyboardKey.keyV,
+                                                control: true): _handlePaste,
+                                          },
+                                          child: fluent.TextBox(
+                                            controller: _editController,
+                                            focusNode: _focusNode,
+                                            maxLines: null,
+                                            minLines: 1,
+                                            placeholder: '编辑消息...',
+                                            decoration: const fluent.WidgetStatePropertyAll(fluent.BoxDecoration(
+                                              color: Colors.transparent,
+                                              border: Border.fromBorderSide(BorderSide.none),
+                                            )),
+                                            highlightColor:
+                                                fluent.Colors.transparent,
+                                            unfocusedColor:
+                                                fluent.Colors.transparent,
+                                            foregroundDecoration: const fluent.WidgetStatePropertyAll(fluent.BoxDecoration(
+                                              border: Border.fromBorderSide(BorderSide.none),
+                                            )),
+                                            style: TextStyle(
+                                                fontSize: 14,
+                                                height: 1.5,
+                                                color: theme
+                                                    .typography.body?.color),
+                                            cursorColor: theme.accentColor,
+                                            textInputAction:
+                                                TextInputAction.send,
+                                            onSubmitted: (_) => _saveEdit(),
+                                          ),
+                                        ),
+                                        if (_newAttachments.isNotEmpty)
+                                          Container(
+                                            height: 40,
+                                            margin: const EdgeInsets.only(
+                                                top: 8),
+                                            child: ListView.builder(
+                                              scrollDirection: Axis.horizontal,
+                                              itemCount: _newAttachments.length,
+                                              itemBuilder: (context, index) =>
+                                                  Padding(
+                                                padding: const EdgeInsets.only(
+                                                    right: 8),
+                                                child: HoverImagePreview(
+                                                  imagePath: _newAttachments[index],
+                                                  child: MouseRegion(
+                                                    cursor:
+                                                        SystemMouseCursors.click,
+                                                    child: GestureDetector(
+                                                      onTap: () => setState(() =>
+                                                          _newAttachments
+                                                              .removeAt(index)),
+                                                      child: Container(
+                                                        padding: const EdgeInsets
+                                                            .symmetric(
+                                                            horizontal: 8,
+                                                            vertical: 4),
+                                                      decoration: BoxDecoration(
+                                                        color: theme.accentColor
+                                                            .withOpacity(0.1),
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(12),
+                                                        border: Border.all(
+                                                            color: theme
+                                                                .accentColor
+                                                                .withOpacity(
+                                                                    0.3)),
+                                                      ),
+                                                      child: Row(
+                                                        mainAxisSize:
+                                                            MainAxisSize.min,
+                                                        children: [
+                                                          ConstrainedBox(
+                                                            constraints:
+                                                                const BoxConstraints(
+                                                                    maxWidth:
+                                                                        100),
+                                                            child: Text(
+                                                              _newAttachments[
+                                                                      index]
+                                                                  .split(Platform
+                                                                      .pathSeparator)
+                                                                  .last,
+                                                              style:
+                                                                  const TextStyle(
+                                                                      fontSize:
+                                                                          12),
+                                                              overflow:
+                                                                  TextOverflow
+                                                                      .ellipsis,
+                                                            ),
+                                                          ),
+                                                          const SizedBox(
+                                                              width: 4),
+                                                          Icon(
+                                                              fluent.FluentIcons
+                                                                  .chrome_close,
+                                                              size: 8,
+                                                              color: theme
+                                                                  .accentColor),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      fluent.IconButton(
+                                        icon: const Icon(
+                                            fluent.FluentIcons.attach,
+                                            size: 14),
+                                        onPressed: _pickFiles,
+                                        style: fluent.ButtonStyle(
+                                          foregroundColor:
+                                              fluent.ButtonState.resolveWith(
+                                                  (states) {
+                                            if (states.isHovering)
+                                              return fluent.Colors.blue;
+                                            return fluent.Colors.grey;
+                                          }),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      ActionButton(
+                                          icon: fluent.FluentIcons.cancel,
+                                          tooltip: 'Cancel',
+                                          onPressed: () => setState(
+                                              () => _isEditing = false)),
+                                      const SizedBox(width: 4),
+                                      ActionButton(
+                                          icon: fluent.FluentIcons.save,
+                                          tooltip: 'Save',
+                                          onPressed: _saveEdit),
+                                      if (message.isUser) ...[
+                                        const SizedBox(width: 4),
+                                        ActionButton(
+                                            icon: fluent.FluentIcons.send,
+                                            tooltip: 'Send & Regenerate',
+                                            onPressed: () async {
+                                              await _saveEdit();
+                                              ref
+                                                  .read(historyChatProvider)
+                                                  .regenerateResponse(
+                                                      message.id);
+                                            }),
+                                      ],
+                                    ],
+                                  ),
+                                ],
+                              )
+                            else if (message.role == 'tool')
+                              BuildToolOutput(content: message.content)
+                            else if (isUser)
+                              Text(
+                                message.content,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  height: 1.5,
+                                  color: theme.typography.body!.color,
+                                ),
+                              )
+                            else
+                              fluent.FluentTheme(
+                                data: theme,
+                                child: MarkdownBody(
+                                  data: message.content,
+                                  selectable: false,
+                                  softLineBreak: true,
+                                  styleSheet: MarkdownStyleSheet(
+                                    p: TextStyle(
+                                      fontSize: 14,
+                                      height: 1.5,
+                                      color: theme.typography.body!.color,
+                                    ),
+                                    h1: TextStyle(
+                                      fontSize: Platform.isWindows ? 28 : 20,
+                                      fontWeight: FontWeight.bold,
+                                      height: 1.4,
+                                      color: theme.typography.body!.color,
+                                    ),
+                                    h2: TextStyle(
+                                      fontSize: Platform.isWindows ? 24 : 18,
+                                      fontWeight: FontWeight.bold,
+                                      height: 1.4,
+                                      color: theme.typography.body!.color,
+                                    ),
+                                    h3: TextStyle(
+                                      fontSize: Platform.isWindows ? 20 : 16,
+                                      fontWeight: FontWeight.w600,
+                                      height: 1.4,
+                                      color: theme.typography.body!.color,
+                                    ),
+                                    h4: TextStyle(
+                                      fontSize: Platform.isWindows ? 18 : 15,
+                                      fontWeight: FontWeight.w600,
+                                      height: 1.4,
+                                      color: theme.typography.body!.color,
+                                    ),
+                                    h5: TextStyle(
+                                      fontSize: Platform.isWindows ? 16 : 14,
+                                      fontWeight: FontWeight.w600,
+                                      height: 1.4,
+                                      color: theme.typography.body!.color,
+                                    ),
+                                    h6: TextStyle(
+                                      fontSize: Platform.isWindows ? 14 : 13,
+                                      fontWeight: FontWeight.w600,
+                                      height: 1.4,
+                                      color: theme.typography.body!.color,
+                                    ),
+                                    code: TextStyle(
+                                      backgroundColor: theme.micaBackgroundColor,
+                                      color: theme.typography.body!.color,
+                                      fontSize: Platform.isWindows ? 13 : 12,
+                                    ),
+                                    tableBody: TextStyle(
+                                      fontSize: Platform.isWindows ? 14 : 12,
+                                      color: theme.typography.body!.color,
+                                    ),
+                                    tableHead: TextStyle(
+                                      fontSize: Platform.isWindows ? 14 : 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: theme.typography.body!.color,
+                                    ),
+                                    blockquote: TextStyle(
+                                      fontSize: Platform.isWindows ? 14 : 13,
+                                      color: theme.typography.body!.color?.withOpacity(0.8),
+                                      fontStyle: FontStyle.italic,
+                                    ),
+                                    listBullet: TextStyle(
+                                      fontSize: 14,
+                                      color: theme.typography.body!.color,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            // Display attachments for user messages (image files)
+                            if (isUser && message.attachments.isNotEmpty && !_isEditing) ...[
+                              const SizedBox(height: 8),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: message.attachments
+                                    .where((path) {
+                                      final ext = path.toLowerCase();
+                                      return ext.endsWith('.png') || 
+                                             ext.endsWith('.jpg') || 
+                                             ext.endsWith('.jpeg') ||
+                                             ext.endsWith('.webp') ||
+                                             ext.endsWith('.gif');
+                                    })
+                                    .map((path) => ChatImageBubble(
+                                          key: ValueKey(path.hashCode),
+                                          imageUrl: path,
+                                        ))
+                                    .toList(),
+                              ),
+                            ],
+                            // Display AI-generated images
+                            if (message.images.isNotEmpty &&
+                                !(isUser && _isEditing)) ...[
+                              const SizedBox(height: 8),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: message.images
+                                    .map((img) => ChatImageBubble(
+                                          key: ValueKey(img.hashCode),
+                                          imageUrl: img,
+                                        ))
+                                    .toList(),
+                              ),
+                            ],
+                          // Token Count
+                          if (!isUser && message.tokenCount != null && message.tokenCount! > 0)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4.0),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    '${message.tokenCount} tokens',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: theme.typography.body?.color?.withOpacity(0.5),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                        ],
+                        ),
+                      ),
+                    ),
+                    ],
+                  ),
+                ),
+                if (isUser) ...[
+                  const SizedBox(width: 8),
+                  _buildAvatar(
+                    avatarPath: settingsState.userAvatar,
+                    fallbackIcon: Icons.person,
+                    backgroundColor: Colors.blue,
+                  ),
+                ],
+              ],
+            ),
+            Platform.isWindows
+                ? Visibility(
+                    visible: !_isEditing, // Always visible on desktop, hidden when editing
+                    maintainSize: true,
+                    maintainAnimation: true,
+                    maintainState: true,
+                    child: Padding(
+                      padding: EdgeInsets.only(
+                          top: 4,
+                          left: isUser ? 0 : 40,
+                          right: isUser ? 40 : 0),
+                      child: Row(
+                        mainAxisAlignment: isUser
+                            ? MainAxisAlignment.end
+                            : MainAxisAlignment.start,
+                        children: [
+                          ActionButton(
+                              icon: fluent.FluentIcons.refresh,
+                              tooltip: 'Retry',
+                              onPressed: () => _handleAction('retry')),
+                          const SizedBox(width: 4),
+                          ActionButton(
+                              icon: fluent.FluentIcons.edit,
+                              tooltip: 'Edit',
+                              onPressed: () => _handleAction('edit')),
+                          const SizedBox(width: 4),
+                          ActionButton(
+                              icon: fluent.FluentIcons.copy,
+                              tooltip: 'Copy',
+                              onPressed: () => _handleAction('copy')),
+                          const SizedBox(width: 4),
+                          ActionButton(
+                              icon: fluent.FluentIcons.delete,
+                              tooltip: 'Delete',
+                              onPressed: () => _handleAction('delete')),
+                        ],
+                      ),
+                    ),
+                  )
+                : _isEditing
+                    ? const SizedBox.shrink()
+                    : Padding(
+                        padding: EdgeInsets.only(
+                            top: 4,
+                            left: isUser ? 0 : 40,
+                            right: isUser ? 40 : 0),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: isUser
+                              ? MainAxisAlignment.end
+                              : MainAxisAlignment.start,
+                          children: [
+                            MobileActionButton(
+                              icon: Icons.refresh,
+                              onPressed: () => _handleAction('retry'),
+                            ),
+                            MobileActionButton(
+                              icon: Icons.edit_outlined,
+                              onPressed: () => _handleAction('edit'),
+                            ),
+                            MobileActionButton(
+                              icon: Icons.copy_outlined,
+                              onPressed: () => _handleAction('copy'),
+                            ),
+                            MobileActionButton(
+                              icon: Icons.delete_outline,
+                              onPressed: () => _handleAction('delete'),
+                            ),
+                          ],
+                        ),
+                      ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAvatar({
+    required String? avatarPath,
+    required IconData fallbackIcon,
+    required Color backgroundColor,
+  }) {
+    if (avatarPath != null && avatarPath.isNotEmpty) {
+      return ClipOval(
+        child: SizedBox(
+          width: 32,
+          height: 32,
+          child: Image.file(
+            File(avatarPath),
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => CircleAvatar(
+              radius: 16,
+              backgroundColor: backgroundColor,
+              child: Icon(fallbackIcon, size: 16, color: Colors.white),
+            ),
+          ),
+        ),
+      );
+    }
+    return CircleAvatar(
+      radius: 16,
+      backgroundColor: backgroundColor,
+      child: Icon(fallbackIcon, size: 16, color: Colors.white),
+    );
+  }
+}
