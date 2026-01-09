@@ -641,10 +641,24 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
                                       color: theme.typography.body!.color,
                                     ),
                                     code: TextStyle(
-                                      backgroundColor: theme.micaBackgroundColor,
-                                      color: theme.typography.body!.color,
+                                      color: theme.brightness == Brightness.dark
+                                          ? const Color(0xFFE5C07B) // One Dark yellow/tan
+                                          : const Color(0xFF986801), // Warm brown
                                       fontSize: Platform.isWindows ? 13 : 12,
+                                      fontFamily: Platform.isWindows ? 'Consolas' : 'monospace',
                                     ),
+                                    codeblockDecoration: BoxDecoration(
+                                      color: theme.brightness == Brightness.dark
+                                          ? const Color(0xFF1E1E1E)
+                                          : const Color(0xFFF5F5F5),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: theme.brightness == Brightness.dark
+                                            ? Colors.white.withOpacity(0.1)
+                                            : Colors.black.withOpacity(0.1),
+                                      ),
+                                    ),
+                                    codeblockPadding: const EdgeInsets.all(12),
                                     tableBody: TextStyle(
                                       fontSize: Platform.isWindows ? 14 : 12,
                                       color: theme.typography.body!.color,

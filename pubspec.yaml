@@ -58,6 +58,7 @@ dependencies:
   gal: ^2.3.0
   image: ^4.5.3
   url_launcher: ^6.3.2
+  flutter_highlighter: ^0.1.1
 
 
 
