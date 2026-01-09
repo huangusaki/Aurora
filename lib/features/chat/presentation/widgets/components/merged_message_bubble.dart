@@ -12,6 +12,7 @@ import '../chat_image_bubble.dart';
 import '../reasoning_display.dart';
 import 'chat_utils.dart';
 import 'tool_output.dart';
+import 'code_block_builder.dart';
 
 class MergedMessageBubble extends ConsumerStatefulWidget {
   final MergedGroupItem group;
@@ -342,6 +343,11 @@ class _MergedMessageBubbleState extends ConsumerState<MergedMessageBubble> with 
               data: message.content,
               selectable: false,
               softLineBreak: true,
+              builders: {
+                'pre': CodeBlockBuilder(
+                  isDarkMode: theme.brightness == Brightness.dark,
+                ),
+              },
                 styleSheet: MarkdownStyleSheet(
                   p: TextStyle(
                     fontSize: 14,
@@ -398,18 +404,9 @@ class _MergedMessageBubbleState extends ConsumerState<MergedMessageBubble> with 
                     fontSize: Platform.isWindows ? 13 : 12,
                     fontFamily: Platform.isWindows ? 'Consolas' : 'monospace', 
                   ),
-                  codeblockDecoration: BoxDecoration(
-                    color: theme.brightness == Brightness.dark
-                        ? const Color(0xFF1E1E1E)
-                        : const Color(0xFFF5F5F5),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: theme.brightness == Brightness.dark
-                          ? Colors.white.withOpacity(0.1)
-                          : Colors.black.withOpacity(0.1),
-                    ),
-                  ),
-                  codeblockPadding: const EdgeInsets.all(12),
+                  // Override default codeblock decoration (handled by CodeBlockBuilder)
+                  codeblockDecoration: const BoxDecoration(),
+                  codeblockPadding: EdgeInsets.zero,
                   tableBody: TextStyle(
                     fontSize: Platform.isWindows ? 14 : 12,
                     color: theme.typography.body!.color,
