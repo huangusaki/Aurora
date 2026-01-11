@@ -696,4 +696,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get systemPromptPlaceholder => 'Enter system prompt here...';
+
+  @override
+  String get noPresets => 'No presets found';
+
+  @override
+  String get deletePreset => 'Delete Preset';
+
+  @override
+  String deletePresetConfirmation(String name) {
+    return 'Are you sure you want to delete preset \"$name\"?';
+  }
+
+  @override
+  String get fillRequiredFields => 'Please fill in all required fields';
 }

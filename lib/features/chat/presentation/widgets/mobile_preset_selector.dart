@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../settings/presentation/settings_provider.dart';
-import '../../../settings/presentation/preset_manage_dialog.dart';
+import '../../../settings/presentation/mobile_preset_manage_page.dart';
 import '../chat_provider.dart';
 
 import 'package:aurora/l10n/app_localizations.dart';
@@ -22,9 +22,11 @@ class MobilePresetSelector extends ConsumerWidget {
       tooltip: l10n.promptPresets,
       onSelected: (value) {
         if (value == '__manage__') {
-          showDialog(
-            context: context,
-            builder: (context) => const PresetManageDialog(),
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const MobilePresetManagePage(),
+            ),
           );
         } else if (value == '__default__') {
           ref.read(chatSessionManagerProvider).getOrCreate(sessionId).updateSystemPrompt('', null);

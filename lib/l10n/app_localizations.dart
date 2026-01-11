@@ -1417,6 +1417,30 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'在此输入系统提示词...'**
   String get systemPromptPlaceholder;
+
+  /// No description provided for @noPresets.
+  ///
+  /// In zh, this message translates to:
+  /// **'暂无预设'**
+  String get noPresets;
+
+  /// No description provided for @deletePreset.
+  ///
+  /// In zh, this message translates to:
+  /// **'删除预设'**
+  String get deletePreset;
+
+  /// No description provided for @deletePresetConfirmation.
+  ///
+  /// In zh, this message translates to:
+  /// **'确定要删除预设 \"{name}\" 吗？'**
+  String deletePresetConfirmation(String name);
+
+  /// No description provided for @fillRequiredFields.
+  ///
+  /// In zh, this message translates to:
+  /// **'请填写所有必填字段'**
+  String get fillRequiredFields;
 }
 
 class _AppLocalizationsDelegate

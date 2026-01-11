@@ -300,5 +300,16 @@
   "selectPresetHint": "Select a preset to edit or create a new one.",
   "presetNamePlaceholder": "e.g., Python Expert",
   "presetDescriptionPlaceholder": "Optional description...",
-  "systemPromptPlaceholder": "Enter system prompt here..."
+  "systemPromptPlaceholder": "Enter system prompt here...",
+  "noPresets": "No presets found",
+  "deletePreset": "Delete Preset",
+  "deletePresetConfirmation": "Are you sure you want to delete preset \"{name}\"?",
+  "@deletePresetConfirmation": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "fillRequiredFields": "Please fill in all required fields"
 }

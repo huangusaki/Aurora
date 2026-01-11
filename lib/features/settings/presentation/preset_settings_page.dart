@@ -232,6 +232,10 @@ class _PresetSettingsPageState extends ConsumerState<PresetSettingsPage> {
                             child: const Text('{language}'),
                             onPressed: () => _insertVariable('{language}'),
                           ),
+                          Button(
+                            child: const Text('{clipboard}'),
+                            onPressed: () => _insertVariable('{clipboard}'),
+                          ),
                         ],
                      ),
                      const SizedBox(height: 16),

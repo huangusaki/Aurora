@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'dart:convert';
 import 'dart:io'; // Added
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:device_info_plus/device_info_plus.dart'; // Added
 import '../../settings/presentation/settings_provider.dart';
@@ -674,16 +675,26 @@ class ChatNotifier extends StateNotifier<ChatState> {
     final system = Platform.operatingSystem;
     final lang = settingsState.language;
     
-    // 使用简单的 Platform 信息代替 DeviceInfoPlugin 以避免卡顿
     // DeviceInfoPlugin 首次调用需初始化，会导致卡顿
     String deviceName = Platform.localHostname;
+
+    String clipboardContent = '';
+    if (template.contains('{clipboard}')) {
+      try {
+        final data = await Clipboard.getData(Clipboard.kTextPlain);
+        clipboardContent = data?.text ?? '';
+      } catch (e) {
+        debugPrint('Failed to get clipboard data: $e');
+      }
+    }
 
     String prompt = template
         .replaceAll('{time}', DateTime.now().toString())
         .replaceAll('{user_name}', user)
         .replaceAll('{system}', system)
         .replaceAll('{device}', deviceName)
-        .replaceAll('{language}', lang);
+        .replaceAll('{language}', lang)
+        .replaceAll('{clipboard}', clipboardContent);
 
     final messages = List<Message>.from(state.messages);
     

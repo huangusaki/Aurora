@@ -300,5 +300,16 @@
   "selectPresetHint": "选择左侧预设进行编辑，或新建预设。",
   "presetNamePlaceholder": "例如：Python 专家",
   "presetDescriptionPlaceholder": "可选描述...",
-  "systemPromptPlaceholder": "在此输入系统提示词..."
+  "systemPromptPlaceholder": "在此输入系统提示词...",
+  "noPresets": "暂无预设",
+  "deletePreset": "删除预设",
+  "deletePresetConfirmation": "确定要删除预设 \"{name}\" 吗？",
+  "@deletePresetConfirmation": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "fillRequiredFields": "请填写所有必填字段"
 }

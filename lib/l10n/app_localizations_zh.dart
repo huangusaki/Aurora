@@ -683,4 +683,18 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get systemPromptPlaceholder => '在此输入系统提示词...';
+
+  @override
+  String get noPresets => '暂无预设';
+
+  @override
+  String get deletePreset => '删除预设';
+
+  @override
+  String deletePresetConfirmation(String name) {
+    return '确定要删除预设 \"$name\" 吗？';
+  }
+
+  @override
+  String get fillRequiredFields => '请填写所有必填字段';
 }
