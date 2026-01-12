@@ -22,7 +22,6 @@ class _HistoryContentState extends ConsumerState<HistoryContent> {
   void initState() {
     super.initState();
     Future.microtask(() async {
-      // SessionsNotifier handles restoration or default selection
       await ref.read(sessionsProvider.notifier).loadSessions();
     });
   }
@@ -32,7 +31,6 @@ class _HistoryContentState extends ConsumerState<HistoryContent> {
     if (Platform.isWindows) {
       return _buildDesktopLayout(context, ref);
     }
-
     return LayoutBuilder(
       builder: (context, constraints) {
         final isMobile = constraints.maxWidth < 600;
@@ -48,25 +46,12 @@ class _HistoryContentState extends ConsumerState<HistoryContent> {
     final l10n = AppLocalizations.of(context)!;
     final selectedSessionId = ref.watch(selectedHistorySessionIdProvider);
     final sessionsState = ref.watch(sessionsProvider);
-
     if (selectedSessionId != null && selectedSessionId != '') {
       return GestureDetector(
-        onHorizontalDragStart: (details) {
-          // Store start X position to distinguish from system back gesture
-          // If needed, use a state variable or closure variable. 
-          // Since _buildMobileLayout is a method, we can't easily persist state across frames without class state.
-          // However, we can check details in onHorizontalDragUpdate/End if we track it.
-          // Let's use a simpler approach: check primaryVelocity in onHorizontalDragEnd, 
-          // but we can't know start position there easily without state.
-          // We'll rely on the class member _dragStartX if we added it, or simple logic.
-        },
-        // We'll implement a custom detector or use a closure variable if valid within build scope (not persistent).
-        // Actually, let's just check the update/end details.
-        // A better way without class state change:
+        onHorizontalDragStart: (details) {},
         onHorizontalDragEnd: (details) {
-          // Simple right swipe detection
           if (details.primaryVelocity! > 500) {
-             Scaffold.of(context).openDrawer();
+            Scaffold.of(context).openDrawer();
           }
         },
         child: Column(
@@ -89,9 +74,12 @@ class _HistoryContentState extends ConsumerState<HistoryContent> {
                   fluent.IconButton(
                     icon: const Icon(Icons.arrow_back),
                     onPressed: () async {
-                      final currentId = ref.read(selectedHistorySessionIdProvider);
+                      final currentId =
+                          ref.read(selectedHistorySessionIdProvider);
                       if (currentId != null) {
-                        await ref.read(sessionsProvider.notifier).cleanupSessionIfEmpty(currentId);
+                        await ref
+                            .read(sessionsProvider.notifier)
+                            .cleanupSessionIfEmpty(currentId);
                       }
                       ref
                           .read(selectedHistorySessionIdProvider.notifier)
@@ -122,7 +110,6 @@ class _HistoryContentState extends ConsumerState<HistoryContent> {
     final sessionsState = ref.watch(sessionsProvider);
     final selectedSessionId = ref.watch(selectedHistorySessionIdProvider);
     final l10n = AppLocalizations.of(context)!;
-
     return Container(
       color: fluent.FluentTheme.of(context).navigationPaneTheme.backgroundColor,
       child: Row(
@@ -140,7 +127,9 @@ class _HistoryContentState extends ConsumerState<HistoryContent> {
                   child: Container(
                     width: 250,
                     decoration: BoxDecoration(
-                      color: fluent.FluentTheme.of(context).navigationPaneTheme.backgroundColor,
+                      color: fluent.FluentTheme.of(context)
+                          .navigationPaneTheme
+                          .backgroundColor,
                     ),
                     child: _SessionList(
                       sessionsState: sessionsState,
@@ -160,7 +149,7 @@ class _HistoryContentState extends ConsumerState<HistoryContent> {
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.04), // Subtle shadow for depth
+                    color: Colors.black.withOpacity(0.04),
                     blurRadius: 10,
                     offset: const Offset(0, 2),
                   ),
@@ -171,7 +160,9 @@ class _HistoryContentState extends ConsumerState<HistoryContent> {
                 child: RepaintBoundary(
                   child: selectedSessionId == null
                       ? Center(child: Text(l10n.selectOrNewTopic))
-                      : ChatView(key: ValueKey(selectedSessionId), sessionId: selectedSessionId),
+                      : ChatView(
+                          key: ValueKey(selectedSessionId),
+                          sessionId: selectedSessionId),
                 ),
               ),
             ),
@@ -194,30 +185,19 @@ class _SessionList extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final manager = ref.watch(chatSessionManagerProvider);
-    // Watch trigger to rebuild when any session state changes
     ref.watch(chatStateUpdateTriggerProvider);
-    // Listened in main.dart
-    // ref.listen(selectedTopicIdProvider, (_, next) {
-    //   final storage = ref.read(settingsStorageProvider);
-    //   storage.saveLastTopicId(next?.toString());
-    // });
-
     ref.listen(selectedHistorySessionIdProvider, (_, next) {
       if (next != null) {
         final storage = ref.read(settingsStorageProvider);
         storage.saveLastSessionId(next);
       }
     });
-
     final selectedTopicId = ref.watch(selectedTopicIdProvider);
     final l10n = AppLocalizations.of(context)!;
-    
-    // Filter sessions by topic
     final filteredSessions = sessionsState.sessions.where((s) {
-      if (selectedTopicId == null) return true; 
+      if (selectedTopicId == null) return true;
       return s.topicId == selectedTopicId;
     }).toList();
-    
     return Column(
       children: [
         Padding(
@@ -237,32 +217,34 @@ class _SessionList extends ConsumerWidget {
                   return AnimatedContainer(
                     duration: const Duration(milliseconds: 150),
                     width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
-                      color: isHovering 
-                          ? theme.resources.subtleFillColorSecondary 
+                      color: isHovering
+                          ? theme.resources.subtleFillColorSecondary
                           : Colors.transparent,
                       borderRadius: BorderRadius.circular(6),
                       border: Border.all(
-                        color: isHovering 
+                        color: isHovering
                             ? theme.resources.surfaceStrokeColorDefault
-                            : Colors.transparent, // Only show border on hover
+                            : Colors.transparent,
                       ),
                     ),
                     child: Row(
                       children: [
-                        Icon(fluent.FluentIcons.add, 
-                            size: 14, 
-                            color: theme.accentColor),
+                        Icon(fluent.FluentIcons.add,
+                            size: 14, color: theme.accentColor),
                         const SizedBox(width: 12),
-                        Text(l10n.startNewChat, 
+                        Text(l10n.startNewChat,
                             style: TextStyle(
                                 fontSize: 14,
                                 color: theme.typography.body?.color,
                                 fontWeight: FontWeight.w500)),
                         const Spacer(),
                         if (isHovering)
-                           Icon(fluent.FluentIcons.chevron_right, size: 10, color: theme.resources.textFillColorSecondary),
+                          Icon(fluent.FluentIcons.chevron_right,
+                              size: 10,
+                              color: theme.resources.textFillColorSecondary),
                       ],
                     ),
                   );
@@ -271,7 +253,6 @@ class _SessionList extends ConsumerWidget {
             ],
           ),
         ),
-        // Removed Divider
         Expanded(
           child: sessionsState.isLoading && sessionsState.sessions.isEmpty
               ? const Center(child: fluent.ProgressRing())
@@ -287,14 +268,14 @@ class _SessionList extends ConsumerWidget {
                     );
                   },
                   onReorder: (oldIndex, newIndex) {
-                    ref.read(sessionsProvider.notifier).reorderSession(oldIndex, newIndex);
+                    ref
+                        .read(sessionsProvider.notifier)
+                        .reorderSession(oldIndex, newIndex);
                   },
                   itemCount: filteredSessions.length,
                   itemBuilder: (context, index) {
                     final session = filteredSessions[index];
                     final isSelected = session.sessionId == selectedSessionId;
-                    
-                    // Get session state for status indicator
                     final sessionState = manager.getState(session.sessionId);
                     final Color? statusColor;
                     if (sessionState == null) {
@@ -308,7 +289,6 @@ class _SessionList extends ConsumerWidget {
                     } else {
                       statusColor = null;
                     }
-                    
                     return ReorderableDragStartListener(
                       key: Key(session.sessionId),
                       index: index,
@@ -317,10 +297,13 @@ class _SessionList extends ConsumerWidget {
                         isSelected: isSelected,
                         statusColor: statusColor,
                         onTap: () async {
-                          // Cleanup current session if empty before switching
-                          final currentId = ref.read(selectedHistorySessionIdProvider);
-                          if (currentId != null && currentId != session.sessionId) {
-                            await ref.read(sessionsProvider.notifier).cleanupSessionIfEmpty(currentId);
+                          final currentId =
+                              ref.read(selectedHistorySessionIdProvider);
+                          if (currentId != null &&
+                              currentId != session.sessionId) {
+                            await ref
+                                .read(sessionsProvider.notifier)
+                                .cleanupSessionIfEmpty(currentId);
                           }
                           ref
                               .read(selectedHistorySessionIdProvider.notifier)
@@ -347,12 +330,11 @@ class _SessionList extends ConsumerWidget {
 }
 
 class _SessionItem extends StatefulWidget {
-  final dynamic session; // Using dynamic to avoid import issues if Session model isn't exported here, but ideally should be typed
+  final dynamic session;
   final bool isSelected;
   final Color? statusColor;
   final VoidCallback onTap;
   final VoidCallback onDelete;
-
   const _SessionItem({
     required this.session,
     required this.isSelected,
@@ -360,18 +342,15 @@ class _SessionItem extends StatefulWidget {
     required this.onTap,
     required this.onDelete,
   });
-
   @override
   State<_SessionItem> createState() => _SessionItemState();
 }
 
 class _SessionItemState extends State<_SessionItem> {
   bool _isHovering = false;
-
   @override
   Widget build(BuildContext context) {
     final theme = fluent.FluentTheme.of(context);
-    
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovering = true),
       onExit: (_) => setState(() => _isHovering = false),
@@ -383,8 +362,8 @@ class _SessionItemState extends State<_SessionItem> {
           decoration: BoxDecoration(
             color: widget.isSelected
                 ? theme.accentColor.withOpacity(0.1)
-                : (_isHovering 
-                    ? theme.resources.subtleFillColorSecondary 
+                : (_isHovering
+                    ? theme.resources.subtleFillColorSecondary
                     : Colors.transparent),
             borderRadius: BorderRadius.circular(6),
           ),
@@ -410,25 +389,30 @@ class _SessionItemState extends State<_SessionItem> {
                     children: [
                       Text(widget.session.title,
                           style: TextStyle(
-                            fontWeight: widget.isSelected ? FontWeight.w600 : FontWeight.normal,
+                            fontWeight: widget.isSelected
+                                ? FontWeight.w600
+                                : FontWeight.normal,
                             fontSize: 13,
                           ),
-                          maxLines: 1, overflow: TextOverflow.ellipsis),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis),
                       const SizedBox(height: 2),
                       Text(
-                          DateFormat('MM/dd HH:mm').format(widget.session.lastMessageTime) +
-                          (widget.session.totalTokens > 0 ? ' • ${widget.session.totalTokens} tokens' : ''),
+                          DateFormat('MM/dd HH:mm')
+                                  .format(widget.session.lastMessageTime) +
+                              (widget.session.totalTokens > 0
+                                  ? ' • ${widget.session.totalTokens} tokens'
+                                  : ''),
                           style: TextStyle(
                               fontSize: 10,
-                              color: theme.resources.textFillColorSecondary
-                          )),
+                              color: theme.resources.textFillColorSecondary)),
                     ],
                   ),
                 ),
                 if (widget.isSelected || _isHovering)
                   fluent.IconButton(
-                    icon: const fluent.Icon(fluent.FluentIcons.delete,
-                        size: 14),
+                    icon:
+                        const fluent.Icon(fluent.FluentIcons.delete, size: 14),
                     onPressed: widget.onDelete,
                   ),
               ],
@@ -461,10 +445,10 @@ class SessionListWidget extends ConsumerWidget {
     final selectedTopicId = ref.watch(selectedTopicIdProvider);
     final filteredSessions = sessionsState.sessions.where((s) {
       final matchesSearch = s.title.toLowerCase().contains(searchQuery);
-      final matchesTopic = selectedTopicId == null || s.topicId == selectedTopicId;
+      final matchesTopic =
+          selectedTopicId == null || s.topicId == selectedTopicId;
       return matchesSearch && matchesTopic;
     }).toList();
-
     return ReorderableListView.builder(
       buildDefaultDragHandles: false,
       onReorder: (oldIndex, newIndex) {
@@ -474,17 +458,18 @@ class SessionListWidget extends ConsumerWidget {
       itemBuilder: (context, index) {
         final session = filteredSessions[index];
         final isSelected = session.sessionId == selectedSessionId;
-        
         return ReorderableDelayedDragStartListener(
           key: Key(session.sessionId),
           index: index,
-          child: RepaintBoundary( // Isolate item painting
+          child: RepaintBoundary(
             child: _TapDetector(
               onTap: () => onSessionSelected(session.sessionId),
               child: ListTile(
                 selected: isSelected,
-                selectedTileColor:
-                    Theme.of(context).colorScheme.primaryContainer.withOpacity(0.5),
+                selectedTileColor: Theme.of(context)
+                    .colorScheme
+                    .primaryContainer
+                    .withOpacity(0.5),
                 leading: Stack(
                   clipBehavior: Clip.none,
                   children: [
@@ -492,7 +477,8 @@ class SessionListWidget extends ConsumerWidget {
                     Positioned(
                       top: -1,
                       right: -1,
-                      child: _SessionStatusIndicator(sessionId: session.sessionId),
+                      child:
+                          _SessionStatusIndicator(sessionId: session.sessionId),
                     ),
                   ],
                 ),
@@ -500,7 +486,9 @@ class SessionListWidget extends ConsumerWidget {
                     maxLines: 1, overflow: TextOverflow.ellipsis),
                 subtitle: Text(
                   DateFormat('MM/dd HH:mm').format(session.lastMessageTime) +
-                  (session.totalTokens > 0 ? ' • ${session.totalTokens} tokens' : ''),
+                      (session.totalTokens > 0
+                          ? ' • ${session.totalTokens} tokens'
+                          : ''),
                   style: const TextStyle(fontSize: 12),
                 ),
                 trailing: IconButton(
@@ -521,11 +509,7 @@ class _SessionStatusIndicator extends ConsumerWidget {
   const _SessionStatusIndicator({required this.sessionId});
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Read (not watch) the manager to avoid cascading rebuilds of ALL items
-    // when any session state changes. Each indicator only needs to show
-    // the current state at render time - it will re-render when the list itself rebuilds.
     final manager = ref.read(chatSessionManagerProvider);
-    
     final sessionState = manager.getState(sessionId);
     final Color? statusColor;
     if (sessionState == null) {
@@ -535,13 +519,11 @@ class _SessionStatusIndicator extends ConsumerWidget {
     } else if (sessionState.isLoading) {
       statusColor = Colors.orange;
     } else if (sessionState.hasUnreadResponse) {
-      statusColor = Colors.green; // Unread check complete
+      statusColor = Colors.green;
     } else {
       statusColor = null;
     }
-    
     if (statusColor == null) return const SizedBox.shrink();
-    
     return Container(
       width: 8,
       height: 8,
@@ -553,15 +535,10 @@ class _SessionStatusIndicator extends ConsumerWidget {
   }
 }
 
-/// A tap detector that uses raw pointer events instead of GestureDetector.
-/// This avoids participating in the gesture arena, allowing ReorderableDelayedDragStartListener
-/// to properly recognize long press for dragging.
 class _TapDetector extends StatefulWidget {
   final VoidCallback onTap;
   final Widget child;
-
   const _TapDetector({required this.onTap, required this.child});
-
   @override
   State<_TapDetector> createState() => _TapDetectorState();
 }
@@ -570,8 +547,7 @@ class _TapDetectorState extends State<_TapDetector> {
   Offset? _downPosition;
   DateTime? _downTime;
   static const _tapTimeout = Duration(milliseconds: 300);
-  static const _tapSlop = 18.0; // movement threshold
-
+  static const _tapSlop = 18.0;
   @override
   Widget build(BuildContext context) {
     return Listener(
@@ -584,8 +560,6 @@ class _TapDetectorState extends State<_TapDetector> {
         if (_downPosition != null && _downTime != null) {
           final elapsed = DateTime.now().difference(_downTime!);
           final distance = (event.position - _downPosition!).distance;
-          
-          // Only trigger tap if quick press and minimal movement
           if (elapsed < _tapTimeout && distance < _tapSlop) {
             widget.onTap();
           }

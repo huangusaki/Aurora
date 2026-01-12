@@ -5,14 +5,12 @@ class ChatPreset {
   final String name;
   final String description;
   final String systemPrompt;
-
   const ChatPreset({
     required this.id,
     required this.name,
     required this.description,
     required this.systemPrompt,
   });
-
   factory ChatPreset.create({
     required String name,
     required String description,
@@ -25,7 +23,6 @@ class ChatPreset {
       systemPrompt: systemPrompt,
     );
   }
-
   ChatPreset copyWith({
     String? name,
     String? description,

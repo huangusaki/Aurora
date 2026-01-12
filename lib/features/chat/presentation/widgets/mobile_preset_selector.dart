@@ -3,36 +3,32 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../settings/presentation/settings_provider.dart';
 import '../../../settings/presentation/mobile_preset_manage_page.dart';
 import '../chat_provider.dart';
-
 import 'package:aurora/l10n/app_localizations.dart';
 
 class MobilePresetSelector extends ConsumerWidget {
   final String sessionId;
-
   const MobilePresetSelector({super.key, required this.sessionId});
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    
     return IconButton(
       icon: const Icon(Icons.tune),
       tooltip: l10n.promptPresets,
       onPressed: () => _showPresetSheet(context, ref),
     );
   }
-  
+
   void _showPresetSheet(BuildContext context, WidgetRef ref) {
     final settings = ref.read(settingsProvider);
     final presets = settings.presets;
     final l10n = AppLocalizations.of(context)!;
-    
-    // Get current session's active preset
-    ref.read(chatStateUpdateTriggerProvider); // Ensure state is fresh
-    final chatState = ref.read(chatSessionManagerProvider).getOrCreate(sessionId).currentState;
+    ref.read(chatStateUpdateTriggerProvider);
+    final chatState = ref
+        .read(chatSessionManagerProvider)
+        .getOrCreate(sessionId)
+        .currentState;
     String? activePresetName = chatState.activePresetName;
     final isDefault = activePresetName == null;
-    
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -63,7 +59,8 @@ class MobilePresetSelector extends ConsumerWidget {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const MobilePresetManagePage(),
+                            builder: (context) =>
+                                const MobilePresetManagePage(),
                           ),
                         );
                       },
@@ -76,29 +73,39 @@ class MobilePresetSelector extends ConsumerWidget {
                 child: ListView(
                   shrinkWrap: true,
                   children: [
-                    // Default preset option
                     ListTile(
                       leading: Icon(
                         isDefault ? Icons.check_circle : Icons.circle_outlined,
-                        color: isDefault ? Theme.of(context).primaryColor : null,
+                        color:
+                            isDefault ? Theme.of(context).primaryColor : null,
                       ),
                       title: Text(l10n.defaultPreset),
                       onTap: () {
-                        ref.read(chatSessionManagerProvider).getOrCreate(sessionId).updateSystemPrompt('', null);
+                        ref
+                            .read(chatSessionManagerProvider)
+                            .getOrCreate(sessionId)
+                            .updateSystemPrompt('', null);
                         Navigator.pop(ctx);
                       },
                     ),
                     if (presets.isNotEmpty) const Divider(),
-                    // User presets
                     for (final preset in presets)
                       ListTile(
                         leading: Icon(
-                          activePresetName == preset.name ? Icons.check_circle : Icons.circle_outlined,
-                          color: activePresetName == preset.name ? Theme.of(context).primaryColor : null,
+                          activePresetName == preset.name
+                              ? Icons.check_circle
+                              : Icons.circle_outlined,
+                          color: activePresetName == preset.name
+                              ? Theme.of(context).primaryColor
+                              : null,
                         ),
                         title: Text(preset.name),
                         onTap: () {
-                          ref.read(chatSessionManagerProvider).getOrCreate(sessionId).updateSystemPrompt(preset.systemPrompt, preset.name);
+                          ref
+                              .read(chatSessionManagerProvider)
+                              .getOrCreate(sessionId)
+                              .updateSystemPrompt(
+                                  preset.systemPrompt, preset.name);
                           Navigator.pop(ctx);
                         },
                       ),

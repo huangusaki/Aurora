@@ -7,7 +7,6 @@ import '../../settings/presentation/settings_provider.dart';
 
 class PresetManageDialog extends ConsumerStatefulWidget {
   const PresetManageDialog({super.key});
-
   @override
   ConsumerState<PresetManageDialog> createState() => _PresetManageDialogState();
 }
@@ -17,7 +16,6 @@ class _PresetManageDialogState extends ConsumerState<PresetManageDialog> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _descController = TextEditingController();
   final TextEditingController _promptController = TextEditingController();
-
   void _startEdit(ChatPreset? preset) {
     setState(() {
       _editingPreset = preset;
@@ -35,13 +33,10 @@ class _PresetManageDialogState extends ConsumerState<PresetManageDialog> {
 
   void _save() {
     if (_nameController.text.isEmpty || _promptController.text.isEmpty) return;
-
     final name = _nameController.text;
     final desc = _descController.text;
     final prompt = _promptController.text;
-
     if (_editingPreset != null) {
-      // Update
       final updated = _editingPreset!.copyWith(
         name: name,
         description: desc,
@@ -49,7 +44,6 @@ class _PresetManageDialogState extends ConsumerState<PresetManageDialog> {
       );
       ref.read(settingsProvider.notifier).updatePreset(updated);
     } else {
-      // Create
       final newPreset = ChatPreset.create(
         name: name,
         description: desc,
@@ -75,10 +69,12 @@ class _PresetManageDialogState extends ConsumerState<PresetManageDialog> {
     final text = _promptController.text;
     final selection = _promptController.selection;
     if (selection.isValid && selection.start >= 0) {
-      final newText = text.replaceRange(selection.start, selection.end, variable);
+      final newText =
+          text.replaceRange(selection.start, selection.end, variable);
       _promptController.value = TextEditingValue(
         text: newText,
-        selection: TextSelection.collapsed(offset: selection.start + variable.length),
+        selection:
+            TextSelection.collapsed(offset: selection.start + variable.length),
       );
     } else {
       _promptController.text += variable;
@@ -88,13 +84,11 @@ class _PresetManageDialogState extends ConsumerState<PresetManageDialog> {
   @override
   Widget build(BuildContext context) {
     final presets = ref.watch(settingsProvider).presets;
-
     return ContentDialog(
       title: const Text('Manage Presets'),
       content: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // List
           SizedBox(
             width: 200,
             child: Column(
@@ -111,14 +105,17 @@ class _PresetManageDialogState extends ConsumerState<PresetManageDialog> {
                       final preset = presets[index];
                       final isSelected = _editingPreset?.id == preset.id;
                       return ListTile(
-                        title: Text(preset.name, overflow: TextOverflow.ellipsis),
+                        title:
+                            Text(preset.name, overflow: TextOverflow.ellipsis),
                         onPressed: () => _startEdit(preset),
                         trailing: IconButton(
                           icon: const Icon(FluentIcons.delete),
                           onPressed: () => _delete(preset.id),
                         ),
-                        tileColor: isSelected 
-                            ? ButtonState.all(FluentTheme.of(context).accentColor.withOpacity(0.1))
+                        tileColor: isSelected
+                            ? ButtonState.all(FluentTheme.of(context)
+                                .accentColor
+                                .withOpacity(0.1))
                             : ButtonState.all(Colors.transparent),
                       );
                     },
@@ -128,7 +125,6 @@ class _PresetManageDialogState extends ConsumerState<PresetManageDialog> {
             ),
           ),
           const SizedBox(width: 20),
-          // Edit Form
           Expanded(
             child: Column(
               children: [

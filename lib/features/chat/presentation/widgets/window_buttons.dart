@@ -4,14 +4,12 @@ import 'package:window_manager/window_manager.dart';
 
 class WindowButtons extends StatefulWidget {
   const WindowButtons({super.key});
-
   @override
   State<WindowButtons> createState() => _WindowButtonsState();
 }
 
 class _WindowButtonsState extends State<WindowButtons> with WindowListener {
   bool _isHovering = false;
-
   @override
   void initState() {
     windowManager.addListener(this);
@@ -33,7 +31,7 @@ class _WindowButtonsState extends State<WindowButtons> with WindowListener {
         mainAxisSize: MainAxisSize.min,
         children: [
           _TrafficLightButton(
-            color: const Color(0xFFFEBC2E), // MacOS Yellow
+            color: const Color(0xFFFEBC2E),
             icon: Icons.remove,
             showIcon: _isHovering,
             onTap: windowManager.minimize,
@@ -44,7 +42,7 @@ class _WindowButtonsState extends State<WindowButtons> with WindowListener {
             builder: (context, snapshot) {
               final isMaximized = snapshot.data ?? false;
               return _TrafficLightButton(
-                color: const Color(0xFF28C840), // MacOS Green
+                color: const Color(0xFF28C840),
                 icon: isMaximized ? Icons.zoom_in_map : Icons.zoom_out_map,
                 showIcon: _isHovering,
                 onTap: () {
@@ -60,12 +58,12 @@ class _WindowButtonsState extends State<WindowButtons> with WindowListener {
           ),
           const SizedBox(width: 8),
           _TrafficLightButton(
-            color: const Color(0xFFFF5F57), // MacOS Red
+            color: const Color(0xFFFF5F57),
             icon: Icons.close,
             showIcon: _isHovering,
             onTap: windowManager.close,
           ),
-          const SizedBox(width: 10), // Padding from edge
+          const SizedBox(width: 10),
         ],
       ),
     );
@@ -84,14 +82,12 @@ class _TrafficLightButton extends StatelessWidget {
   final IconData icon;
   final bool showIcon;
   final VoidCallback onTap;
-
   const _TrafficLightButton({
     required this.color,
     required this.icon,
     required this.showIcon,
     required this.onTap,
   });
-
   @override
   Widget build(BuildContext context) {
     return GestureDetector(

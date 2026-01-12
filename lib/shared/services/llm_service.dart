@@ -7,14 +7,21 @@ class LLMResponseChunk {
   final List<String> images;
   final List<ToolCallChunk>? toolCalls;
   final int? usage;
-
   const LLMResponseChunk(
-      {this.content, this.reasoning, this.images = const [], this.toolCalls, this.usage});
+      {this.content,
+      this.reasoning,
+      this.images = const [],
+      this.toolCalls,
+      this.usage});
 }
 
 abstract class LLMService {
   Stream<LLMResponseChunk> streamResponse(List<Message> messages,
-      {List<String>? attachments, List<Map<String, dynamic>>? tools, CancelToken? cancelToken});
+      {List<String>? attachments,
+      List<Map<String, dynamic>>? tools,
+      CancelToken? cancelToken});
   Future<LLMResponseChunk> getResponse(List<Message> messages,
-      {List<String>? attachments, List<Map<String, dynamic>>? tools, CancelToken? cancelToken});
+      {List<String>? attachments,
+      List<Map<String, dynamic>>? tools,
+      CancelToken? cancelToken});
 }

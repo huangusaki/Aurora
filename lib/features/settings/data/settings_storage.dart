@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
-import 'chat_preset_entity.dart'; // Added
+import 'chat_preset_entity.dart';
 import 'provider_config_entity.dart';
 import 'usage_stats_entity.dart';
 import '../../chat/data/message_entity.dart';
@@ -23,7 +23,7 @@ class SettingsStorage {
         SessionEntitySchema,
         UsageStatsEntitySchema,
         TopicEntitySchema,
-        ChatPresetEntitySchema, // Added
+        ChatPresetEntitySchema,
       ],
       directory: dir.path,
     );
@@ -79,13 +79,14 @@ class SettingsStorage {
       ..isStreamEnabled = isStreamEnabled ?? existing?.isStreamEnabled ?? true
       ..isSearchEnabled = isSearchEnabled ?? existing?.isSearchEnabled ?? false
       ..searchEngine = searchEngine ?? existing?.searchEngine ?? 'duckduckgo'
-      ..enableSmartTopic = enableSmartTopic ?? existing?.enableSmartTopic ?? true
-      ..topicGenerationModel = topicGenerationModel ?? existing?.topicGenerationModel
+      ..enableSmartTopic =
+          enableSmartTopic ?? existing?.enableSmartTopic ?? true
+      ..topicGenerationModel =
+          topicGenerationModel ?? existing?.topicGenerationModel
       ..lastSessionId = lastSessionId ?? existing?.lastSessionId
       ..lastTopicId = lastTopicId ?? existing?.lastTopicId
       ..language = language ?? existing?.language ?? 'zh'
       ..lastPresetId = existing?.lastPresetId;
-    
     await _isar.writeTxn(() async {
       await _isar.appSettingsEntitys.clear();
       await _isar.appSettingsEntitys.put(settings);
@@ -167,9 +168,7 @@ class SettingsStorage {
         final List<dynamic> json = jsonDecode(content);
         return json.cast<String>();
       }
-    } catch (e) {
-      // ignore error
-    }
+    } catch (e) {}
     return [];
   }
 
@@ -177,13 +176,11 @@ class SettingsStorage {
     try {
       final file = await _orderFile;
       await file.writeAsString(jsonEncode(order));
-    } catch (e) {
-      // ignore error
-    }
+    } catch (e) {}
   }
 
-  // Usage Stats Methods
-  Future<void> incrementUsage(String modelName, {bool success = true, int durationMs = 0}) async {
+  Future<void> incrementUsage(String modelName,
+      {bool success = true, int durationMs = 0}) async {
     await _isar.writeTxn(() async {
       var existing = await _isar.usageStatsEntitys
           .filter()
@@ -202,7 +199,6 @@ class SettingsStorage {
         } else {
           existing.failureCount++;
         }
-        // Only accumulate duration if it's a valid positive value
         if (durationMs > 0) {
           existing.totalDurationMs += durationMs;
           existing.validDurationCount++;
@@ -221,6 +217,7 @@ class SettingsStorage {
       await _isar.usageStatsEntitys.clear();
     });
   }
+
   Future<void> saveLastTopicId(String? topicId) async {
     final existing = await loadAppSettings();
     if (existing == null) return;
@@ -247,7 +244,6 @@ class SettingsStorage {
     });
   }
 
-  // Chat Preset Methods
   Future<void> saveChatPreset(ChatPresetEntity preset) async {
     await _isar.writeTxn(() async {
       await _isar.chatPresetEntitys.put(preset);

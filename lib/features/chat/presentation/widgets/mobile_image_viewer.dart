@@ -9,30 +9,22 @@ import 'package:super_clipboard/super_clipboard.dart';
 class MobileImageViewer extends StatefulWidget {
   final Uint8List imageBytes;
   final VoidCallback? onClose;
-
   const MobileImageViewer({
     super.key,
     required this.imageBytes,
     this.onClose,
   });
-
   @override
   State<MobileImageViewer> createState() => _MobileImageViewerState();
 }
 
 class _MobileImageViewerState extends State<MobileImageViewer>
     with SingleTickerProviderStateMixin {
-  // TransformationController allows us to manipulate the InteractiveViewer programmatically
   final TransformationController _transformationController =
       TransformationController();
-  
-  // Animation controller for double-tap zoom
   late AnimationController _animationController;
   Animation<Matrix4>? _animation;
-
-  // Track toolbar visibility
   bool _showToolbar = true;
-
   @override
   void initState() {
     super.initState();
@@ -60,21 +52,16 @@ class _MobileImageViewerState extends State<MobileImageViewer>
   void _onDoubleTap() {
     Matrix4 currentMatrix = _transformationController.value;
     double currentScale = currentMatrix.getMaxScaleOnAxis();
-
     Matrix4 endMatrix;
     if (currentScale > 1.2) {
-      // Zoom out to normal
       endMatrix = Matrix4.identity();
     } else {
-      // Zoom in to 2x (or could be smarter based on tap position, but keeping it simple for now)
       endMatrix = Matrix4.identity()..scale(2.0);
     }
-
     _animation = Matrix4Tween(
       begin: currentMatrix,
       end: endMatrix,
     ).animate(CurveTween(curve: Curves.easeOut).animate(_animationController));
-
     _animationController.forward(from: 0);
   }
 
@@ -100,20 +87,14 @@ class _MobileImageViewerState extends State<MobileImageViewer>
   }
 
   Future<void> _handleSave(BuildContext context) async {
-    // Use gal package for mobile gallery saving
     try {
-      // Gal requires a file path, so we save to temp first
       final tempDir = await getTemporaryDirectory();
-      final tempPath = '${tempDir.path}/image_${DateTime.now().millisecondsSinceEpoch}.png';
+      final tempPath =
+          '${tempDir.path}/image_${DateTime.now().millisecondsSinceEpoch}.png';
       final tempFile = File(tempPath);
       await tempFile.writeAsBytes(widget.imageBytes);
-      
-      // Save to gallery
       await Gal.putImage(tempPath);
-      
-      // Cleanup temp file
       await tempFile.delete();
-      
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -136,40 +117,33 @@ class _MobileImageViewerState extends State<MobileImageViewer>
       }
     }
   }
-  
+
   void _rotateClockwise() {
-      // InteractiveViewer doesn't support rotation natively.
-      // We would need to wrap the Image in a Transform.rotate and manage state.
-      // This adds complexity with InteractiveViewer's boundaries. 
-      // For now, let's keep it simple: Zoom/Pan is primary. 
-      // If rotation is critical, we wrap child of InteractiveViewer.
-      // Let's implement simple 90 degree rotation.
-      setState(() {
-        _rotation += math.pi / 2;
-      });
+    setState(() {
+      _rotation += math.pi / 2;
+    });
   }
 
   double _rotation = 0.0;
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
       extendBodyBehindAppBar: true,
-      // Minimal app bar for closing
-      appBar: _showToolbar ? AppBar(
-        backgroundColor: Colors.transparent, // transparent for full immersion
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: widget.onClose ?? () => Navigator.pop(context),
-          tooltip: 'Back',
-        ),
-      ) : null,
+      appBar: _showToolbar
+          ? AppBar(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back, color: Colors.white),
+                onPressed: widget.onClose ?? () => Navigator.pop(context),
+                tooltip: 'Back',
+              ),
+            )
+          : null,
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // Main Image Viewer
           GestureDetector(
             onTap: _toggleToolbar,
             onDoubleTap: _onDoubleTap,
@@ -179,7 +153,7 @@ class _MobileImageViewerState extends State<MobileImageViewer>
               maxScale: 5.0,
               panEnabled: true,
               scaleEnabled: true,
-              boundaryMargin: const EdgeInsets.all(double.infinity), // Allows dragging "off screen" feel
+              boundaryMargin: const EdgeInsets.all(double.infinity),
               child: Center(
                 child: Transform.rotate(
                   angle: _rotation,
@@ -191,23 +165,23 @@ class _MobileImageViewerState extends State<MobileImageViewer>
               ),
             ),
           ),
-
-          // Bottom Toolbar
           if (_showToolbar)
             Positioned(
               bottom: 0,
               left: 0,
               right: 0,
               child: Container(
-                color: Colors.black.withOpacity(0.6), // Semi-transparent bar
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                color: Colors.black.withOpacity(0.6),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 16.0, vertical: 12.0),
                 child: SafeArea(
                   top: false,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.rotate_right, color: Colors.white),
+                        icon:
+                            const Icon(Icons.rotate_right, color: Colors.white),
                         onPressed: _rotateClockwise,
                         tooltip: 'Rotate',
                       ),
@@ -216,7 +190,7 @@ class _MobileImageViewerState extends State<MobileImageViewer>
                         onPressed: () => _handleCopy(context),
                         tooltip: 'Copy',
                       ),
-                       IconButton(
+                      IconButton(
                         icon: const Icon(Icons.save_alt, color: Colors.white),
                         onPressed: () => _handleSave(context),
                         tooltip: 'Save',

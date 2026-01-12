@@ -7,12 +7,9 @@ import 'mobile/mobile_chat_screen.dart';
 
 class ChatScreen extends ConsumerWidget {
   const ChatScreen({super.key});
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Simple platform check
     final isWindows = !kIsWeb && Platform.isWindows;
-    
     if (isWindows) {
       return const DesktopChatScreen();
     } else {

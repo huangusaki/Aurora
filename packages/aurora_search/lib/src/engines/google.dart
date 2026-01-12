@@ -1,48 +1,36 @@
-/// Google search engine implementation via HTML scraping.
 library;
 
 import '../base_search_engine.dart';
 import '../results.dart';
 
-/// Google search engine.
 class GoogleEngine extends BaseSearchEngine<TextResult> {
   GoogleEngine({super.proxy, super.timeout, super.verify});
-
   @override
   String get name => 'google';
-
   @override
   String get category => 'text';
-
   @override
   String get provider => 'google';
-
   @override
-  double get priority => 1.5; // Higher priority
-
+  double get priority => 1.5;
   @override
   String get searchUrl => 'https://www.google.com/search';
-
   @override
   String get searchMethod => 'GET';
-
   @override
   Map<String, String> get searchHeaders => {
         'Accept': 'text/html,application/xhtml+xml',
         'Accept-Language': 'en-US,en;q=0.9',
         'DNT': '1',
       };
-
   @override
   String get itemsSelector => 'div.g, div.xpd, div.mnr-c';
-
   @override
   Map<String, String> get elementsSelector => {
         'title': 'h3',
         'href': 'a',
         'body': 'div[data-snf], div.VwiC3b, span.aCOpRe',
       };
-
   @override
   Map<String, String> buildPayload({
     required String query,
@@ -55,22 +43,17 @@ class GoogleEngine extends BaseSearchEngine<TextResult> {
     final parts = region.toLowerCase().split('-');
     final lang = parts.length > 1 ? parts[1] : 'en';
     final country = parts.isNotEmpty ? parts[0] : 'us';
-
     final payload = <String, String>{
       'q': query,
       'hl': lang,
       'gl': country,
       'num': '10',
     };
-
-    // Safe search
     if (safesearch == 'off') {
       payload['safe'] = 'off';
     } else if (safesearch == 'on') {
       payload['safe'] = 'active';
     }
-
-    // Time limit
     if (timelimit != null) {
       final tbs = {
         'd': 'qdr:d',
@@ -82,12 +65,9 @@ class GoogleEngine extends BaseSearchEngine<TextResult> {
         payload['tbs'] = tbs[timelimit]!;
       }
     }
-
-    // Pagination
     if (page > 1) {
       payload['start'] = '${(page - 1) * 10}';
     }
-
     return payload;
   }
 
@@ -95,70 +75,51 @@ class GoogleEngine extends BaseSearchEngine<TextResult> {
   List<TextResult> extractResults(String htmlText) {
     final results = <TextResult>[];
     final document = extractTree(htmlText);
-    
-    // Try multiple selectors for Google's varying HTML structure
     var items = document.querySelectorAll(itemsSelector);
     if (items.isEmpty) {
       items = document.querySelectorAll('div[data-sokoban-container]');
     }
-
     for (final item in items) {
-      // Extract title
       final titleElement = item.querySelector('h3');
       final title = titleElement?.text ?? '';
-
-      // Extract URL
       var linkElement = item.querySelector('a[href^="http"]');
       linkElement ??= item.querySelector('a[data-ved]');
       var href = linkElement?.attributes['href'] ?? '';
-      
-      // Clean Google redirect URLs
       if (href.startsWith('/url?')) {
         final uri = Uri.tryParse('https://google.com$href');
         href = uri?.queryParameters['q'] ?? href;
       }
-
-      // Extract snippet
       var bodyElement = item.querySelector('div[data-snf]');
       bodyElement ??= item.querySelector('div.VwiC3b');
       bodyElement ??= item.querySelector('span.aCOpRe');
       bodyElement ??= item.querySelector('div[style*="line-clamp"]');
       final body = bodyElement?.text ?? '';
-
-      if (title.isNotEmpty && href.isNotEmpty && !href.contains('google.com/search')) {
+      if (title.isNotEmpty &&
+          href.isNotEmpty &&
+          !href.contains('google.com/search')) {
         results.add(TextResult(title: title, href: href, body: body));
       }
     }
-
     return results;
   }
 }
 
-/// Google Images search engine.
 class GoogleImagesEngine extends BaseSearchEngine<ImagesResult> {
   GoogleImagesEngine({super.proxy, super.timeout, super.verify});
-
   @override
   String get name => 'google_images';
-
   @override
   String get category => 'images';
-
   @override
   String get provider => 'google';
-
   @override
   String get searchUrl => 'https://www.google.com/search';
-
   @override
   String get searchMethod => 'GET';
-
   @override
   String get itemsSelector => 'div[data-ri]';
-
   @override
   Map<String, String> get elementsSelector => {};
-
   @override
   Map<String, String> buildPayload({
     required String query,
@@ -170,7 +131,6 @@ class GoogleImagesEngine extends BaseSearchEngine<ImagesResult> {
   }) {
     final parts = region.toLowerCase().split('-');
     final lang = parts.length > 1 ? parts[1] : 'en';
-
     return {
       'q': query,
       'tbm': 'isch',
@@ -182,23 +142,22 @@ class GoogleImagesEngine extends BaseSearchEngine<ImagesResult> {
   @override
   List<ImagesResult> extractResults(String htmlText) {
     final results = <ImagesResult>[];
-    
-    // Google images are loaded via JavaScript, so we parse embedded JSON
-    final regex = RegExp(r'\["(https?://[^"]+\.(jpg|jpeg|png|gif|webp))"[^\]]*\]');
+    final regex =
+        RegExp(r'\["(https?://[^"]+\.(jpg|jpeg|png|gif|webp))"[^\]]*\]');
     final matches = regex.allMatches(htmlText);
-
     for (final match in matches.take(20)) {
       final imageUrl = match.group(1);
       if (imageUrl != null && !imageUrl.contains('gstatic.com')) {
-        results.add(ImagesResult(
-          image: imageUrl,
-          url: imageUrl,
-          title: 'Google Image',
-          source: 'google',
-        ),);
+        results.add(
+          ImagesResult(
+            image: imageUrl,
+            url: imageUrl,
+            title: 'Google Image',
+            source: 'google',
+          ),
+        );
       }
     }
-
     return results;
   }
 }

@@ -19,7 +19,6 @@ import 'chat_image_bubble.dart';
 import '../../../settings/presentation/settings_provider.dart';
 import '../../../history/presentation/widgets/hover_image_preview.dart';
 import 'package:aurora/l10n/app_localizations.dart';
-
 import 'components/chat_utils.dart';
 import 'components/tool_output.dart';
 import 'components/message_bubble.dart';
@@ -29,7 +28,6 @@ import 'components/chat_attachment_menu.dart';
 
 class ChatView extends ConsumerStatefulWidget {
   final String sessionId;
-  
   const ChatView({super.key, required this.sessionId});
   @override
   ConsumerState<ChatView> createState() => ChatViewState();
@@ -39,16 +37,11 @@ class ChatViewState extends ConsumerState<ChatView> {
   final TextEditingController _controller = TextEditingController();
   late final ScrollController _scrollController;
   List<String> _attachments = [];
-  
-  // Use the widget's sessionId
   String get _sessionId => widget.sessionId;
-  
-  // Toast State
   bool _toastVisible = false;
   String _toastMessage = '';
   IconData? _toastIcon;
   Timer? _toastTimer;
-
   void _showPillToast(String message, IconData icon) {
     _toastTimer?.cancel();
     setState(() {
@@ -64,7 +57,7 @@ class ChatViewState extends ConsumerState<ChatView> {
   Widget _buildPillToastWidget() {
     final theme = fluent.FluentTheme.of(context);
     return Positioned(
-      top: 60, // Top margin
+      top: 60,
       left: 0,
       right: 0,
       child: IgnorePointer(
@@ -86,14 +79,15 @@ class ChatViewState extends ConsumerState<ChatView> {
                   ),
                 ],
                 border: Border.all(
-                    color: theme.resources.dividerStrokeColorDefault,
+                  color: theme.resources.dividerStrokeColorDefault,
                 ),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (_toastIcon != null) ...[
-                    Icon(_toastIcon, size: 18, color: Theme.of(context).colorScheme.primary),
+                    Icon(_toastIcon,
+                        size: 18, color: Theme.of(context).colorScheme.primary),
                     const SizedBox(width: 10),
                   ],
                   Text(
@@ -118,11 +112,9 @@ class ChatViewState extends ConsumerState<ChatView> {
     try {
       final XFile? image = await picker.pickImage(source: source);
       if (image != null) {
-        // We'll use the path for now, consistent with how desktop file selection works
-        // If image.path is empty (web), we'd need readAsBytes. But this is mobile logic.
         if (!_attachments.contains(image.path)) {
           setState(() {
-             _attachments.add(image.path);
+            _attachments.add(image.path);
           });
         }
       }
@@ -130,23 +122,21 @@ class ChatViewState extends ConsumerState<ChatView> {
       debugPrint('Error picking image: $e');
     }
   }
+
   bool _hasRestoredPosition = false;
   bool _wasLoading = false;
   ChatNotifier? _notifier;
-  
   @override
   void initState() {
     super.initState();
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
-    
-    // Subscribe to session-specific state changes
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _notifier = ref.read(chatSessionManagerProvider).getOrCreate(_sessionId);
       _notifier!.addLocalListener(_onNotifierStateChanged);
     });
   }
-  
+
   void _onNotifierStateChanged() {
     if (mounted) {
       setState(() {});
@@ -154,25 +144,20 @@ class ChatViewState extends ConsumerState<ChatView> {
   }
 
   void _restoreScrollPosition() {
-    final notifier = ref.read(chatSessionManagerProvider).getOrCreate(_sessionId);
+    final notifier =
+        ref.read(chatSessionManagerProvider).getOrCreate(_sessionId);
     final state = notifier.currentState;
     if (_hasRestoredPosition || state.messages.isEmpty) return;
-    
-    // If we have messages and haven't restored yet
     _hasRestoredPosition = true;
-    
     final savedOffset = notifier.savedScrollOffset;
     final isAutoScroll = state.isAutoScrollEnabled;
-    
     if (savedOffset != null || isAutoScroll) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (_scrollController.hasClients) {
-          // Prioritize saved offset if user was significantly scrolled up (> 100px),
-          // ignoring stale auto-scroll flag to prevent unwanted jumps.
           if (savedOffset != null && savedOffset > 100) {
             _scrollController.jumpTo(savedOffset);
           } else if (isAutoScroll) {
-            _scrollController.jumpTo(0); // 0 is bottom
+            _scrollController.jumpTo(0);
           } else if (savedOffset != null) {
             _scrollController.jumpTo(savedOffset);
           }
@@ -180,23 +165,18 @@ class ChatViewState extends ConsumerState<ChatView> {
       });
     }
   }
-  
+
   void _onScroll() {
-    // Do not update state if we haven't restored position (or initial load)
-    // or if the list is effectively empty
     if (!_hasRestoredPosition) return;
     if (!_scrollController.hasClients) return;
-    
-    // In reverse mode, offset 0 is bottom
     final currentScroll = _scrollController.position.pixels;
-    
-    // Re-enable auto-scroll if close to bottom (0)
     final autoScroll = currentScroll < 100;
-      
-    // Update state via notifier (session-specific)
-    ref.read(chatSessionManagerProvider).getOrCreate(_sessionId).setAutoScrollEnabled(autoScroll);
+    ref
+        .read(chatSessionManagerProvider)
+        .getOrCreate(_sessionId)
+        .setAutoScrollEnabled(autoScroll);
   }
-  
+
   @override
   void dispose() {
     _notifier?.removeLocalListener(_onNotifierStateChanged);
@@ -217,7 +197,6 @@ class ChatViewState extends ConsumerState<ChatView> {
         .map((e) => e.path)
         .where((path) => !_attachments.contains(path))
         .toList();
-    
     if (newPaths.isNotEmpty) {
       setState(() {
         _attachments.addAll(newPaths);
@@ -229,12 +208,10 @@ class ChatViewState extends ConsumerState<ChatView> {
     final clipboard = SystemClipboard.instance;
     if (clipboard == null) return;
     final reader = await clipboard.read();
-    
     if (!reader.canProvide(Formats.png) &&
         !reader.canProvide(Formats.jpeg) &&
         !reader.canProvide(Formats.fileUri) &&
         !reader.canProvide(Formats.plainText)) {
-      // Retry logic for images
       for (int i = 0; i < 5; i++) {
         await Future.delayed(const Duration(milliseconds: 200));
         final newReader = await clipboard.read();
@@ -245,7 +222,6 @@ class ChatViewState extends ConsumerState<ChatView> {
           return;
         }
       }
-      // Pasteboard fallback for images
       try {
         final imageBytes = await Pasteboard.image;
         if (imageBytes != null && imageBytes.isNotEmpty) {
@@ -265,7 +241,6 @@ class ChatViewState extends ConsumerState<ChatView> {
       } catch (e) {
         debugPrint('Pasteboard fallback failed: $e');
       }
-      // No image found, try to handle as text
       await _processReader(reader);
     } else {
       await _processReader(reader);
@@ -302,9 +277,7 @@ class ChatViewState extends ConsumerState<ChatView> {
         }
         return;
       }
-    } 
-    
-    // JPEG handling
+    }
     if (reader.canProvide(Formats.jpeg)) {
       final completer = Completer<String?>();
       reader.getFile(Formats.jpeg, (file) async {
@@ -335,7 +308,6 @@ class ChatViewState extends ConsumerState<ChatView> {
         return;
       }
     }
-
     if (reader.canProvide(Formats.fileUri)) {
       final uri = await reader.readValue(Formats.fileUri);
       if (uri != null) {
@@ -405,25 +377,16 @@ class ChatViewState extends ConsumerState<ChatView> {
 
   Future<void> _sendMessage() async {
     final text = _controller.text;
-
     if (text.trim().isEmpty && _attachments.isEmpty) {
       return;
     }
     final currentSessionId = ref.read(selectedHistorySessionIdProvider);
-    
-    // Capture attachments before clearing
     final attachmentsCopy = List<String>.from(_attachments);
-    
-    // Clear input immediately before async operation
     setState(() {
       _controller.clear();
       _attachments.clear();
     });
-    
-    // Enable auto-scroll when sending message
     ref.read(historyChatProvider).setAutoScrollEnabled(true);
-    
-    // Explicitly scroll to bottom (0)
     if (_scrollController.hasClients) {
       _scrollController.animateTo(
         0,
@@ -431,11 +394,10 @@ class ChatViewState extends ConsumerState<ChatView> {
         curve: Curves.easeOut,
       );
     }
-    
     final finalSessionId = await ref
         .read(historyChatProvider)
         .sendMessage(text, attachments: attachmentsCopy);
-    if (!mounted) return; // Widget disposed during async operation
+    if (!mounted) return;
     if (currentSessionId == 'new_chat' && finalSessionId != 'new_chat') {
       ref.read(selectedHistorySessionIdProvider.notifier).state =
           finalSessionId;
@@ -444,21 +406,15 @@ class ChatViewState extends ConsumerState<ChatView> {
 
   @override
   Widget build(BuildContext context) {
-    // Get session-specific notifier
-    final notifier = ref.read(chatSessionManagerProvider).getOrCreate(_sessionId);
+    final notifier =
+        ref.read(chatSessionManagerProvider).getOrCreate(_sessionId);
     final chatState = notifier.currentState;
-    
     final messages = chatState.messages;
     final isLoading = chatState.isLoading;
     final hasUnreadResponse = chatState.hasUnreadResponse;
     final isLoadingHistory = chatState.isLoadingHistory;
-    
     final settings = ref.watch(settingsProvider);
-    
-    // Attempt to restore scroll position if needed
     _restoreScrollPosition();
-
-    // Auto-scroll on loading start (e.g. Retry)
     if (isLoading && !_wasLoading && chatState.isAutoScrollEnabled) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (_scrollController.hasClients) {
@@ -471,15 +427,11 @@ class ChatViewState extends ConsumerState<ChatView> {
       });
     }
     _wasLoading = isLoading;
-    
-    // Mark as read if displaying unread content
     if (hasUnreadResponse) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         notifier.markAsRead();
       });
     }
-    
-    // Show loading indicator while history is loading
     if (isLoadingHistory && messages.isEmpty) {
       return Stack(
         children: [
@@ -493,11 +445,10 @@ class ChatViewState extends ConsumerState<ChatView> {
                 ),
                 Container(
                   padding: EdgeInsets.fromLTRB(
-                    Platform.isWindows ? 12 : 0, 
-                    Platform.isWindows ? 0 : 0,
-                    Platform.isWindows ? 12 : 0, 
-                    Platform.isWindows ? 12 : 0
-                  ),
+                      Platform.isWindows ? 12 : 0,
+                      Platform.isWindows ? 0 : 0,
+                      Platform.isWindows ? 12 : 0,
+                      Platform.isWindows ? 12 : 0),
                   child: Platform.isWindows
                       ? DesktopChatInputArea(
                           controller: _controller,
@@ -512,10 +463,11 @@ class ChatViewState extends ConsumerState<ChatView> {
                           isLoading: isLoading,
                           onSend: _sendMessage,
                           onAttachmentTap: () => ChatAttachmentMenu.show(
-                             context,
-                             onPickCamera: () => _pickImage(ImageSource.camera),
-                             onPickGallery: () => _pickImage(ImageSource.gallery),
-                             onPickFile: _pickFiles,
+                            context,
+                            onPickCamera: () => _pickImage(ImageSource.camera),
+                            onPickGallery: () =>
+                                _pickImage(ImageSource.gallery),
+                            onPickFile: _pickFiles,
                           ),
                           onShowToast: _showPillToast,
                         ),
@@ -527,331 +479,335 @@ class ChatViewState extends ConsumerState<ChatView> {
         ],
       );
     }
-    
-    // --- Grouping Logic Start ---
     List<DisplayItem> displayItems = [];
     MergedGroupItem? currentGroup;
-
-    // messages is [Oldest -> Newest]. Iterate from Oldest to Newest to build groups.
     for (int i = 0; i < messages.length; i++) {
-       final msg = messages[i];
-       if (msg.role == 'system') continue; // Hide system messages
-       
-       if (msg.isUser) {
-          // Close valid group if any
-          if (currentGroup != null) {
-             displayItems.add(currentGroup);
-             currentGroup = null;
-          }
-          displayItems.add(SingleMessageItem(msg));
-       } else {
-          // Assistant or Tool
-          if (currentGroup == null) {
-             currentGroup = MergedGroupItem([msg]);
-          } else {
-             currentGroup.messages.add(msg);
-          }
-       }
+      final msg = messages[i];
+      if (msg.role == 'system') continue;
+      if (msg.isUser) {
+        if (currentGroup != null) {
+          displayItems.add(currentGroup);
+          currentGroup = null;
+        }
+        displayItems.add(SingleMessageItem(msg));
+      } else {
+        if (currentGroup == null) {
+          currentGroup = MergedGroupItem([msg]);
+        } else {
+          currentGroup.messages.add(msg);
+        }
+      }
     }
-    // Add final group
     if (currentGroup != null) {
-       displayItems.add(currentGroup);
+      displayItems.add(currentGroup);
     }
-    // --- Grouping Logic End ---
-
     return Stack(
       children: [
         Positioned.fill(
           child: Column(
-      children: [
-        Expanded(
-          child: NotificationListener<ScrollNotification>(
-            onNotification: (notification) {
-              if (notification is ScrollEndNotification) {
-                if (_sessionId != null && _scrollController.hasClients) {
-                  ref
-                      .read(chatSessionManagerProvider)
-                      .getOrCreate(_sessionId!)
-                      .saveScrollOffset(_scrollController.offset);
-                }
-              }
-              return false;
-            },
-            child: Platform.isWindows
-                ? SelectionArea(
-                    child: Padding(
-                      padding: const EdgeInsets.only(right: 4.0, top: 2.0, bottom: 2.0),
-                      child: fluent.Scrollbar(
-                      controller: _scrollController,
-                      thumbVisibility: true,
-                      style: const fluent.ScrollbarThemeData(
-                        thickness: 6,
-                        hoveringThickness: 10,
-                      ),
-                      child: ScrollConfiguration(
-                        behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
-                        child: ListView.builder(
-                          cacheExtent: 2000,
-                          key: ValueKey(ref.watch(selectedHistorySessionIdProvider)),
-                          controller: _scrollController,
-                          reverse: true,
-                          padding: const EdgeInsets.all(16),
-                          itemCount: displayItems.length,
-                          itemBuilder: (context, index) {
-                             // index 0 is BOTTOM (Latest Item)
-                             // displayItems is [Oldest, ..., Newest]
-                             // So reversedIndex = displayItems.length - 1 - index
-                             final reversedIndex = displayItems.length - 1 - index;
-                             final item = displayItems[reversedIndex];
-                             
-                             final isLatest = index == 0;
-                             final isGenerating = isLatest && isLoading;
-
-                             if (item is MergedGroupItem) {
-                                return MergedMessageBubble(
-                                   key: ValueKey(item.id),
-                                   group: item,
-                                   isLast: isLatest,
-                                   isGenerating: isGenerating,
-                                );
-                             } else if (item is SingleMessageItem) {
-                                final msg = item.message;
-                                
-                                // Merge Logic for Users (User vs User)
-                                bool mergeTop = false;
-                                if (reversedIndex > 0) {
-                                  final prevItem = displayItems[reversedIndex - 1];
-                                  if (prevItem is SingleMessageItem && prevItem.message.isUser) {
-                                     mergeTop = true;
-                                  }
-                                }
-                                bool mergeBottom = false;
-                                if (reversedIndex < displayItems.length - 1) {
-                                   final nextItem = displayItems[reversedIndex + 1];
-                                   if (nextItem is SingleMessageItem && nextItem.message.isUser) {
-                                      mergeBottom = true;
-                                   }
-                                }
-                                
-                                bool showAvatar = !mergeTop;
-
-                                final bubble = MessageBubble(
-                                    key: ValueKey(msg.id),
-                                    message: msg,
-                                    isLast: isLatest,
-                                    isGenerating: false, // User messages don't generate
-                                    showAvatar: showAvatar,
-                                    mergeTop: mergeTop,
-                                    mergeBottom: mergeBottom
-                                );
-                                
-                                // Animation only for latest?
-                                if (isLatest) {
-                                  return TweenAnimationBuilder<double>(
-                                    tween: Tween(begin: 0.0, end: 1.0),
-                                    duration: const Duration(milliseconds: 300),
-                                    curve: Curves.easeOutCubic,
-                                    builder: (context, value, child) {
-                                      return Opacity(
-                                        opacity: value,
-                                        child: Transform.translate(
-                                          offset: Offset(0, 20 * (1 - value)),
-                                          child: child,
-                                        ),
+            children: [
+              Expanded(
+                child: NotificationListener<ScrollNotification>(
+                  onNotification: (notification) {
+                    if (notification is ScrollEndNotification) {
+                      if (_sessionId != null && _scrollController.hasClients) {
+                        ref
+                            .read(chatSessionManagerProvider)
+                            .getOrCreate(_sessionId!)
+                            .saveScrollOffset(_scrollController.offset);
+                      }
+                    }
+                    return false;
+                  },
+                  child: Platform.isWindows
+                      ? SelectionArea(
+                          child: Padding(
+                            padding: const EdgeInsets.only(
+                                right: 4.0, top: 2.0, bottom: 2.0),
+                            child: fluent.Scrollbar(
+                              controller: _scrollController,
+                              thumbVisibility: true,
+                              style: const fluent.ScrollbarThemeData(
+                                thickness: 6,
+                                hoveringThickness: 10,
+                              ),
+                              child: ScrollConfiguration(
+                                behavior: ScrollConfiguration.of(context)
+                                    .copyWith(scrollbars: false),
+                                child: ListView.builder(
+                                  cacheExtent: 2000,
+                                  key: ValueKey(ref
+                                      .watch(selectedHistorySessionIdProvider)),
+                                  controller: _scrollController,
+                                  reverse: true,
+                                  padding: const EdgeInsets.all(16),
+                                  itemCount: displayItems.length,
+                                  itemBuilder: (context, index) {
+                                    final reversedIndex =
+                                        displayItems.length - 1 - index;
+                                    final item = displayItems[reversedIndex];
+                                    final isLatest = index == 0;
+                                    final isGenerating = isLatest && isLoading;
+                                    if (item is MergedGroupItem) {
+                                      return MergedMessageBubble(
+                                        key: ValueKey(item.id),
+                                        group: item,
+                                        isLast: isLatest,
+                                        isGenerating: isGenerating,
                                       );
-                                    },
-                                    child: bubble,
-                                  );
-                                }
-                                return bubble;
-                             }
-                             return const SizedBox.shrink();
-                          },
-                          physics: const ClampingScrollPhysics(),
-                        ),
-                      ),
-                    ),
-                  ),
-                )
-                : SelectionArea(
-                    child: CustomScrollView(
-                    controller: _scrollController,
-                    physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
-                    reverse: true,
-                    slivers: [
-                      SliverFillRemaining(
-                        hasScrollBody: false,
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          verticalDirection: VerticalDirection.up,
-                          children: [
-                            for (int index = 0; index < displayItems.length; index++)
-                              Builder(builder: (context) {
-                                final reversedIndex = displayItems.length - 1 - index;
-                                final item = displayItems[reversedIndex];
-                                final isLatest = index == 0;
-                                final isGenerating = isLatest && isLoading;
-
-                                if (item is MergedGroupItem) {
-                                  final bubble = MergedMessageBubble(
-                                    key: ValueKey(item.id),
-                                    group: item,
-                                    isLast: isLatest,
-                                    isGenerating: isGenerating,
-                                  );
-                                  
-                                  if (isLatest) {
-                                    return TweenAnimationBuilder<double>(
-                                      key: ValueKey(item.id),
-                                      tween: Tween(begin: 0.0, end: 1.0),
-                                      duration: const Duration(milliseconds: 300),
-                                      curve: Curves.easeOutCubic,
-                                      builder: (context, value, child) {
-                                        return Opacity(
-                                          opacity: value,
-                                          child: Transform.translate(
-                                            offset: Offset(0, 20 * (1 - value)),
-                                            child: child,
-                                          ),
+                                    } else if (item is SingleMessageItem) {
+                                      final msg = item.message;
+                                      bool mergeTop = false;
+                                      if (reversedIndex > 0) {
+                                        final prevItem =
+                                            displayItems[reversedIndex - 1];
+                                        if (prevItem is SingleMessageItem &&
+                                            prevItem.message.isUser) {
+                                          mergeTop = true;
+                                        }
+                                      }
+                                      bool mergeBottom = false;
+                                      if (reversedIndex <
+                                          displayItems.length - 1) {
+                                        final nextItem =
+                                            displayItems[reversedIndex + 1];
+                                        if (nextItem is SingleMessageItem &&
+                                            nextItem.message.isUser) {
+                                          mergeBottom = true;
+                                        }
+                                      }
+                                      bool showAvatar = !mergeTop;
+                                      final bubble = MessageBubble(
+                                          key: ValueKey(msg.id),
+                                          message: msg,
+                                          isLast: isLatest,
+                                          isGenerating: false,
+                                          showAvatar: showAvatar,
+                                          mergeTop: mergeTop,
+                                          mergeBottom: mergeBottom);
+                                      if (isLatest) {
+                                        return TweenAnimationBuilder<double>(
+                                          tween: Tween(begin: 0.0, end: 1.0),
+                                          duration:
+                                              const Duration(milliseconds: 300),
+                                          curve: Curves.easeOutCubic,
+                                          builder: (context, value, child) {
+                                            return Opacity(
+                                              opacity: value,
+                                              child: Transform.translate(
+                                                offset:
+                                                    Offset(0, 20 * (1 - value)),
+                                                child: child,
+                                              ),
+                                            );
+                                          },
+                                          child: bubble,
                                         );
-                                      },
-                                      child: bubble,
-                                    );
-                                  }
-                                  return bubble;
-                                } else if (item is SingleMessageItem) {
-                                  final msg = item.message;
-                                  
-                                  bool mergeTop = false;
-                                  if (reversedIndex > 0) {
-                                    final prevItem = displayItems[reversedIndex - 1];
-                                    if (prevItem is SingleMessageItem && prevItem.message.isUser) mergeTop = true;
-                                  }
-                                  bool mergeBottom = false;
-                                  if (reversedIndex < displayItems.length - 1) {
-                                    final nextItem = displayItems[reversedIndex + 1];
-                                    if (nextItem is SingleMessageItem && nextItem.message.isUser) mergeBottom = true;
-                                  }
-                                  bool showAvatar = !mergeTop;
-
-                                  final bubble = MessageBubble(
-                                    key: ValueKey(msg.id),
-                                    message: msg,
-                                    isLast: isLatest,
-                                    isGenerating: false,
-                                    showAvatar: showAvatar,
-                                    mergeTop: mergeTop,
-                                    mergeBottom: mergeBottom,
-                                  );
-                                  
-                                  if (isLatest) {
-                                    return TweenAnimationBuilder<double>(
-                                      key: ValueKey(msg.id),
-                                      tween: Tween(begin: 0.0, end: 1.0),
-                                      duration: const Duration(milliseconds: 300),
-                                      curve: Curves.easeOutCubic,
-                                      builder: (context, value, child) {
-                                        return Opacity(
-                                          opacity: value,
-                                          child: Transform.translate(
-                                            offset: Offset(0, 20 * (1 - value)),
-                                            child: child,
-                                          ),
-                                        );
-                                      },
-                                      child: bubble,
-                                    );
-                                  }
-                                  return bubble;
-                                }
-                                return const SizedBox.shrink();
-                              }),
-                            const SizedBox(height: 16),
-                          ],
+                                      }
+                                      return bubble;
+                                    }
+                                    return const SizedBox.shrink();
+                                  },
+                                  physics: const ClampingScrollPhysics(),
+                                ),
+                              ),
+                            ),
+                          ),
+                        )
+                      : SelectionArea(
+                          child: CustomScrollView(
+                            controller: _scrollController,
+                            physics: const AlwaysScrollableScrollPhysics(
+                                parent: BouncingScrollPhysics()),
+                            reverse: true,
+                            slivers: [
+                              SliverFillRemaining(
+                                hasScrollBody: false,
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  verticalDirection: VerticalDirection.up,
+                                  children: [
+                                    for (int index = 0;
+                                        index < displayItems.length;
+                                        index++)
+                                      Builder(builder: (context) {
+                                        final reversedIndex =
+                                            displayItems.length - 1 - index;
+                                        final item =
+                                            displayItems[reversedIndex];
+                                        final isLatest = index == 0;
+                                        final isGenerating =
+                                            isLatest && isLoading;
+                                        if (item is MergedGroupItem) {
+                                          final bubble = MergedMessageBubble(
+                                            key: ValueKey(item.id),
+                                            group: item,
+                                            isLast: isLatest,
+                                            isGenerating: isGenerating,
+                                          );
+                                          if (isLatest) {
+                                            return TweenAnimationBuilder<
+                                                double>(
+                                              key: ValueKey(item.id),
+                                              tween:
+                                                  Tween(begin: 0.0, end: 1.0),
+                                              duration: const Duration(
+                                                  milliseconds: 300),
+                                              curve: Curves.easeOutCubic,
+                                              builder: (context, value, child) {
+                                                return Opacity(
+                                                  opacity: value,
+                                                  child: Transform.translate(
+                                                    offset: Offset(
+                                                        0, 20 * (1 - value)),
+                                                    child: child,
+                                                  ),
+                                                );
+                                              },
+                                              child: bubble,
+                                            );
+                                          }
+                                          return bubble;
+                                        } else if (item is SingleMessageItem) {
+                                          final msg = item.message;
+                                          bool mergeTop = false;
+                                          if (reversedIndex > 0) {
+                                            final prevItem =
+                                                displayItems[reversedIndex - 1];
+                                            if (prevItem is SingleMessageItem &&
+                                                prevItem.message.isUser)
+                                              mergeTop = true;
+                                          }
+                                          bool mergeBottom = false;
+                                          if (reversedIndex <
+                                              displayItems.length - 1) {
+                                            final nextItem =
+                                                displayItems[reversedIndex + 1];
+                                            if (nextItem is SingleMessageItem &&
+                                                nextItem.message.isUser)
+                                              mergeBottom = true;
+                                          }
+                                          bool showAvatar = !mergeTop;
+                                          final bubble = MessageBubble(
+                                            key: ValueKey(msg.id),
+                                            message: msg,
+                                            isLast: isLatest,
+                                            isGenerating: false,
+                                            showAvatar: showAvatar,
+                                            mergeTop: mergeTop,
+                                            mergeBottom: mergeBottom,
+                                          );
+                                          if (isLatest) {
+                                            return TweenAnimationBuilder<
+                                                double>(
+                                              key: ValueKey(msg.id),
+                                              tween:
+                                                  Tween(begin: 0.0, end: 1.0),
+                                              duration: const Duration(
+                                                  milliseconds: 300),
+                                              curve: Curves.easeOutCubic,
+                                              builder: (context, value, child) {
+                                                return Opacity(
+                                                  opacity: value,
+                                                  child: Transform.translate(
+                                                    offset: Offset(
+                                                        0, 20 * (1 - value)),
+                                                    child: child,
+                                                  ),
+                                                );
+                                              },
+                                              child: bubble,
+                                            );
+                                          }
+                                          return bubble;
+                                        }
+                                        return const SizedBox.shrink();
+                                      }),
+                                    const SizedBox(height: 16),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  ), // Close SelectionArea
-          ),
-        ),
-        if (_attachments.isNotEmpty)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            height: 60,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: _attachments.length,
-              itemBuilder: (context, index) {
-                final path = _attachments[index];
-                return HoverImagePreview(
-                  imagePath: path,
-                  child: Container(
-                    margin: const EdgeInsets.only(right: 8),
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: fluent.FluentTheme.of(context).cardColor,
-                      borderRadius: BorderRadius.circular(4),
-                      border: Border.all(
-                          color: fluent.FluentTheme.of(context)
-                              .resources
-                              .dividerStrokeColorDefault),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.attach_file, size: 14),
-                        const SizedBox(width: 4),
-                        Text(path.split(Platform.pathSeparator).last,
-                            style: const TextStyle(fontSize: 12)),
-                        const SizedBox(width: 4),
-                        GestureDetector(
-                          onTap: () =>
-                              setState(() => _attachments.removeAt(index)),
-                          child: const Icon(Icons.close, size: 14),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-        Container(
-          padding: EdgeInsets.fromLTRB(
-            Platform.isWindows ? 12 : 0, 
-            Platform.isWindows ? 0 : 0,  // Top: 0 on Windows (gap reduction)
-            Platform.isWindows ? 12 : 0, 
-            Platform.isWindows ? 12 : 0// Mobile padding handled by margin
-          ),
-
-          child: Platform.isWindows
-              ? DesktopChatInputArea(
-                  controller: _controller,
-                  isLoading: isLoading,
-                  onSend: _sendMessage,
-                  onPickFiles: _pickFiles,
-                  onPaste: _handlePaste,
-                  onShowToast: _showPillToast,
-                )
-              : MobileChatInputArea(
-                  controller: _controller,
-                  isLoading: isLoading,
-                  onSend: _sendMessage,
-                  onAttachmentTap: () => ChatAttachmentMenu.show(
-                     context,
-                     onPickCamera: () => _pickImage(ImageSource.camera),
-                     onPickGallery: () => _pickImage(ImageSource.gallery),
-                     onPickFile: _pickFiles,
-                  ),
-                  onShowToast: _showPillToast,
                 ),
-        ),
-      ],
-            ),
+              ),
+              if (_attachments.isNotEmpty)
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  height: 60,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: _attachments.length,
+                    itemBuilder: (context, index) {
+                      final path = _attachments[index];
+                      return HoverImagePreview(
+                        imagePath: path,
+                        child: Container(
+                          margin: const EdgeInsets.only(right: 8),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: fluent.FluentTheme.of(context).cardColor,
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(
+                                color: fluent.FluentTheme.of(context)
+                                    .resources
+                                    .dividerStrokeColorDefault),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.attach_file, size: 14),
+                              const SizedBox(width: 4),
+                              Text(path.split(Platform.pathSeparator).last,
+                                  style: const TextStyle(fontSize: 12)),
+                              const SizedBox(width: 4),
+                              GestureDetector(
+                                onTap: () => setState(
+                                    () => _attachments.removeAt(index)),
+                                child: const Icon(Icons.close, size: 14),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              Container(
+                padding: EdgeInsets.fromLTRB(
+                    Platform.isWindows ? 12 : 0,
+                    Platform.isWindows ? 0 : 0,
+                    Platform.isWindows ? 12 : 0,
+                    Platform.isWindows ? 12 : 0),
+                child: Platform.isWindows
+                    ? DesktopChatInputArea(
+                        controller: _controller,
+                        isLoading: isLoading,
+                        onSend: _sendMessage,
+                        onPickFiles: _pickFiles,
+                        onPaste: _handlePaste,
+                        onShowToast: _showPillToast,
+                      )
+                    : MobileChatInputArea(
+                        controller: _controller,
+                        isLoading: isLoading,
+                        onSend: _sendMessage,
+                        onAttachmentTap: () => ChatAttachmentMenu.show(
+                          context,
+                          onPickCamera: () => _pickImage(ImageSource.camera),
+                          onPickGallery: () => _pickImage(ImageSource.gallery),
+                          onPickFile: _pickFiles,
+                        ),
+                        onShowToast: _showPillToast,
+                      ),
+              ),
+            ],
           ),
-          _buildPillToastWidget(),
-        ],
-      );
+        ),
+        _buildPillToastWidget(),
+      ],
+    );
   }
 }

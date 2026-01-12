@@ -37,5 +37,5 @@ class AppSettingsEntity {
   String? lastSessionId;
   String? lastTopicId;
   String language = 'zh';
-  String? lastPresetId; // 记录最后使用的预设 ID
+  String? lastPresetId;
 }

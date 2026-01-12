@@ -1,10 +1,10 @@
 import 'package:flutter/foundation.dart';
 import 'dart:convert';
-import 'dart:io'; // Added
-import 'package:dio/dio.dart'; // For CancelToken
+import 'dart:io';
+import 'package:dio/dio.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:device_info_plus/device_info_plus.dart'; // Added
+import 'package:device_info_plus/device_info_plus.dart';
 import '../../settings/presentation/settings_provider.dart';
 import '../../settings/presentation/usage_stats_provider.dart';
 import 'package:aurora/shared/services/openai_llm_service.dart';
@@ -12,7 +12,7 @@ import '../domain/message.dart';
 import 'package:aurora/shared/services/llm_service.dart';
 import '../data/chat_storage.dart';
 import '../data/session_entity.dart';
-import 'package:aurora/shared/services/tool_manager.dart'; // Import ToolManager
+import 'package:aurora/shared/services/tool_manager.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:uuid/uuid.dart';
 import 'topic_provider.dart';
@@ -36,8 +36,7 @@ class ChatState {
   final double? currentReasoningTimer;
   final bool isStreamEnabled;
   final bool isLoadingHistory;
-  final String? activePresetName; // New field
-
+  final String? activePresetName;
   const ChatState({
     this.messages = const [],
     this.isLoading = false,
@@ -52,7 +51,6 @@ class ChatState {
     this.isLoadingHistory = false,
     this.activePresetName,
   });
-
   ChatState copyWith({
     List<Message>? messages,
     bool? isLoading,
@@ -75,16 +73,19 @@ class ChatState {
       isAutoScrollEnabled: isAutoScrollEnabled ?? this.isAutoScrollEnabled,
       isStreaming: isStreaming ?? this.isStreaming,
       currentStreamContent: currentStreamContent ?? this.currentStreamContent,
-      currentStreamReasoning: currentStreamReasoning ?? this.currentStreamReasoning,
-      currentReasoningTimer: currentReasoningTimer ?? this.currentReasoningTimer,
+      currentStreamReasoning:
+          currentStreamReasoning ?? this.currentStreamReasoning,
+      currentReasoningTimer:
+          currentReasoningTimer ?? this.currentReasoningTimer,
       isStreamEnabled: isStreamEnabled ?? this.isStreamEnabled,
       isLoadingHistory: isLoadingHistory ?? this.isLoadingHistory,
-      activePresetName: activePresetName == _sentinel ? this.activePresetName : activePresetName as String?,
+      activePresetName: activePresetName == _sentinel
+          ? this.activePresetName
+          : activePresetName as String?,
     );
   }
 }
 
-// Sentinel object for copyWith null handling
 const Object _sentinel = Object();
 
 class ChatNotifier extends StateNotifier<ChatState> {
@@ -94,12 +95,9 @@ class ChatNotifier extends StateNotifier<ChatState> {
   final void Function(String newId)? onSessionCreated;
   final void Function()? onStateChanged;
   String _currentGenerationId = '';
-  CancelToken? _currentCancelToken; // For canceling HTTP requests
+  CancelToken? _currentCancelToken;
   double? _savedScrollOffset;
-  
-  // Per-session listeners for targeted rebuilds
   final List<VoidCallback> _listeners = [];
-  
   ChatNotifier({
     required Ref ref,
     required ChatStorage storage,
@@ -114,80 +112,62 @@ class ChatNotifier extends StateNotifier<ChatState> {
       _loadHistory();
     }
   }
-  
-  /// Add a listener that will be called when this session's state changes.
   void addLocalListener(VoidCallback listener) {
     _listeners.add(listener);
   }
-  
-  /// Remove a previously added listener.
+
   void removeLocalListener(VoidCallback listener) {
     _listeners.remove(listener);
   }
-  
+
   void _notifyLocalListeners() {
     for (final listener in _listeners) {
       listener();
     }
   }
-  
+
   @override
   set state(ChatState value) {
     super.state = value;
     onStateChanged?.call();
-    _notifyLocalListeners(); // Notify local listeners too
+    _notifyLocalListeners();
   }
-  
-  /// Public getter for current state (avoids protected member access)
-  ChatState get currentState => state;
 
-  /// Public getter for saved scroll offset
+  ChatState get currentState => state;
   double? get savedScrollOffset => _savedScrollOffset;
-  
   void setAutoScrollEnabled(bool enabled) {
     if (state.isAutoScrollEnabled != enabled) {
       state = state.copyWith(isAutoScrollEnabled: enabled);
     }
   }
 
-
-  
   void saveScrollOffset(double offset) {
     _savedScrollOffset = offset;
-    // No state update to prevent rebuilds
   }
-  
+
   void abortGeneration() {
-    _currentGenerationId = ''; // Invalidate current generation
-    _currentCancelToken?.cancel('User aborted generation'); // Cancel HTTP request
+    _currentGenerationId = '';
+    _currentCancelToken?.cancel('User aborted generation');
     _currentCancelToken = null;
     state = state.copyWith(isLoading: false);
   }
-  
+
   void markAsRead() {
     if (state.hasUnreadResponse) {
       state = state.copyWith(hasUnreadResponse: false);
     }
   }
-  
+
   Future<void> _loadHistory() async {
-    // Defer state modification to avoid Riverpod "provider modifying another provider during initialization" error.
-    // This happens because _loadHistory is called from constructor, and state= triggers onStateChanged.
     await Future.microtask(() {});
     if (!mounted) return;
-    
     state = state.copyWith(isLoadingHistory: true);
     final messages = await _storage.loadHistory(_sessionId);
     if (!mounted) return;
-    
-    // 尝试恢复预设
     String? restoredPresetName;
-    
-    // 1. 优先尝试从 SessionEntity 恢复 presetId
     final session = await _storage.getSession(_sessionId);
     if (session?.presetId != null) {
       if (session!.presetId!.isEmpty) {
-        // 空字符串表示用户明确选择了默认预设
         restoredPresetName = null;
       } else {
         final presets = _ref.read(settingsProvider).presets;
@@ -197,22 +177,21 @@ class ChatNotifier extends StateNotifier<ChatState> {
         }
       }
     } else {
-      // 2. 如果没有 presetId (旧数据)，尝试从系统消息中恢复
       final systemMsg = messages.where((m) => m.role == 'system').firstOrNull;
       if (systemMsg != null) {
         final presets = _ref.read(settingsProvider).presets;
-        final appSettings = await _ref.read(settingsStorageProvider).loadAppSettings();
+        final appSettings =
+            await _ref.read(settingsStorageProvider).loadAppSettings();
         if (appSettings?.lastPresetId != null) {
           final match = presets.where((p) => p.id == appSettings!.lastPresetId);
           if (match.isNotEmpty) {
-             restoredPresetName = match.first.name;
+            restoredPresetName = match.first.name;
           }
         }
       }
     }
-    
     state = state.copyWith(
-      messages: messages, 
+      messages: messages,
       isLoadingHistory: false,
       activePresetName: restoredPresetName,
     );
@@ -220,154 +199,100 @@ class ChatNotifier extends StateNotifier<ChatState> {
 
   Future<String> sendMessage(String? text,
       {List<String> attachments = const [], String? apiContent}) async {
-    
-    // Concurrent control: if already loading, don't start another one for this session
     if (state.isLoading && text != null) {
       return _sessionId;
     }
-    
-    // If new text provided, validate it
-    if (text != null && text.trim().isEmpty && attachments.isEmpty) return _sessionId;
-    
+    if (text != null && text.trim().isEmpty && attachments.isEmpty)
+      return _sessionId;
     final myGenerationId = const Uuid().v4();
     _currentGenerationId = myGenerationId;
-    
-    // Create a new CancelToken for this request
-    _currentCancelToken?.cancel(); // Cancel any previous pending request
+    _currentCancelToken?.cancel();
     _currentCancelToken = CancelToken();
-    
-    // Session handling
     if (text != null && (_sessionId == 'chat' || _sessionId == 'new_chat')) {
       final title = text.length > 15 ? '${text.substring(0, 15)}...' : text;
-      // Use selected topic if available
       final topicId = _ref.read(selectedTopicIdProvider);
-      // Get current preset ID to save with session
       final currentPresetId = _ref.read(settingsProvider).lastPresetId;
-      final realId = await _storage.createSession(title: title, topicId: topicId, presetId: currentPresetId);
+      final realId = await _storage.createSession(
+          title: title, topicId: topicId, presetId: currentPresetId);
       if (_sessionId == 'new_chat' && onSessionCreated != null) {
         onSessionCreated!(realId);
       }
       _sessionId = realId;
-      
-      // Background smart topic generation
-      // Fire and forget, but update title if successful
       _generateTopic(text).then((smartTitle) async {
         if (smartTitle != title && smartTitle.isNotEmpty) {
-           await _storage.updateSessionTitle(realId, smartTitle);
-           _ref.read(sessionsProvider.notifier).loadSessions();
+          await _storage.updateSessionTitle(realId, smartTitle);
+          _ref.read(sessionsProvider.notifier).loadSessions();
         }
       });
     } else if (text != null && state.messages.isEmpty) {
-      // Logic for pre-created empty sessions (e.g. from "New Chat" button which calls startNewSession)
-      // We want to update the title from "New Chat" to the user's prompt
-       final title = text.length > 15 ? '${text.substring(0, 15)}...' : text;
-       await _storage.updateSessionTitle(_sessionId, title);
-       _ref.read(sessionsProvider.notifier).loadSessions();
-       
-       // Background smart topic generation
-       final currentSessionId = _sessionId;
-       _generateTopic(text).then((smartTitle) async {
-         if (smartTitle != title && smartTitle.isNotEmpty) {
-            await _storage.updateSessionTitle(currentSessionId, smartTitle);
-            _ref.read(sessionsProvider.notifier).loadSessions();
-         }
-       });
+      final title = text.length > 15 ? '${text.substring(0, 15)}...' : text;
+      await _storage.updateSessionTitle(_sessionId, title);
+      _ref.read(sessionsProvider.notifier).loadSessions();
+      final currentSessionId = _sessionId;
+      _generateTopic(text).then((smartTitle) async {
+        if (smartTitle != title && smartTitle.isNotEmpty) {
+          await _storage.updateSessionTitle(currentSessionId, smartTitle);
+          _ref.read(sessionsProvider.notifier).loadSessions();
+        }
+      });
     }
-
     if (text != null) {
       final content = apiContent ?? text;
       final userMessage = Message.user(content, attachments: attachments);
-      
-      // Save user message and get database ID
       final dbId = await _storage.saveMessage(userMessage, _sessionId);
-      
-      // Force UI update with the CORRECT database ID (not UUID)
       final userMessageWithDbId = userMessage.copyWith(id: dbId);
       state = state.copyWith(
         messages: [...state.messages, userMessageWithDbId],
       );
     }
-    
-    state = state.copyWith(isLoading: true, error: null, hasUnreadResponse: false);
-    
-    // Track index of first new AI/Tool message to save later
-    // Track index of first new AI/Tool message to save later
+    state =
+        state.copyWith(isLoading: true, error: null, hasUnreadResponse: false);
     final startSaveIndex = state.messages.length;
     final startTime = DateTime.now();
-
     try {
-      // Use current state messages for API context
-      // If we didn't add a user message (regeneration), we rely on existing history.
       final messagesForApi = List<Message>.from(state.messages);
       final settings = _ref.read(settingsProvider);
       final llmService = _ref.read(llmServiceProvider);
-      // Instantiate ToolManager
       final toolManager = ToolManager();
-      
       final currentModel = settings.activeProvider?.selectedModel;
       final currentProvider = settings.activeProvider?.name;
-      
-      var aiMsg = Message.ai('', model: currentModel, provider: currentProvider);
+      var aiMsg =
+          Message.ai('', model: currentModel, provider: currentProvider);
       state = state.copyWith(messages: [...state.messages, aiMsg]);
-      
-      
-      // Determine if tools should be used
       List<Map<String, dynamic>>? tools;
       if (settings.isSearchEnabled) {
         tools = toolManager.getTools();
-      } else {
-      }
-
-      // Loop for tool execution (Max 3 turns to prevent infinite loops)
+      } else {}
       bool continueGeneration = true;
       int turns = 0;
-      
-      while (continueGeneration && turns < 3 && _currentGenerationId == myGenerationId && mounted) {
+      while (continueGeneration &&
+          turns < 3 &&
+          _currentGenerationId == myGenerationId &&
+          mounted) {
         turns++;
-        continueGeneration = false; // Assume done unless tool call occurs
-        
-        // ... (lines 198-375 match existing structure, omitted in replace logic, need to only target changed lines? No, replace tool works on chunks)
-        // I need to target specific blocks. I can't skip the middle.
-        // I will do TWO replacements. 
-        // 1. Loop definition.
-        // 2. Cleanup logic.
-
-        // Check stream mode (from global settings) BEFORE making API call
+        continueGeneration = false;
         if (settings.isStreamEnabled) {
-          // Streaming mode - call streamResponse
           final responseStream = llmService.streamResponse(
             messagesForApi,
             attachments: attachments,
             tools: tools,
             cancelToken: _currentCancelToken,
           );
-          
           DateTime? reasoningStartTime;
-          
           await for (final chunk in responseStream) {
-            if (_currentGenerationId != myGenerationId || !mounted) break; // Check generation ID and mounted state
-            
-            // Track reasoning start
+            if (_currentGenerationId != myGenerationId || !mounted) break;
             if (chunk.reasoning != null && chunk.reasoning!.isNotEmpty) {
               reasoningStartTime ??= DateTime.now();
             }
-            
-            // Calculate duration if reasoning finished (content started)
             double? duration = aiMsg.reasoningDurationSeconds;
-            if (duration == null && 
-                reasoningStartTime != null && 
-                chunk.content != null && 
+            if (duration == null &&
+                reasoningStartTime != null &&
+                chunk.content != null &&
                 chunk.content!.isNotEmpty) {
-              duration = DateTime.now().difference(reasoningStartTime).inMilliseconds / 1000.0;
+              duration =
+                  DateTime.now().difference(reasoningStartTime).inMilliseconds /
+                      1000.0;
             }
-
-            // Update AI Message accumulator
-            // If toolCalls are present, we need to accumulate them too
-            // Note: ToolCalls in streams are usually built up across chunks. 
-            // For simplicity, we'll assume the LLMService parses them correctly or we'd need complex merging logic here.
-            // Our LLMService yields chunks with partial tool calls. We need to merge them.
-            // TODO: simplified merging for now.
-
             aiMsg = Message(
               id: aiMsg.id,
               content: aiMsg.content + (chunk.content ?? ''),
@@ -381,184 +306,143 @@ class ChatNotifier extends StateNotifier<ChatState> {
               provider: aiMsg.provider,
               reasoningDurationSeconds: duration,
               tokenCount: chunk.usage ?? aiMsg.tokenCount,
-              // Merge tool calls
               toolCalls: _mergeToolCalls(aiMsg.toolCalls, chunk.toolCalls),
             );
-            
-            // Update UI
             final newMessages = List<Message>.from(state.messages);
             if (newMessages.isNotEmpty && newMessages.last.id == aiMsg.id) {
-               newMessages.removeLast();
+              newMessages.removeLast();
             }
             newMessages.add(aiMsg);
             if (mounted) state = state.copyWith(messages: newMessages);
           }
-           
-           if (!mounted) return aiMsg.id;
-
-          // If reasoning finished but duration wasn't set (e.g. stream ended without content or pure reasoning)
-          if (aiMsg.reasoningDurationSeconds == null && reasoningStartTime != null) {
-             final duration = DateTime.now().difference(reasoningStartTime).inMilliseconds / 1000.0;
-             aiMsg = aiMsg.copyWith(reasoningDurationSeconds: duration);
-             // Verify UI update one last time
-             final newMessages = List<Message>.from(state.messages);
-             if (newMessages.isNotEmpty && newMessages.last.id == aiMsg.id) {
-                 newMessages.removeLast();
-             }
-             newMessages.add(aiMsg);
-             if (mounted) state = state.copyWith(messages: newMessages);
+          if (!mounted) return aiMsg.id;
+          if (aiMsg.reasoningDurationSeconds == null &&
+              reasoningStartTime != null) {
+            final duration =
+                DateTime.now().difference(reasoningStartTime).inMilliseconds /
+                    1000.0;
+            aiMsg = aiMsg.copyWith(reasoningDurationSeconds: duration);
+            final newMessages = List<Message>.from(state.messages);
+            if (newMessages.isNotEmpty && newMessages.last.id == aiMsg.id) {
+              newMessages.removeLast();
+            }
+            newMessages.add(aiMsg);
+            if (mounted) state = state.copyWith(messages: newMessages);
           }
-
-          // Check if the final message has tool calls
           if (aiMsg.toolCalls != null && aiMsg.toolCalls!.isNotEmpty) {
-             // Execute tools
-             continueGeneration = true; // Loop again
-             
-             // 1. Add Assistant message (already in state, but ensure it's in `messagesForApi`)
-             // Note: `messagesForApi` is a local disconnected list in this loop implementation?
-             // Actually, we must update `messagesForApi` to include the AI response + Tool Outputs
-             
-             // Update history for next API call
-             messagesForApi.add(aiMsg);
-
-             // 2. Execute each tool
-             for (final tc in aiMsg.toolCalls!) {
-                String toolResult;
-                try {
-                  final args = jsonDecode(tc.arguments);  
-                  toolResult = await toolManager.executeTool(tc.name, args, preferredEngine: settings.searchEngine);
-                } catch (e) {
-                  toolResult = jsonEncode({'error': e.toString()});
-                }
-                
-                final toolMsg = Message.tool(toolResult, toolCallId: tc.id);
-                messagesForApi.add(toolMsg);
-                // Also update UI state to show the tool usage invisibly or visibly?
-                // Usually tool outputs are hidden or shown as expandable.
-                // For now, let's add them to state so `messagesForApi` logic stays consistent with state.
-                state = state.copyWith(messages: [...state.messages, toolMsg]);
-             }
-             
-             // Prepare for next Turn (Assistant Answer)
-             aiMsg = Message.ai('', model: currentModel, provider: currentProvider);
-             // Add placeholder for the *next* assistant response
-             state = state.copyWith(messages: [...state.messages, aiMsg]);
+            continueGeneration = true;
+            messagesForApi.add(aiMsg);
+            for (final tc in aiMsg.toolCalls!) {
+              String toolResult;
+              try {
+                final args = jsonDecode(tc.arguments);
+                toolResult = await toolManager.executeTool(tc.name, args,
+                    preferredEngine: settings.searchEngine);
+              } catch (e) {
+                toolResult = jsonEncode({'error': e.toString()});
+              }
+              final toolMsg = Message.tool(toolResult, toolCallId: tc.id);
+              messagesForApi.add(toolMsg);
+              state = state.copyWith(messages: [...state.messages, toolMsg]);
+            }
+            aiMsg =
+                Message.ai('', model: currentModel, provider: currentProvider);
+            state = state.copyWith(messages: [...state.messages, aiMsg]);
           }
-
         } else {
-          // Non-streaming mode
           final response = await llmService.getResponse(
-            messagesForApi, 
+            messagesForApi,
             attachments: attachments,
             tools: tools,
             cancelToken: _currentCancelToken,
           );
-          
           if (_currentGenerationId == myGenerationId && mounted) {
             aiMsg = Message(
-              id: aiMsg.id,
-              content: response.content ?? '',
-              reasoningContent: response.reasoning,
-              isUser: false,
-              timestamp: aiMsg.timestamp,
-              attachments: aiMsg.attachments,
-              images: response.images,
-              model: aiMsg.model,
-              provider: aiMsg.provider,
-              tokenCount: response.usage,
-              toolCalls: response.toolCalls?.map((tc) => ToolCall(id: tc.id ?? '', type: tc.type ?? 'function', name: tc.name ?? '', arguments: tc.arguments ?? '')).toList()
-            );
-            
-            // Update UI
+                id: aiMsg.id,
+                content: response.content ?? '',
+                reasoningContent: response.reasoning,
+                isUser: false,
+                timestamp: aiMsg.timestamp,
+                attachments: aiMsg.attachments,
+                images: response.images,
+                model: aiMsg.model,
+                provider: aiMsg.provider,
+                tokenCount: response.usage,
+                toolCalls: response.toolCalls
+                    ?.map((tc) => ToolCall(
+                        id: tc.id ?? '',
+                        type: tc.type ?? 'function',
+                        name: tc.name ?? '',
+                        arguments: tc.arguments ?? ''))
+                    .toList());
             final newMessages = List<Message>.from(state.messages);
             if (newMessages.isNotEmpty && newMessages.last.id == aiMsg.id) {
-                newMessages.removeLast();
+              newMessages.removeLast();
             }
             newMessages.add(aiMsg);
             state = state.copyWith(messages: newMessages);
-            
             if (aiMsg.toolCalls != null && aiMsg.toolCalls!.isNotEmpty) {
-               continueGeneration = true;
-               messagesForApi.add(aiMsg);
-               
-               for (final tc in aiMsg.toolCalls!) {
-                  String toolResult;
-                  try {
-                    final args = jsonDecode(tc.arguments);
-                    toolResult = await toolManager.executeTool(tc.name, args, preferredEngine: settings.searchEngine);
-                  } catch (e) {
-                    toolResult = jsonEncode({'error': e.toString()});
-                  }
-                  final toolMsg = Message.tool(toolResult, toolCallId: tc.id);
-                  messagesForApi.add(toolMsg);
-                  state = state.copyWith(messages: [...state.messages, toolMsg]);
-               }
-               
-               aiMsg = Message.ai('', model: currentModel, provider: currentProvider);
-               state = state.copyWith(messages: [...state.messages, aiMsg]);
+              continueGeneration = true;
+              messagesForApi.add(aiMsg);
+              for (final tc in aiMsg.toolCalls!) {
+                String toolResult;
+                try {
+                  final args = jsonDecode(tc.arguments);
+                  toolResult = await toolManager.executeTool(tc.name, args,
+                      preferredEngine: settings.searchEngine);
+                } catch (e) {
+                  toolResult = jsonEncode({'error': e.toString()});
+                }
+                final toolMsg = Message.tool(toolResult, toolCallId: tc.id);
+                messagesForApi.add(toolMsg);
+                state = state.copyWith(messages: [...state.messages, toolMsg]);
+              }
+              aiMsg = Message.ai('',
+                  model: currentModel, provider: currentProvider);
+              state = state.copyWith(messages: [...state.messages, aiMsg]);
             }
           }
         }
-      } // End while loop
-
+      }
       if (_currentGenerationId == myGenerationId) {
-        // Save the *final* conversation state 
-        // (Note: Intermediate tool calls constitute valid history, so we should save all new messages)
-        // We iterate and save messages that aren't saved yet? 
-        // Or just save the *last* one? 
-        // Correct way: Save all messages generated in this session turn.
-        // For simplicity: We save the *final* AI message. Tool messages should also be saved if we want history context to work.
-        // Current architecture: `saveMessage` writes one by one.
-        // We need to ensure all tool messages + final AI answer are saved.
-        
-        // Find all unsaved messages (newly generated ones)
         final messages = state.messages;
         if (messages.length > startSaveIndex) {
           final unsaved = messages.sublist(startSaveIndex);
           final updatedMessages = List<Message>.from(state.messages);
-          
           for (int i = 0; i < unsaved.length; i++) {
-             // CRITICAL: Strict check inside the loop to catch aborts during previous iterations
-             if (_currentGenerationId != myGenerationId) {
-                break;
-             }
-             final m = unsaved[i];
-             final dbId = await _storage.saveMessage(m, _sessionId);
-             
-             // Update the message in state with the correct DB ID
-             final stateIndex = startSaveIndex + i;
-             if (stateIndex < updatedMessages.length) {
-               updatedMessages[stateIndex] = m.copyWith(id: dbId);
-             }
+            if (_currentGenerationId != myGenerationId) {
+              break;
+            }
+            final m = unsaved[i];
+            final dbId = await _storage.saveMessage(m, _sessionId);
+            final stateIndex = startSaveIndex + i;
+            if (stateIndex < updatedMessages.length) {
+              updatedMessages[stateIndex] = m.copyWith(id: dbId);
+            }
           }
-          
-          // Commit updated IDs to state
           if (mounted && _currentGenerationId == myGenerationId) {
-            state = state.copyWith(messages: updatedMessages, isLoading: false, hasUnreadResponse: true);
-            // Refresh sessions to update token count in sidebar
+            state = state.copyWith(
+                messages: updatedMessages,
+                isLoading: false,
+                hasUnreadResponse: true);
             _ref.read(sessionsProvider.notifier).loadSessions();
           }
         } else {
-          // Generation complete, mark as unread
-          if (mounted) state = state.copyWith(isLoading: false, hasUnreadResponse: true);
+          if (mounted)
+            state = state.copyWith(isLoading: false, hasUnreadResponse: true);
         }
-        
-        // Track successful usage
         if (currentModel != null && currentModel.isNotEmpty) {
           final duration = DateTime.now().difference(startTime).inMilliseconds;
-          _ref.read(usageStatsProvider.notifier).incrementUsage(currentModel, success: true, durationMs: duration);
+          _ref.read(usageStatsProvider.notifier).incrementUsage(currentModel,
+              success: true, durationMs: duration);
         }
       }
     } catch (e, stack) {
       if (_currentGenerationId == myGenerationId && mounted) {
-        // Extract error message
         String errorMessage = e.toString();
-        // Remove "Exception: " prefix if present
         if (errorMessage.startsWith('Exception: ')) {
           errorMessage = errorMessage.substring(11);
         }
-        
-        // Update the last AI message with error content
         final messages = List<Message>.from(state.messages);
         if (messages.isNotEmpty && !messages.last.isUser) {
           final lastMsg = messages.last;
@@ -571,14 +455,14 @@ class ChatNotifier extends StateNotifier<ChatState> {
             provider: lastMsg.provider,
           );
         }
-        
-        state = state.copyWith(messages: messages, isLoading: false, error: errorMessage);
-        
-        // Track failed usage
-        final currentModel = _ref.read(settingsProvider).activeProvider?.selectedModel;
+        state = state.copyWith(
+            messages: messages, isLoading: false, error: errorMessage);
+        final currentModel =
+            _ref.read(settingsProvider).activeProvider?.selectedModel;
         if (currentModel != null && currentModel.isNotEmpty) {
           final duration = DateTime.now().difference(startTime).inMilliseconds;
-          _ref.read(usageStatsProvider.notifier).incrementUsage(currentModel, success: false, durationMs: duration);
+          _ref.read(usageStatsProvider.notifier).incrementUsage(currentModel,
+              success: false, durationMs: duration);
         }
       }
     } finally {
@@ -586,31 +470,30 @@ class ChatNotifier extends StateNotifier<ChatState> {
     }
     return _sessionId;
   }
-  
-  List<ToolCall>? _mergeToolCalls(List<ToolCall>? existing, List<ToolCallChunk>? chunks) {
+
+  List<ToolCall>? _mergeToolCalls(
+      List<ToolCall>? existing, List<ToolCallChunk>? chunks) {
     if (chunks == null || chunks.isEmpty) return existing;
-    final merged = existing != null ? List<ToolCall>.from(existing) : <ToolCall>[];
-    
+    final merged =
+        existing != null ? List<ToolCall>.from(existing) : <ToolCall>[];
     for (final chunk in chunks) {
-       final index = chunk.index ?? 0;
-       if (index >= merged.length) {
-         // New tool call
-         merged.add(ToolCall(
-           id: chunk.id ?? '', 
-           type: chunk.type ?? 'function', 
-           name: chunk.name ?? '', 
-           arguments: chunk.arguments ?? ''
-         ));
-       } else {
-         // Append to existing
-         final prev = merged[index];
-         merged[index] = ToolCall(
-           id: (prev.id == '' ? (chunk.id ?? '') : prev.id),
-           type: (prev.type == 'function' ? (chunk.type ?? 'function') : prev.type),
-           name: prev.name + (chunk.name ?? ''),
-           arguments: prev.arguments + (chunk.arguments ?? '')
-         );
-       }
+      final index = chunk.index ?? 0;
+      if (index >= merged.length) {
+        merged.add(ToolCall(
+            id: chunk.id ?? '',
+            type: chunk.type ?? 'function',
+            name: chunk.name ?? '',
+            arguments: chunk.arguments ?? ''));
+      } else {
+        final prev = merged[index];
+        merged[index] = ToolCall(
+            id: (prev.id == '' ? (chunk.id ?? '') : prev.id),
+            type: (prev.type == 'function'
+                ? (chunk.type ?? 'function')
+                : prev.type),
+            name: prev.name + (chunk.name ?? ''),
+            arguments: prev.arguments + (chunk.arguments ?? ''));
+      }
     }
     return merged;
   }
@@ -627,7 +510,6 @@ class ChatNotifier extends StateNotifier<ChatState> {
     if (index == -1) return;
     final oldMsg = state.messages[index];
     final updatedAttachments = newAttachments ?? oldMsg.attachments;
-    // Keep AI-generated images unchanged; do NOT copy user attachments to images
     final newMsg = Message(
       id: oldMsg.id,
       content: newContent,
@@ -646,44 +528,33 @@ class ChatNotifier extends StateNotifier<ChatState> {
   Future<void> regenerateResponse(String rootMessageId) async {
     final index = state.messages.indexWhere((m) => m.id == rootMessageId);
     if (index == -1) return;
-    
-    // Safety: Abort any current generation before starting a new one
     abortGeneration();
-    // Allow a tiny bit of time for the loop to break if it was running
     await Future.delayed(const Duration(milliseconds: 100));
-    
     final rootMsg = state.messages[index];
     List<Message> historyToKeep;
-    
-    // Determine history to keep
     if (rootMsg.isUser) {
-      // If user message selected: Keep up to this User message (inclusive)
-      // Then generate new assistant response.
       historyToKeep = state.messages.sublist(0, index + 1);
     } else {
-      // If assistant message selected: Keep up to the PREVIOUS message (User usually)
       if (index == 0) return;
       historyToKeep = state.messages.sublist(0, index);
     }
-
     final oldMessages = state.messages;
-    // Update state to show pruned history immediately and loading
-    state = state.copyWith(messages: historyToKeep, isLoading: true, error: null, isAutoScrollEnabled: true);
-    
-    // Delete valid pruned messages from database
+    state = state.copyWith(
+        messages: historyToKeep,
+        isLoading: true,
+        error: null,
+        isAutoScrollEnabled: true);
     final idsToDelete =
         oldMessages.skip(historyToKeep.length).map((m) => m.id).toList();
     for (final mid in idsToDelete) {
       await _storage.deleteMessage(mid, sessionId: _sessionId);
     }
-    
-    // Trigger generation using existing history
     await sendMessage(null);
   }
 
   Future<void> clearContext() async {
     if (_sessionId == 'new_chat' || _sessionId == 'translation') {
-      state = state.copyWith(messages: [], isLoading: false, error: null); // Keep other settings
+      state = state.copyWith(messages: [], isLoading: false, error: null);
       return;
     }
     await _storage.clearSessionMessages(_sessionId);
@@ -699,10 +570,7 @@ class ChatNotifier extends StateNotifier<ChatState> {
     final user = settingsState.userName;
     final system = Platform.operatingSystem;
     final lang = settingsState.language;
-    
-    // DeviceInfoPlugin 首次调用需初始化，会导致卡顿
     String deviceName = Platform.localHostname;
-
     String clipboardContent = '';
     if (template.contains('{clipboard}')) {
       try {
@@ -712,7 +580,6 @@ class ChatNotifier extends StateNotifier<ChatState> {
         debugPrint('Failed to get clipboard data: $e');
       }
     }
-
     String prompt = template
         .replaceAll('{time}', DateTime.now().toString())
         .replaceAll('{user_name}', user)
@@ -720,20 +587,14 @@ class ChatNotifier extends StateNotifier<ChatState> {
         .replaceAll('{device}', deviceName)
         .replaceAll('{language}', lang)
         .replaceAll('{clipboard}', clipboardContent);
-
     final messages = List<Message>.from(state.messages);
-    
-    // Check if system message exists (index 0 usually) or find it
     final index = messages.indexWhere((m) => m.role == 'system');
-    
     if (index != -1) {
-      // Update existing
       final oldMsg = messages[index];
       final newMsg = oldMsg.copyWith(content: prompt);
       messages[index] = newMsg;
       await _storage.updateMessage(newMsg);
     } else {
-      // Insert new at start
       final newMsg = Message(
         id: const Uuid().v4(),
         role: 'system',
@@ -744,31 +605,26 @@ class ChatNotifier extends StateNotifier<ChatState> {
       messages.insert(0, newMsg);
       await _storage.saveMessage(newMsg, _sessionId);
     }
-    
-    // Update state activePresetName
     state = state.copyWith(
-       messages: messages,
-       activePresetName: presetName,
+      messages: messages,
+      activePresetName: presetName,
     );
-    
-    // 持久化最后使用的预设 ID
-    debugPrint('[PresetSave] updateSystemPrompt called with presetName: $presetName, sessionId: $_sessionId');
+    debugPrint(
+        '[PresetSave] updateSystemPrompt called with presetName: $presetName, sessionId: $_sessionId');
     if (presetName != null) {
-      // 查找对应预设的 ID
       final presets = settingsState.presets;
       final match = presets.where((p) => p.name == presetName);
       if (match.isNotEmpty) {
         final newPresetId = match.first.id;
         await _ref.read(settingsProvider.notifier).setLastPresetId(newPresetId);
         if (_sessionId != 'chat' && _sessionId != 'new_chat') {
-           await _storage.updateSessionPreset(_sessionId, newPresetId);
+          await _storage.updateSessionPreset(_sessionId, newPresetId);
         }
       }
     } else {
-      // 如果没有预设名称（即选择了默认/空），使用空字符串表示明确选择了默认
       await _ref.read(settingsProvider.notifier).setLastPresetId(null);
       if (_sessionId != 'chat' && _sessionId != 'new_chat') {
-         await _storage.updateSessionPreset(_sessionId, '');
+        await _storage.updateSessionPreset(_sessionId, '');
       }
     }
   }
@@ -776,81 +632,64 @@ class ChatNotifier extends StateNotifier<ChatState> {
   void setSearchEngine(SearchEngine engine) {
     _ref.read(settingsProvider.notifier).setSearchEngine(engine.name);
   }
+
   Future<String> _generateTopic(String text) async {
     final settings = _ref.read(settingsProvider);
-    
-    // 1. Fallback if disabled or no model selected
     if (!settings.enableSmartTopic || settings.topicGenerationModel == null) {
       return text.length > 15 ? '${text.substring(0, 15)}...' : text;
     }
-
-    // 2. Parse model config
     final parts = settings.topicGenerationModel!.split('@');
     if (parts.length != 2) {
       return text.length > 15 ? '${text.substring(0, 15)}...' : text;
     }
     final providerId = parts[0];
     final modelId = parts[1];
-
-    // 3. Image Model Safeguard (Cherry Studio Regex)
     final imageModelRegex = RegExp(
       r'(dall-e|gpt-image|midjourney|mj-|flux|stable-diffusion|sd-|sdxl|imagen|cogview|qwen-image)',
       caseSensitive: false,
     );
     if (imageModelRegex.hasMatch(modelId)) {
-      debugPrint('Skipping smart topic generation: Image model detected ($modelId)');
+      debugPrint(
+          'Skipping smart topic generation: Image model detected ($modelId)');
       return text.length > 15 ? '${text.substring(0, 15)}...' : text;
     }
-
-    // 4. Construct Temporary Service
-    // Find provider
-    final providerIndex = settings.providers.indexWhere((p) => p.id == providerId);
+    final providerIndex =
+        settings.providers.indexWhere((p) => p.id == providerId);
     if (providerIndex == -1) {
-       return text.length > 15 ? '${text.substring(0, 15)}...' : text;
+      return text.length > 15 ? '${text.substring(0, 15)}...' : text;
     }
-    
-    // Create temp settings with target provider active and target model selected
     final tempProviders = List<ProviderConfig>.from(settings.providers);
-    tempProviders[providerIndex] = tempProviders[providerIndex].copyWith(selectedModel: modelId);
-    
+    tempProviders[providerIndex] =
+        tempProviders[providerIndex].copyWith(selectedModel: modelId);
     final tempSettings = settings.copyWith(
       activeProviderId: providerId,
       providers: tempProviders,
     );
-    
     final tempLLMService = OpenAILLMService(tempSettings);
-
-    // 5. Generate
     try {
-      // Truncate input for prompt context (3000 chars limit)
       final inputContent = text.length > 3000 ? text.substring(0, 3000) : text;
-      final prompt = '''Analyze the conversation in <content> and generate a concise title.
+      final prompt =
+          '''Analyze the conversation in <content> and generate a concise title.
 Rules:
 1. Language: Use the same language as the conversation.
 2. Length: Max 10 characters or 5 words.
 3. Style: Concise, no punctuation, no special symbols.
 4. Output: The title text only.
-
 <content>
 $inputContent
 </content>''';
-
       final response = await tempLLMService.getResponse([Message.user(prompt)]);
       final generatedTitle = response.content?.trim() ?? '';
-      
       if (generatedTitle.isNotEmpty) {
-        // Cleanup quotes if LLM adds them
         var cleanTitle = generatedTitle.replaceAll('"', '').replaceAll("'", "");
         if (cleanTitle.length > 20) {
-           cleanTitle = cleanTitle.substring(0, 20);
+          cleanTitle = cleanTitle.substring(0, 20);
         }
         return cleanTitle;
       }
     } catch (e) {
       debugPrint('Error generating topic: $e');
     }
-    
-    // Fallback
     return text.length > 15 ? '${text.substring(0, 15)}...' : text;
   }
 }
@@ -862,10 +701,7 @@ final chatStorageProvider = Provider<ChatStorage>((ref) {
 final translationProvider =
     StateNotifierProvider<ChatNotifier, ChatState>((ref) {
   final storage = ref.watch(chatStorageProvider);
-  return ChatNotifier(
-      ref: ref,
-      storage: storage,
-      sessionId: 'translation');
+  return ChatNotifier(ref: ref, storage: storage, sessionId: 'translation');
 });
 
 class SessionsState {
@@ -877,38 +713,25 @@ class SessionsState {
 class SessionsNotifier extends StateNotifier<SessionsState> {
   final ChatStorage _storage;
   final Ref _ref;
-  
   SessionsNotifier(this._ref, this._storage) : super(SessionsState()) {
     _init();
   }
-  
   Future<void> _init() async {
-    // 1. Cleanup empty sessions
     await _storage.cleanupEmptySessions();
-    
-    // 2. Load sessions
     await loadSessions();
-    
-    // 3. Preload all session messages for instant switching
-    _storage.preloadAllSessions(); // Fire and forget - don't await to avoid blocking UI
-    
-    // 4. Restore last session and topic
+    _storage.preloadAllSessions();
     final settings = await _ref.read(settingsStorageProvider).loadAppSettings();
     final lastId = settings?.lastSessionId;
-    final lastTopicId = settings?.lastTopicId; // provider_config_entity change reflects here
+    final lastTopicId = settings?.lastTopicId;
     debugPrint('Restoring session. lastId: $lastId, lastTopicId: $lastTopicId');
-
     if (lastTopicId != null) {
       final topicId = int.tryParse(lastTopicId);
       _ref.read(selectedTopicIdProvider.notifier).state = topicId;
       debugPrint('Restored topic id: $topicId');
     }
-
     if (lastId != null && state.sessions.any((s) => s.sessionId == lastId)) {
       _ref.read(selectedHistorySessionIdProvider.notifier).state = lastId;
     } else {
-      // If no valid last session, create a new one automatically
-      // This ensures mobile users always have a proper session with preset selector
       await startNewSession();
     }
   }
@@ -917,7 +740,6 @@ class SessionsNotifier extends StateNotifier<SessionsState> {
     state = SessionsState(sessions: state.sessions, isLoading: true);
     final sessions = await _storage.loadSessions();
     final order = await _storage.loadSessionOrder();
-    
     if (order.isNotEmpty) {
       final orderMap = {for (var i = 0; i < order.length; i++) order[i]: i};
       sessions.sort((a, b) {
@@ -929,7 +751,6 @@ class SessionsNotifier extends StateNotifier<SessionsState> {
         return b.lastMessageTime.compareTo(a.lastMessageTime);
       });
     }
-    
     state = SessionsState(sessions: sessions, isLoading: false);
   }
 
@@ -940,9 +761,7 @@ class SessionsNotifier extends StateNotifier<SessionsState> {
     final items = List<SessionEntity>.from(state.sessions);
     final item = items.removeAt(oldIndex);
     items.insert(newIndex, item);
-    
     state = SessionsState(sessions: items, isLoading: false);
-    
     final newOrder = items.map((s) => s.sessionId).toList();
     await _storage.saveSessionOrder(newOrder);
   }
@@ -952,9 +771,8 @@ class SessionsNotifier extends StateNotifier<SessionsState> {
     await loadSessions();
     return id;
   }
-  
+
   Future<void> startNewSession() async {
-    // Before creating a new session, check if current session is empty and delete it
     final currentId = _ref.read(selectedHistorySessionIdProvider);
     if (currentId != null && currentId != 'new_chat') {
       final deleted = await _storage.deleteSessionIfEmpty(currentId);
@@ -962,15 +780,13 @@ class SessionsNotifier extends StateNotifier<SessionsState> {
         await loadSessions();
       }
     }
-    
     final topicId = _ref.read(selectedTopicIdProvider);
-    final id = await _storage.createSession(title: 'New Chat', topicId: topicId);
+    final id =
+        await _storage.createSession(title: 'New Chat', topicId: topicId);
     await loadSessions();
     _ref.read(selectedHistorySessionIdProvider.notifier).state = id;
   }
-  
-  /// Check if the given session is empty and delete it if so.
-  /// Used when switching away from a session.
+
   Future<void> cleanupSessionIfEmpty(String? sessionId) async {
     if (sessionId == null || sessionId == 'new_chat') return;
     final deleted = await _storage.deleteSessionIfEmpty(sessionId);
@@ -982,11 +798,9 @@ class SessionsNotifier extends StateNotifier<SessionsState> {
   Future<void> deleteSession(String id) async {
     await _storage.deleteSession(id);
     await loadSessions();
-    
-    // If deleted session was selected, select another or none
     final selected = _ref.read(selectedHistorySessionIdProvider);
     if (selected == id) {
-       _ref.read(selectedHistorySessionIdProvider.notifier).state = null;
+      _ref.read(selectedHistorySessionIdProvider.notifier).state = null;
     }
   }
 }
@@ -1000,15 +814,12 @@ final selectedHistorySessionIdProvider = StateProvider<String?>((ref) => null);
 final isHistorySidebarVisibleProvider = StateProvider<bool>((ref) => true);
 final sessionSearchQueryProvider = StateProvider<String>((ref) => '');
 
-/// Manages cached ChatNotifier instances to preserve state across session switches
 class ChatSessionManager {
   final Map<String, ChatNotifier> _cache = {};
   final ChatStorage _storage;
   final Ref _ref;
   final StateController<int> _updateTrigger;
-  
   ChatSessionManager(this._ref, this._storage, this._updateTrigger);
-  
   ChatNotifier getOrCreate(String sessionId) {
     if (!_cache.containsKey(sessionId)) {
       _cache[sessionId] = ChatNotifier(
@@ -1016,7 +827,6 @@ class ChatSessionManager {
         storage: _storage,
         sessionId: sessionId,
         onSessionCreated: (newId) {
-          // Migrate cache key when session is created from new_chat
           if (_cache.containsKey(sessionId)) {
             _cache[newId] = _cache.remove(sessionId)!;
           }
@@ -1024,75 +834,54 @@ class ChatSessionManager {
           _ref.read(selectedHistorySessionIdProvider.notifier).state = newId;
         },
         onStateChanged: () {
-          // Trigger UI rebuild when state changes
           _updateTrigger.state++;
         },
       );
     }
     return _cache[sessionId]!;
   }
-  
+
   void disposeSession(String sessionId) {
     _cache.remove(sessionId)?.dispose();
   }
-  
+
   void disposeAll() {
     for (final notifier in _cache.values) {
       notifier.dispose();
     }
     _cache.clear();
   }
-  
+
   ChatState? getState(String sessionId) {
     return _cache[sessionId]?.currentState;
   }
 }
 
-/// Trigger for rebuilding UI when any cached session state changes
 final chatStateUpdateTriggerProvider = StateProvider<int>((ref) => 0);
-
-/// Global provider for Desktop Sidebar state
 final isSidebarExpandedProvider = StateProvider<bool>((ref) => false);
-
-/// Global provider for Desktop Active Tab Index
 final desktopActiveTabProvider = StateProvider<int>((ref) => 0);
-
 final chatSessionManagerProvider = Provider<ChatSessionManager>((ref) {
-  // Do not watch settings/service to avoid rebuilds
   final storage = ref.watch(chatStorageProvider);
   final updateTrigger = ref.watch(chatStateUpdateTriggerProvider.notifier);
-  
   final manager = ChatSessionManager(ref, storage, updateTrigger);
   ref.onDispose(() => manager.disposeAll());
   return manager;
 });
-
 final historyChatProvider = Provider<ChatNotifier>((ref) {
   final manager = ref.watch(chatSessionManagerProvider);
   final sessionId = ref.watch(selectedHistorySessionIdProvider);
-  // Watch the trigger to rebuild when state changes
   ref.watch(chatStateUpdateTriggerProvider);
-  
   if (sessionId == null) {
     return manager.getOrCreate('temp_empty');
   }
   return manager.getOrCreate(sessionId);
 });
-
-/// Provider to watch the current chat state (for UI rebuilds)
 final historyChatStateProvider = Provider<ChatState>((ref) {
   final notifier = ref.watch(historyChatProvider);
-  // Watch the trigger to rebuild when state changes
   ref.watch(chatStateUpdateTriggerProvider);
   return notifier.currentState;
 });
-
 final chatProvider = StateNotifierProvider<ChatNotifier, ChatState>((ref) {
   final storage = ref.watch(chatStorageProvider);
-  return ChatNotifier(
-      ref: ref,
-      storage: storage,
-      sessionId: 'chat');
+  return ChatNotifier(ref: ref, storage: storage, sessionId: 'chat');
 });
-
-

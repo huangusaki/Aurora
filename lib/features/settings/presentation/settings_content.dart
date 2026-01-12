@@ -7,7 +7,7 @@ import 'package:file_selector/file_selector.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 import 'settings_provider.dart';
 import 'usage_stats_view.dart';
-import 'preset_settings_page.dart'; // Added
+import 'preset_settings_page.dart';
 import '../../../shared/utils/avatar_cropper.dart';
 
 class SettingsContent extends ConsumerStatefulWidget {
@@ -16,15 +16,12 @@ class SettingsContent extends ConsumerStatefulWidget {
   ConsumerState<SettingsContent> createState() => _SettingsContentState();
 }
 
-
-
 class _SettingsContentState extends ConsumerState<SettingsContent> {
   final TextEditingController _apiKeyController = TextEditingController();
   final TextEditingController _baseUrlController = TextEditingController();
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _userNameController = TextEditingController();
   final TextEditingController _llmNameController = TextEditingController();
-
   @override
   void initState() {
     super.initState();
@@ -69,10 +66,7 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
     final settingsState = ref.watch(settingsProvider);
     final viewingProvider = settingsState.viewingProvider;
     _updateControllers(viewingProvider);
-    
-    // Watch global page index
     final settingsPageIndex = ref.watch(settingsPageIndexProvider);
-
     if (Platform.isWindows) {
       final theme = fluent.FluentTheme.of(context);
       final l10n = AppLocalizations.of(context)!;
@@ -103,8 +97,9 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
                     final page = entry.value;
                     final isSelected = settingsPageIndex == index;
                     return fluent.HoverButton(
-                      onPressed: () =>
-                          ref.read(settingsPageIndexProvider.notifier).state = index,
+                      onPressed: () => ref
+                          .read(settingsPageIndexProvider.notifier)
+                          .state = index,
                       builder: (context, states) {
                         return Container(
                           height: 40,
@@ -152,7 +147,7 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
                 children: [
                   _buildProviderSettings(settingsState, viewingProvider),
                   _buildChatSettings(settingsState),
-                  const PresetSettingsPage(), // Added
+                  const PresetSettingsPage(),
                   _buildDisplaySettings(),
                   _buildDataSettings(),
                   const UsageStatsView(),
@@ -194,15 +189,21 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          width: 140, // Reduced from 200
+          width: 140,
           decoration: BoxDecoration(
-            border: Border(right: BorderSide(color: fluent.FluentTheme.of(context).resources.dividerStrokeColorDefault)),
+            border: Border(
+                right: BorderSide(
+                    color: fluent.FluentTheme.of(context)
+                        .resources
+                        .dividerStrokeColorDefault)),
           ),
           child: Column(
             children: [
               Padding(
                 padding: const EdgeInsets.all(8.0),
-                child: Text(l10n.providers, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+                child: Text(l10n.providers,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, color: Colors.grey)),
               ),
               Expanded(
                 child: fluent.ListView.builder(
@@ -215,7 +216,11 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
                     return Container(
                       margin: const EdgeInsets.only(bottom: 2),
                       decoration: BoxDecoration(
-                        color: isSelected ? fluent.FluentTheme.of(context).accentColor.withOpacity(0.1) : null,
+                        color: isSelected
+                            ? fluent.FluentTheme.of(context)
+                                .accentColor
+                                .withOpacity(0.1)
+                            : null,
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: fluent.ListTile(
@@ -224,43 +229,48 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            color: isSelected ? fluent.FluentTheme.of(context).accentColor : null,
+                            color: isSelected
+                                ? fluent.FluentTheme.of(context).accentColor
+                                : null,
                             fontWeight: isSelected ? FontWeight.w600 : null,
                           ),
                         ),
-                        // Remove selection processing here, handled by container decoration for cleaner look
                         onPressed: () {
                           ref
                               .read(settingsProvider.notifier)
                               .viewProvider(provider.id);
                         },
                         trailing: fluent.IconButton(
-                          icon: Icon(fluent.FluentIcons.delete, size: 12, color: fluent.FluentTheme.of(context).resources.textFillColorSecondary),
+                          icon: Icon(fluent.FluentIcons.delete,
+                              size: 12,
+                              color: fluent.FluentTheme.of(context)
+                                  .resources
+                                  .textFillColorSecondary),
                           onPressed: () {
-                          showDialog(
-                              context: context,
-                              builder: (context) {
-                                return fluent.ContentDialog(
-                                  title: Text(l10n.deleteProvider),
-                                  content: Text(l10n.deleteProviderConfirm),
-                                  actions: [
-                                    fluent.Button(
-                                      child: Text(l10n.cancel),
-                                      onPressed: () => Navigator.pop(context),
-                                    ),
-                                    fluent.FilledButton(
-                                      child: Text(l10n.delete),
-                                      onPressed: () {
-                                        Navigator.pop(context);
-                                        ref
-                                            .read(settingsProvider.notifier)
-                                            .deleteProvider(provider.id);
-                                      },
-                                    ),
-                                  ],
-                                );
-                              });
-                        },
+                            showDialog(
+                                context: context,
+                                builder: (context) {
+                                  return fluent.ContentDialog(
+                                    title: Text(l10n.deleteProvider),
+                                    content: Text(l10n.deleteProviderConfirm),
+                                    actions: [
+                                      fluent.Button(
+                                        child: Text(l10n.cancel),
+                                        onPressed: () => Navigator.pop(context),
+                                      ),
+                                      fluent.FilledButton(
+                                        child: Text(l10n.delete),
+                                        onPressed: () {
+                                          Navigator.pop(context);
+                                          ref
+                                              .read(settingsProvider.notifier)
+                                              .deleteProvider(provider.id);
+                                        },
+                                      ),
+                                    ],
+                                  );
+                                });
+                          },
                         ),
                       ),
                     );
@@ -339,8 +349,9 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
                                   .read(settingsProvider.notifier)
                                   .toggleProviderEnabled(viewingProvider.id);
                             },
-                            content: fluent.Text(
-                                viewingProvider.isEnabled ? l10n.enabled : l10n.disabled),
+                            content: fluent.Text(viewingProvider.isEnabled
+                                ? l10n.enabled
+                                : l10n.disabled),
                           ),
                         ],
                       ),
@@ -394,12 +405,10 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
                           final isSelected =
                               model == viewingProvider.selectedModel;
                           final theme = fluent.FluentTheme.of(context);
-
-
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 8.0),
                             child: fluent.HoverButton(
-                              onPressed: () {}, // No action on press
+                              onPressed: () {},
                               builder: (context, states) {
                                 return Container(
                                   padding: const EdgeInsets.symmetric(
@@ -437,7 +446,6 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
                               },
                             ),
                           );
-
                         },
                       )
                     : Container(
@@ -480,7 +488,9 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
                         .read(settingsProvider.notifier)
                         .toggleSmartTopicEnabled(v);
                   },
-                  content: fluent.Text(settingsState.enableSmartTopic ? l10n.enabled : l10n.disabled),
+                  content: fluent.Text(settingsState.enableSmartTopic
+                      ? l10n.enabled
+                      : l10n.disabled),
                 ),
                 if (settingsState.enableSmartTopic) ...[
                   const SizedBox(height: 12),
@@ -525,7 +535,7 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
                       return items;
                     }(),
                   ),
-                    if (settingsState.topicGenerationModel == null)
+                  if (settingsState.topicGenerationModel == null)
                     Padding(
                       padding: const EdgeInsets.only(top: 4.0),
                       child: Text(
@@ -592,7 +602,8 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
                       ],
                     );
                     if (result != null) {
-                      final croppedPath = await AvatarCropper.cropImage(context, result.path);
+                      final croppedPath =
+                          await AvatarCropper.cropImage(context, result.path);
                       if (croppedPath != null) {
                         ref
                             .read(settingsProvider.notifier)
@@ -666,7 +677,8 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
                       ],
                     );
                     if (result != null) {
-                      final croppedPath = await AvatarCropper.cropImage(context, result.path);
+                      final croppedPath =
+                          await AvatarCropper.cropImage(context, result.path);
                       if (croppedPath != null) {
                         ref
                             .read(settingsProvider.notifier)
@@ -786,156 +798,166 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
                   child: SizedBox(
                     width: 400,
                     child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Thinking Config Section
-                      fluent.Text(l10n.thinkingConfig,
-                          style: const TextStyle(fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 8),
-                  Consumer(builder: (context, ref, _) {
-                    final liveSettings = ref.watch(settingsProvider);
-                    final liveProvider = liveSettings.providers.firstWhere(
-                        (p) => p.id == provider.id,
-                        orElse: () => provider);
-                    final liveParams =
-                        liveProvider.modelSettings[modelName] ?? {};
-                    final thinkingEnabled =
-                        liveParams['_aurora_thinking_enabled'] == true;
-                    final thinkingValue =
-                        liveParams['_aurora_thinking_value']?.toString() ?? '';
-                    final thinkingMode =
-                        liveParams['_aurora_thinking_mode']?.toString() ??
-                            'auto';
-
-                    void updateThinkingConfig({
-                      bool? enabled,
-                      String? value,
-                      String? mode,
-                    }) {
-                      final newParams = Map<String, dynamic>.from(liveParams);
-                      if (enabled != null) {
-                        newParams['_aurora_thinking_enabled'] = enabled;
-                      }
-                      if (value != null) {
-                        newParams['_aurora_thinking_value'] = value;
-                      }
-                      if (mode != null) {
-                        newParams['_aurora_thinking_mode'] = mode;
-                      }
-                      final newModelSettings =
-                          Map<String, Map<String, dynamic>>.from(
-                              liveProvider.modelSettings);
-                      newModelSettings[modelName] = newParams;
-                      ref.read(settingsProvider.notifier).updateProvider(
-                            id: provider.id,
-                            modelSettings: newModelSettings,
-                          );
-                    }
-
-                    return Column(
+                      mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          children: [
-                            fluent.ToggleSwitch(
-                              checked: thinkingEnabled,
-                              onChanged: (v) =>
-                                  updateThinkingConfig(enabled: v),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(l10n.enableThinking),
-                          ],
-                        ),
-                        if (thinkingEnabled) ...[
-                          const SizedBox(height: 12),
-                          fluent.InfoLabel(
-                            label: l10n.thinkingBudget,
-                            child: _ThinkingBudgetInput(
-                              initialValue: thinkingValue,
-                              placeholder: l10n.thinkingBudgetHint,
-                              onChanged: (v) => updateThinkingConfig(value: v),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          fluent.InfoLabel(
-                            label: l10n.transmissionMode,
-                            child: fluent.ComboBox<String>(
-                              value: thinkingMode,
-                              items: [
-                                fluent.ComboBoxItem(
-                                    value: 'auto', child: Text(l10n.modeAuto)),
-                                fluent.ComboBoxItem(
-                                    value: 'extra_body',
-                                    child: Text(l10n.modeExtraBody)),
-                                fluent.ComboBoxItem(
-                                    value: 'reasoning_effort',
-                                    child: Text(l10n.modeReasoningEffort)),
-                              ],
-                              onChanged: (v) =>
-                                  updateThinkingConfig(mode: v),
-                            ),
-                          ),
-                        ],
-                      ],
-                    );
-                  }),
-                  const SizedBox(height: 16),
-                  const Divider(),
-                  const SizedBox(height: 16),
-                  // Custom Parameters Section
-                  fluent.Text(l10n.configureModelParams,
-                      style: const TextStyle(fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 4),
-                  fluent.Text(l10n.paramsHigherPriority,
-                      style: const TextStyle(fontSize: 12, color: Colors.grey)),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    height: 200,
-                    child: SingleChildScrollView(
-                      child: Consumer(builder: (context, ref, _) {
-                        final liveSettings = ref.watch(settingsProvider);
-                        final liveProvider = liveSettings.providers.firstWhere(
-                            (p) => p.id == provider.id,
-                            orElse: () => provider);
-                        final liveParams =
-                            liveProvider.modelSettings[modelName] ?? {};
-                        // Filter out _aurora_ prefixed keys for display
-                        final displayParams = Map<String, dynamic>.fromEntries(
-                            liveParams.entries.where(
-                                (e) => !e.key.startsWith('_aurora_')));
-                        return _ParamsEditor(
-                          params: displayParams,
-                          onChanged: (newParams) {
-                            // Preserve _aurora_ keys when updating
-                            final preservedKeys = Map<String, dynamic>.from(
-                                liveParams)
-                              ..removeWhere(
-                                  (k, v) => !k.startsWith('_aurora_'));
-                            final merged = {...preservedKeys, ...newParams};
+                        fluent.Text(l10n.thinkingConfig,
+                            style:
+                                const TextStyle(fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 8),
+                        Consumer(builder: (context, ref, _) {
+                          final liveSettings = ref.watch(settingsProvider);
+                          final liveProvider = liveSettings.providers
+                              .firstWhere((p) => p.id == provider.id,
+                                  orElse: () => provider);
+                          final liveParams =
+                              liveProvider.modelSettings[modelName] ?? {};
+                          final thinkingEnabled =
+                              liveParams['_aurora_thinking_enabled'] == true;
+                          final thinkingValue =
+                              liveParams['_aurora_thinking_value']
+                                      ?.toString() ??
+                                  '';
+                          final thinkingMode =
+                              liveParams['_aurora_thinking_mode']?.toString() ??
+                                  'auto';
+                          void updateThinkingConfig({
+                            bool? enabled,
+                            String? value,
+                            String? mode,
+                          }) {
+                            final newParams =
+                                Map<String, dynamic>.from(liveParams);
+                            if (enabled != null) {
+                              newParams['_aurora_thinking_enabled'] = enabled;
+                            }
+                            if (value != null) {
+                              newParams['_aurora_thinking_value'] = value;
+                            }
+                            if (mode != null) {
+                              newParams['_aurora_thinking_mode'] = mode;
+                            }
                             final newModelSettings =
                                 Map<String, Map<String, dynamic>>.from(
                                     liveProvider.modelSettings);
-                            if (merged.isEmpty) {
-                              newModelSettings.remove(modelName);
-                            } else {
-                              newModelSettings[modelName] = merged;
-                            }
+                            newModelSettings[modelName] = newParams;
                             ref.read(settingsProvider.notifier).updateProvider(
                                   id: provider.id,
                                   modelSettings: newModelSettings,
                                 );
-                          },
-                        );
-                      }),
+                          }
+
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  fluent.ToggleSwitch(
+                                    checked: thinkingEnabled,
+                                    onChanged: (v) =>
+                                        updateThinkingConfig(enabled: v),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(l10n.enableThinking),
+                                ],
+                              ),
+                              if (thinkingEnabled) ...[
+                                const SizedBox(height: 12),
+                                fluent.InfoLabel(
+                                  label: l10n.thinkingBudget,
+                                  child: _ThinkingBudgetInput(
+                                    initialValue: thinkingValue,
+                                    placeholder: l10n.thinkingBudgetHint,
+                                    onChanged: (v) =>
+                                        updateThinkingConfig(value: v),
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                fluent.InfoLabel(
+                                  label: l10n.transmissionMode,
+                                  child: fluent.ComboBox<String>(
+                                    value: thinkingMode,
+                                    items: [
+                                      fluent.ComboBoxItem(
+                                          value: 'auto',
+                                          child: Text(l10n.modeAuto)),
+                                      fluent.ComboBoxItem(
+                                          value: 'extra_body',
+                                          child: Text(l10n.modeExtraBody)),
+                                      fluent.ComboBoxItem(
+                                          value: 'reasoning_effort',
+                                          child:
+                                              Text(l10n.modeReasoningEffort)),
+                                    ],
+                                    onChanged: (v) =>
+                                        updateThinkingConfig(mode: v),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          );
+                        }),
+                        const SizedBox(height: 16),
+                        const Divider(),
+                        const SizedBox(height: 16),
+                        fluent.Text(l10n.configureModelParams,
+                            style:
+                                const TextStyle(fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 4),
+                        fluent.Text(l10n.paramsHigherPriority,
+                            style: const TextStyle(
+                                fontSize: 12, color: Colors.grey)),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          height: 200,
+                          child: SingleChildScrollView(
+                            child: Consumer(builder: (context, ref, _) {
+                              final liveSettings = ref.watch(settingsProvider);
+                              final liveProvider = liveSettings.providers
+                                  .firstWhere((p) => p.id == provider.id,
+                                      orElse: () => provider);
+                              final liveParams =
+                                  liveProvider.modelSettings[modelName] ?? {};
+                              final displayParams =
+                                  Map<String, dynamic>.fromEntries(
+                                      liveParams.entries.where((e) =>
+                                          !e.key.startsWith('_aurora_')));
+                              return _ParamsEditor(
+                                params: displayParams,
+                                onChanged: (newParams) {
+                                  final preservedKeys =
+                                      Map<String, dynamic>.from(liveParams)
+                                        ..removeWhere((k, v) =>
+                                            !k.startsWith('_aurora_'));
+                                  final merged = {
+                                    ...preservedKeys,
+                                    ...newParams
+                                  };
+                                  final newModelSettings =
+                                      Map<String, Map<String, dynamic>>.from(
+                                          liveProvider.modelSettings);
+                                  if (merged.isEmpty) {
+                                    newModelSettings.remove(modelName);
+                                  } else {
+                                    newModelSettings[modelName] = merged;
+                                  }
+                                  ref
+                                      .read(settingsProvider.notifier)
+                                      .updateProvider(
+                                        id: provider.id,
+                                        modelSettings: newModelSettings,
+                                      );
+                                },
+                              );
+                            }),
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                    ],
                   ),
                 ),
               ),
             ),
-          ),
             actions: [
               fluent.Button(
                 onPressed: () => Navigator.pop(context),
@@ -1014,7 +1036,8 @@ class _ParamsEditorState extends State<_ParamsEditor> {
             ),
             width: double.infinity,
             child: Center(
-                child: Text(AppLocalizations.of(context)!.noCustomParams, style: const TextStyle(color: Colors.grey))),
+                child: Text(AppLocalizations.of(context)!.noCustomParams,
+                    style: const TextStyle(color: Colors.grey))),
           )
         else
           ...widget.params.entries.map((e) {
@@ -1178,19 +1201,15 @@ class _AddParamDialogState extends State<_AddParamDialog> {
   }
 }
 
-/// A stateful text input for thinking budget that properly manages the controller
-/// and saves the value when the widget is disposed (e.g., when dialog closes).
 class _ThinkingBudgetInput extends StatefulWidget {
   final String initialValue;
   final String placeholder;
   final ValueChanged<String> onChanged;
-
   const _ThinkingBudgetInput({
     required this.initialValue,
     required this.placeholder,
     required this.onChanged,
   });
-
   @override
   State<_ThinkingBudgetInput> createState() => _ThinkingBudgetInputState();
 }
@@ -1199,15 +1218,12 @@ class _ThinkingBudgetInputState extends State<_ThinkingBudgetInput> {
   late TextEditingController _controller;
   late FocusNode _focusNode;
   String _lastSavedValue = '';
-
   @override
   void initState() {
     super.initState();
     _controller = TextEditingController(text: widget.initialValue);
     _focusNode = FocusNode();
     _lastSavedValue = widget.initialValue;
-    
-    // Auto-save when focus is lost (e.g. clicking Done)
     _focusNode.addListener(() {
       if (!_focusNode.hasFocus) {
         _saveValue();
@@ -1218,8 +1234,7 @@ class _ThinkingBudgetInputState extends State<_ThinkingBudgetInput> {
   @override
   void didUpdateWidget(_ThinkingBudgetInput oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Only update if the external value changed (not from our own input)
-    if (widget.initialValue != _lastSavedValue && 
+    if (widget.initialValue != _lastSavedValue &&
         widget.initialValue != _controller.text) {
       _controller.text = widget.initialValue;
       _lastSavedValue = widget.initialValue;
@@ -1228,7 +1243,6 @@ class _ThinkingBudgetInputState extends State<_ThinkingBudgetInput> {
 
   @override
   void dispose() {
-    // Save the current value when the widget is disposed (dialog closes)
     if (_controller.text != _lastSavedValue) {
       widget.onChanged(_controller.text);
     }

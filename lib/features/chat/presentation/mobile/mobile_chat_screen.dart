@@ -5,7 +5,7 @@ import '../chat_provider.dart';
 import '../../../settings/presentation/settings_provider.dart';
 import '../../../history/presentation/history_content.dart';
 import '../widgets/chat_view.dart';
-import '../widgets/mobile_preset_selector.dart'; // Added
+import '../widgets/mobile_preset_selector.dart';
 import '../../../settings/presentation/mobile_settings_page.dart';
 import '../../../settings/presentation/mobile_user_page.dart';
 import '../mobile_translation_page.dart';
@@ -16,28 +16,22 @@ import 'package:aurora/l10n/app_localizations.dart';
 
 class MobileChatScreen extends ConsumerStatefulWidget {
   const MobileChatScreen({super.key});
-
   @override
   ConsumerState<MobileChatScreen> createState() => _MobileChatScreenState();
 }
 
 class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
-  // Navigation Keys
   static const String keySettings = '__settings__';
   static const String keyTranslation = '__translation__';
   static const String keyUser = '__user__';
-
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  String _currentViewKey = 'new_chat'; // Default to initial session
+  String _currentViewKey = 'new_chat';
   String _lastSessionId = 'new_chat';
-
   DateTime? _lastPopTime;
   double? _dragStartX;
-
   @override
   void initState() {
     super.initState();
-    // Initialize session ID from provider on load if valid
     final selected = ref.read(selectedHistorySessionIdProvider);
     if (selected != null) {
       _currentViewKey = selected;
@@ -46,40 +40,32 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
   }
 
   Future<void> _navigateTo(String key) async {
-    // If we are navigating away from a session to a special page (Settings, etc)
-    // OR we are navigating to a different session, we should check cleanup
-    
-    // Note: If navigating to a different session via Drawer, the Drawer callback might have already handled it.
-    // But _navigateTo is also used for User/Settings/Translation pages.
-    
     if (_isSpecialKey(key)) {
-       final currentId = ref.read(selectedHistorySessionIdProvider);
-       if (currentId != null) {
-         await ref.read(sessionsProvider.notifier).cleanupSessionIfEmpty(currentId);
-       }
+      final currentId = ref.read(selectedHistorySessionIdProvider);
+      if (currentId != null) {
+        await ref
+            .read(sessionsProvider.notifier)
+            .cleanupSessionIfEmpty(currentId);
+      }
     }
-
     setState(() {
       _currentViewKey = key;
-      // If it's a session key, update the last session reference
       if (!_isSpecialKey(key)) {
         _lastSessionId = key;
-        // Also sync provider
         ref.read(selectedHistorySessionIdProvider.notifier).state = key;
       }
     });
-    // Close drawer if open
     if (_scaffoldKey.currentState?.isDrawerOpen == true) {
       if (mounted) Navigator.pop(context);
     }
   }
-  
+
   void _navigateBackToSession() {
-     setState(() {
-       _currentViewKey = _lastSessionId;
-       // Sync provider
-       ref.read(selectedHistorySessionIdProvider.notifier).state = _lastSessionId;
-     });
+    setState(() {
+      _currentViewKey = _lastSessionId;
+      ref.read(selectedHistorySessionIdProvider.notifier).state =
+          _lastSessionId;
+    });
   }
 
   bool _isSpecialKey(String key) {
@@ -88,25 +74,21 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Listen to provider changes to update view key if changed externally (e.g. from drawer)
     ref.listen<String?>(selectedHistorySessionIdProvider, (prev, next) {
-      if (next != null && next != _currentViewKey && !_isSpecialKey(_currentViewKey)) {
+      if (next != null &&
+          next != _currentViewKey &&
+          !_isSpecialKey(_currentViewKey)) {
         setState(() {
           _currentViewKey = next;
           _lastSessionId = next;
         });
       } else if (next != null && _isSpecialKey(_currentViewKey)) {
-         // If we are in settings but provider changed (e.g. cleared session), 
-         // we update background session ID but don't force nav unless explicit
-         _lastSessionId = next;
+        _lastSessionId = next;
       }
     });
-
     final settingsState = ref.watch(settingsProvider);
     final selectedSessionId = ref.watch(selectedHistorySessionIdProvider);
     final sessionsState = ref.watch(sessionsProvider);
-    
-    // Determine title for App Bar (only relevant if showing Session)
     String sessionTitle = AppLocalizations.of(context)!.startNewChat;
     if (selectedSessionId != null &&
         selectedSessionId != 'new_chat' &&
@@ -117,9 +99,7 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
         sessionTitle = sessionMatch.first.title;
       }
     }
-    
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
     return WillPopScope(
       onWillPop: _onWillPop,
       child: Stack(
@@ -136,38 +116,46 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
                 ),
               ),
             ),
-            
           Scaffold(
             key: _scaffoldKey,
-            backgroundColor: Colors.transparent, // Let gradient show through
-            drawerEdgeDragWidth: MediaQuery.of(context).size.width * 0.25, // Wider edge (25% of screen)
+            backgroundColor: Colors.transparent,
+            drawerEdgeDragWidth: MediaQuery.of(context).size.width * 0.25,
             drawer: MobileNavigationDrawer(
               sessionsState: sessionsState,
               selectedSessionId: selectedSessionId,
               onNewChat: () {
-                 ref.read(sessionsProvider.notifier).startNewSession();
+                ref.read(sessionsProvider.notifier).startNewSession();
               },
               onNavigate: _navigateTo,
               onThemeCycle: _cycleTheme,
               onAbout: _showAboutDialog,
             ),
-            body:  fluent.NavigationPaneTheme(
-                data: fluent.NavigationPaneThemeData(
-                   backgroundColor: isDark ? fluent.FluentTheme.of(context).scaffoldBackgroundColor : Colors.transparent,
-                ),
-                child: CachedPageStack(
+            body: fluent.NavigationPaneTheme(
+              data: fluent.NavigationPaneThemeData(
+                backgroundColor: isDark
+                    ? fluent.FluentTheme.of(context).scaffoldBackgroundColor
+                    : Colors.transparent,
+              ),
+              child: CachedPageStack(
                 selectedKey: _currentViewKey,
                 cacheSize: 10,
                 itemBuilder: (context, key) {
                   if (key == keySettings) {
                     return MobileSettingsPage(onBack: _navigateBackToSession);
                   } else if (key == keyTranslation) {
-                    return MobileTranslationPage(onBack: _navigateBackToSession);
+                    return MobileTranslationPage(
+                        onBack: _navigateBackToSession);
                   } else if (key == keyUser) {
                     return MobileUserPage(onBack: _navigateBackToSession);
                   } else {
-                    // It's a Session ID
-                    return _buildSessionPage(context, key, sessionTitle, settingsState, sessionsState, selectedSessionId, isDark);
+                    return _buildSessionPage(
+                        context,
+                        key,
+                        sessionTitle,
+                        settingsState,
+                        sessionsState,
+                        selectedSessionId,
+                        isDark);
                   }
                 },
               ),
@@ -179,19 +167,15 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
   }
 
   Future<bool> _onWillPop() async {
-    // If drawer is open, let Scaffold handle it (it usually closes drawer on back)
     if (_scaffoldKey.currentState?.isDrawerOpen == true) {
       return true;
     }
-
     if (_isSpecialKey(_currentViewKey)) {
       _navigateBackToSession();
-      return false; // Prevent exit, just navigate back
+      return false;
     }
-
-    // In Chat Session
     final now = DateTime.now();
-    if (_lastPopTime == null || 
+    if (_lastPopTime == null ||
         now.difference(_lastPopTime!) > const Duration(seconds: 2)) {
       _lastPopTime = now;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -202,10 +186,17 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
       );
       return false;
     }
-    return true; // Exit app
+    return true;
   }
 
-  Widget _buildSessionPage(BuildContext context, String sessionId, String sessionTitle, SettingsState settingsState, SessionsState sessionsState, String? selectedSessionId, bool isDark) {
+  Widget _buildSessionPage(
+      BuildContext context,
+      String sessionId,
+      String sessionTitle,
+      SettingsState settingsState,
+      SessionsState sessionsState,
+      String? selectedSessionId,
+      bool isDark) {
     return Scaffold(
       extendBodyBehindAppBar: !isDark,
       backgroundColor: Colors.transparent,
@@ -226,19 +217,17 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
         title: Consumer(
           builder: (context, ref, _) {
             final currentSettings = ref.watch(settingsProvider);
-            final sessionsState = ref.watch(sessionsProvider); // Watch sessions
-            
-            // Re-calculate title dynamically
-            String dynamicTitle = sessionTitle; // Default/Fallback
+            final sessionsState = ref.watch(sessionsProvider);
+            String dynamicTitle = sessionTitle;
             int totalTokens = 0;
             if (sessionId != 'new_chat' && sessionsState.sessions.isNotEmpty) {
-               final sessionMatch = sessionsState.sessions.where((s) => s.sessionId == sessionId);
-               if (sessionMatch.isNotEmpty) {
-                 dynamicTitle = sessionMatch.first.title;
-                 totalTokens = sessionMatch.first.totalTokens;
-               }
+              final sessionMatch =
+                  sessionsState.sessions.where((s) => s.sessionId == sessionId);
+              if (sessionMatch.isNotEmpty) {
+                dynamicTitle = sessionMatch.first.title;
+                totalTokens = sessionMatch.first.totalTokens;
+              }
             }
-
             return GestureDetector(
               onTap: () async {
                 FocusManager.instance.primaryFocus?.unfocus();
@@ -252,38 +241,44 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                         Row(
-                           children: [
-                             Flexible(
-                               child: Text(
-                                 dynamicTitle,
-                                 style: TextStyle(
-                                   fontSize: 18,
-                                   fontWeight: FontWeight.w600,
-                                   color: Theme.of(context).textTheme.bodyLarge?.color,
-                                 ),
-                                 overflow: TextOverflow.ellipsis,
-                               ),
-                             ),
-                             if (totalTokens > 0) ...[
-                               const SizedBox(width: 8),
-                               Container(
-                                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                 decoration: BoxDecoration(
-                                   color: Theme.of(context).primaryColor.withOpacity(0.1),
-                                   borderRadius: BorderRadius.circular(8),
-                                 ),
-                                 child: Text(
-                                   '$totalTokens tokens',
-                                   style: TextStyle(
-                                     fontSize: 11,
-                                     color: Theme.of(context).primaryColor,
-                                   ),
-                                 ),
-                               ),
-                             ],
-                           ],
-                         ),
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                dynamicTitle,
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
+                                  color: Theme.of(context)
+                                      .textTheme
+                                      .bodyLarge
+                                      ?.color,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            if (totalTokens > 0) ...[
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context)
+                                      .primaryColor
+                                      .withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  '$totalTokens tokens',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Theme.of(context).primaryColor,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
                         Row(
                           children: [
                             Flexible(
@@ -332,16 +327,14 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
     final providers = settingsState.providers;
     final activeProvider = settingsState.activeProvider;
     final selectedModel = settingsState.selectedModel;
-    
-    // Check if any provider has models
-    final hasAnyModels = providers.any((p) => p.isEnabled && p.models.isNotEmpty);
+    final hasAnyModels =
+        providers.any((p) => p.isEnabled && p.models.isNotEmpty);
     if (!hasAnyModels) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('请先在设置中配置模型')),
       );
       return;
     }
-    
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -366,7 +359,6 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
                   children: [
                     for (final provider in providers) ...[
                       if (provider.isEnabled && provider.models.isNotEmpty) ...[
-                        // Provider header
                         ListTile(
                           dense: true,
                           enabled: false,
@@ -378,27 +370,36 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
                             ),
                           ),
                         ),
-                        // Models under this provider
                         for (final model in provider.models)
                           ListTile(
-                            contentPadding: const EdgeInsets.only(left: 32, right: 16),
+                            contentPadding:
+                                const EdgeInsets.only(left: 32, right: 16),
                             leading: Icon(
-                              activeProvider?.id == provider.id && selectedModel == model
+                              activeProvider?.id == provider.id &&
+                                      selectedModel == model
                                   ? Icons.check_circle
                                   : Icons.circle_outlined,
-                              color: activeProvider?.id == provider.id && selectedModel == model
+                              color: activeProvider?.id == provider.id &&
+                                      selectedModel == model
                                   ? Theme.of(context).primaryColor
                                   : null,
                             ),
                             title: Text(model),
                             onTap: () async {
-                              await ref.read(settingsProvider.notifier).selectProvider(provider.id);
-                              await ref.read(settingsProvider.notifier).setSelectedModel(model);
+                              await ref
+                                  .read(settingsProvider.notifier)
+                                  .selectProvider(provider.id);
+                              await ref
+                                  .read(settingsProvider.notifier)
+                                  .setSelectedModel(model);
                               Navigator.pop(ctx);
                             },
                           ),
-                        // Divider after each provider (except last)
-                        if (provider != providers.where((p) => p.isEnabled && p.models.isNotEmpty).last)
+                        if (provider !=
+                            providers
+                                .where(
+                                    (p) => p.isEnabled && p.models.isNotEmpty)
+                                .last)
                           const Divider(),
                       ],
                     ],
@@ -461,4 +462,3 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
     );
   }
 }
-

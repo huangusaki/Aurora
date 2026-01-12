@@ -21,14 +21,27 @@ class _TranslationContentState extends ConsumerState<TranslationContent> {
   String _targetLang = '简体中文';
   bool _showComparison = true;
   bool _hasRestored = false;
-  
   final List<String> _sourceLanguages = [
-    '自动检测', '英语', '日语', '韩语', '简体中文', '繁体中文', '俄语', '法语', '德语'
+    '自动检测',
+    '英语',
+    '日语',
+    '韩语',
+    '简体中文',
+    '繁体中文',
+    '俄语',
+    '法语',
+    '德语'
   ];
   final List<String> _targetLanguages = [
-    '简体中文', '英语', '日语', '韩语', '繁体中文', '俄语', '法语', '德语'
+    '简体中文',
+    '英语',
+    '日语',
+    '韩语',
+    '繁体中文',
+    '俄语',
+    '法语',
+    '德语'
   ];
-
   @override
   void initState() {
     super.initState();
@@ -89,69 +102,57 @@ class _TranslationContentState extends ConsumerState<TranslationContent> {
         }
       }
     });
-
     final theme = fluent.FluentTheme.of(context);
     final l10n = AppLocalizations.of(context)!;
     final chatState = ref.watch(translationProvider);
     final isWindows = !kIsWeb && Platform.isWindows;
     final fontFamily = isWindows ? 'Microsoft YaHei' : null;
-
-    final aiMessage = chatState.messages.isNotEmpty && !chatState.messages.last.isUser
+    final aiMessage =
+        chatState.messages.isNotEmpty && !chatState.messages.last.isUser
             ? chatState.messages.last
             : null;
-
     return Container(
       color: theme.navigationPaneTheme.backgroundColor,
       child: Column(
         children: [
-          // Toolbar
           Container(
-            height: 50, // Reduced height
-            padding: const EdgeInsets.symmetric(horizontal: 16), // Reduced padding
-            // Removed explicit color to blend with background (or transparent)
+            height: 50,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
               children: [
-                fluent.Text(l10n.textTranslation, 
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14) // Reduced font size
-                ),
-                const SizedBox(width: 20), // Reduced spacing
-                
-                // Language Selectors
+                fluent.Text(l10n.textTranslation,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 14)),
+                const SizedBox(width: 20),
                 _buildLangSelector(
-                  value: _sourceLang, 
-                  items: _sourceLanguages, 
-                  onChanged: (v) => setState(() => _sourceLang = v!)
-                ),
+                    value: _sourceLang,
+                    items: _sourceLanguages,
+                    onChanged: (v) => setState(() => _sourceLang = v!)),
                 const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 10), // Reduced spacing
-                  child: Icon(fluent.FluentIcons.forward, size: 12, color: Colors.grey),
+                  padding: EdgeInsets.symmetric(horizontal: 10),
+                  child: Icon(fluent.FluentIcons.forward,
+                      size: 12, color: Colors.grey),
                 ),
                 _buildLangSelector(
-                  value: _targetLang, 
-                  items: _targetLanguages, 
-                  onChanged: (v) => setState(() => _targetLang = v!)
-                ),
-                
+                    value: _targetLang,
+                    items: _targetLanguages,
+                    onChanged: (v) => setState(() => _targetLang = v!)),
                 const Spacer(),
-                
                 if (chatState.isLoading)
                   const Padding(
                     padding: EdgeInsets.only(right: 12),
-                    child: fluent.ProgressRing(strokeWidth: 2.5, activeColor: Colors.blue),
+                    child: fluent.ProgressRing(
+                        strokeWidth: 2.5, activeColor: Colors.blue),
                   ),
               ],
             ),
           ),
-          
-          // Content Area
           Expanded(
             child: Container(
-              // Removed explicit color to remove "white background" effect
               padding: const EdgeInsets.all(16),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Source Card
                   Expanded(
                     child: _buildCard(
                       theme: theme,
@@ -176,38 +177,43 @@ class _TranslationContentState extends ConsumerState<TranslationContent> {
                       actions: [
                         if (_sourceController.text.isNotEmpty)
                           fluent.IconButton(
-                            icon: const Icon(fluent.FluentIcons.clear, size: 14),
+                            icon:
+                                const Icon(fluent.FluentIcons.clear, size: 14),
                             onPressed: () => _sourceController.clear(),
                           ),
                         const SizedBox(width: 8),
                         fluent.Button(
-                           style: fluent.ButtonStyle(
-                             shape: fluent.ButtonState.all(RoundedRectangleBorder(side: BorderSide.none)),
-                             backgroundColor: fluent.ButtonState.resolveWith((states) {
-                               if (states.isHovering) return theme.resources.subtleFillColorSecondary;
-                               return Colors.transparent;
-                             }),
-                           ),
-                           onPressed: chatState.isLoading ? null : _translate,
-                           child: Row(
-                             mainAxisSize: MainAxisSize.min,
-                             children: [
-                               Icon(fluent.FluentIcons.translate, size: 14, color: theme.accentColor),
-                               const SizedBox(width: 6),
-                               Text(
-                                 chatState.isLoading ? '...' : l10n.translateButton, 
-                                 style: TextStyle(color: theme.accentColor, fontWeight: FontWeight.normal)
-                               ),
-                             ],
-                           ),
+                          style: fluent.ButtonStyle(
+                            shape: fluent.ButtonState.all(
+                                RoundedRectangleBorder(side: BorderSide.none)),
+                            backgroundColor:
+                                fluent.ButtonState.resolveWith((states) {
+                              if (states.isHovering)
+                                return theme.resources.subtleFillColorSecondary;
+                              return Colors.transparent;
+                            }),
+                          ),
+                          onPressed: chatState.isLoading ? null : _translate,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(fluent.FluentIcons.translate,
+                                  size: 14, color: theme.accentColor),
+                              const SizedBox(width: 6),
+                              Text(
+                                  chatState.isLoading
+                                      ? '...'
+                                      : l10n.translateButton,
+                                  style: TextStyle(
+                                      color: theme.accentColor,
+                                      fontWeight: FontWeight.normal)),
+                            ],
+                          ),
                         ),
                       ],
                     ),
                   ),
-                  
                   const SizedBox(width: 16),
-                  
-                  // Target Card
                   Expanded(
                     child: _buildCard(
                       theme: theme,
@@ -215,29 +221,33 @@ class _TranslationContentState extends ConsumerState<TranslationContent> {
                       fontFamily: fontFamily,
                       actions: [
                         fluent.Tooltip(
-                          message: _showComparison ? l10n.disableCompare : l10n.enableCompare,
+                          message: _showComparison
+                              ? l10n.disableCompare
+                              : l10n.enableCompare,
                           child: fluent.IconButton(
                             icon: Icon(
-                              fluent.FluentIcons.compare, 
+                              fluent.FluentIcons.compare,
                               size: 16,
                               color: _showComparison ? theme.accentColor : null,
                             ),
-                            onPressed: () => setState(() => _showComparison = !_showComparison),
+                            onPressed: () => setState(
+                                () => _showComparison = !_showComparison),
                           ),
                         ),
                         fluent.IconButton(
                           icon: const Icon(fluent.FluentIcons.copy, size: 16),
                           onPressed: () {
-                             final text = aiMessage?.content;
-                             if (text != null && text.isNotEmpty) {
-                               final item = DataWriterItem();
-                               item.add(Formats.plainText(text));
-                               SystemClipboard.instance?.write([item]);
-                             }
+                            final text = aiMessage?.content;
+                            if (text != null && text.isNotEmpty) {
+                              final item = DataWriterItem();
+                              item.add(Formats.plainText(text));
+                              SystemClipboard.instance?.write([item]);
+                            }
                           },
                         ),
                       ],
-                      child: _buildTargetContent(chatState, aiMessage, theme, fontFamily),
+                      child: _buildTargetContent(
+                          chatState, aiMessage, theme, fontFamily),
                     ),
                   ),
                 ],
@@ -255,12 +265,18 @@ class _TranslationContentState extends ConsumerState<TranslationContent> {
     required ValueChanged<String?> onChanged,
   }) {
     return SizedBox(
-      width: 200, // 进一步增加宽度以容纳 "Simplified Chinese"
+      width: 200,
       child: fluent.ComboBox<String>(
         value: value,
-        items: items.map((e) => fluent.ComboBoxItem(child: Text(_getDisplayLanguage(context, e), style: const TextStyle(fontSize: 13)), value: e)).toList(),
+        items: items
+            .map((e) => fluent.ComboBoxItem(
+                child: Text(_getDisplayLanguage(context, e),
+                    style: const TextStyle(fontSize: 13)),
+                value: e))
+            .toList(),
         onChanged: onChanged,
-        placeholder: Text(AppLocalizations.of(context)!.selectLanguage, style: const TextStyle(fontSize: 13)),
+        placeholder: Text(AppLocalizations.of(context)!.selectLanguage,
+            style: const TextStyle(fontSize: 13)),
       ),
     );
   }
@@ -268,16 +284,26 @@ class _TranslationContentState extends ConsumerState<TranslationContent> {
   String _getDisplayLanguage(BuildContext context, String internalLang) {
     final l10n = AppLocalizations.of(context)!;
     switch (internalLang) {
-      case '自动检测': return l10n.autoDetect;
-      case '英语': return l10n.english;
-      case '日语': return l10n.japanese;
-      case '韩语': return l10n.korean;
-      case '简体中文': return l10n.simplifiedChinese;
-      case '繁体中文': return l10n.traditionalChinese;
-      case '俄语': return l10n.russian;
-      case '法语': return l10n.french;
-      case '德语': return l10n.german;
-      default: return internalLang;
+      case '自动检测':
+        return l10n.autoDetect;
+      case '英语':
+        return l10n.english;
+      case '日语':
+        return l10n.japanese;
+      case '韩语':
+        return l10n.korean;
+      case '简体中文':
+        return l10n.simplifiedChinese;
+      case '繁体中文':
+        return l10n.traditionalChinese;
+      case '俄语':
+        return l10n.russian;
+      case '法语':
+        return l10n.french;
+      case '德语':
+        return l10n.german;
+      default:
+        return internalLang;
     }
   }
 
@@ -304,24 +330,21 @@ class _TranslationContentState extends ConsumerState<TranslationContent> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Card Header
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(title, 
-                  style: TextStyle(
-                    color: theme.resources.textFillColorSecondary,
-                    fontWeight: FontWeight.w600,
-                  )
-                ),
+                Text(title,
+                    style: TextStyle(
+                      color: theme.resources.textFillColorSecondary,
+                      fontWeight: FontWeight.w600,
+                    )),
                 if (actions != null) Row(children: actions),
               ],
             ),
           ),
           const Divider(height: 1),
-          // Card Body
           Expanded(
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -333,22 +356,17 @@ class _TranslationContentState extends ConsumerState<TranslationContent> {
     );
   }
 
-  Widget _buildTargetContent(ChatState chatState, Message? aiMessage, fluent.FluentThemeData theme, String? fontFamily) {
+  Widget _buildTargetContent(ChatState chatState, Message? aiMessage,
+      fluent.FluentThemeData theme, String? fontFamily) {
     if (aiMessage == null && !chatState.isLoading) {
       return Center(
-        child: Text(
-          AppLocalizations.of(context)!.translationPlaceholder, 
-          style: TextStyle(color: theme.resources.textFillColorSecondary)
-        )
-      );
+          child: Text(AppLocalizations.of(context)!.translationPlaceholder,
+              style: TextStyle(color: theme.resources.textFillColorSecondary)));
     }
-    
     final targetText = aiMessage?.content ?? '';
-    
     if (chatState.isLoading && targetText.isEmpty) {
-       return const Center(child: fluent.ProgressRing());
+      return const Center(child: fluent.ProgressRing());
     }
-
     if (!_showComparison) {
       return SingleChildScrollView(
         child: SelectableText(
@@ -363,29 +381,26 @@ class _TranslationContentState extends ConsumerState<TranslationContent> {
         ),
       );
     }
-
-    // Comparison Mode
     String sourceText = _sourceController.text;
     if (sourceText.isEmpty && chatState.messages.isNotEmpty) {
-        // Fallback to history if input is empty but state exists (restoration case)
-        final lastUserMsg = chatState.messages.lastWhere((m) => m.isUser, orElse: () => Message(content: '', isUser: true, id: '', timestamp: DateTime.now()));
-        sourceText = lastUserMsg.content;
+      final lastUserMsg = chatState.messages.lastWhere((m) => m.isUser,
+          orElse: () => Message(
+              content: '', isUser: true, id: '', timestamp: DateTime.now()));
+      sourceText = lastUserMsg.content;
     }
-    
     final sourceLines = sourceText.split('\n');
     final targetLines = targetText.split('\n');
-    
-    final int itemCount = sourceLines.length > targetLines.length ? sourceLines.length : targetLines.length;
-
+    final int itemCount = sourceLines.length > targetLines.length
+        ? sourceLines.length
+        : targetLines.length;
     return ListView.separated(
       itemCount: itemCount,
       separatorBuilder: (c, i) => const SizedBox(height: 24),
       itemBuilder: (context, index) {
         final src = index < sourceLines.length ? sourceLines[index] : '';
         final tgt = index < targetLines.length ? targetLines[index] : '';
-        
-        if (src.trim().isEmpty && tgt.trim().isEmpty) return const SizedBox.shrink();
-
+        if (src.trim().isEmpty && tgt.trim().isEmpty)
+          return const SizedBox.shrink();
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -399,8 +414,7 @@ class _TranslationContentState extends ConsumerState<TranslationContent> {
                   fontFamily: fontFamily,
                 ),
               ),
-            if (src.isNotEmpty && tgt.isNotEmpty)
-              const SizedBox(height: 8),
+            if (src.isNotEmpty && tgt.isNotEmpty) const SizedBox(height: 8),
             if (tgt.isNotEmpty)
               SelectableText(
                 tgt,

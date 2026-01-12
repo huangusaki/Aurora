@@ -8,7 +8,6 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:super_clipboard/super_clipboard.dart';
 import 'package:pasteboard/pasteboard.dart';
 import 'package:file_selector/file_selector.dart';
-
 import '../../chat_provider.dart';
 import '../../../domain/message.dart';
 import '../chat_image_bubble.dart';
@@ -27,20 +26,17 @@ class MessageBubble extends ConsumerStatefulWidget {
   final bool showAvatar;
   final bool mergeTop;
   final bool mergeBottom;
-  
   const MessageBubble({
-    super.key, 
-    required this.message, 
-    required this.isLast, 
-    this.isGenerating = false, 
+    super.key,
+    required this.message,
+    required this.isLast,
+    this.isGenerating = false,
     this.showAvatar = true,
     this.mergeTop = false,
     this.mergeBottom = false,
   });
-
   @override
-  ConsumerState<MessageBubble> createState() =>
-      MessageBubbleState();
+  ConsumerState<MessageBubble> createState() => MessageBubbleState();
 }
 
 class MessageBubbleState extends ConsumerState<MessageBubble> {
@@ -70,18 +66,15 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
   }
 
   bool _isPasting = false;
-
   Future<void> _pickFiles() async {
     const typeGroup = XTypeGroup(
         label: 'images', extensions: ['jpg', 'png', 'jpeg', 'bmp', 'gif']);
     final files = await openFiles(acceptedTypeGroups: [typeGroup]);
     if (files.isEmpty) return;
-    
     final newPaths = files
         .map((file) => file.path)
         .where((path) => !_newAttachments.contains(path))
         .toList();
-
     if (newPaths.isNotEmpty) {
       setState(() {
         _newAttachments.addAll(newPaths);
@@ -116,8 +109,8 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
                 currentText.replaceRange(selection.start, selection.end, text);
             _editController.value = TextEditingValue(
               text: newText,
-              selection:
-                  TextSelection.collapsed(offset: selection.start + text.length),
+              selection: TextSelection.collapsed(
+                  offset: selection.start + text.length),
             );
           } else {
             _editController.text += text;
@@ -125,7 +118,6 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
         }
         return;
       }
-      // Pasteboard fallback
       try {
         final imageBytes = await Pasteboard.image;
         if (imageBytes != null && imageBytes.isNotEmpty) {
@@ -138,8 +130,7 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
               setState(() {
                 _newAttachments.add(path);
               });
-            } else {
-            }
+            } else {}
           }
           return;
         }
@@ -153,7 +144,6 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
 
   Future<void> _processReader(ClipboardReader reader) async {
     final completer = Completer<void>();
-    
     if (reader.canProvide(Formats.png)) {
       reader.getFile(Formats.png, (file) async {
         await _saveClipImage(file);
@@ -168,23 +158,19 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
       final uri = await reader.readValue(Formats.fileUri);
       if (uri != null) {
         final path = uri.toFilePath();
-        // Check extensions
         final ext = path.split('.').last.toLowerCase();
         if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].contains(ext)) {
-             if (mounted && !_newAttachments.contains(path)) {
-                setState(() {
-                  _newAttachments.add(path);
-                });
-             } else {
-             }
+          if (mounted && !_newAttachments.contains(path)) {
+            setState(() {
+              _newAttachments.add(path);
+            });
+          } else {}
         }
       }
       if (!completer.isCompleted) completer.complete();
     } else {
       if (!completer.isCompleted) completer.complete();
     }
-    
-    // Wait for the file operation to complete, with a timeout to prevent hanging
     try {
       await completer.future.timeout(const Duration(seconds: 2));
     } catch (e) {
@@ -209,8 +195,7 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
             setState(() {
               _newAttachments.add(path);
             });
-          } else {
-          }
+          } else {}
         }
       }
     } catch (e) {
@@ -270,12 +255,14 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
     final settingsState = ref.watch(settingsProvider);
     final theme = fluent.FluentTheme.of(context);
     return MouseRegion(
-      onEnter: (_) => Platform.isWindows ? setState(() => _isHovering = true) : null,
-      onExit: (_) => Platform.isWindows ? setState(() => _isHovering = false) : null,
+      onEnter: (_) =>
+          Platform.isWindows ? setState(() => _isHovering = true) : null,
+      onExit: (_) =>
+          Platform.isWindows ? setState(() => _isHovering = false) : null,
       child: Container(
         margin: EdgeInsets.only(
           top: widget.mergeTop ? 2 : 8,
-          bottom: widget.mergeBottom ? 2 : 16, // Default was implicit separation
+          bottom: widget.mergeBottom ? 2 : 16,
         ),
         child: Column(
           crossAxisAlignment:
@@ -305,8 +292,8 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
                     children: [
                       if (widget.showAvatar)
                         Padding(
-                          padding:
-                              const EdgeInsets.only(bottom: 4, left: 4, right: 4),
+                          padding: const EdgeInsets.only(
+                              bottom: 4, left: 4, right: 4),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             crossAxisAlignment: CrossAxisAlignment.baseline,
@@ -341,7 +328,7 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
                               ],
                             ],
                           ),
-                      ),
+                        ),
                       ConstrainedBox(
                         constraints: const BoxConstraints(minWidth: 0),
                         child: Container(
@@ -356,385 +343,414 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
                             border: _isEditing
                                 ? null
                                 : Border.all(
-                                    color: theme.resources.dividerStrokeColorDefault),
+                                    color: theme
+                                        .resources.dividerStrokeColorDefault),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                            // Show loading indicator or reasoning content when generating
-                            if (!message.isUser && widget.isGenerating && 
-                                message.content.isEmpty && 
-                                (message.reasoningContent == null || message.reasoningContent!.isEmpty))
-                              Padding(
-                                padding: const EdgeInsets.only(bottom: 8.0),
-                                child: Row(
-                                  children: [
-                                    SizedBox(
-                                      width: 16,
-                                      height: 16,
-                                      child: Platform.isWindows
-                                          ? const fluent.ProgressRing(strokeWidth: 2)
-                                          : const CircularProgressIndicator(strokeWidth: 2),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      '${AppLocalizations.of(context)!.thinking}...',
-                                      style: TextStyle(
-                                        color: theme.typography.body?.color?.withOpacity(0.6),
-                                        fontSize: 14,
+                              if (!message.isUser &&
+                                  widget.isGenerating &&
+                                  message.content.isEmpty &&
+                                  (message.reasoningContent == null ||
+                                      message.reasoningContent!.isEmpty))
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 8.0),
+                                  child: Row(
+                                    children: [
+                                      SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: Platform.isWindows
+                                            ? const fluent.ProgressRing(
+                                                strokeWidth: 2)
+                                            : const CircularProgressIndicator(
+                                                strokeWidth: 2),
                                       ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            if (!message.isUser &&
-                                message.reasoningContent != null &&
-                                message.reasoningContent!.isNotEmpty)
-                              Padding(
-                                padding: _isEditing
-                                    ? const EdgeInsets.fromLTRB(12, 0, 12, 8)
-                                    : const EdgeInsets.only(bottom: 8.0),
-                                child: ReasoningDisplay(
-                                  content: message.reasoningContent!,
-                                  isWindows: Platform.isWindows,
-                                  isRunning: widget.isGenerating,
-                                  duration: message.reasoningDurationSeconds,
-                                  startTime: message.timestamp,
-                                ),
-                              ),
-                            if (_isEditing)
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 12, vertical: 8),
-                                    decoration: BoxDecoration(
-                                      color: theme.cardColor,
-                                      borderRadius: BorderRadius.circular(24),
-                                      // Removed border to avoid "grey rectangle" look
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        CallbackShortcuts(
-                                          bindings: {
-                                            const SingleActivator(
-                                                LogicalKeyboardKey.keyV,
-                                                control: true): _handlePaste,
-                                          },
-                                          child: fluent.TextBox(
-                                            controller: _editController,
-                                            focusNode: _focusNode,
-                                            maxLines: null,
-                                            minLines: 1,
-                                            placeholder: '编辑消息...',
-                                            decoration: const fluent.WidgetStatePropertyAll(fluent.BoxDecoration(
-                                              color: Colors.transparent,
-                                              border: Border.fromBorderSide(BorderSide.none),
-                                            )),
-                                            highlightColor:
-                                                fluent.Colors.transparent,
-                                            unfocusedColor:
-                                                fluent.Colors.transparent,
-                                            foregroundDecoration: const fluent.WidgetStatePropertyAll(fluent.BoxDecoration(
-                                              border: Border.fromBorderSide(BorderSide.none),
-                                            )),
-                                            style: TextStyle(
-                                                fontSize: 14,
-                                                height: 1.5,
-                                                color: theme
-                                                    .typography.body?.color),
-                                            cursorColor: theme.accentColor,
-                                            textInputAction:
-                                                TextInputAction.send,
-                                            onSubmitted: (_) => _saveEdit(),
-                                          ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        '${AppLocalizations.of(context)!.thinking}...',
+                                        style: TextStyle(
+                                          color: theme.typography.body?.color
+                                              ?.withOpacity(0.6),
+                                          fontSize: 14,
                                         ),
-                                        if (_newAttachments.isNotEmpty)
-                                          Container(
-                                            height: 40,
-                                            margin: const EdgeInsets.only(
-                                                top: 8),
-                                            child: ListView.builder(
-                                              scrollDirection: Axis.horizontal,
-                                              itemCount: _newAttachments.length,
-                                              itemBuilder: (context, index) =>
-                                                  Padding(
-                                                padding: const EdgeInsets.only(
-                                                    right: 8),
-                                                child: HoverImagePreview(
-                                                  imagePath: _newAttachments[index],
-                                                  child: MouseRegion(
-                                                    cursor:
-                                                        SystemMouseCursors.click,
-                                                    child: GestureDetector(
-                                                      onTap: () => setState(() =>
-                                                          _newAttachments
-                                                              .removeAt(index)),
-                                                      child: Container(
-                                                        padding: const EdgeInsets
-                                                            .symmetric(
-                                                            horizontal: 8,
-                                                            vertical: 4),
-                                                      decoration: BoxDecoration(
-                                                        color: theme.accentColor
-                                                            .withOpacity(0.1),
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(12),
-                                                        border: Border.all(
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              if (!message.isUser &&
+                                  message.reasoningContent != null &&
+                                  message.reasoningContent!.isNotEmpty)
+                                Padding(
+                                  padding: _isEditing
+                                      ? const EdgeInsets.fromLTRB(12, 0, 12, 8)
+                                      : const EdgeInsets.only(bottom: 8.0),
+                                  child: ReasoningDisplay(
+                                    content: message.reasoningContent!,
+                                    isWindows: Platform.isWindows,
+                                    isRunning: widget.isGenerating,
+                                    duration: message.reasoningDurationSeconds,
+                                    startTime: message.timestamp,
+                                  ),
+                                ),
+                              if (_isEditing)
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 12, vertical: 8),
+                                      decoration: BoxDecoration(
+                                        color: theme.cardColor,
+                                        borderRadius: BorderRadius.circular(24),
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          CallbackShortcuts(
+                                            bindings: {
+                                              const SingleActivator(
+                                                  LogicalKeyboardKey.keyV,
+                                                  control: true): _handlePaste,
+                                            },
+                                            child: fluent.TextBox(
+                                              controller: _editController,
+                                              focusNode: _focusNode,
+                                              maxLines: null,
+                                              minLines: 1,
+                                              placeholder: '编辑消息...',
+                                              decoration: const fluent
+                                                  .WidgetStatePropertyAll(
+                                                  fluent.BoxDecoration(
+                                                color: Colors.transparent,
+                                                border: Border.fromBorderSide(
+                                                    BorderSide.none),
+                                              )),
+                                              highlightColor:
+                                                  fluent.Colors.transparent,
+                                              unfocusedColor:
+                                                  fluent.Colors.transparent,
+                                              foregroundDecoration: const fluent
+                                                  .WidgetStatePropertyAll(
+                                                  fluent.BoxDecoration(
+                                                border: Border.fromBorderSide(
+                                                    BorderSide.none),
+                                              )),
+                                              style: TextStyle(
+                                                  fontSize: 14,
+                                                  height: 1.5,
+                                                  color: theme
+                                                      .typography.body?.color),
+                                              cursorColor: theme.accentColor,
+                                              textInputAction:
+                                                  TextInputAction.send,
+                                              onSubmitted: (_) => _saveEdit(),
+                                            ),
+                                          ),
+                                          if (_newAttachments.isNotEmpty)
+                                            Container(
+                                              height: 40,
+                                              margin:
+                                                  const EdgeInsets.only(top: 8),
+                                              child: ListView.builder(
+                                                scrollDirection:
+                                                    Axis.horizontal,
+                                                itemCount:
+                                                    _newAttachments.length,
+                                                itemBuilder: (context, index) =>
+                                                    Padding(
+                                                  padding:
+                                                      const EdgeInsets.only(
+                                                          right: 8),
+                                                  child: HoverImagePreview(
+                                                    imagePath:
+                                                        _newAttachments[index],
+                                                    child: MouseRegion(
+                                                      cursor: SystemMouseCursors
+                                                          .click,
+                                                      child: GestureDetector(
+                                                        onTap: () => setState(
+                                                            () =>
+                                                                _newAttachments
+                                                                    .removeAt(
+                                                                        index)),
+                                                        child: Container(
+                                                          padding:
+                                                              const EdgeInsets
+                                                                  .symmetric(
+                                                                  horizontal: 8,
+                                                                  vertical: 4),
+                                                          decoration:
+                                                              BoxDecoration(
                                                             color: theme
                                                                 .accentColor
                                                                 .withOpacity(
-                                                                    0.3)),
-                                                      ),
-                                                      child: Row(
-                                                        mainAxisSize:
-                                                            MainAxisSize.min,
-                                                        children: [
-                                                          ConstrainedBox(
-                                                            constraints:
-                                                                const BoxConstraints(
-                                                                    maxWidth:
-                                                                        100),
-                                                            child: Text(
-                                                              _newAttachments[
-                                                                      index]
-                                                                  .split(Platform
-                                                                      .pathSeparator)
-                                                                  .last,
-                                                              style:
-                                                                  const TextStyle(
+                                                                    0.1),
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        12),
+                                                            border: Border.all(
+                                                                color: theme
+                                                                    .accentColor
+                                                                    .withOpacity(
+                                                                        0.3)),
+                                                          ),
+                                                          child: Row(
+                                                            mainAxisSize:
+                                                                MainAxisSize
+                                                                    .min,
+                                                            children: [
+                                                              ConstrainedBox(
+                                                                constraints:
+                                                                    const BoxConstraints(
+                                                                        maxWidth:
+                                                                            100),
+                                                                child: Text(
+                                                                  _newAttachments[
+                                                                          index]
+                                                                      .split(Platform
+                                                                          .pathSeparator)
+                                                                      .last,
+                                                                  style: const TextStyle(
                                                                       fontSize:
                                                                           12),
-                                                              overflow:
-                                                                  TextOverflow
-                                                                      .ellipsis,
-                                                            ),
+                                                                  overflow:
+                                                                      TextOverflow
+                                                                          .ellipsis,
+                                                                ),
+                                                              ),
+                                                              const SizedBox(
+                                                                  width: 4),
+                                                              Icon(
+                                                                  fluent
+                                                                      .FluentIcons
+                                                                      .chrome_close,
+                                                                  size: 8,
+                                                                  color: theme
+                                                                      .accentColor),
+                                                            ],
                                                           ),
-                                                          const SizedBox(
-                                                              width: 4),
-                                                          Icon(
-                                                              fluent.FluentIcons
-                                                                  .chrome_close,
-                                                              size: 8,
-                                                              color: theme
-                                                                  .accentColor),
-                                                        ],
+                                                        ),
                                                       ),
                                                     ),
                                                   ),
                                                 ),
-                                                ),
                                               ),
                                             ),
-                                          ),
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      fluent.IconButton(
-                                        icon: const Icon(
-                                            fluent.FluentIcons.attach,
-                                            size: 14),
-                                        onPressed: _pickFiles,
-                                        style: fluent.ButtonStyle(
-                                          foregroundColor:
-                                              fluent.ButtonState.resolveWith(
-                                                  (states) {
-                                            if (states.isHovering)
-                                              return fluent.Colors.blue;
-                                            return fluent.Colors.grey;
-                                          }),
-                                        ),
+                                        ],
                                       ),
-                                      const SizedBox(width: 8),
-                                      ActionButton(
-                                          icon: fluent.FluentIcons.cancel,
-                                          tooltip: 'Cancel',
-                                          onPressed: () => setState(
-                                              () => _isEditing = false)),
-                                      const SizedBox(width: 4),
-                                      ActionButton(
-                                          icon: fluent.FluentIcons.save,
-                                          tooltip: 'Save',
-                                          onPressed: _saveEdit),
-                                      if (message.isUser) ...[
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        fluent.IconButton(
+                                          icon: const Icon(
+                                              fluent.FluentIcons.attach,
+                                              size: 14),
+                                          onPressed: _pickFiles,
+                                          style: fluent.ButtonStyle(
+                                            foregroundColor:
+                                                fluent.ButtonState.resolveWith(
+                                                    (states) {
+                                              if (states.isHovering)
+                                                return fluent.Colors.blue;
+                                              return fluent.Colors.grey;
+                                            }),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        ActionButton(
+                                            icon: fluent.FluentIcons.cancel,
+                                            tooltip: 'Cancel',
+                                            onPressed: () => setState(
+                                                () => _isEditing = false)),
                                         const SizedBox(width: 4),
                                         ActionButton(
-                                            icon: fluent.FluentIcons.send,
-                                            tooltip: 'Send & Regenerate',
-                                            onPressed: () async {
-                                              await _saveEdit();
-                                              ref
-                                                  .read(historyChatProvider)
-                                                  .regenerateResponse(
-                                                      message.id);
-                                            }),
+                                            icon: fluent.FluentIcons.save,
+                                            tooltip: 'Save',
+                                            onPressed: _saveEdit),
+                                        if (message.isUser) ...[
+                                          const SizedBox(width: 4),
+                                          ActionButton(
+                                              icon: fluent.FluentIcons.send,
+                                              tooltip: 'Send & Regenerate',
+                                              onPressed: () async {
+                                                await _saveEdit();
+                                                ref
+                                                    .read(historyChatProvider)
+                                                    .regenerateResponse(
+                                                        message.id);
+                                              }),
+                                        ],
                                       ],
+                                    ),
+                                  ],
+                                )
+                              else if (message.role == 'tool')
+                                BuildToolOutput(content: message.content)
+                              else if (isUser)
+                                Text(
+                                  message.content,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    height: 1.5,
+                                    color: theme.typography.body!.color,
+                                  ),
+                                )
+                              else
+                                fluent.FluentTheme(
+                                  data: theme,
+                                  child: MarkdownBody(
+                                    data: message.content,
+                                    selectable: false,
+                                    softLineBreak: true,
+                                    builders: {
+                                      'pre': CodeBlockBuilder(
+                                        isDarkMode:
+                                            theme.brightness == Brightness.dark,
+                                      ),
+                                    },
+                                    styleSheet: MarkdownStyleSheet(
+                                      p: TextStyle(
+                                        fontSize: 14,
+                                        height: 1.5,
+                                        color: theme.typography.body!.color,
+                                      ),
+                                      h1: TextStyle(
+                                        fontSize: Platform.isWindows ? 28 : 20,
+                                        fontWeight: FontWeight.bold,
+                                        height: 1.4,
+                                        color: theme.typography.body!.color,
+                                      ),
+                                      h2: TextStyle(
+                                        fontSize: Platform.isWindows ? 24 : 18,
+                                        fontWeight: FontWeight.bold,
+                                        height: 1.4,
+                                        color: theme.typography.body!.color,
+                                      ),
+                                      h3: TextStyle(
+                                        fontSize: Platform.isWindows ? 20 : 16,
+                                        fontWeight: FontWeight.w600,
+                                        height: 1.4,
+                                        color: theme.typography.body!.color,
+                                      ),
+                                      h4: TextStyle(
+                                        fontSize: Platform.isWindows ? 18 : 15,
+                                        fontWeight: FontWeight.w600,
+                                        height: 1.4,
+                                        color: theme.typography.body!.color,
+                                      ),
+                                      h5: TextStyle(
+                                        fontSize: Platform.isWindows ? 16 : 14,
+                                        fontWeight: FontWeight.w600,
+                                        height: 1.4,
+                                        color: theme.typography.body!.color,
+                                      ),
+                                      h6: TextStyle(
+                                        fontSize: Platform.isWindows ? 14 : 13,
+                                        fontWeight: FontWeight.w600,
+                                        height: 1.4,
+                                        color: theme.typography.body!.color,
+                                      ),
+                                      code: TextStyle(
+                                        color:
+                                            theme.brightness == Brightness.dark
+                                                ? const Color(0xFFE5C07B)
+                                                : const Color(0xFF986801),
+                                        fontSize: Platform.isWindows ? 13 : 12,
+                                        fontFamily: Platform.isWindows
+                                            ? 'Consolas'
+                                            : 'monospace',
+                                      ),
+                                      codeblockDecoration:
+                                          const BoxDecoration(),
+                                      codeblockPadding: EdgeInsets.zero,
+                                      tableBody: TextStyle(
+                                        fontSize: Platform.isWindows ? 14 : 12,
+                                        color: theme.typography.body!.color,
+                                      ),
+                                      tableHead: TextStyle(
+                                        fontSize: Platform.isWindows ? 14 : 12,
+                                        fontWeight: FontWeight.bold,
+                                        color: theme.typography.body!.color,
+                                      ),
+                                      blockquote: TextStyle(
+                                        fontSize: Platform.isWindows ? 14 : 13,
+                                        color: theme.typography.body!.color
+                                            ?.withOpacity(0.8),
+                                        fontStyle: FontStyle.italic,
+                                      ),
+                                      listBullet: TextStyle(
+                                        fontSize: 14,
+                                        color: theme.typography.body!.color,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              if (isUser &&
+                                  message.attachments.isNotEmpty &&
+                                  !_isEditing) ...[
+                                const SizedBox(height: 8),
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: message.attachments
+                                      .where((path) {
+                                        final ext = path.toLowerCase();
+                                        return ext.endsWith('.png') ||
+                                            ext.endsWith('.jpg') ||
+                                            ext.endsWith('.jpeg') ||
+                                            ext.endsWith('.webp') ||
+                                            ext.endsWith('.gif');
+                                      })
+                                      .map((path) => ChatImageBubble(
+                                            key: ValueKey(path.hashCode),
+                                            imageUrl: path,
+                                          ))
+                                      .toList(),
+                                ),
+                              ],
+                              if (message.images.isNotEmpty &&
+                                  !(isUser && _isEditing)) ...[
+                                const SizedBox(height: 8),
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: message.images
+                                      .map((img) => ChatImageBubble(
+                                            key: ValueKey(img.hashCode),
+                                            imageUrl: img,
+                                          ))
+                                      .toList(),
+                                ),
+                              ],
+                              if (!isUser &&
+                                  message.tokenCount != null &&
+                                  message.tokenCount! > 0)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 4.0),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        '${message.tokenCount} tokens',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          color: theme.typography.body?.color
+                                              ?.withOpacity(0.5),
+                                        ),
+                                      ),
                                     ],
                                   ),
-                                ],
-                              )
-                            else if (message.role == 'tool')
-                              BuildToolOutput(content: message.content)
-                            else if (isUser)
-                              Text(
-                                message.content,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  height: 1.5,
-                                  color: theme.typography.body!.color,
                                 ),
-                              )
-                            else
-                              fluent.FluentTheme(
-                                data: theme,
-                                child: MarkdownBody(
-                                  data: message.content,
-                                  selectable: false,
-                                  softLineBreak: true,
-                                  builders: {
-                                    'pre': CodeBlockBuilder(
-                                      isDarkMode: theme.brightness == Brightness.dark,
-                                    ),
-                                  },
-                                  styleSheet: MarkdownStyleSheet(
-                                    p: TextStyle(
-                                      fontSize: 14,
-                                      height: 1.5,
-                                      color: theme.typography.body!.color,
-                                    ),
-                                    h1: TextStyle(
-                                      fontSize: Platform.isWindows ? 28 : 20,
-                                      fontWeight: FontWeight.bold,
-                                      height: 1.4,
-                                      color: theme.typography.body!.color,
-                                    ),
-                                    h2: TextStyle(
-                                      fontSize: Platform.isWindows ? 24 : 18,
-                                      fontWeight: FontWeight.bold,
-                                      height: 1.4,
-                                      color: theme.typography.body!.color,
-                                    ),
-                                    h3: TextStyle(
-                                      fontSize: Platform.isWindows ? 20 : 16,
-                                      fontWeight: FontWeight.w600,
-                                      height: 1.4,
-                                      color: theme.typography.body!.color,
-                                    ),
-                                    h4: TextStyle(
-                                      fontSize: Platform.isWindows ? 18 : 15,
-                                      fontWeight: FontWeight.w600,
-                                      height: 1.4,
-                                      color: theme.typography.body!.color,
-                                    ),
-                                    h5: TextStyle(
-                                      fontSize: Platform.isWindows ? 16 : 14,
-                                      fontWeight: FontWeight.w600,
-                                      height: 1.4,
-                                      color: theme.typography.body!.color,
-                                    ),
-                                    h6: TextStyle(
-                                      fontSize: Platform.isWindows ? 14 : 13,
-                                      fontWeight: FontWeight.w600,
-                                      height: 1.4,
-                                      color: theme.typography.body!.color,
-                                    ),
-                                    code: TextStyle(
-                                      color: theme.brightness == Brightness.dark
-                                          ? const Color(0xFFE5C07B) // One Dark yellow/tan
-                                          : const Color(0xFF986801), // Warm brown
-                                      fontSize: Platform.isWindows ? 13 : 12,
-                                      fontFamily: Platform.isWindows ? 'Consolas' : 'monospace',
-                                    ),
-                                    // Override default codeblock decoration (handled by CodeBlockBuilder)
-                                    codeblockDecoration: const BoxDecoration(),
-                                    codeblockPadding: EdgeInsets.zero,
-                                    tableBody: TextStyle(
-                                      fontSize: Platform.isWindows ? 14 : 12,
-                                      color: theme.typography.body!.color,
-                                    ),
-                                    tableHead: TextStyle(
-                                      fontSize: Platform.isWindows ? 14 : 12,
-                                      fontWeight: FontWeight.bold,
-                                      color: theme.typography.body!.color,
-                                    ),
-                                    blockquote: TextStyle(
-                                      fontSize: Platform.isWindows ? 14 : 13,
-                                      color: theme.typography.body!.color?.withOpacity(0.8),
-                                      fontStyle: FontStyle.italic,
-                                    ),
-                                    listBullet: TextStyle(
-                                      fontSize: 14,
-                                      color: theme.typography.body!.color,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            // Display attachments for user messages (image files)
-                            if (isUser && message.attachments.isNotEmpty && !_isEditing) ...[
-                              const SizedBox(height: 8),
-                              Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
-                                children: message.attachments
-                                    .where((path) {
-                                      final ext = path.toLowerCase();
-                                      return ext.endsWith('.png') || 
-                                             ext.endsWith('.jpg') || 
-                                             ext.endsWith('.jpeg') ||
-                                             ext.endsWith('.webp') ||
-                                             ext.endsWith('.gif');
-                                    })
-                                    .map((path) => ChatImageBubble(
-                                          key: ValueKey(path.hashCode),
-                                          imageUrl: path,
-                                        ))
-                                    .toList(),
-                              ),
                             ],
-                            // Display AI-generated images
-                            if (message.images.isNotEmpty &&
-                                !(isUser && _isEditing)) ...[
-                              const SizedBox(height: 8),
-                              Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
-                                children: message.images
-                                    .map((img) => ChatImageBubble(
-                                          key: ValueKey(img.hashCode),
-                                          imageUrl: img,
-                                        ))
-                                    .toList(),
-                              ),
-                            ],
-                          // Token Count
-                          if (!isUser && message.tokenCount != null && message.tokenCount! > 0)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 4.0),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    '${message.tokenCount} tokens',
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      color: theme.typography.body?.color?.withOpacity(0.5),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                        ],
+                          ),
                         ),
                       ),
-                    ),
                     ],
                   ),
                 ),
@@ -750,7 +766,7 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
             ),
             Platform.isWindows
                 ? Visibility(
-                    visible: !_isEditing, // Always visible on desktop, hidden when editing
+                    visible: !_isEditing,
                     maintainSize: true,
                     maintainAnimation: true,
                     maintainState: true,

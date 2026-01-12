@@ -9,14 +9,7 @@ class SessionEntity {
   late String title;
   late DateTime lastMessageTime;
   String? snippet;
-  
-  // Link to a generic TopicEntity
-  // We store the ID directly. Isar Links<T> are also an option, 
-  // but a simple ID is often easier for lightweight relations.
-  int? topicId; 
-
-  String? presetId; // ID of the preset used for this session
-
-
+  int? topicId;
+  String? presetId;
   int totalTokens = 0;
 }

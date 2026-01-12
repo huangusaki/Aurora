@@ -2,12 +2,9 @@ import 'dart:async';
 import 'dart:io' as io;
 import 'package:http/http.dart' as http;
 import 'exceptions.dart';
-
 import 'package:http/io_client.dart';
 
-/// HTTP response wrapper.
 class HttpResponse {
-
   HttpResponse({
     required this.statusCode,
     required this.body,
@@ -18,9 +15,7 @@ class HttpResponse {
   final List<int> bodyBytes;
 }
 
-/// HTTP client with proxy support.
 class HttpClient {
-
   HttpClient({
     this.proxy,
     Duration? timeout,
@@ -29,8 +24,7 @@ class HttpClient {
     if (proxy != null && proxy!.isNotEmpty) {
       final httpClient = io.HttpClient();
       httpClient.findProxy = (uri) => 'PROXY $proxy';
-      httpClient.badCertificateCallback = 
-          (cert, host, port) => !verify;
+      httpClient.badCertificateCallback = (cert, host, port) => !verify;
       _client = IOClient(httpClient);
     } else {
       _client = http.Client();
@@ -40,8 +34,6 @@ class HttpClient {
   final Duration timeout;
   final bool verify;
   late final http.Client _client;
-
-  /// Make an HTTP request.
   Future<HttpResponse> request(
     String method,
     Uri url, {
@@ -50,21 +42,20 @@ class HttpClient {
     dynamic body,
   }) async {
     try {
-      // Add query parameters
       if (params != null && params.isNotEmpty) {
-        url = url.replace(queryParameters: {
-          ...url.queryParameters,
-          ...params,
-        },);
+        url = url.replace(
+          queryParameters: {
+            ...url.queryParameters,
+            ...params,
+          },
+        );
       }
-
       http.Response response;
       final requestHeaders = {
         'User-Agent':
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
         ...?headers,
       };
-
       switch (method.toUpperCase()) {
         case 'GET':
           response =
@@ -78,7 +69,6 @@ class HttpClient {
         default:
           throw DDGSException('Unsupported HTTP method: $method');
       }
-
       return HttpResponse(
         statusCode: response.statusCode,
         body: response.body,
@@ -95,20 +85,18 @@ class HttpClient {
     }
   }
 
-  /// Make a GET request.
   Future<HttpResponse> get(
     Uri url, {
     Map<String, String>? headers,
     Map<String, String>? params,
-  }) => request('GET', url, headers: headers, params: params);
-
-  /// Make a POST request.
+  }) =>
+      request('GET', url, headers: headers, params: params);
   Future<HttpResponse> post(
     Uri url, {
     Map<String, String>? headers,
     dynamic body,
-  }) => request('POST', url, headers: headers, body: body);
-
+  }) =>
+      request('POST', url, headers: headers, body: body);
   void close() {
     _client.close();
   }

@@ -8,7 +8,6 @@ class CustomDropdownOverlay extends StatelessWidget {
   final LayerLink layerLink;
   final Widget child;
   final Offset offset;
-
   const CustomDropdownOverlay({
     super.key,
     required this.onDismiss,
@@ -16,12 +15,10 @@ class CustomDropdownOverlay extends StatelessWidget {
     required this.child,
     this.offset = const Offset(0, 32),
   });
-
   @override
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        // Transparent backdrop to detect clicks outside
         Positioned.fill(
           child: GestureDetector(
             behavior: HitTestBehavior.translucent,
@@ -29,7 +26,6 @@ class CustomDropdownOverlay extends StatelessWidget {
             child: Container(color: Colors.transparent),
           ),
         ),
-        // Positioned Dropdown
         CompositedTransformFollower(
           link: layerLink,
           showWhenUnlinked: false,
@@ -53,7 +49,6 @@ class AnimatedDropdownList extends StatefulWidget {
   final double width;
   final Color backgroundColor;
   final Color borderColor;
-
   const AnimatedDropdownList({
     super.key,
     required this.items,
@@ -61,7 +56,6 @@ class AnimatedDropdownList extends StatefulWidget {
     required this.backgroundColor,
     required this.borderColor,
   });
-
   @override
   State<AnimatedDropdownList> createState() => _AnimatedDropdownListState();
 }
@@ -71,7 +65,6 @@ class _AnimatedDropdownListState extends State<AnimatedDropdownList>
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
   late Animation<double> _fadeAnimation;
-
   @override
   void initState() {
     super.initState();
@@ -129,7 +122,8 @@ class _AnimatedDropdownListState extends State<AnimatedDropdownList>
                   } else if (item is fluent.CommandBarSeparator) {
                     return const Padding(
                       padding: EdgeInsets.symmetric(vertical: 4),
-                      child: Divider(height: 1, thickness: 1, color: Colors.grey),
+                      child:
+                          Divider(height: 1, thickness: 1, color: Colors.grey),
                     );
                   }
                   return const SizedBox.shrink();
@@ -143,7 +137,6 @@ class _AnimatedDropdownListState extends State<AnimatedDropdownList>
   }
 
   Widget _buildMenuItem(fluent.CommandBarButton item) {
-    // Custom hover button implementation to ensure consistent styling
     return _HoverSelectButton(
       onPressed: item.onPressed,
       child: item.label ?? const SizedBox(),
@@ -156,20 +149,17 @@ class _HoverSelectButton extends StatefulWidget {
   final VoidCallback? onPressed;
   final Widget child;
   final Widget? trailing;
-
   const _HoverSelectButton({
     required this.onPressed,
     required this.child,
     this.trailing,
   });
-
   @override
   State<_HoverSelectButton> createState() => _HoverSelectButtonState();
 }
 
 class _HoverSelectButtonState extends State<_HoverSelectButton> {
   bool isHovering = false;
-
   @override
   Widget build(BuildContext context) {
     final theme = fluent.FluentTheme.of(context);
@@ -181,7 +171,9 @@ class _HoverSelectButtonState extends State<_HoverSelectButton> {
         cursor: SystemMouseCursors.click,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          color: isHovering ? theme.resources.subtleFillColorSecondary : Colors.transparent,
+          color: isHovering
+              ? theme.resources.subtleFillColorSecondary
+              : Colors.transparent,
           child: Row(
             children: [
               const SizedBox(width: 8),

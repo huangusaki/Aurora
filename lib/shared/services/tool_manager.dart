@@ -3,15 +3,14 @@ import 'package:ddgs/ddgs.dart';
 
 class ToolManager {
   final DDGS _ddgs = DDGS();
-
-  /// Defines the available tools for the LLM
   List<Map<String, dynamic>> getTools() {
     return [
       {
         'type': 'function',
         'function': {
           'name': 'search_web',
-          'description': 'Search the web for current information. Use this when the user asks about up-to-date events, news, or specific knowledge that might be recent.',
+          'description':
+              'Search the web for current information. Use this when the user asks about up-to-date events, news, or specific knowledge that might be recent.',
           'parameters': {
             'type': 'object',
             'required': ['query'],
@@ -22,7 +21,8 @@ class ToolManager {
               },
               'region': {
                 'type': 'string',
-                'description': 'The region to search in. PREFER "us-en" for high-quality results. Defaults to "us-en".',
+                'description':
+                    'The region to search in. PREFER "us-en" for high-quality results. Defaults to "us-en".',
                 'enum': ['us-en', 'wt-wt', 'zh-cn', 'jp-jp', 'de-de', 'fr-fr']
               }
             }
@@ -32,65 +32,54 @@ class ToolManager {
     ];
   }
 
-  /// Executes a tool call and returns the result as a JSON string
-  Future<String> executeTool(String name, Map<String, dynamic> args, {String preferredEngine = 'duckduckgo'}) async {
+  Future<String> executeTool(String name, Map<String, dynamic> args,
+      {String preferredEngine = 'duckduckgo'}) async {
     if (name == 'search_web') {
       final query = args['query'] as String;
       final region = args['region'] as String? ?? 'us-en';
-      // Use preferred engine from settings, ignoring any hallucinated engine arg
       final result = await _searchWeb(query, preferredEngine, region: region);
       return result;
     }
     return jsonEncode({'error': 'Tool not found: $name'});
   }
 
-  Future<String> _searchWeb(String query, String preferredEngine, {String region = 'us-en'}) async {
-    // Define the sequence of engines to try.
-    // 1. Preferred engine from settings/LLM
-    // 2. Bing (High availability in most regions including China)
-    // 3. Google (Best quality if accessible)
-    // 4. DuckDuckGo (Privacy focused, good fallback)
+  Future<String> _searchWeb(String query, String preferredEngine,
+      {String region = 'us-en'}) async {
     final enginesToTry = {
       preferredEngine,
       'duckduckgo',
       'bing',
       'google',
-    }.toList(); // Use Set to remove duplicates automatically
-
+    }.toList();
     List<Map<String, dynamic>> finalResults = [];
     String successfulEngine = '';
     List<String> errors = [];
-
     for (final engine in enginesToTry) {
       if (finalResults.isNotEmpty) break;
-      
       try {
-        // Use a short timeout for individual attempts to speed up fallback
-        final results = await _ddgs.text(
-          query,
-          region: region,
-          backend: engine,
-          maxResults: 5,
-        ).timeout(const Duration(seconds: 10)); // 10s timeout per engine
-
+        final results = await _ddgs
+            .text(
+              query,
+              region: region,
+              backend: engine,
+              maxResults: 5,
+            )
+            .timeout(const Duration(seconds: 10));
         if (results.isNotEmpty) {
           finalResults = results;
           successfulEngine = engine;
         }
       } catch (e) {
         errors.add('$engine: $e');
-        // Continue to next engine
       }
     }
-
     if (finalResults.isEmpty) {
       return jsonEncode({
         'status': 'error',
-        'message': 'No results found after trying mechanisms: ${enginesToTry.join(', ')}. Errors: ${errors.join('; ')}'
+        'message':
+            'No results found after trying mechanisms: ${enginesToTry.join(', ')}. Errors: ${errors.join('; ')}'
       });
     }
-
-    // Format results for the LLM
     final formattedResults = finalResults.asMap().entries.map((entry) {
       final index = entry.key + 1;
       final r = entry.value;
@@ -101,7 +90,6 @@ class ToolManager {
         'snippet': r['body'],
       };
     }).toList();
-
     return jsonEncode({
       'status': 'success',
       'engine': successfulEngine,

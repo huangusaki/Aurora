@@ -31,7 +31,6 @@ class AvatarCropper {
       );
       return cropped?.path;
     } else {
-      // Desktop - Use pure Dart crop_image with Fluent UI Dialog
       return await showDialog<String>(
         context: context,
         builder: (context) => _DesktopCropDialog(imagePath: path),
@@ -43,7 +42,6 @@ class AvatarCropper {
 class _DesktopCropDialog extends StatefulWidget {
   final String imagePath;
   const _DesktopCropDialog({required this.imagePath});
-
   @override
   State<_DesktopCropDialog> createState() => _DesktopCropDialogState();
 }
@@ -53,9 +51,7 @@ class _DesktopCropDialogState extends State<_DesktopCropDialog> {
     aspectRatio: 1.0,
     defaultCrop: const Rect.fromLTWH(0.1, 0.1, 0.8, 0.8),
   );
-
   bool _processing = false;
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -66,16 +62,16 @@ class _DesktopCropDialogState extends State<_DesktopCropDialog> {
         height: 400,
         child: Column(
           children: [
-             Expanded(
-               child: CropImage(
-                 controller: _controller,
-                 image: Image.file(File(widget.imagePath)),
-                 gridColor: Colors.white70,
-                 gridCornerSize: 20,
-                 touchSize: 20,
-                 alwaysMove: true,
-               ),
-             ),
+            Expanded(
+              child: CropImage(
+                controller: _controller,
+                image: Image.file(File(widget.imagePath)),
+                gridColor: Colors.white70,
+                gridCornerSize: 20,
+                touchSize: 20,
+                alwaysMove: true,
+              ),
+            ),
           ],
         ),
       ),
@@ -86,8 +82,11 @@ class _DesktopCropDialogState extends State<_DesktopCropDialog> {
         ),
         fluent.FilledButton(
           onPressed: _processing ? null : _save,
-          child: _processing 
-              ? const SizedBox(width: 16, height: 16, child: fluent.ProgressRing(strokeWidth: 2)) 
+          child: _processing
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: fluent.ProgressRing(strokeWidth: 2))
               : Text(l10n.confirm),
         ),
       ],
@@ -100,12 +99,11 @@ class _DesktopCropDialogState extends State<_DesktopCropDialog> {
       final bitmap = await _controller.croppedBitmap();
       final data = await bitmap.toByteData(format: ui.ImageByteFormat.png);
       if (data == null) throw Exception('Failed to encode image');
-      
       final bytes = data.buffer.asUint8List();
       final tempDir = await getTemporaryDirectory();
-      final file = File('${tempDir.path}/avatar_crop_${DateTime.now().millisecondsSinceEpoch}.png');
+      final file = File(
+          '${tempDir.path}/avatar_crop_${DateTime.now().millisecondsSinceEpoch}.png');
       await file.writeAsBytes(bytes);
-      
       if (mounted) Navigator.pop(context, file.path);
     } catch (e) {
       debugPrint('Crop error: $e');

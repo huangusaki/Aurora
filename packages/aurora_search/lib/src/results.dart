@@ -1,9 +1,7 @@
-/// Result classes.
 library;
 
 import 'utils.dart';
 
-/// Base class for all results. Contains normalization functions.
 abstract class BaseResult {
   static final Map<String, String Function(String)> _normalizers = {
     'title': normalizeText,
@@ -17,8 +15,6 @@ abstract class BaseResult {
     'publisher': normalizeText,
     'info': normalizeText,
   };
-
-  /// Normalize a field value if a normalizer exists.
   String normalizeField(String fieldName, String value) {
     final normalizer = _normalizers[fieldName];
     return normalizer != null ? normalizer(value) : value;
@@ -27,9 +23,7 @@ abstract class BaseResult {
   Map<String, dynamic> toJson();
 }
 
-/// Text search result.
 class TextResult extends BaseResult {
-
   TextResult({this.title = '', this.href = '', this.body = ''}) {
     title = normalizeField('title', title);
     href = normalizeField('href', href);
@@ -38,7 +32,6 @@ class TextResult extends BaseResult {
   String title;
   String href;
   String body;
-
   @override
   Map<String, dynamic> toJson() => {
         'title': title,
@@ -47,9 +40,7 @@ class TextResult extends BaseResult {
       };
 }
 
-/// Image search result.
 class ImagesResult extends BaseResult {
-
   ImagesResult({
     this.title = '',
     this.image = '',
@@ -71,7 +62,6 @@ class ImagesResult extends BaseResult {
   String height;
   String width;
   String source;
-
   @override
   Map<String, dynamic> toJson() => {
         'title': title,
@@ -84,9 +74,7 @@ class ImagesResult extends BaseResult {
       };
 }
 
-/// News search result.
 class NewsResult extends BaseResult {
-
   NewsResult({
     this.date = '',
     this.title = '',
@@ -107,7 +95,6 @@ class NewsResult extends BaseResult {
   String url;
   String image;
   String source;
-
   @override
   Map<String, dynamic> toJson() => {
         'date': date,
@@ -119,9 +106,7 @@ class NewsResult extends BaseResult {
       };
 }
 
-/// Video search result.
 class VideosResult extends BaseResult {
-
   VideosResult({
     this.title = '',
     this.content = '',
@@ -154,7 +139,6 @@ class VideosResult extends BaseResult {
   String publisher;
   Map<String, String> statistics;
   String uploader;
-
   @override
   Map<String, dynamic> toJson() => {
         'title': title,
@@ -173,9 +157,7 @@ class VideosResult extends BaseResult {
       };
 }
 
-/// Book search result.
 class BooksResult extends BaseResult {
-
   BooksResult({
     this.title = '',
     this.author = '',
@@ -194,7 +176,6 @@ class BooksResult extends BaseResult {
   String publisher;
   String info;
   String url;
-
   @override
   Map<String, dynamic> toJson() => {
         'title': title,
@@ -205,21 +186,17 @@ class BooksResult extends BaseResult {
       };
 }
 
-/// Results aggregator for deduplication.
 class ResultsAggregator<T extends BaseResult> {
-
   ResultsAggregator(this._uniqueFields);
   final List<T> _results = [];
   final Set<String> _seenKeys = {};
   final Set<String> _uniqueFields;
-
   void add(T result) {
     final json = result.toJson();
     final key = _uniqueFields
         .map((field) => json[field]?.toString() ?? '')
         .where((val) => val.isNotEmpty)
         .join('|');
-
     if (key.isNotEmpty && !_seenKeys.contains(key)) {
       _seenKeys.add(key);
       _results.add(result);

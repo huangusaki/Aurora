@@ -9,60 +9,57 @@ import 'package:super_clipboard/super_clipboard.dart';
 class WindowsImageViewer extends StatefulWidget {
   final Uint8List imageBytes;
   final VoidCallback? onClose;
-  
   const WindowsImageViewer({
     super.key,
     required this.imageBytes,
     this.onClose,
   });
-
   @override
   State<WindowsImageViewer> createState() => _WindowsImageViewerState();
 }
 
 class _WindowsImageViewerState extends State<WindowsImageViewer> {
   double _scale = 1.0;
-  double _rotation = 0.0; // in radians
+  double _rotation = 0.0;
   bool _flipHorizontal = false;
   bool _flipVertical = false;
   Offset _offset = Offset.zero;
-  
   void _zoomIn() {
     setState(() {
       _scale = (_scale * 1.25).clamp(0.1, 10.0);
     });
   }
-  
+
   void _zoomOut() {
     setState(() {
       _scale = (_scale / 1.25).clamp(0.1, 10.0);
     });
   }
-  
+
   void _rotateRight() {
     setState(() {
       _rotation += math.pi / 2;
     });
   }
-  
+
   void _rotateLeft() {
     setState(() {
       _rotation -= math.pi / 2;
     });
   }
-  
+
   void _flipH() {
     setState(() {
       _flipHorizontal = !_flipHorizontal;
     });
   }
-  
+
   void _flipV() {
     setState(() {
       _flipVertical = !_flipVertical;
     });
   }
-  
+
   void _resetView() {
     setState(() {
       _scale = 1.0;
@@ -72,7 +69,7 @@ class _WindowsImageViewerState extends State<WindowsImageViewer> {
       _offset = Offset.zero;
     });
   }
-  
+
   Future<void> _handleCopy() async {
     try {
       final clipboard = SystemClipboard.instance;
@@ -86,7 +83,8 @@ class _WindowsImageViewerState extends State<WindowsImageViewer> {
             title: const Text('已复制'),
             content: const Text('图片已复制到剪贴板'),
             severity: InfoBarSeverity.success,
-            action: IconButton(icon: const Icon(FluentIcons.clear), onPressed: close),
+            action: IconButton(
+                icon: const Icon(FluentIcons.clear), onPressed: close),
           );
         });
       }
@@ -94,7 +92,7 @@ class _WindowsImageViewerState extends State<WindowsImageViewer> {
       debugPrint('Copy error: $e');
     }
   }
-  
+
   Future<void> _handleSave() async {
     final FileSaveLocation? result = await getSaveLocation(
       suggestedName: 'image_${DateTime.now().millisecondsSinceEpoch}.png',
@@ -111,7 +109,8 @@ class _WindowsImageViewerState extends State<WindowsImageViewer> {
             title: const Text('已保存'),
             content: Text('图片已保存到 ${result.path}'),
             severity: InfoBarSeverity.success,
-            action: IconButton(icon: const Icon(FluentIcons.clear), onPressed: close),
+            action: IconButton(
+                icon: const Icon(FluentIcons.clear), onPressed: close),
           );
         });
       }
@@ -138,13 +137,10 @@ class _WindowsImageViewerState extends State<WindowsImageViewer> {
       },
       child: Stack(
         children: [
-          // Dark background - click to close
           GestureDetector(
             onTap: widget.onClose ?? () => Navigator.pop(context),
             child: Container(color: Colors.black.withOpacity(0.9)),
           ),
-          
-          // Image area with gestures
           GestureDetector(
             onScaleStart: (details) {},
             onScaleUpdate: (details) {
@@ -164,7 +160,8 @@ class _WindowsImageViewerState extends State<WindowsImageViewer> {
                     child: Transform(
                       alignment: Alignment.center,
                       transform: Matrix4.identity()
-                        ..scale(_flipHorizontal ? -1.0 : 1.0, _flipVertical ? -1.0 : 1.0),
+                        ..scale(_flipHorizontal ? -1.0 : 1.0,
+                            _flipVertical ? -1.0 : 1.0),
                       child: Image.memory(
                         widget.imageBytes,
                         fit: BoxFit.contain,
@@ -175,25 +172,23 @@ class _WindowsImageViewerState extends State<WindowsImageViewer> {
               ),
             ),
           ),
-          
-          // Close button (top right)
           Positioned(
             top: 16,
             right: 16,
             child: IconButton(
-              icon: Icon(FluentIcons.chrome_close, size: 20, color: Colors.white),
+              icon:
+                  Icon(FluentIcons.chrome_close, size: 20, color: Colors.white),
               onPressed: widget.onClose ?? () => Navigator.pop(context),
             ),
           ),
-          
-          // Toolbar (bottom center) - transparent background
           Positioned(
             bottom: 24,
             left: 0,
             right: 0,
             child: Center(
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
                   color: Colors.black.withOpacity(0.5),
                   borderRadius: BorderRadius.circular(32),
@@ -269,7 +264,6 @@ class _ToolButton extends StatelessWidget {
   final VoidCallback onPressed;
   final bool flipIcon;
   final bool rotateIcon;
-  
   const _ToolButton({
     required this.icon,
     required this.tooltip,
@@ -277,11 +271,9 @@ class _ToolButton extends StatelessWidget {
     this.flipIcon = false,
     this.rotateIcon = false,
   });
-  
   @override
   Widget build(BuildContext context) {
     Widget iconWidget = Icon(icon, size: 18, color: Colors.white);
-    
     if (flipIcon) {
       iconWidget = Transform(
         alignment: Alignment.center,
@@ -289,14 +281,12 @@ class _ToolButton extends StatelessWidget {
         child: iconWidget,
       );
     }
-    
     if (rotateIcon) {
       iconWidget = Transform.rotate(
         angle: math.pi / 2,
         child: iconWidget,
       );
     }
-    
     return Tooltip(
       message: tooltip,
       child: IconButton(

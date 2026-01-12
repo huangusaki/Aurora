@@ -1,15 +1,11 @@
-/// Base class for search engines.
 library;
 
 import 'package:html/dom.dart';
 import 'package:html/parser.dart' as html_parser;
-
 import 'http_client.dart';
 import 'results.dart';
 
-/// Abstract base class for all search-engine backends.
 abstract class BaseSearchEngine<T extends BaseResult> {
-
   BaseSearchEngine({
     String? proxy,
     Duration? timeout,
@@ -19,40 +15,18 @@ abstract class BaseSearchEngine<T extends BaseResult> {
           timeout: timeout,
           verify: verify,
         );
-  /// Unique key, e.g. "google"
   String get name;
-
-  /// Category of search: text, images, videos, news, books
   String get category;
-
-  /// Source of the search results (e.g. "google" for MullVadLetaGoogle)
   String get provider;
-
-  /// If true, the engine is disabled
   bool get disabled => false;
-
-  /// Engine priority
   double get priority => 1;
-
-  /// Search URL
   String get searchUrl;
-
-  /// Search method: GET or POST
   String get searchMethod;
-
-  /// Search headers
   Map<String, String> get searchHeaders => {};
-
-  /// XPath for items
   String get itemsSelector;
-
-  /// CSS selectors for elements
   Map<String, String> get elementsSelector;
-
   final HttpClient httpClient;
   final List<T> results = [];
-
-  /// Build a payload for the search request.
   Map<String, String> buildPayload({
     required String query,
     required String region,
@@ -61,14 +35,11 @@ abstract class BaseSearchEngine<T extends BaseResult> {
     int page = 1,
     Map<String, dynamic>? extra,
   });
-
-  /// Build headers for the search request.
   Map<String, String> buildHeaders({
     required String region,
     Map<String, dynamic>? extra,
-  }) => searchHeaders;
-
-  /// Make a request to the search engine.
+  }) =>
+      searchHeaders;
   Future<String?> request(
     String method,
     String url, {
@@ -94,19 +65,10 @@ abstract class BaseSearchEngine<T extends BaseResult> {
     return null;
   }
 
-  /// Extract HTML document from text.
   Document extractTree(String htmlText) => html_parser.parse(htmlText);
-
-  /// Pre-process HTML text before extracting results.
   String preProcessHtml(String htmlText) => htmlText;
-
-  /// Extract search results from HTML text.
   List<T> extractResults(String htmlText);
-
-  /// Post-process search results.
   List<T> postExtractResults(List<T> results) => results;
-
-  /// Search the engine.
   Future<List<T>?> search({
     required String query,
     String region = 'us-en',
@@ -123,9 +85,7 @@ abstract class BaseSearchEngine<T extends BaseResult> {
       page: page,
       extra: extra,
     );
-
     final headers = buildHeaders(region: region, extra: extra);
-
     String? htmlText;
     if (searchMethod.toUpperCase() == 'GET') {
       htmlText = await request(
@@ -142,11 +102,9 @@ abstract class BaseSearchEngine<T extends BaseResult> {
         headers: headers,
       );
     }
-
     if (htmlText == null) {
       return null;
     }
-
     final results = extractResults(htmlText);
     return postExtractResults(results);
   }

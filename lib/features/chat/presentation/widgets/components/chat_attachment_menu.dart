@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 
-// ignore: camel_case_types
 class ChatAttachmentMenu {
   static Future<void> show(
     BuildContext context, {
@@ -13,7 +12,6 @@ class ChatAttachmentMenu {
   }) async {
     final theme = fluent.FluentTheme.of(context);
     final isDark = theme.brightness == fluent.Brightness.dark;
-
     await showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,

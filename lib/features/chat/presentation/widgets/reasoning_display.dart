@@ -9,7 +9,6 @@ class ReasoningDisplay extends StatefulWidget {
   final bool isRunning;
   final double? duration;
   final DateTime? startTime;
-
   const ReasoningDisplay({
     super.key,
     required this.content,
@@ -27,29 +26,25 @@ class _ReasoningDisplayState extends State<ReasoningDisplay>
   late AnimationController _controller;
   late Animation<double> _animation;
   bool _isExpanded = false;
-  
   Timer? _timer;
   double _currentDuration = 0;
-  
   @override
-  bool get wantKeepAlive => true; // Keep state alive to prevent scroll jumps and state loss
-
+  bool get wantKeepAlive => true;
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
-       duration: const Duration(milliseconds: 300),
-       vsync: this,
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
     );
     _animation = CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
-
     if (widget.isRunning) {
       _isExpanded = true;
-      _controller.value = 1.0; // Start expanded
+      _controller.value = 1.0;
       _startTimer();
     }
   }
-  
+
   void _startTimer() {
     _timer?.cancel();
     if (widget.startTime != null) {
@@ -73,7 +68,7 @@ class _ReasoningDisplayState extends State<ReasoningDisplay>
     _controller.dispose();
     super.dispose();
   }
-  
+
   @override
   void didUpdateWidget(ReasoningDisplay oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -84,8 +79,6 @@ class _ReasoningDisplayState extends State<ReasoningDisplay>
     }
     if (!widget.isRunning && oldWidget.isRunning) {
       _timer?.cancel();
-      // Keep expanded state but stop timer? Or collapse? 
-      // Usually we keep it as is. User can collapse manually.
     }
   }
 
@@ -104,12 +97,12 @@ class _ReasoningDisplayState extends State<ReasoningDisplay>
   Widget build(BuildContext context) {
     super.build(context);
     if (widget.content.isEmpty) return const SizedBox.shrink();
-    final isDark = fluent.FluentTheme.of(context).brightness == fluent.Brightness.dark;
+    final isDark =
+        fluent.FluentTheme.of(context).brightness == fluent.Brightness.dark;
     final backgroundColor =
         isDark ? const Color(0xFF2D2D2D) : const Color(0xFFF5F5F5);
     final textColor = isDark ? Colors.white70 : Colors.black87;
     final iconColor = isDark ? Colors.white54 : Colors.black54;
-
     return Container(
       decoration: BoxDecoration(
         color: backgroundColor,
@@ -142,7 +135,8 @@ class _ReasoningDisplayState extends State<ReasoningDisplay>
                     widget.isRunning
                         ? '${AppLocalizations.of(context)!.deepThinking} (${_currentDuration.toStringAsFixed(1)}s)'
                         : (widget.duration != null
-                            ? AppLocalizations.of(context)!.deepThoughtFinished(widget.duration!.toStringAsFixed(1))
+                            ? AppLocalizations.of(context)!.deepThoughtFinished(
+                                widget.duration!.toStringAsFixed(1))
                             : AppLocalizations.of(context)!.thoughtChain),
                     style: TextStyle(
                       fontSize: 14,
@@ -168,7 +162,6 @@ class _ReasoningDisplayState extends State<ReasoningDisplay>
           AnimatedBuilder(
             animation: _controller,
             builder: (context, _) {
-              // Don't build SelectableText at all when fully collapsed
               if (_controller.isDismissed) {
                 return const SizedBox.shrink();
               }

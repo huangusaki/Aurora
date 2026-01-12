@@ -204,7 +204,9 @@ class _MobileTranslationPageState extends ConsumerState<MobileTranslationPage> {
           IconButton(
             icon:
                 Icon(_showComparison ? Icons.view_agenda : Icons.view_headline),
-            tooltip: _showComparison ? l10n.closeComparison : l10n.bilingualComparison,
+            tooltip: _showComparison
+                ? l10n.closeComparison
+                : l10n.bilingualComparison,
             onPressed: () => setState(() => _showComparison = !_showComparison),
           ),
           IconButton(
@@ -318,7 +320,9 @@ class _MobileTranslationPageState extends ConsumerState<MobileTranslationPage> {
                             height: 16,
                             child: CircularProgressIndicator(strokeWidth: 2))
                         : const Icon(Icons.translate, size: 18),
-                    label: Text(chatState.isLoading ? l10n.translating : l10n.translateButton),
+                    label: Text(chatState.isLoading
+                        ? l10n.translating
+                        : l10n.translateButton),
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
@@ -338,7 +342,10 @@ class _MobileTranslationPageState extends ConsumerState<MobileTranslationPage> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(_showComparison ? l10n.bilingualComparison : l10n.targetText,
+                      Text(
+                          _showComparison
+                              ? l10n.bilingualComparison
+                              : l10n.targetText,
                           style:
                               TextStyle(color: Colors.grey[600], fontSize: 13)),
                       if (aiMessage != null)

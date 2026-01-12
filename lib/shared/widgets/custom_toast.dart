@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 void showTopToast(BuildContext context, String message) {
   final overlay = Overlay.of(context);
   late OverlayEntry overlayEntry;
-
   overlayEntry = OverlayEntry(
     builder: (context) => Positioned(
       top: MediaQuery.of(context).padding.top + 10,
@@ -37,9 +36,7 @@ void showTopToast(BuildContext context, String message) {
       ),
     ),
   );
-
   overlay.insert(overlayEntry);
-
   Future.delayed(const Duration(seconds: 2), () {
     overlayEntry.remove();
   });

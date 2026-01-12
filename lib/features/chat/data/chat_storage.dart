@@ -8,8 +8,6 @@ import 'session_entity.dart';
 import 'topic_entity.dart';
 import '../domain/message.dart';
 
-/// Deletes local attachment files for given paths.
-/// Silently ignores errors (e.g., file already deleted).
 Future<void> _deleteAttachmentFiles(List<String> paths) async {
   for (final path in paths) {
     try {
@@ -26,25 +24,21 @@ Future<void> _deleteAttachmentFiles(List<String> paths) async {
 class ChatStorage {
   final Isar _isar;
   final SettingsStorage _settingsStorage;
-  
-  // In-memory cache: sessionId -> List<Message>
   final Map<String, List<Message>> _messagesCache = {};
-  
   ChatStorage(this._settingsStorage) : _isar = _settingsStorage.isar;
-  
-  /// Preload messages for all sessions into memory cache.
-  /// Call this at startup for instant session switching.
   Future<void> preloadAllSessions() async {
     final sw = Stopwatch()..start();
     final sessions = await loadSessions();
     for (final session in sessions) {
       if (!_messagesCache.containsKey(session.sessionId)) {
-        _messagesCache[session.sessionId] = await _loadHistoryFromDb(session.sessionId);
+        _messagesCache[session.sessionId] =
+            await _loadHistoryFromDb(session.sessionId);
       }
     }
-    debugPrint('ChatStorage: preloadAllSessions completed in ${sw.elapsedMilliseconds}ms for ${sessions.length} sessions');
+    debugPrint(
+        'ChatStorage: preloadAllSessions completed in ${sw.elapsedMilliseconds}ms for ${sessions.length} sessions');
   }
-  
+
   Future<String> saveMessage(Message message, String sessionId) async {
     final entity = MessageEntity()
       ..timestamp = message.timestamp
@@ -60,31 +54,24 @@ class ChatStorage {
       ..role = message.role
       ..toolCallId = message.toolCallId
       ..tokenCount = message.tokenCount;
-      
     if (message.toolCalls != null) {
-      entity.toolCallsJson = jsonEncode(message.toolCalls!.map((tc) => tc.toJson()).toList());
+      entity.toolCallsJson =
+          jsonEncode(message.toolCalls!.map((tc) => tc.toJson()).toList());
     }
-
     await _isar.writeTxn(() async {
       await _isar.messageEntitys.put(entity);
-      
-      // Update session total tokens
       if (message.tokenCount != null && message.tokenCount! > 0) {
-         final session = await _isar.sessionEntitys.getBySessionId(sessionId);
-         if (session != null) {
-           session.totalTokens += message.tokenCount!;
-           await _isar.sessionEntitys.put(session);
-         }
+        final session = await _isar.sessionEntitys.getBySessionId(sessionId);
+        if (session != null) {
+          session.totalTokens += message.tokenCount!;
+          await _isar.sessionEntitys.put(session);
+        }
       }
     });
-    
-    // Update cache with the CORRECT database ID (not the original UUID)
     if (_messagesCache.containsKey(sessionId)) {
       final cachedMessage = message.copyWith(id: entity.id.toString());
       _messagesCache[sessionId]!.add(cachedMessage);
     }
-    
-    // Return the DB-assigned ID
     return entity.id.toString();
   }
 
@@ -94,98 +81,86 @@ class ChatStorage {
           .filter()
           .sessionIdEqualTo(sessionId)
           .deleteAll();
-      final entities = messages
-          .map((m) {
-            final e = MessageEntity()
-              ..timestamp = m.timestamp
-              ..isUser = m.isUser
-              ..content = m.content
-              ..reasoningContent = m.reasoningContent
-              ..attachments = m.attachments
-              ..images = m.images
-              ..model = m.model
-              ..provider = m.provider
-              ..reasoningDurationSeconds = m.reasoningDurationSeconds
-              ..sessionId = sessionId
-              ..role = m.role
-              ..toolCallId = m.toolCallId
-              ..tokenCount = m.tokenCount;
-            if (m.toolCalls != null) {
-              e.toolCallsJson = jsonEncode(m.toolCalls!.map((tc) => tc.toJson()).toList());
-            }
-            return e;
-          })
-          .toList();
+      final entities = messages.map((m) {
+        final e = MessageEntity()
+          ..timestamp = m.timestamp
+          ..isUser = m.isUser
+          ..content = m.content
+          ..reasoningContent = m.reasoningContent
+          ..attachments = m.attachments
+          ..images = m.images
+          ..model = m.model
+          ..provider = m.provider
+          ..reasoningDurationSeconds = m.reasoningDurationSeconds
+          ..sessionId = sessionId
+          ..role = m.role
+          ..toolCallId = m.toolCallId
+          ..tokenCount = m.tokenCount;
+        if (m.toolCalls != null) {
+          e.toolCallsJson =
+              jsonEncode(m.toolCalls!.map((tc) => tc.toJson()).toList());
+        }
+        return e;
+      }).toList();
       await _isar.messageEntitys.putAll(entities);
     });
-    
-    // Update cache
     _messagesCache[sessionId] = List.of(messages);
   }
 
-  /// Load history, checking cache first for instant access.
   Future<List<Message>> loadHistory(String sessionId) async {
-    // Check cache first
     if (_messagesCache.containsKey(sessionId)) {
       debugPrint('ChatStorage: loadHistory cache HIT for $sessionId');
-      // Return a COPY to prevent shared reference issues
       return List.from(_messagesCache[sessionId]!);
     }
-    
-    // Cache miss - load from DB and cache
-    debugPrint('ChatStorage: loadHistory cache MISS for $sessionId, loading from DB');
+    debugPrint(
+        'ChatStorage: loadHistory cache MISS for $sessionId, loading from DB');
     final messages = await _loadHistoryFromDb(sessionId);
     _messagesCache[sessionId] = messages;
-    // Return a COPY to prevent shared reference issues
     return List.from(messages);
   }
-  
-  /// Internal method to load from database.
+
   Future<List<Message>> _loadHistoryFromDb(String sessionId) async {
     final entities = await _isar.messageEntitys
         .filter()
         .sessionIdEqualTo(sessionId)
         .sortByTimestamp()
         .findAll();
-    return entities
-        .map((e) {
-          List<ToolCall>? toolCalls;
-          if (e.toolCallsJson != null) {
-            try {
-              final List<dynamic> jsonList = jsonDecode(e.toolCallsJson!);
-              toolCalls = jsonList.map((json) {
-                 return ToolCall(
-                   id: json['id'] as String,
-                   type: json['type'] as String,
-                   name: json['function']['name'] as String,
-                   arguments: json['function']['arguments'] as String,
-                 );
-              }).toList();
-            } catch (e) {
-              print('Error parsing toolCallsJson: $e');
-            }
-          }
-          return Message(
-              id: e.id.toString(),
-              content: e.content,
-              isUser: e.isUser,
-              timestamp: e.timestamp,
-              reasoningContent: e.reasoningContent,
-              attachments: e.attachments,
-              images: e.images,
-              model: e.model,
-              provider: e.provider,
-              reasoningDurationSeconds: e.reasoningDurationSeconds,
-              role: e.role,
-              toolCallId: e.toolCallId,
-              toolCalls: toolCalls,
-              tokenCount: e.tokenCount,
+    return entities.map((e) {
+      List<ToolCall>? toolCalls;
+      if (e.toolCallsJson != null) {
+        try {
+          final List<dynamic> jsonList = jsonDecode(e.toolCallsJson!);
+          toolCalls = jsonList.map((json) {
+            return ToolCall(
+              id: json['id'] as String,
+              type: json['type'] as String,
+              name: json['function']['name'] as String,
+              arguments: json['function']['arguments'] as String,
             );
-        })
-        .toList();
+          }).toList();
+        } catch (e) {
+          print('Error parsing toolCallsJson: $e');
+        }
+      }
+      return Message(
+        id: e.id.toString(),
+        content: e.content,
+        isUser: e.isUser,
+        timestamp: e.timestamp,
+        reasoningContent: e.reasoningContent,
+        attachments: e.attachments,
+        images: e.images,
+        model: e.model,
+        provider: e.provider,
+        reasoningDurationSeconds: e.reasoningDurationSeconds,
+        role: e.role,
+        toolCallId: e.toolCallId,
+        toolCalls: toolCalls,
+        tokenCount: e.tokenCount,
+      );
+    }).toList();
   }
-  
-  /// Invalidate cache for a session (e.g., after delete).
+
   void invalidateCache(String sessionId) {
     _messagesCache.remove(sessionId);
   }
@@ -193,32 +168,29 @@ class ChatStorage {
   Future<void> deleteMessage(String id, {String? sessionId}) async {
     final intId = int.tryParse(id);
     if (intId == null) return;
-    
-    // Fetch the message to get attachments and session before deleting
     final entity = await _isar.messageEntitys.get(intId);
     if (entity != null) {
       if (entity.attachments.isNotEmpty) {
         await _deleteAttachmentFiles(entity.attachments);
       }
-      
-      // Update cache: remove from the session's cached messages
       final targetSessionId = sessionId ?? entity.sessionId;
       if (_messagesCache.containsKey(targetSessionId)) {
         _messagesCache[targetSessionId]!.removeWhere((m) => m.id == id);
       }
     }
-    
     await _isar.writeTxn(() async {
-      // Update session total tokens before deleting
-      if (entity != null && entity.tokenCount != null && entity.tokenCount! > 0) {
-         final session = await _isar.sessionEntitys
-             .filter()
-             .sessionIdEqualTo(entity.sessionId!)
-             .findFirst();
-         if (session != null) {
-           session.totalTokens = (session.totalTokens - entity.tokenCount!).clamp(0, 999999999);
-           await _isar.sessionEntitys.put(session);
-         }
+      if (entity != null &&
+          entity.tokenCount != null &&
+          entity.tokenCount! > 0) {
+        final session = await _isar.sessionEntitys
+            .filter()
+            .sessionIdEqualTo(entity.sessionId!)
+            .findFirst();
+        if (session != null) {
+          session.totalTokens =
+              (session.totalTokens - entity.tokenCount!).clamp(0, 999999999);
+          await _isar.sessionEntitys.put(session);
+        }
       }
       await _isar.messageEntitys.delete(intId);
     });
@@ -240,30 +212,27 @@ class ChatStorage {
         existing.role = message.role;
         existing.toolCallId = message.toolCallId;
         if (message.toolCalls != null) {
-            existing.toolCallsJson = jsonEncode(message.toolCalls!.map((tc) => tc.toJson()).toList());
+          existing.toolCallsJson =
+              jsonEncode(message.toolCalls!.map((tc) => tc.toJson()).toList());
         } else {
-            existing.toolCallsJson = null;
+          existing.toolCallsJson = null;
         }
-        
-        // Handle token count update if changed (though usually tokens don't change on edit?)
-        // If editing an AI message, tokens might change if re-parsed? 
-        // For now, assume edit doesn't change tokens unless explicitly provided.
-        // If we want to support token updates on edit:
-        if (message.tokenCount != null && message.tokenCount != existing.tokenCount) {
-             final diff = (message.tokenCount ?? 0) - (existing.tokenCount ?? 0);
-             if (diff != 0) {
-               final session = await _isar.sessionEntitys
-                   .filter()
-                   .sessionIdEqualTo(existing.sessionId!)
-                   .findFirst();
-               if (session != null) {
-                 session.totalTokens = (session.totalTokens + diff).clamp(0, 999999999);
-                 await _isar.sessionEntitys.put(session);
-               }
-             }
-             existing.tokenCount = message.tokenCount;
+        if (message.tokenCount != null &&
+            message.tokenCount != existing.tokenCount) {
+          final diff = (message.tokenCount ?? 0) - (existing.tokenCount ?? 0);
+          if (diff != 0) {
+            final session = await _isar.sessionEntitys
+                .filter()
+                .sessionIdEqualTo(existing.sessionId!)
+                .findFirst();
+            if (session != null) {
+              session.totalTokens =
+                  (session.totalTokens + diff).clamp(0, 999999999);
+              await _isar.sessionEntitys.put(session);
+            }
+          }
+          existing.tokenCount = message.tokenCount;
         }
-
         await _isar.messageEntitys.put(existing);
       }
     });
@@ -275,8 +244,6 @@ class ChatStorage {
           .filter()
           .sessionIdEqualTo(sessionId)
           .deleteAll();
-      
-      // Reset session total tokens
       final session = await _isar.sessionEntitys
           .filter()
           .sessionIdEqualTo(sessionId)
@@ -288,7 +255,11 @@ class ChatStorage {
     });
   }
 
-  Future<String> createSession({required String title, String? uuid, int? topicId, String? presetId}) async {
+  Future<String> createSession(
+      {required String title,
+      String? uuid,
+      int? topicId,
+      String? presetId}) async {
     final session = SessionEntity()
       ..sessionId = uuid ?? DateTime.now().millisecondsSinceEpoch.toString()
       ..title = title
@@ -300,9 +271,7 @@ class ChatStorage {
     });
     return session.sessionId;
   }
-  
-  // Topic CRUD
-  
+
   Future<void> createTopic(String name) async {
     final topic = TopicEntity()
       ..name = name
@@ -311,7 +280,7 @@ class ChatStorage {
       await _isar.topicEntitys.put(topic);
     });
   }
-  
+
   Future<void> updateTopic(int id, String name) async {
     await _isar.writeTxn(() async {
       final topic = await _isar.topicEntitys.get(id);
@@ -321,30 +290,21 @@ class ChatStorage {
       }
     });
   }
-  
+
   Future<void> deleteTopic(int id) async {
     await _isar.writeTxn(() async {
-      // First, dissociate sessions from this topic
-      final sessions = await _isar.sessionEntitys
-        .filter()
-        .topicIdEqualTo(id)
-        .findAll();
-        
+      final sessions =
+          await _isar.sessionEntitys.filter().topicIdEqualTo(id).findAll();
       for (final session in sessions) {
         session.topicId = null;
         await _isar.sessionEntitys.put(session);
       }
-      
-      // Then delete the topic
       await _isar.topicEntitys.delete(id);
     });
   }
-  
+
   Future<List<TopicEntity>> getAllTopics() async {
-    return await _isar.topicEntitys
-      .where()
-      .sortByCreatedAt() // or sortByName()
-      .findAll();
+    return await _isar.topicEntitys.where().sortByCreatedAt().findAll();
   }
 
   Future<List<SessionEntity>> loadSessions() async {
@@ -362,23 +322,17 @@ class ChatStorage {
   }
 
   Future<void> deleteSession(String sessionId) async {
-    // Fetch all messages for the session to get attachments before deleting
     final messages = await _isar.messageEntitys
         .filter()
         .sessionIdEqualTo(sessionId)
         .findAll();
-    
-    // Collect all attachment paths
     final allAttachments = <String>[];
     for (final msg in messages) {
       allAttachments.addAll(msg.attachments);
     }
-    
-    // Delete attachment files
     if (allAttachments.isNotEmpty) {
       await _deleteAttachmentFiles(allAttachments);
     }
-    
     await _isar.writeTxn(() async {
       await _isar.messageEntitys
           .filter()
@@ -390,6 +344,7 @@ class ChatStorage {
           .deleteAll();
     });
   }
+
   Future<void> updateSessionTitle(String sessionId, String newTitle) async {
     await _isar.writeTxn(() async {
       final session = await _isar.sessionEntitys
@@ -431,13 +386,9 @@ class ChatStorage {
     });
   }
 
-  /// Check if a specific session is empty (has no messages) and delete it if so.
-  /// Returns true if the session was deleted.
   Future<bool> deleteSessionIfEmpty(String sessionId) async {
-    final count = await _isar.messageEntitys
-        .filter()
-        .sessionIdEqualTo(sessionId)
-        .count();
+    final count =
+        await _isar.messageEntitys.filter().sessionIdEqualTo(sessionId).count();
     if (count == 0) {
       await deleteSession(sessionId);
       invalidateCache(sessionId);
@@ -446,6 +397,8 @@ class ChatStorage {
     return false;
   }
 
-  Future<List<String>> loadSessionOrder() => _settingsStorage.loadSessionOrder();
-  Future<void> saveSessionOrder(List<String> order) => _settingsStorage.saveSessionOrder(order);
+  Future<List<String>> loadSessionOrder() =>
+      _settingsStorage.loadSessionOrder();
+  Future<void> saveSessionOrder(List<String> order) =>
+      _settingsStorage.saveSessionOrder(order);
 }

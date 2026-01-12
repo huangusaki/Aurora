@@ -3,22 +3,24 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:file_selector/file_selector.dart';
 import 'package:fluent_ui/fluent_ui.dart';
-import 'package:flutter/material.dart' as material show CircularProgressIndicator, InteractiveViewer, Scaffold, AppBar, IconButton, Icons;
+import 'package:flutter/material.dart' as material
+    show
+        CircularProgressIndicator,
+        InteractiveViewer,
+        Scaffold,
+        AppBar,
+        IconButton,
+        Icons;
 import 'package:super_clipboard/super_clipboard.dart';
 import 'package:flutter/foundation.dart';
 import 'windows_image_viewer.dart';
 import 'mobile_image_viewer.dart';
 
-/// Global cache for decoded base64 images to prevent flicker on widget rebuild.
-/// Key is the hashCode of the imageUrl string.
 final Map<int, Uint8List> _imageCache = {};
-
-/// Clears the global image cache. Call this when switching chat sessions.
 void clearImageCache() {
   _imageCache.clear();
 }
 
-// Top-level function for compute
 Uint8List? _decodeBase64Isolate(String imageUrl) {
   final commaIndex = imageUrl.indexOf(',');
   if (commaIndex != -1) {
@@ -45,7 +47,6 @@ class _ChatImageBubbleState extends State<ChatImageBubble> {
   bool get _isLocalFile => !widget.imageUrl.startsWith('http') && !_isBase64;
   String? _mimeType;
   final FlyoutController _flyoutController = FlyoutController();
-
   @override
   void initState() {
     super.initState();
@@ -69,32 +70,24 @@ class _ChatImageBubbleState extends State<ChatImageBubble> {
   Future<void> _decodeImage() async {
     if (_isBase64) {
       final cacheKey = widget.imageUrl.hashCode;
-      
-      // Check cache first
       if (_imageCache.containsKey(cacheKey)) {
         if (mounted) {
           setState(() => _cachedBytes = _imageCache[cacheKey]);
         }
         return;
       }
-      
       if (mounted) {
         try {
           Uint8List? bytes;
-          // Only use isolate for large images (>50KB) to avoid isolate startup overhead
-          // for small icons/images which causes jank on mobile.
           if (widget.imageUrl.length > 50 * 1024) {
             bytes = await compute(_decodeBase64Isolate, widget.imageUrl);
           } else {
-             // Synchronous decode for small images (fast)
-             final commaIndex = widget.imageUrl.indexOf(',');
-             bytes = (commaIndex != -1) 
-                 ? base64Decode(widget.imageUrl.substring(commaIndex + 1))
-                 : base64Decode(widget.imageUrl);
+            final commaIndex = widget.imageUrl.indexOf(',');
+            bytes = (commaIndex != -1)
+                ? base64Decode(widget.imageUrl.substring(commaIndex + 1))
+                : base64Decode(widget.imageUrl);
           }
-          
           if (bytes != null) {
-            // Store in global cache
             _imageCache[cacheKey] = bytes;
             if (mounted) {
               setState(() => _cachedBytes = bytes);
@@ -115,14 +108,11 @@ class _ChatImageBubbleState extends State<ChatImageBubble> {
 
   Future<Uint8List?> _getImageBytes() async {
     if (_cachedBytes != null) return _cachedBytes;
-    
-    // Try to read from local file
     if (_isLocalFile) {
       try {
         final file = File(widget.imageUrl);
         if (await file.exists()) {
           final bytes = await file.readAsBytes();
-          // Cache for future use
           _imageCache[widget.imageUrl.hashCode] = bytes;
           if (mounted) {
             setState(() => _cachedBytes = bytes);
@@ -182,10 +172,8 @@ class _ChatImageBubbleState extends State<ChatImageBubble> {
   Future<void> _handleSave(BuildContext context) async {
     final bytes = await _getImageBytes();
     if (bytes == null) return;
-    
     final FileSaveLocation? result = await getSaveLocation(
-      suggestedName:
-          'image_${DateTime.now().millisecondsSinceEpoch}.png',
+      suggestedName: 'image_${DateTime.now().millisecondsSinceEpoch}.png',
       acceptedTypeGroups: [
         const XTypeGroup(
           label: 'Images',
@@ -201,14 +189,11 @@ class _ChatImageBubbleState extends State<ChatImageBubble> {
 
   void _showFullImage(BuildContext context) async {
     Uint8List? bytes = _cachedBytes;
-    
-    // For local files, read bytes from file
     if (bytes == null && _isLocalFile) {
       try {
         final file = File(widget.imageUrl);
         if (await file.exists()) {
           bytes = await file.readAsBytes();
-          // Cache for future use
           _imageCache[widget.imageUrl.hashCode] = bytes;
           if (mounted) {
             setState(() => _cachedBytes = bytes);
@@ -219,11 +204,8 @@ class _ChatImageBubbleState extends State<ChatImageBubble> {
         return;
       }
     }
-    
     if (bytes == null) return;
-    
     if (Platform.isWindows) {
-      // Windows: Full-featured image viewer
       Navigator.of(context).push(
         PageRouteBuilder(
           opaque: false,
@@ -239,10 +221,9 @@ class _ChatImageBubbleState extends State<ChatImageBubble> {
         ),
       );
     } else {
-      // Mobile: Full-featured mobile viewer
       Navigator.of(context).push(
         PageRouteBuilder(
-          opaque: true, // Opaque for full immersion
+          opaque: true,
           pageBuilder: (context, animation, secondaryAnimation) {
             return MobileImageViewer(
               imageBytes: bytes!,
@@ -250,8 +231,6 @@ class _ChatImageBubbleState extends State<ChatImageBubble> {
             );
           },
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            // Slide transition works well for mobile full screen
-            // or we can stick to Fade. Let's stick to Fade for consistency with PC or use Zoom.
             return FadeTransition(opacity: animation, child: child);
           },
         ),
@@ -264,7 +243,6 @@ class _ChatImageBubbleState extends State<ChatImageBubble> {
     if (_isBase64) {
       final bytes = _cachedBytes;
       if (bytes == null) {
-        // Show loading indicator instead of error icon
         return Container(
           width: 60,
           height: 60,
@@ -343,7 +321,6 @@ class _ChatImageBubbleState extends State<ChatImageBubble> {
         ),
       );
     }
-    // Local file or network image
     return FlyoutTarget(
       controller: _flyoutController,
       child: MouseRegion(

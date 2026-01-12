@@ -14,7 +14,8 @@ import 'features/settings/data/settings_storage.dart';
 import 'features/settings/presentation/settings_provider.dart';
 import 'shared/utils/windows_injector.dart';
 import 'package:flutter_displaymode/flutter_displaymode.dart';
-import 'features/chat/presentation/widgets/chat_image_bubble.dart' show clearImageCache;
+import 'features/chat/presentation/widgets/chat_image_bubble.dart'
+    show clearImageCache;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -81,10 +82,6 @@ void main() async {
         isEnabled: e.isEnabled,
       );
     }).toList();
-    // if (!initialProviders.any((p) => p.id == 'openai')) {
-    //   initialProviders.insert(
-    //       0, ProviderConfig(id: 'openai', name: 'OpenAI', isCustom: false));
-    // }
     if (!initialProviders.any((p) => p.id == 'custom')) {
       initialProviders
           .add(ProviderConfig(id: 'custom', name: 'Custom', isCustom: true));
@@ -108,9 +105,9 @@ void main() async {
           isSearchEnabled: appSettings?.isSearchEnabled ?? false,
           searchEngine: appSettings?.searchEngine ?? 'duckduckgo',
           enableSmartTopic: appSettings?.enableSmartTopic ?? true,
-
           topicGenerationModel: appSettings?.topicGenerationModel,
-          language: appSettings?.language ?? (Platform.localeName.startsWith('zh') ? 'zh' : 'en'),
+          language: appSettings?.language ??
+              (Platform.localeName.startsWith('zh') ? 'zh' : 'en'),
         );
       }),
     ],
@@ -123,7 +120,6 @@ class MyApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.listen<String?>(selectedHistorySessionIdProvider, (prev, next) {
-      // Clear image cache when switching sessions to free memory
       if (prev != next) {
         clearImageCache();
       }
@@ -131,15 +127,15 @@ class MyApp extends ConsumerWidget {
         ref.read(settingsStorageProvider).saveLastSessionId(next);
       }
     });
-
     ref.listen<int?>(selectedTopicIdProvider, (prev, next) {
       if (prev != next) {
         ref.read(settingsStorageProvider).saveLastTopicId(next?.toString());
       }
     });
-
-    final themeModeStr = ref.watch(settingsProvider.select((value) => value.themeMode));
-    final language = ref.watch(settingsProvider.select((value) => value.language));
+    final themeModeStr =
+        ref.watch(settingsProvider.select((value) => value.themeMode));
+    final language =
+        ref.watch(settingsProvider.select((value) => value.language));
     fluent.ThemeMode fluentMode;
     if (themeModeStr == 'light') {
       fluentMode = fluent.ThemeMode.light;
@@ -150,7 +146,6 @@ class MyApp extends ConsumerWidget {
     }
     final locale = language == 'en' ? const Locale('en') : const Locale('zh');
     final String? fontFamily = Platform.isWindows ? 'Microsoft YaHei' : null;
-    
     return fluent.FluentApp(
       title: 'Aurora',
       debugShowCheckedModeBanner: false,
@@ -178,40 +173,44 @@ class MyApp extends ConsumerWidget {
         final fluentTheme = fluent.FluentTheme.of(context);
         final brightness = fluentTheme.brightness;
         final accentColor = fluentTheme.accentColor;
-        
-        // Convert Fluent accent color to Material Color
-        // This is an approximation as Fluent colors work differently
         final materialPrimary = Color(accentColor.normal.value);
-        
         return Theme(
           data: ThemeData(
             fontFamily: fontFamily,
-            brightness: brightness == fluent.Brightness.dark ? Brightness.dark : Brightness.light,
+            brightness: brightness == fluent.Brightness.dark
+                ? Brightness.dark
+                : Brightness.light,
             primaryColor: materialPrimary,
             scaffoldBackgroundColor: fluentTheme.scaffoldBackgroundColor,
             colorScheme: ColorScheme.fromSeed(
               seedColor: materialPrimary,
-              brightness: brightness == fluent.Brightness.dark ? Brightness.dark : Brightness.light,
+              brightness: brightness == fluent.Brightness.dark
+                  ? Brightness.dark
+                  : Brightness.light,
               primary: materialPrimary,
             ),
             appBarTheme: AppBarTheme(
               backgroundColor: Colors.transparent,
               elevation: 0,
               iconTheme: IconThemeData(
-                color: brightness == fluent.Brightness.dark ? Colors.white : Colors.black,
+                color: brightness == fluent.Brightness.dark
+                    ? Colors.white
+                    : Colors.black,
               ),
               titleTextStyle: TextStyle(
-                color: brightness == fluent.Brightness.dark ? Colors.white : Colors.black,
+                color: brightness == fluent.Brightness.dark
+                    ? Colors.white
+                    : Colors.black,
                 fontSize: 20,
                 fontWeight: FontWeight.w500,
               ),
               systemOverlayStyle: SystemUiOverlayStyle(
                 statusBarColor: Colors.transparent,
-                statusBarIconBrightness: brightness == fluent.Brightness.dark 
-                    ? Brightness.light 
+                statusBarIconBrightness: brightness == fluent.Brightness.dark
+                    ? Brightness.light
                     : Brightness.dark,
-                statusBarBrightness: brightness == fluent.Brightness.dark 
-                    ? Brightness.dark 
+                statusBarBrightness: brightness == fluent.Brightness.dark
+                    ? Brightness.dark
                     : Brightness.light,
               ),
             ),

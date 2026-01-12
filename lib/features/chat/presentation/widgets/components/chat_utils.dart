@@ -20,15 +20,13 @@ class MergedGroupItem extends DisplayItem {
   MergedGroupItem(this.messages);
   @override
   String get id => messages.first.id;
-  
   Message get latestMessage => messages.last;
 }
 
-/// Returns a persistent directory for storing user-uploaded attachments.
-/// Creates the directory if it doesn't exist.
 Future<Directory> getAttachmentsDir() async {
   final appDir = await getApplicationDocumentsDirectory();
-  final attachmentsDir = Directory('${appDir.path}${Platform.pathSeparator}Aurora${Platform.pathSeparator}attachments');
+  final attachmentsDir = Directory(
+      '${appDir.path}${Platform.pathSeparator}Aurora${Platform.pathSeparator}attachments');
   if (!await attachmentsDir.exists()) {
     await attachmentsDir.create(recursive: true);
   }
@@ -40,7 +38,10 @@ class ActionButton extends StatelessWidget {
   final String tooltip;
   final VoidCallback onPressed;
   const ActionButton(
-      {super.key, required this.icon, required this.tooltip, required this.onPressed});
+      {super.key,
+      required this.icon,
+      required this.tooltip,
+      required this.onPressed});
   @override
   Widget build(BuildContext context) {
     return fluent.Tooltip(

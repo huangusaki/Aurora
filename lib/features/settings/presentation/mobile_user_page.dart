@@ -17,7 +17,6 @@ class MobileUserPage extends ConsumerStatefulWidget {
 
 class _MobileUserPageState extends ConsumerState<MobileUserPage> {
   final ImagePicker _picker = ImagePicker();
-
   @override
   Widget build(BuildContext context) {
     final settingsState = ref.watch(settingsProvider);
@@ -38,7 +37,8 @@ class _MobileUserPageState extends ConsumerState<MobileUserPage> {
       ),
       body: ListView(
         children: [
-          _SectionHeader(title: l10n.displaySettings, icon: Icons.palette_outlined),
+          _SectionHeader(
+              title: l10n.displaySettings, icon: Icons.palette_outlined),
           ListTile(
             leading: const Icon(Icons.language),
             title: Text(l10n.language),
@@ -70,13 +70,16 @@ class _MobileUserPageState extends ConsumerState<MobileUserPage> {
             },
           ),
           const Divider(),
-          _SectionHeader(title: l10n.chatExperience, icon: Icons.chat_bubble_outline),
+          _SectionHeader(
+              title: l10n.chatExperience, icon: Icons.chat_bubble_outline),
           SwitchListTile(
             title: Text(l10n.smartTopicGeneration),
             subtitle: Text(l10n.smartTopicDescription),
             value: settingsState.enableSmartTopic,
             onChanged: (bool value) {
-              ref.read(settingsProvider.notifier).toggleSmartTopicEnabled(value);
+              ref
+                  .read(settingsProvider.notifier)
+                  .toggleSmartTopicEnabled(value);
             },
           ),
           if (settingsState.enableSmartTopic)
@@ -199,72 +202,81 @@ class _MobileUserPageState extends ConsumerState<MobileUserPage> {
     final l10n = AppLocalizations.of(context)!;
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.transparent, // For rounded corners
+      backgroundColor: Colors.transparent,
       builder: (ctx) {
-         return Container(
-           decoration: BoxDecoration(
-             color: Theme.of(context).scaffoldBackgroundColor,
-             borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-           ),
-           child: SafeArea(
-             child: Column(
-               mainAxisSize: MainAxisSize.min,
-               children: [
-                 const SizedBox(height: 8),
-                 Container(
-                   width: 32,
-                   height: 4,
-                   decoration: BoxDecoration(
-                     color: Colors.grey[300],
-                     borderRadius: BorderRadius.circular(2),
-                   ),
-                 ),
-                 const SizedBox(height: 16),
-                 Text(
-                   l10n.changeAvatarTitle(isUser ? l10n.user : 'AI'),
-                   style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                 ),
-                 const SizedBox(height: 16),
-                 ListTile(
-                   leading: const Icon(Icons.camera_alt),
-                   title: Text(l10n.camera),
-                   onTap: () {
-                     Navigator.pop(ctx);
-                     _pickImage(ImageSource.camera, isUser);
-                   },
-                 ),
-                 ListTile(
-                   leading: const Icon(Icons.photo_library),
-                   title: Text(l10n.photos),
-                   onTap: () {
-                     Navigator.pop(ctx);
-                     _pickImage(ImageSource.gallery, isUser);
-                   },
-                 ),
-                 if ((isUser ? ref.read(settingsProvider).userAvatar : ref.read(settingsProvider).llmAvatar) != null)
-                    ListTile(
-                      leading: const Icon(Icons.delete_outline, color: Colors.red),
-                      title: Text(l10n.removeAvatar, style: const TextStyle(color: Colors.red)),
-                      onTap: () {
-                         Navigator.pop(ctx);
-                         if (isUser) {
-                           ref.read(settingsProvider.notifier).setChatDisplaySettings(userAvatar: '');
-                         } else {
-                           ref.read(settingsProvider.notifier).setChatDisplaySettings(llmAvatar: '');
-                         }
-                      },
-                    ),
-                 const SizedBox(height: 16),
-               ],
-             ),
-           ),
-         );
+        return Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).scaffoldBackgroundColor,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+          ),
+          child: SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 8),
+                Container(
+                  width: 32,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  l10n.changeAvatarTitle(isUser ? l10n.user : 'AI'),
+                  style: const TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 16),
+                ListTile(
+                  leading: const Icon(Icons.camera_alt),
+                  title: Text(l10n.camera),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _pickImage(ImageSource.camera, isUser);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.photo_library),
+                  title: Text(l10n.photos),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _pickImage(ImageSource.gallery, isUser);
+                  },
+                ),
+                if ((isUser
+                        ? ref.read(settingsProvider).userAvatar
+                        : ref.read(settingsProvider).llmAvatar) !=
+                    null)
+                  ListTile(
+                    leading:
+                        const Icon(Icons.delete_outline, color: Colors.red),
+                    title: Text(l10n.removeAvatar,
+                        style: const TextStyle(color: Colors.red)),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      if (isUser) {
+                        ref
+                            .read(settingsProvider.notifier)
+                            .setChatDisplaySettings(userAvatar: '');
+                      } else {
+                        ref
+                            .read(settingsProvider.notifier)
+                            .setChatDisplaySettings(llmAvatar: '');
+                      }
+                    },
+                  ),
+                const SizedBox(height: 16),
+              ],
+            ),
+          ),
+        );
       },
     );
   }
 
   Future<void> _pickImage(ImageSource source, bool isUser) async {
-    // Permission Handling
     if (source == ImageSource.camera) {
       final status = await Permission.camera.request();
       if (status.isPermanentlyDenied) {
@@ -273,41 +285,30 @@ class _MobileUserPageState extends ConsumerState<MobileUserPage> {
       }
       if (!status.isGranted) return;
     } else {
-      // For gallery, Android 13+ (SDK 33) uses Photo Picker which doesn't need permissions
-      // For older versions, we might need storage permission.
-      // However, image_picker usually handles this nicely.
-      // We'll check photos permission just in case for older Androids if needed,
-      // but usually standard practice keeps it simple.
-      // Let's rely on image_picker unless it fails.
-      // Actually, for consistency, checking photos/storage is good practice if not using Photo Picker.
-      if (Platform.isAndroid) {
-         // Simple check: if SDK < 33, check storage/photos. But checking SDK version in Dart is tedious without device_info.
-         // We'll try to request photos permission if it's explicitly denied.
-         // But Permission.photos is for iOS/Android 13+. Permission.storage is for older.
-         // Let's just try to pick, handling error if it happens is complex.
-         // Using Permission.photos.request() on Android < 13 will request READ_MEDIA_IMAGES (Android 13) or nothing?
-         // Safer to trust ImagePicker plugin for Gallery logic usually.
-      }
+      if (Platform.isAndroid) {}
     }
-
     try {
       final XFile? image = await _picker.pickImage(source: source);
       if (image != null) {
         final croppedPath = await AvatarCropper.cropImage(context, image.path);
         if (croppedPath != null) {
           if (isUser) {
-            ref.read(settingsProvider.notifier).setChatDisplaySettings(userAvatar: croppedPath);
+            ref
+                .read(settingsProvider.notifier)
+                .setChatDisplaySettings(userAvatar: croppedPath);
           } else {
-            ref.read(settingsProvider.notifier).setChatDisplaySettings(llmAvatar: croppedPath);
+            ref
+                .read(settingsProvider.notifier)
+                .setChatDisplaySettings(llmAvatar: croppedPath);
           }
         }
       }
     } catch (e) {
       if (mounted) {
-         final l10n = AppLocalizations.of(context)!;
-         ScaffoldMessenger.of(context).showSnackBar(
-           SnackBar(content: Text('${l10n.pickImageFailed}: $e')),
-         );
+        final l10n = AppLocalizations.of(context)!;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${l10n.pickImageFailed}: $e')),
+        );
       }
     }
   }
@@ -336,6 +337,7 @@ class _MobileUserPageState extends ConsumerState<MobileUserPage> {
       ),
     );
   }
+
   void _showModelPicker(BuildContext context, SettingsState settings) {
     final l10n = AppLocalizations.of(context)!;
     showModalBottomSheet(
@@ -365,7 +367,8 @@ class _MobileUserPageState extends ConsumerState<MobileUserPage> {
                             onTap: () {
                               ref
                                   .read(settingsProvider.notifier)
-                                  .setTopicGenerationModel('${provider.id}@$model');
+                                  .setTopicGenerationModel(
+                                      '${provider.id}@$model');
                               Navigator.pop(context);
                             },
                           ),

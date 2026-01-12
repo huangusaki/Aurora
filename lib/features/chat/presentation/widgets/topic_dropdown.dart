@@ -8,9 +8,7 @@ import 'topic_management_dialog.dart';
 
 class TopicDropdown extends ConsumerStatefulWidget {
   final bool isMobile;
-
   const TopicDropdown({super.key, this.isMobile = false});
-
   @override
   ConsumerState<TopicDropdown> createState() => _TopicDropdownState();
 }
@@ -18,7 +16,6 @@ class TopicDropdown extends ConsumerStatefulWidget {
 class _TopicDropdownState extends ConsumerState<TopicDropdown> {
   final fluent.FlyoutController _flyoutController = fluent.FlyoutController();
   final GlobalKey _buttonKey = GlobalKey();
-
   @override
   void dispose() {
     _flyoutController.dispose();
@@ -31,215 +28,236 @@ class _TopicDropdownState extends ConsumerState<TopicDropdown> {
     final selectedTopicId = ref.watch(selectedTopicIdProvider);
     final l10n = AppLocalizations.of(context)!;
     final theme = fluent.FluentTheme.of(context);
-
-    // Find selected topic name
-    final selectedTopicName = selectedTopicId == null 
-        ? l10n.allChats 
-        : topicsAsync.value?.firstWhere((t) => t.id == selectedTopicId, orElse: () => TopicEntity()..id = -1..name = 'Unknown').name ?? l10n.allChats;
-
-    // Use native PopupMenuButton on mobile for correct positioning
-    // Use native PopupMenuButton on mobile for correct positioning
+    final selectedTopicName = selectedTopicId == null
+        ? l10n.allChats
+        : topicsAsync.value
+                ?.firstWhere((t) => t.id == selectedTopicId,
+                    orElse: () => TopicEntity()
+                      ..id = -1
+                      ..name = 'Unknown')
+                .name ??
+            l10n.allChats;
     if (widget.isMobile) {
-      return LayoutBuilder(
-        builder: (context, constraints) {
-          return PopupMenuButton<dynamic>(
-            offset: const Offset(0, 42),
-            elevation: 4,
-            color: theme.menuColor,
-            constraints: BoxConstraints.tightFor(width: constraints.maxWidth), // Force width
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(color: theme.resources.surfaceStrokeColorDefault, width: 0.5),
-            ),
-            onSelected: (value) {
-              if (value == 'all') {
-                ref.read(selectedTopicIdProvider.notifier).state = null;
-              } else if (value == 'create') {
-                _showCreateDialog(context, ref);
-              } else if (value == 'manage') {
-                _showManageTopicsDialog(context, ref);
-              } else if (value is int) {
-                ref.read(selectedTopicIdProvider.notifier).state = value;
-              }
-            },
-            itemBuilder: (context) => [
-              // "All" option
-              PopupMenuItem(
-                value: 'all',
-                height: 42,
-                child: Row(
-                  children: [
-                    Icon(Icons.all_inclusive, size: 16, color: theme.accentColor),
-                    const SizedBox(width: 12),
-                    Expanded(child: Text(l10n.allChats, style: const TextStyle(fontSize: 14))),
-                    if (selectedTopicId == null) Icon(Icons.check, size: 16, color: theme.accentColor),
-                  ],
-                ),
-              ),
-              const PopupMenuDivider(height: 1),
-              // Topic list
-              ...topicsAsync.when(
-                data: (topics) => topics.map((topic) => PopupMenuItem(
-                  value: topic.id,
-                  height: 42,
-                  child: Row(
-                    children: [
-                      const SizedBox(width: 16),
-                      const SizedBox(width: 12),
-                      Expanded(child: Text(topic.name, style: const TextStyle(fontSize: 14))),
-                      if (selectedTopicId == topic.id) Icon(Icons.check, size: 16, color: theme.accentColor),
-                    ],
-                  ),
-                )),
-                loading: () => [const PopupMenuItem(enabled: false, value: null, child: Text('Loading...'))],
-                error: (_, __) => [const PopupMenuItem(enabled: false, value: null, child: Text('Error'))],
-              ),
-              const PopupMenuDivider(height: 1),
-              // New Group
-              PopupMenuItem(
-                value: 'create',
-                height: 42,
-                child: Row(
-                  children: [
-                    Icon(Icons.add_circle_outline, size: 16, color: theme.typography.body?.color),
-                    const SizedBox(width: 12),
-                    Text(l10n.createTopic, style: const TextStyle(fontSize: 14)),
-                  ],
-                ),
-              ),
-              // Manage Groups
-              PopupMenuItem(
-                value: 'manage',
-                height: 42,
-                child: Row(
-                  children: [
-                    Icon(Icons.settings_outlined, size: 16, color: theme.typography.body?.color),
-                    const SizedBox(width: 12),
-                    Text(l10n.topics, style: const TextStyle(fontSize: 14)),
-                  ],
-                ),
-              ),
-            ],
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(6),
-              ),
+      return LayoutBuilder(builder: (context, constraints) {
+        return PopupMenuButton<dynamic>(
+          offset: const Offset(0, 42),
+          elevation: 4,
+          color: theme.menuColor,
+          constraints: BoxConstraints.tightFor(width: constraints.maxWidth),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(
+                color: theme.resources.surfaceStrokeColorDefault, width: 0.5),
+          ),
+          onSelected: (value) {
+            if (value == 'all') {
+              ref.read(selectedTopicIdProvider.notifier).state = null;
+            } else if (value == 'create') {
+              _showCreateDialog(context, ref);
+            } else if (value == 'manage') {
+              _showManageTopicsDialog(context, ref);
+            } else if (value is int) {
+              ref.read(selectedTopicIdProvider.notifier).state = value;
+            }
+          },
+          itemBuilder: (context) => [
+            PopupMenuItem(
+              value: 'all',
+              height: 42,
               child: Row(
                 children: [
-                  Icon(Icons.label_outline, size: 14, color: theme.accentColor),
+                  Icon(Icons.all_inclusive, size: 16, color: theme.accentColor),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: Text(
-                      selectedTopicName,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: theme.typography.body?.color,
-                      ),
-                      textAlign: TextAlign.left,
-                    ),
-                  ),
-                  Icon(Icons.arrow_drop_down, size: 20, color: theme.resources.textFillColorSecondary),
+                      child: Text(l10n.allChats,
+                          style: const TextStyle(fontSize: 14))),
+                  if (selectedTopicId == null)
+                    Icon(Icons.check, size: 16, color: theme.accentColor),
                 ],
               ),
             ),
-          );
-        }
-      );
+            const PopupMenuDivider(height: 1),
+            ...topicsAsync.when(
+              data: (topics) => topics.map((topic) => PopupMenuItem(
+                    value: topic.id,
+                    height: 42,
+                    child: Row(
+                      children: [
+                        const SizedBox(width: 16),
+                        const SizedBox(width: 12),
+                        Expanded(
+                            child: Text(topic.name,
+                                style: const TextStyle(fontSize: 14))),
+                        if (selectedTopicId == topic.id)
+                          Icon(Icons.check, size: 16, color: theme.accentColor),
+                      ],
+                    ),
+                  )),
+              loading: () => [
+                const PopupMenuItem(
+                    enabled: false, value: null, child: Text('Loading...'))
+              ],
+              error: (_, __) => [
+                const PopupMenuItem(
+                    enabled: false, value: null, child: Text('Error'))
+              ],
+            ),
+            const PopupMenuDivider(height: 1),
+            PopupMenuItem(
+              value: 'create',
+              height: 42,
+              child: Row(
+                children: [
+                  Icon(Icons.add_circle_outline,
+                      size: 16, color: theme.typography.body?.color),
+                  const SizedBox(width: 12),
+                  Text(l10n.createTopic, style: const TextStyle(fontSize: 14)),
+                ],
+              ),
+            ),
+            PopupMenuItem(
+              value: 'manage',
+              height: 42,
+              child: Row(
+                children: [
+                  Icon(Icons.settings_outlined,
+                      size: 16, color: theme.typography.body?.color),
+                  const SizedBox(width: 12),
+                  Text(l10n.topics, style: const TextStyle(fontSize: 14)),
+                ],
+              ),
+            ),
+          ],
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.label_outline, size: 14, color: theme.accentColor),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    selectedTopicName,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: theme.typography.body?.color,
+                    ),
+                    textAlign: TextAlign.left,
+                  ),
+                ),
+                Icon(Icons.arrow_drop_down,
+                    size: 20, color: theme.resources.textFillColorSecondary),
+              ],
+            ),
+          ),
+        );
+      });
     }
-
-    // Desktop: Use Fluent UI FlyoutTarget
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Custom Styled Dropdown Trigger
         fluent.FlyoutTarget(
           controller: _flyoutController,
           child: fluent.HoverButton(
             key: _buttonKey,
             onPressed: () {
-               final renderBox = _buttonKey.currentContext?.findRenderObject() as RenderBox?;
-               final width = renderBox?.size.width;
-
-               _flyoutController.showFlyout(
-                 placementMode: fluent.FlyoutPlacementMode.bottomLeft,
-                 barrierDismissible: true,
-                 dismissOnPointerMoveAway: false,
-                 dismissWithEsc: true,
-                 builder: (context) {
-                   // Constrain width to button width
-                   return SizedBox(
-                     width: width,
-                     child: fluent.MenuFlyout(
-                       items: [
-                          // "All" Option
-                         fluent.MenuFlyoutItem(
-                           text: Text(l10n.allChats),
-                           leading: const SizedBox(width: 14, height: 14), 
-                           onPressed: () { 
-                             ref.read(selectedTopicIdProvider.notifier).state = null;
-                             fluent.Navigator.of(context).pop();
-                           },
-                           trailing: selectedTopicId == null ? fluent.Icon(fluent.FluentIcons.check_mark, size: 12) : null,
-                         ),
-                         const fluent.MenuFlyoutSeparator(),
-                         
-                         // Topic List
-                         ...topicsAsync.when(
-                           data: (topics) => topics.map((topic) {
+              final renderBox =
+                  _buttonKey.currentContext?.findRenderObject() as RenderBox?;
+              final width = renderBox?.size.width;
+              _flyoutController.showFlyout(
+                  placementMode: fluent.FlyoutPlacementMode.bottomLeft,
+                  barrierDismissible: true,
+                  dismissOnPointerMoveAway: false,
+                  dismissWithEsc: true,
+                  builder: (context) {
+                    return SizedBox(
+                      width: width,
+                      child: fluent.MenuFlyout(
+                        items: [
+                          fluent.MenuFlyoutItem(
+                            text: Text(l10n.allChats),
+                            leading: const SizedBox(width: 14, height: 14),
+                            onPressed: () {
+                              ref.read(selectedTopicIdProvider.notifier).state =
+                                  null;
+                              fluent.Navigator.of(context).pop();
+                            },
+                            trailing: selectedTopicId == null
+                                ? fluent.Icon(fluent.FluentIcons.check_mark,
+                                    size: 12)
+                                : null,
+                          ),
+                          const fluent.MenuFlyoutSeparator(),
+                          ...topicsAsync.when(
+                            data: (topics) => topics.map((topic) {
                               return fluent.MenuFlyoutItem(
                                 text: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Expanded(child: Text(topic.name, overflow: TextOverflow.ellipsis)),
+                                    Expanded(
+                                        child: Text(topic.name,
+                                            overflow: TextOverflow.ellipsis)),
                                   ],
                                 ),
-                                leading: const SizedBox(width: 14, height: 14), 
+                                leading: const SizedBox(width: 14, height: 14),
                                 onPressed: () {
-                                  ref.read(selectedTopicIdProvider.notifier).state = topic.id;
+                                  ref
+                                      .read(selectedTopicIdProvider.notifier)
+                                      .state = topic.id;
                                   fluent.Navigator.of(context).pop();
                                 },
-                                trailing: selectedTopicId == topic.id ? fluent.Icon(fluent.FluentIcons.check_mark, size: 12) : null,
+                                trailing: selectedTopicId == topic.id
+                                    ? fluent.Icon(fluent.FluentIcons.check_mark,
+                                        size: 12)
+                                    : null,
                               );
-                           }),
-                           loading: () => [fluent.MenuFlyoutItem(text: const Text('Loading...'), onPressed: null)],
-                           error: (e, s) => [fluent.MenuFlyoutItem(text: const Text('Error loading topics'), onPressed: null)],
-                         ),
-
-                         const fluent.MenuFlyoutSeparator(),
-
-                         // New Group Action
-                         fluent.MenuFlyoutItem(
-                           text: Text(l10n.createTopic),
-                           leading: fluent.Icon(fluent.FluentIcons.add, size: 14),
-                           onPressed: () {
-                             fluent.Navigator.of(context).pop();
-                             _showCreateDialog(context, ref);
-                           },
-                         ),
-                          // Manage Groups Action
-                         fluent.MenuFlyoutItem(
-                           text: Text(l10n.topics), 
-                           leading: fluent.Icon(fluent.FluentIcons.settings, size: 14),
-                           onPressed: () {
-                             fluent.Navigator.of(context).pop();
-                             _showManageTopicsDialog(context, ref);
-                           },
-                         ),
-                       ],
-                     ),
-                   );
-                 }
-               );
+                            }),
+                            loading: () => [
+                              fluent.MenuFlyoutItem(
+                                  text: const Text('Loading...'),
+                                  onPressed: null)
+                            ],
+                            error: (e, s) => [
+                              fluent.MenuFlyoutItem(
+                                  text: const Text('Error loading topics'),
+                                  onPressed: null)
+                            ],
+                          ),
+                          const fluent.MenuFlyoutSeparator(),
+                          fluent.MenuFlyoutItem(
+                            text: Text(l10n.createTopic),
+                            leading:
+                                fluent.Icon(fluent.FluentIcons.add, size: 14),
+                            onPressed: () {
+                              fluent.Navigator.of(context).pop();
+                              _showCreateDialog(context, ref);
+                            },
+                          ),
+                          fluent.MenuFlyoutItem(
+                            text: Text(l10n.topics),
+                            leading: fluent.Icon(fluent.FluentIcons.settings,
+                                size: 14),
+                            onPressed: () {
+                              fluent.Navigator.of(context).pop();
+                              _showManageTopicsDialog(context, ref);
+                            },
+                          ),
+                        ],
+                      ),
+                    );
+                  });
             },
             builder: (context, states) {
               final isHovering = states.isHovered;
               return AnimatedContainer(
                 duration: const Duration(milliseconds: 150),
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
                   color: isHovering
                       ? theme.resources.subtleFillColorSecondary
@@ -253,11 +271,12 @@ class _TopicDropdownState extends ConsumerState<TopicDropdown> {
                 ),
                 child: Row(
                   children: [
-                    fluent.Icon(fluent.FluentIcons.tag, size: 14, color: theme.accentColor), 
+                    fluent.Icon(fluent.FluentIcons.tag,
+                        size: 14, color: theme.accentColor),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        selectedTopicName, 
+                        selectedTopicName,
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
@@ -266,7 +285,9 @@ class _TopicDropdownState extends ConsumerState<TopicDropdown> {
                         textAlign: TextAlign.left,
                       ),
                     ),
-                    fluent.Icon(fluent.FluentIcons.chevron_down, size: 10, color: theme.resources.textFillColorSecondary),
+                    fluent.Icon(fluent.FluentIcons.chevron_down,
+                        size: 10,
+                        color: theme.resources.textFillColorSecondary),
                   ],
                 ),
               );
@@ -289,67 +310,67 @@ class _TopicDropdownState extends ConsumerState<TopicDropdown> {
   }
 
   void _showManageTopicsDialog(BuildContext context, WidgetRef ref) {
-     final l10n = AppLocalizations.of(context)!;
-     showDialog(
-       context: context,
-       builder: (context) => fluent.ContentDialog(
-         title: Text(l10n.editTopic), // Reuse "Edit Topic" or "Manage Topics"
-         content: SizedBox(
-           width: 300,
-           height: 400,
-           child: Consumer(
-             builder: (context, ref, _) {
-               final topicsAsync = ref.watch(topicsProvider);
-               return topicsAsync.when(
-                 data: (topics) {
-                    if (topics.isEmpty) return Center(child: Text("No groups"));
-                    return ListView.builder(
-                      itemCount: topics.length,
-                      itemBuilder: (context, index) {
-                        final topic = topics[index];
-                        return _TopicItem(
-                          name: topic.name,
-                          isSelected: false,
-                          onTap: () {}, // No selection in manage mode
-                          isMobile: widget.isMobile,
-                          onEdit: () => _showEditDialog(context, ref, topic.id, topic.name),
-                          onDelete: () => _showDeleteConfirm(context, ref, topic.id),
-                        );
-                      },
+    final l10n = AppLocalizations.of(context)!;
+    showDialog(
+      context: context,
+      builder: (context) => fluent.ContentDialog(
+        title: Text(l10n.editTopic),
+        content: SizedBox(
+          width: 300,
+          height: 400,
+          child: Consumer(builder: (context, ref, _) {
+            final topicsAsync = ref.watch(topicsProvider);
+            return topicsAsync.when(
+              data: (topics) {
+                if (topics.isEmpty) return Center(child: Text("No groups"));
+                return ListView.builder(
+                  itemCount: topics.length,
+                  itemBuilder: (context, index) {
+                    final topic = topics[index];
+                    return _TopicItem(
+                      name: topic.name,
+                      isSelected: false,
+                      onTap: () {},
+                      isMobile: widget.isMobile,
+                      onEdit: () =>
+                          _showEditDialog(context, ref, topic.id, topic.name),
+                      onDelete: () =>
+                          _showDeleteConfirm(context, ref, topic.id),
                     );
-                 },
-                 loading: () => const Center(child: fluent.ProgressRing()),
-                 error: (e, s) => Center(child: Text('Error: $e')),
-               );
-             }
-           ),
-         ),
-         actions: [
-           fluent.Button(
-             onPressed: () => Navigator.pop(context),
-             child: Text(l10n.close),
-           ),
-         ],
-       ),
-     );
+                  },
+                );
+              },
+              loading: () => const Center(child: fluent.ProgressRing()),
+              error: (e, s) => Center(child: Text('Error: $e')),
+            );
+          }),
+        ),
+        actions: [
+          fluent.Button(
+            onPressed: () => Navigator.pop(context),
+            child: Text(l10n.close),
+          ),
+        ],
+      ),
+    );
   }
 
-  void _showEditDialog(BuildContext context, WidgetRef ref, int id, String name) {
+  void _showEditDialog(
+      BuildContext context, WidgetRef ref, int id, String name) {
     showDialog(
-       context: context,
-       builder: (context) => TopicManagementDialog(
-         existingTopicId: id,
-         initialName: name,
-         onConfirm: (newName) {
-           ref.read(topicNotifierProvider.notifier).updateTopic(id, newName);
-         },
-       ),
+      context: context,
+      builder: (context) => TopicManagementDialog(
+        existingTopicId: id,
+        initialName: name,
+        onConfirm: (newName) {
+          ref.read(topicNotifierProvider.notifier).updateTopic(id, newName);
+        },
+      ),
     );
   }
 
   void _showDeleteConfirm(BuildContext context, WidgetRef ref, int id) {
     final l10n = AppLocalizations.of(context)!;
-    // Use platform specific dialogs
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -361,24 +382,21 @@ class _TopicDropdownState extends ConsumerState<TopicDropdown> {
             child: Text(l10n.cancel),
           ),
           TextButton(
-             onPressed: () {
-               ref.read(topicNotifierProvider.notifier).deleteTopic(id);
-               // If selected, reset selection
-               if (ref.read(selectedTopicIdProvider) == id) {
-                 ref.read(selectedTopicIdProvider.notifier).state = null;
-               }
-               Navigator.pop(context);
-             },
-             style: TextButton.styleFrom(foregroundColor: Colors.red),
-             child: Text(l10n.delete),
+            onPressed: () {
+              ref.read(topicNotifierProvider.notifier).deleteTopic(id);
+              if (ref.read(selectedTopicIdProvider) == id) {
+                ref.read(selectedTopicIdProvider.notifier).state = null;
+              }
+              Navigator.pop(context);
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: Text(l10n.delete),
           ),
         ],
       ),
     );
   }
 }
-
-// Old ExpansionTile Removed.
 
 class _TopicItem extends StatefulWidget {
   final String name;
@@ -389,7 +407,6 @@ class _TopicItem extends StatefulWidget {
   final bool isAction;
   final IconData? icon;
   final bool isMobile;
-
   const _TopicItem({
     required this.name,
     required this.onTap,
@@ -400,19 +417,18 @@ class _TopicItem extends StatefulWidget {
     this.icon,
     required this.isMobile,
   });
-
   @override
   State<_TopicItem> createState() => _TopicItemState();
 }
 
 class _TopicItemState extends State<_TopicItem> {
   bool _isHovering = false;
-
   @override
   Widget build(BuildContext context) {
     final theme = fluent.FluentTheme.of(context);
-    final showButtons = (_isHovering || widget.isMobile) && !widget.isAction && widget.onEdit != null;
-    
+    final showButtons = (_isHovering || widget.isMobile) &&
+        !widget.isAction &&
+        widget.onEdit != null;
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovering = true),
       onExit: (_) => setState(() => _isHovering = false),
@@ -421,54 +437,56 @@ class _TopicItemState extends State<_TopicItem> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: widget.isSelected 
+            color: widget.isSelected
                 ? theme.accentColor.withOpacity(0.1)
-                : (_isHovering ? theme.resources.subtleFillColorSecondary : Colors.transparent),
+                : (_isHovering
+                    ? theme.resources.subtleFillColorSecondary
+                    : Colors.transparent),
             borderRadius: BorderRadius.circular(4),
           ),
           child: Row(
             children: [
-               if (widget.icon != null)
-                 fluent.Icon(widget.icon!, size: 12, color: widget.isAction ? theme.accentColor : theme.typography.caption?.color)
-               else
-                 const SizedBox(width: 12), // Indent for items
-               
-               if (widget.icon != null) const SizedBox(width: 8),
-
-               Expanded(
-                 child: Text(
-                   widget.name,
-                   style: TextStyle(
-                     fontSize: 13,
-                     color: widget.isSelected 
-                         ? theme.accentColor 
-                         : theme.typography.body?.color, // Unified Text Color
-                   ),
-                   overflow: TextOverflow.ellipsis,
-                 ),
-               ),
-               
-               // Always reserve space for action buttons to prevent layout shift
-               if (widget.onEdit != null) ...[
-                 Opacity(
-                   opacity: showButtons ? 1.0 : 0.0,
-                   child: Row(
-                     mainAxisSize: MainAxisSize.min,
-                     children: [
-                       _ActionButton(
-                         icon: fluent.FluentIcons.edit,
-                         onTap: widget.onEdit!,
-                       ),
-                       const SizedBox(width: 4),
-                       _ActionButton(
-                         icon: fluent.FluentIcons.delete,
-                         onTap: widget.onDelete!,
-                         isDestructive: true,
-                       ),
-                     ],
-                   ),
-                 ),
-               ]
+              if (widget.icon != null)
+                fluent.Icon(widget.icon!,
+                    size: 12,
+                    color: widget.isAction
+                        ? theme.accentColor
+                        : theme.typography.caption?.color)
+              else
+                const SizedBox(width: 12),
+              if (widget.icon != null) const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  widget.name,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: widget.isSelected
+                        ? theme.accentColor
+                        : theme.typography.body?.color,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (widget.onEdit != null) ...[
+                Opacity(
+                  opacity: showButtons ? 1.0 : 0.0,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _ActionButton(
+                        icon: fluent.FluentIcons.edit,
+                        onTap: widget.onEdit!,
+                      ),
+                      const SizedBox(width: 4),
+                      _ActionButton(
+                        icon: fluent.FluentIcons.delete,
+                        onTap: widget.onDelete!,
+                        isDestructive: true,
+                      ),
+                    ],
+                  ),
+                ),
+              ]
             ],
           ),
         ),
@@ -481,14 +499,17 @@ class _ActionButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
   final bool isDestructive;
-
-  const _ActionButton({required this.icon, required this.onTap, this.isDestructive = false});
-
+  const _ActionButton(
+      {required this.icon, required this.onTap, this.isDestructive = false});
   @override
   Widget build(BuildContext context) {
     final theme = fluent.FluentTheme.of(context);
     return fluent.IconButton(
-      icon: fluent.Icon(icon, size: 12, color: isDestructive ? Colors.red : theme.resources.textFillColorSecondary),
+      icon: fluent.Icon(icon,
+          size: 12,
+          color: isDestructive
+              ? Colors.red
+              : theme.resources.textFillColorSecondary),
       onPressed: onTap,
     );
   }

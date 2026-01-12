@@ -7,13 +7,11 @@ import '../../settings/presentation/settings_provider.dart';
 
 class MobilePresetManagePage extends ConsumerWidget {
   const MobilePresetManagePage({super.key});
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final presets = ref.watch(settingsProvider).presets;
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
-
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.managePresets),
@@ -31,14 +29,16 @@ class MobilePresetManagePage extends ConsumerWidget {
                 final preset = presets[index];
                 return ListTile(
                   title: Text(preset.name),
-                  subtitle: preset.description.isNotEmpty 
-                      ? Text(preset.description, maxLines: 1, overflow: TextOverflow.ellipsis)
+                  subtitle: preset.description.isNotEmpty
+                      ? Text(preset.description,
+                          maxLines: 1, overflow: TextOverflow.ellipsis)
                       : null,
                   onTap: () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => MobilePresetEditPage(preset: preset),
+                        builder: (context) =>
+                            MobilePresetEditPage(preset: preset),
                       ),
                     );
                   },
@@ -49,7 +49,8 @@ class MobilePresetManagePage extends ConsumerWidget {
                         context: context,
                         builder: (context) => AlertDialog(
                           title: Text(l10n.deletePreset),
-                          content: Text(l10n.deletePresetConfirmation(preset.name)),
+                          content:
+                              Text(l10n.deletePresetConfirmation(preset.name)),
                           actions: [
                             TextButton(
                               onPressed: () => Navigator.pop(context),
@@ -57,10 +58,13 @@ class MobilePresetManagePage extends ConsumerWidget {
                             ),
                             TextButton(
                               onPressed: () {
-                                ref.read(settingsProvider.notifier).deletePreset(preset.id);
+                                ref
+                                    .read(settingsProvider.notifier)
+                                    .deletePreset(preset.id);
                                 Navigator.pop(context);
                               },
-                              child: Text(l10n.delete, style: const TextStyle(color: Colors.red)),
+                              child: Text(l10n.delete,
+                                  style: const TextStyle(color: Colors.red)),
                             ),
                           ],
                         ),
@@ -87,18 +91,16 @@ class MobilePresetManagePage extends ConsumerWidget {
 
 class MobilePresetEditPage extends ConsumerStatefulWidget {
   final ChatPreset? preset;
-
   const MobilePresetEditPage({super.key, required this.preset});
-
   @override
-  ConsumerState<MobilePresetEditPage> createState() => _MobilePresetEditPageState();
+  ConsumerState<MobilePresetEditPage> createState() =>
+      _MobilePresetEditPageState();
 }
 
 class _MobilePresetEditPageState extends ConsumerState<MobilePresetEditPage> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _descController = TextEditingController();
   final TextEditingController _promptController = TextEditingController();
-
   @override
   void initState() {
     super.initState();
@@ -120,17 +122,15 @@ class _MobilePresetEditPageState extends ConsumerState<MobilePresetEditPage> {
   void _save() {
     if (_nameController.text.isEmpty || _promptController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context)!.fillRequiredFields)),
+        SnackBar(
+            content: Text(AppLocalizations.of(context)!.fillRequiredFields)),
       );
       return;
     }
-
     final name = _nameController.text;
     final desc = _descController.text;
     final prompt = _promptController.text;
-
     if (widget.preset != null) {
-      // Update
       final updated = widget.preset!.copyWith(
         name: name,
         description: desc,
@@ -138,7 +138,6 @@ class _MobilePresetEditPageState extends ConsumerState<MobilePresetEditPage> {
       );
       ref.read(settingsProvider.notifier).updatePreset(updated);
     } else {
-      // Create
       final newPreset = ChatPreset.create(
         name: name,
         description: desc,
@@ -153,10 +152,12 @@ class _MobilePresetEditPageState extends ConsumerState<MobilePresetEditPage> {
     final text = _promptController.text;
     final selection = _promptController.selection;
     if (selection.isValid && selection.start >= 0) {
-      final newText = text.replaceRange(selection.start, selection.end, variable);
+      final newText =
+          text.replaceRange(selection.start, selection.end, variable);
       _promptController.value = TextEditingValue(
         text: newText,
-        selection: TextSelection.collapsed(offset: selection.start + variable.length),
+        selection:
+            TextSelection.collapsed(offset: selection.start + variable.length),
       );
     } else {
       _promptController.text += variable;
@@ -166,7 +167,6 @@ class _MobilePresetEditPageState extends ConsumerState<MobilePresetEditPage> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.preset == null ? l10n.newPreset : l10n.editPreset),
@@ -198,18 +198,30 @@ class _MobilePresetEditPageState extends ConsumerState<MobilePresetEditPage> {
               ),
             ),
             const SizedBox(height: 16),
-             Text(l10n.systemPrompt, style: Theme.of(context).textTheme.titleMedium),
+            Text(l10n.systemPrompt,
+                style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 8),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
-                   _VariableChip(label: '{time}', onTap: () => _insertVariable('{time}')),
-                   _VariableChip(label: '{user_name}', onTap: () => _insertVariable('{user_name}')),
-                   _VariableChip(label: '{system}', onTap: () => _insertVariable('{system}')),
-                   _VariableChip(label: '{device}', onTap: () => _insertVariable('{device}')),
-                   _VariableChip(label: '{language}', onTap: () => _insertVariable('{language}')),
-                   _VariableChip(label: '{clipboard}', onTap: () => _insertVariable('{clipboard}')),
+                  _VariableChip(
+                      label: '{time}', onTap: () => _insertVariable('{time}')),
+                  _VariableChip(
+                      label: '{user_name}',
+                      onTap: () => _insertVariable('{user_name}')),
+                  _VariableChip(
+                      label: '{system}',
+                      onTap: () => _insertVariable('{system}')),
+                  _VariableChip(
+                      label: '{device}',
+                      onTap: () => _insertVariable('{device}')),
+                  _VariableChip(
+                      label: '{language}',
+                      onTap: () => _insertVariable('{language}')),
+                  _VariableChip(
+                      label: '{clipboard}',
+                      onTap: () => _insertVariable('{clipboard}')),
                 ],
               ),
             ),
@@ -233,9 +245,7 @@ class _MobilePresetEditPageState extends ConsumerState<MobilePresetEditPage> {
 class _VariableChip extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
-
   const _VariableChip({required this.label, required this.onTap});
-
   @override
   Widget build(BuildContext context) {
     return Padding(

@@ -7,21 +7,19 @@ class TopicManagementDialog extends ConsumerStatefulWidget {
   final int? existingTopicId;
   final String? initialName;
   final Function(String) onConfirm;
-
   const TopicManagementDialog({
     super.key,
     this.existingTopicId,
     this.initialName,
     required this.onConfirm,
   });
-
   @override
-  ConsumerState<TopicManagementDialog> createState() => _TopicManagementDialogState();
+  ConsumerState<TopicManagementDialog> createState() =>
+      _TopicManagementDialogState();
 }
 
 class _TopicManagementDialogState extends ConsumerState<TopicManagementDialog> {
   late TextEditingController _controller;
-
   @override
   void initState() {
     super.initState();
@@ -38,10 +36,7 @@ class _TopicManagementDialogState extends ConsumerState<TopicManagementDialog> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final isEditing = widget.existingTopicId != null;
-
-    // Use a platform-agnostic approach or Fluent UI since the app seems to use both
     final isWindows = Theme.of(context).platform == TargetPlatform.windows;
-
     if (isWindows) {
       return fluent.ContentDialog(
         title: Text(isEditing ? l10n.editTopic : l10n.createTopic),

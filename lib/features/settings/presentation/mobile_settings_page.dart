@@ -51,8 +51,8 @@ class _MobileSettingsPageState extends ConsumerState<MobileSettingsPage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-
-                _SectionHeader(title: l10n.modelProvider, icon: Icons.cloud_outlined),
+                _SectionHeader(
+                    title: l10n.modelProvider, icon: Icons.cloud_outlined),
                 ListTile(
                   leading: const Icon(Icons.business),
                   title: Text(l10n.currentProvider),
@@ -80,8 +80,9 @@ class _MobileSettingsPageState extends ConsumerState<MobileSettingsPage> {
                 ListTile(
                   leading: const Icon(Icons.power_settings_new),
                   title: Text(l10n.enabledStatus),
-                  subtitle:
-                      Text(activeProvider?.isEnabled == true ? l10n.enabled : l10n.disabled),
+                  subtitle: Text(activeProvider?.isEnabled == true
+                      ? l10n.enabled
+                      : l10n.disabled),
                   trailing: Switch(
                     value: activeProvider?.isEnabled == true,
                     onChanged: (v) {
@@ -138,10 +139,9 @@ class _MobileSettingsPageState extends ConsumerState<MobileSettingsPage> {
                   title: Text(model),
                   trailing: IconButton(
                     icon: const Icon(Icons.settings_outlined),
-                    onPressed: () => _showModelConfigDialog(
-                        context, activeProvider, model),
+                    onPressed: () =>
+                        _showModelConfigDialog(context, activeProvider, model),
                   ),
-                  // No onTap - model selection should only be done via top dropdown
                 );
               },
             )
@@ -149,10 +149,10 @@ class _MobileSettingsPageState extends ConsumerState<MobileSettingsPage> {
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.all(16),
-                child:
-                    Text(l10n.noModelsFetch, style: const TextStyle(color: Colors.grey)),
-                  ),
-                ),
+                child: Text(l10n.noModelsFetch,
+                    style: const TextStyle(color: Colors.grey)),
+              ),
+            ),
           const SliverToBoxAdapter(child: SizedBox(height: 16)),
         ],
       ),
@@ -177,7 +177,6 @@ class _MobileSettingsPageState extends ConsumerState<MobileSettingsPage> {
                         style: const TextStyle(
                             fontSize: 16, fontWeight: FontWeight.bold)),
                   ),
-
                   const Divider(height: 1),
                   ...state.providers.map((p) => ListTile(
                         leading: Icon(
@@ -215,7 +214,8 @@ class _MobileSettingsPageState extends ConsumerState<MobileSettingsPage> {
                                             onPressed: () {
                                               Navigator.pop(context);
                                               ref
-                                                  .read(settingsProvider.notifier)
+                                                  .read(
+                                                      settingsProvider.notifier)
                                                   .deleteProvider(p.id);
                                             },
                                           ),
@@ -234,16 +234,10 @@ class _MobileSettingsPageState extends ConsumerState<MobileSettingsPage> {
                           ],
                         ),
                         onTap: () {
-                          if (!p.isEnabled) {
-                             // Optional: Show toast "Cannot select disabled provider"
-                             // But for now just allow selecting (and user sees no models)
-                             // Or maybe auto-enable?
-                             // User requirement says "disabled provider models not in dropdown".
-                             // It doesn't strictly say "cannot select provider".
-                             // But it's better if I enable it if selected.
-                             // But let's just Stick to the plan.
-                          }
-                          ref.read(settingsProvider.notifier).selectProvider(p.id);
+                          if (!p.isEnabled) {}
+                          ref
+                              .read(settingsProvider.notifier)
+                              .selectProvider(p.id);
                           Navigator.pop(ctx);
                         },
                       )),
@@ -514,7 +508,6 @@ class _ModelConfigDialog extends StatefulWidget {
 
 class _ModelConfigDialogState extends State<_ModelConfigDialog> {
   late Map<String, dynamic> _settings;
-  
   @override
   void initState() {
     super.initState();
@@ -552,16 +545,17 @@ class _ModelConfigDialogState extends State<_ModelConfigDialog> {
   Widget _buildThinkingConfig(AppLocalizations l10n) {
     final thinkingEnabled = _settings['_aurora_thinking_enabled'] == true;
     final thinkingValue = _settings['_aurora_thinking_value']?.toString() ?? '';
-    final thinkingMode = _settings['_aurora_thinking_mode']?.toString() ?? 'auto';
-
+    final thinkingMode =
+        _settings['_aurora_thinking_mode']?.toString() ?? 'auto';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
           title: Text(l10n.thinkingConfig,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-          subtitle: Text(l10n.enableThinking, 
+              style:
+                  const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+          subtitle: Text(l10n.enableThinking,
               style: TextStyle(fontSize: 12, color: Colors.grey[600])),
           value: thinkingEnabled,
           onChanged: (v) => _saveParameter(null, '_aurora_thinking_enabled', v),
@@ -576,7 +570,8 @@ class _ModelConfigDialogState extends State<_ModelConfigDialog> {
                   initialValue: thinkingValue,
                   labelText: l10n.thinkingBudget,
                   hintText: l10n.thinkingBudgetHint,
-                  onChanged: (v) => _saveParameter(null, '_aurora_thinking_value', v),
+                  onChanged: (v) =>
+                      _saveParameter(null, '_aurora_thinking_value', v),
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
@@ -585,11 +580,11 @@ class _ModelConfigDialogState extends State<_ModelConfigDialog> {
                     labelText: l10n.transmissionMode,
                     border: const OutlineInputBorder(),
                     isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 12),
                   ),
                   items: [
-                    DropdownMenuItem(
-                        value: 'auto', child: Text(l10n.modeAuto)),
+                    DropdownMenuItem(value: 'auto', child: Text(l10n.modeAuto)),
                     DropdownMenuItem(
                         value: 'extra_body', child: Text(l10n.modeExtraBody)),
                     DropdownMenuItem(
@@ -615,10 +610,8 @@ class _ModelConfigDialogState extends State<_ModelConfigDialog> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final l10n = AppLocalizations.of(context)!;
-    
-    // Filter out _aurora_ keys for the generic list
-    final displayKeys = _settings.keys.where((k) => !k.startsWith('_aurora_')).toList();
-
+    final displayKeys =
+        _settings.keys.where((k) => !k.startsWith('_aurora_')).toList();
     return AlertDialog(
       backgroundColor: isDark ? const Color(0xFF202020) : Colors.white,
       surfaceTintColor: Colors.transparent,
@@ -628,7 +621,8 @@ class _ModelConfigDialogState extends State<_ModelConfigDialog> {
           Text(widget.modelName,
               style:
                   const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-          Text(l10n.modelConfig, style: const TextStyle(fontSize: 14, color: Colors.grey)),
+          Text(l10n.modelConfig,
+              style: const TextStyle(fontSize: 14, color: Colors.grey)),
         ],
       ),
       content: SizedBox(
@@ -642,8 +636,8 @@ class _ModelConfigDialogState extends State<_ModelConfigDialog> {
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 20),
                 child: Center(
-                    child:
-                        Text(l10n.noCustomParams, style: const TextStyle(color: Colors.grey))),
+                    child: Text(l10n.noCustomParams,
+                        style: const TextStyle(color: Colors.grey))),
               )
             else
               Flexible(
@@ -693,14 +687,12 @@ class _ThinkingBudgetInput extends StatefulWidget {
   final String labelText;
   final String hintText;
   final ValueChanged<String> onChanged;
-
   const _ThinkingBudgetInput({
     required this.initialValue,
     required this.labelText,
     required this.hintText,
     required this.onChanged,
   });
-
   @override
   State<_ThinkingBudgetInput> createState() => _ThinkingBudgetInputState();
 }
@@ -709,14 +701,12 @@ class _ThinkingBudgetInputState extends State<_ThinkingBudgetInput> {
   late TextEditingController _controller;
   late FocusNode _focusNode;
   String _lastSavedValue = '';
-
   @override
   void initState() {
     super.initState();
     _controller = TextEditingController(text: widget.initialValue);
     _focusNode = FocusNode();
     _lastSavedValue = widget.initialValue;
-    
     _focusNode.addListener(() {
       if (!_focusNode.hasFocus) {
         _saveValue();
@@ -727,7 +717,7 @@ class _ThinkingBudgetInputState extends State<_ThinkingBudgetInput> {
   @override
   void didUpdateWidget(_ThinkingBudgetInput oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.initialValue != _lastSavedValue && 
+    if (widget.initialValue != _lastSavedValue &&
         widget.initialValue != _controller.text) {
       _controller.text = widget.initialValue;
       _lastSavedValue = widget.initialValue;
@@ -827,14 +817,12 @@ class _ParameterConfigDialogState extends State<_ParameterConfigDialog> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isEditing = widget.initialKey != null;
     final l10n = AppLocalizations.of(context)!;
-    
     final typeMap = {
       'string': l10n.typeText,
       'number': l10n.typeNumber,
       'boolean': l10n.typeBoolean,
       'json': l10n.typeJson,
     };
-    
     return AlertDialog(
       backgroundColor: isDark ? const Color(0xFF202020) : Colors.white,
       surfaceTintColor: Colors.transparent,
@@ -859,7 +847,8 @@ class _ParameterConfigDialogState extends State<_ParameterConfigDialog> {
               border: const OutlineInputBorder(),
             ),
             items: typeMap.entries
-                .map((e) => DropdownMenuItem(value: e.key, child: Text(e.value)))
+                .map(
+                    (e) => DropdownMenuItem(value: e.key, child: Text(e.value)))
                 .toList(),
             onChanged: (v) => setState(() => _type = v!),
           ),

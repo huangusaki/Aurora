@@ -16,7 +16,6 @@ class MobileNavigationDrawer extends ConsumerWidget {
   final Function(String) onNavigate;
   final VoidCallback onThemeCycle;
   final VoidCallback onAbout;
-
   const MobileNavigationDrawer({
     super.key,
     required this.sessionsState,
@@ -26,7 +25,6 @@ class MobileNavigationDrawer extends ConsumerWidget {
     required this.onThemeCycle,
     required this.onAbout,
   });
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Drawer(
@@ -42,19 +40,26 @@ class MobileNavigationDrawer extends ConsumerWidget {
                     child: Container(
                       height: 40,
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        color: Theme.of(context)
+                            .colorScheme
+                            .surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: TextField(
                         onChanged: (value) {
-                          ref.read(sessionSearchQueryProvider.notifier).state = value;
+                          ref.read(sessionSearchQueryProvider.notifier).state =
+                              value;
                         },
                         decoration: InputDecoration(
-                          hintText: AppLocalizations.of(context)!.searchChatHistory,
-                          hintStyle: TextStyle(color: Colors.grey[600], fontSize: 14),
-                          prefixIcon: Icon(Icons.search, size: 20, color: Colors.grey[600]),
+                          hintText:
+                              AppLocalizations.of(context)!.searchChatHistory,
+                          hintStyle:
+                              TextStyle(color: Colors.grey[600], fontSize: 14),
+                          prefixIcon: Icon(Icons.search,
+                              size: 20, color: Colors.grey[600]),
                           border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 10),
                         ),
                         style: const TextStyle(fontSize: 14),
                       ),
@@ -76,7 +81,7 @@ class MobileNavigationDrawer extends ConsumerWidget {
             ),
             const SizedBox(height: 4),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12), // Match TopicDropdown padding
+              padding: const EdgeInsets.symmetric(horizontal: 12),
               child: fluent.HoverButton(
                 onPressed: () {
                   onNewChat();
@@ -88,32 +93,34 @@ class MobileNavigationDrawer extends ConsumerWidget {
                   return AnimatedContainer(
                     duration: const Duration(milliseconds: 150),
                     width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
-                      color: isHovering 
-                          ? theme.resources.subtleFillColorSecondary 
+                      color: isHovering
+                          ? theme.resources.subtleFillColorSecondary
                           : Colors.transparent,
                       borderRadius: BorderRadius.circular(6),
                       border: Border.all(
-                        color: isHovering 
+                        color: isHovering
                             ? theme.resources.surfaceStrokeColorDefault
                             : Colors.transparent,
                       ),
                     ),
                     child: Row(
                       children: [
-                        Icon(fluent.FluentIcons.add, 
-                            size: 14, 
-                            color: theme.accentColor),
+                        Icon(fluent.FluentIcons.add,
+                            size: 14, color: theme.accentColor),
                         const SizedBox(width: 12),
-                        Text(AppLocalizations.of(context)!.startNewChat, 
+                        Text(AppLocalizations.of(context)!.startNewChat,
                             style: TextStyle(
                                 fontSize: 14,
                                 color: theme.typography.body?.color,
                                 fontWeight: FontWeight.w500)),
                         const Spacer(),
                         if (isHovering)
-                           Icon(fluent.FluentIcons.chevron_right, size: 10, color: theme.resources.textFillColorSecondary),
+                          Icon(fluent.FluentIcons.chevron_right,
+                              size: 10,
+                              color: theme.resources.textFillColorSecondary),
                       ],
                     ),
                   );
@@ -122,23 +129,30 @@ class MobileNavigationDrawer extends ConsumerWidget {
             ),
             const SizedBox(height: 4),
             Expanded(
-              // Wrap List in RepaintBoundary to isolate list updates from drawer structure
               child: RepaintBoundary(
                 child: SessionListWidget(
                   sessionsState: sessionsState,
                   selectedSessionId: selectedSessionId,
                   onSessionSelected: (sessionId) async {
-                    final currentId = ref.read(selectedHistorySessionIdProvider);
+                    final currentId =
+                        ref.read(selectedHistorySessionIdProvider);
                     if (currentId != null && currentId != sessionId) {
-                      await ref.read(sessionsProvider.notifier).cleanupSessionIfEmpty(currentId);
+                      await ref
+                          .read(sessionsProvider.notifier)
+                          .cleanupSessionIfEmpty(currentId);
                     }
-                    ref.read(selectedHistorySessionIdProvider.notifier).state = sessionId;
+                    ref.read(selectedHistorySessionIdProvider.notifier).state =
+                        sessionId;
                     Navigator.pop(context);
                   },
                   onSessionDeleted: (sessionId) {
-                    ref.read(sessionsProvider.notifier).deleteSession(sessionId);
+                    ref
+                        .read(sessionsProvider.notifier)
+                        .deleteSession(sessionId);
                     if (sessionId == selectedSessionId) {
-                      ref.read(selectedHistorySessionIdProvider.notifier).state = null;
+                      ref
+                          .read(selectedHistorySessionIdProvider.notifier)
+                          .state = null;
                     }
                   },
                 ),
@@ -149,7 +163,9 @@ class MobileNavigationDrawer extends ConsumerWidget {
                 color: fluent.FluentTheme.of(context).scaffoldBackgroundColor,
                 border: Border(
                     top: BorderSide(
-                        color: fluent.FluentTheme.of(context).resources.dividerStrokeColorDefault)),
+                        color: fluent.FluentTheme.of(context)
+                            .resources
+                            .dividerStrokeColorDefault)),
               ),
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 12),
@@ -161,24 +177,25 @@ class MobileNavigationDrawer extends ConsumerWidget {
                       children: [
                         Expanded(
                           child: _MobileDrawerNavItem(
-                            icon: Icons.person_outline,
-                            label: AppLocalizations.of(context)!.user,
-                            onTap: () => onNavigate('__user__')),
+                              icon: Icons.person_outline,
+                              label: AppLocalizations.of(context)!.user,
+                              onTap: () => onNavigate('__user__')),
                         ),
                         Expanded(
                           child: _MobileDrawerNavItem(
-                            icon: Icons.translate,
-                            label: AppLocalizations.of(context)!.translation,
-                            onTap: () => onNavigate('__translation__')),
+                              icon: Icons.translate,
+                              label: AppLocalizations.of(context)!.translation,
+                              onTap: () => onNavigate('__translation__')),
                         ),
                         Consumer(builder: (context, ref, _) {
-                           return Expanded(
-                             child: _MobileDrawerNavItem(
-                              icon: _getThemeIcon(ref.watch(settingsProvider).themeMode),
+                          return Expanded(
+                            child: _MobileDrawerNavItem(
+                              icon: _getThemeIcon(
+                                  ref.watch(settingsProvider).themeMode),
                               label: AppLocalizations.of(context)!.theme,
                               onTap: onThemeCycle,
-                          ),
-                           );
+                            ),
+                          );
                         }),
                       ],
                     ),
@@ -188,75 +205,90 @@ class MobileNavigationDrawer extends ConsumerWidget {
                       children: [
                         Expanded(
                           child: _MobileDrawerNavItem(
-                            icon: Icons.cloud_outlined,
-                            label: AppLocalizations.of(context)!.model,
-                            onTap: () => onNavigate('__settings__')),
+                              icon: Icons.cloud_outlined,
+                              label: AppLocalizations.of(context)!.model,
+                              onTap: () => onNavigate('__settings__')),
                         ),
                         Expanded(
                           child: _MobileDrawerNavItem(
-                            icon: Icons.analytics_outlined,
-                            label: AppLocalizations.of(context)!.stats,
-                            onTap: () {
-                              Navigator.pop(context);
-                              showModalBottomSheet(
-                                context: context,
-                                isScrollControlled: true,
-                                backgroundColor: Colors.transparent,
-                                builder: (context) => const UsageStatsMobileSheet(),
-                              );
-                            }),
-                        ),
-                        Expanded(
-                          child: _MobileDrawerNavItem(
-                            icon: Icons.info_outline,
-                            label: AppLocalizations.of(context)!.about,
-                            onTap: () async {
-                              FocusManager.instance.primaryFocus?.unfocus();
-                              Navigator.pop(context);
-                              await Future.delayed(const Duration(milliseconds: 100));
-                              // Show about dialog with project link
-                              if (context.mounted) {
-                                showDialog(
+                              icon: Icons.analytics_outlined,
+                              label: AppLocalizations.of(context)!.stats,
+                              onTap: () {
+                                Navigator.pop(context);
+                                showModalBottomSheet(
                                   context: context,
-                                  builder: (context) => AlertDialog(
-                                    title: Text(AppLocalizations.of(context)!.aboutAurora),
-                                    content: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(AppLocalizations.of(context)!.crossPlatformLlmClient),
-                                        const SizedBox(height: 16),
-                                        InkWell(
-                                          onTap: () async {
-                                            const url = 'https://github.com/huangusaki/Aurora';
-                                            final uri = Uri.parse(url);
-                                            if (await canLaunchUrl(uri)) {
-                                              await launchUrl(uri, mode: LaunchMode.externalApplication);
-                                            }
-                                          },
-                                          child: Row(
-                                            children: [
-                                              const Icon(Icons.code, size: 18),
-                                              const SizedBox(width: 8),
-                                              Text(
-                                                AppLocalizations.of(context)!.githubProject,
-                                                style: const TextStyle(color: Colors.blue, decoration: TextDecoration.underline),
-                                              ),
-                                            ],
+                                  isScrollControlled: true,
+                                  backgroundColor: Colors.transparent,
+                                  builder: (context) =>
+                                      const UsageStatsMobileSheet(),
+                                );
+                              }),
+                        ),
+                        Expanded(
+                          child: _MobileDrawerNavItem(
+                              icon: Icons.info_outline,
+                              label: AppLocalizations.of(context)!.about,
+                              onTap: () async {
+                                FocusManager.instance.primaryFocus?.unfocus();
+                                Navigator.pop(context);
+                                await Future.delayed(
+                                    const Duration(milliseconds: 100));
+                                if (context.mounted) {
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) => AlertDialog(
+                                      title: Text(AppLocalizations.of(context)!
+                                          .aboutAurora),
+                                      content: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(AppLocalizations.of(context)!
+                                              .crossPlatformLlmClient),
+                                          const SizedBox(height: 16),
+                                          InkWell(
+                                            onTap: () async {
+                                              const url =
+                                                  'https://github.com/huangusaki/Aurora';
+                                              final uri = Uri.parse(url);
+                                              if (await canLaunchUrl(uri)) {
+                                                await launchUrl(uri,
+                                                    mode: LaunchMode
+                                                        .externalApplication);
+                                              }
+                                            },
+                                            child: Row(
+                                              children: [
+                                                const Icon(Icons.code,
+                                                    size: 18),
+                                                const SizedBox(width: 8),
+                                                Text(
+                                                  AppLocalizations.of(context)!
+                                                      .githubProject,
+                                                  style: const TextStyle(
+                                                      color: Colors.blue,
+                                                      decoration: TextDecoration
+                                                          .underline),
+                                                ),
+                                              ],
+                                            ),
                                           ),
+                                        ],
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () =>
+                                              Navigator.pop(context),
+                                          child: Text(
+                                              AppLocalizations.of(context)!
+                                                  .close),
                                         ),
                                       ],
                                     ),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () => Navigator.pop(context),
-                                        child: Text(AppLocalizations.of(context)!.close),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              }
-                            }),
+                                  );
+                                }
+                              }),
                         ),
                       ],
                     ),
