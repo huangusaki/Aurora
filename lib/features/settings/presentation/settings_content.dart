@@ -494,47 +494,55 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
                 ),
                 if (settingsState.enableSmartTopic) ...[
                   const SizedBox(height: 12),
-                  fluent.DropDownButton(
-                    title: Text(() {
-                      if (settingsState.topicGenerationModel == null) {
-                        return l10n.selectTopicModel;
-                      }
-                      final parts =
-                          settingsState.topicGenerationModel!.split('@');
-                      if (parts.length == 2) {
-                        final provider = settingsState.providers.firstWhere(
-                            (p) => p.id == parts[0],
-                            orElse: () => settingsState.providers.first);
-                        return '${provider.name} - ${parts[1]}';
-                      }
-                      return settingsState.topicGenerationModel!;
-                    }()),
-                    items: () {
-                      final items = <fluent.MenuFlyoutItemBase>[];
-                      for (final provider in settingsState.providers) {
-                        if (provider.isEnabled) {
-                          for (final model in provider.models) {
-                            final value = '${provider.id}@$model';
-                            final isSelected =
-                                settingsState.topicGenerationModel == value;
-                            items.add(fluent.MenuFlyoutItem(
-                              leading: isSelected
-                                  ? const Icon(fluent.FluentIcons.check_mark,
-                                      size: 12)
-                                  : null,
-                              text: Text('${provider.name} - $model'),
-                              onPressed: () {
-                                ref
-                                    .read(settingsProvider.notifier)
-                                    .setTopicGenerationModel(value);
-                              },
-                            ));
-                          }
+                  Builder(builder: (context) {
+                    final items = <fluent.MenuFlyoutItemBase>[];
+                    for (final provider in settingsState.providers) {
+                      if (provider.isEnabled) {
+                        for (final model in provider.models) {
+                          final value = '${provider.id}@$model';
+                          final isSelected =
+                              settingsState.topicGenerationModel == value;
+                          items.add(fluent.MenuFlyoutItem(
+                            leading: isSelected
+                                ? const Icon(fluent.FluentIcons.check_mark,
+                                    size: 12)
+                                : null,
+                            text: Text('${provider.name} - $model'),
+                            onPressed: () {
+                              ref
+                                  .read(settingsProvider.notifier)
+                                  .setTopicGenerationModel(value);
+                            },
+                          ));
                         }
                       }
-                      return items;
-                    }(),
-                  ),
+                    }
+
+                    if (items.isEmpty) {
+                      return fluent.Button(
+                        onPressed: null,
+                        child: Text(l10n.noModelsData),
+                      );
+                    }
+
+                    return fluent.DropDownButton(
+                      title: Text(() {
+                        if (settingsState.topicGenerationModel == null) {
+                          return l10n.selectTopicModel;
+                        }
+                        final parts =
+                            settingsState.topicGenerationModel!.split('@');
+                        if (parts.length == 2) {
+                          final provider = settingsState.providers.firstWhere(
+                              (p) => p.id == parts[0],
+                              orElse: () => settingsState.providers.first);
+                          return '${provider.name} - ${parts[1]}';
+                        }
+                        return settingsState.topicGenerationModel!;
+                      }()),
+                      items: items,
+                    );
+                  }),
                   if (settingsState.topicGenerationModel == null)
                     Padding(
                       padding: const EdgeInsets.only(top: 4.0),

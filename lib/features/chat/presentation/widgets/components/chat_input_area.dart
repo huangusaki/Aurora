@@ -30,7 +30,8 @@ class DesktopChatInputArea extends ConsumerStatefulWidget {
       _DesktopChatInputAreaState();
 }
 
-class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea> {
+class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
+    with SingleTickerProviderStateMixin {
   final LayerLink _layerLink = LayerLink();
   OverlayEntry? _overlayEntry;
   int _selectedIndex = 0;
@@ -38,11 +39,29 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea> {
   final ScrollController _scrollController = ScrollController();
   static const double _itemHeight = 40.0;
   int? _triggerIndex;
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
+  late Animation<double> _scaleAnimation;
+  final FocusNode _focusNode = FocusNode();
 
   @override
   void initState() {
     super.initState();
     widget.controller.addListener(_onTextChanged);
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 150),
+    );
+    _fadeAnimation = CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeOut,
+    );
+    _scaleAnimation = Tween<double>(begin: 0.95, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: Curves.easeOut,
+      ),
+    );
   }
 
   @override
@@ -50,15 +69,20 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea> {
     widget.controller.removeListener(_onTextChanged);
     _removeOverlay();
     _scrollController.dispose();
+    _animationController.dispose();
+    _focusNode.dispose();
     super.dispose();
   }
+
+
+
 
   void _onTextChanged() {
     if (_overlayEntry != null && _triggerIndex != null) {
       // If the trigger character is gone or changed, close the overlay
-      if (widget.controller.text.length <= _triggerIndex! || 
+      if (widget.controller.text.length <= _triggerIndex! ||
           widget.controller.text[_triggerIndex!] != '@') {
-        _removeOverlay();
+        _animateClose();
       }
     }
   }
@@ -69,6 +93,12 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea> {
     _filteredModels = [];
     _selectedIndex = 0;
     _triggerIndex = null;
+  }
+
+  Future<void> _animateClose() async {
+    if (_overlayEntry == null) return;
+    await _animationController.reverse();
+    _removeOverlay();
   }
 
   void _cancelTrigger() {
@@ -82,12 +112,12 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea> {
         selection: newSelection,
       );
     }
-    _removeOverlay();
+    _animateClose();
   }
 
   void _scrollToIndex(int index) {
     if (!_scrollController.hasClients) return;
-    
+
     final double targetOffset = index * _itemHeight;
     final double currentOffset = _scrollController.offset;
     final double viewportHeight = _scrollController.position.viewportDimension;
@@ -99,19 +129,21 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea> {
     }
   }
 
-  void _showModelSelector(BuildContext context, List<String> models, String currentModel) {
+  void _showModelSelector(
+      BuildContext context, List<String> models, String currentModel) {
     if (_overlayEntry != null) return;
-    
+
     // Capture where the '@' is. Assuming current selection is just after '@'.
     // If not valid, fallback to current selection end.
-    if (widget.controller.selection.isValid && widget.controller.selection.baseOffset > 0) {
-       _triggerIndex = widget.controller.selection.baseOffset - 1;
+    if (widget.controller.selection.isValid &&
+        widget.controller.selection.baseOffset > 0) {
+      _triggerIndex = widget.controller.selection.baseOffset - 1;
     } else {
-       // Should not happen if triggered by key press correctly, but safe guard
-       _triggerIndex = widget.controller.text.length - 1; 
-       if (_triggerIndex! < 0) _triggerIndex = 0;
+      // Should not happen if triggered by key press correctly, but safe guard
+      _triggerIndex = widget.controller.text.length - 1;
+      if (_triggerIndex! < 0) _triggerIndex = 0;
     }
-    
+
     _filteredModels = List.from(models);
     _selectedIndex = _filteredModels.indexOf(currentModel);
     if (_selectedIndex == -1) _selectedIndex = 0;
@@ -119,6 +151,7 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea> {
     // Scroll to initial selection after frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollToIndex(_selectedIndex);
+      _animationController.forward(from: 0.0);
     });
 
     _overlayEntry = OverlayEntry(
@@ -135,46 +168,58 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea> {
                 link: _layerLink,
                 showWhenUnlinked: false,
                 offset: const Offset(0, -200), // Show above the input
-                child: Material(
-                  elevation: 8,
-                  borderRadius: BorderRadius.circular(8),
-                  color: fluent.FluentTheme.of(context).menuColor,
-                  child: Container(
-                    constraints: const BoxConstraints(maxHeight: 200),
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: fluent.FluentTheme.of(context)
-                            .resources
-                            .dividerStrokeColorDefault,
-                      ),
+                child: ScaleTransition(
+                  scale: _scaleAnimation,
+                  child: FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: Material(
+                      elevation: 8,
                       borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: StatefulBuilder(
-                      builder: (context, setState) {
-                        return ListView.builder(
-                          controller: _scrollController,
-                          padding: const EdgeInsets.symmetric(vertical: 4),
-                          shrinkWrap: true,
-                          itemCount: _filteredModels.length,
-                          itemExtent: _itemHeight, // Optimize for fixed height
-                          itemBuilder: (context, index) {
-                            final isSelected = index == _selectedIndex;
-                            final theme = fluent.FluentTheme.of(context);
-                            return Container(
-                              color: isSelected ? theme.accentColor.withOpacity(0.1) : Colors.transparent,
-                              child: fluent.ListTile(
-                                title: Text(
-                                  _filteredModels[index], 
-                                  maxLines: 1, 
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(fontSize: 13), // Adjust font size for compact list
-                                ),
-                                onPressed: () => _selectModel(_filteredModels[index]),
-                              ),
+                      color: fluent.FluentTheme.of(context).menuColor,
+                      child: Container(
+                        constraints: const BoxConstraints(maxHeight: 200),
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: fluent.FluentTheme.of(context)
+                                .resources
+                                .dividerStrokeColorDefault,
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: StatefulBuilder(
+                          builder: (context, setState) {
+                            return ListView.builder(
+                              controller: _scrollController,
+                              padding: const EdgeInsets.symmetric(vertical: 4),
+                              shrinkWrap: true,
+                              itemCount: _filteredModels.length,
+                              itemExtent:
+                                  _itemHeight, // Optimize for fixed height
+                              itemBuilder: (context, index) {
+                                final isSelected = index == _selectedIndex;
+                                final theme = fluent.FluentTheme.of(context);
+                                return Container(
+                                  color: isSelected
+                                      ? theme.accentColor.withOpacity(0.1)
+                                      : Colors.transparent,
+                                  child: fluent.ListTile(
+                                    title: Text(
+                                      _filteredModels[index],
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                          fontSize:
+                                              13), // Adjust font size for compact list
+                                    ),
+                                    onPressed: () =>
+                                        _selectModel(_filteredModels[index]),
+                                  ),
+                                );
+                              },
                             );
                           },
-                        );
-                      },
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -195,19 +240,29 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea> {
 
   void _selectModel(String model) {
     ref.read(settingsProvider.notifier).setSelectedModel(model);
-    
-    // Remove the '@' character if it exists at the cursor position
-    final text = widget.controller.text;
-    final selection = widget.controller.selection;
-    if (selection.isValid && selection.start > 0) {
-      final newText = text.replaceRange(selection.start - 1, selection.start, '');
+
+    // Remove the '@' character using the captured trigger index
+    if (_triggerIndex != null && 
+        _triggerIndex! < widget.controller.text.length &&
+        widget.controller.text[_triggerIndex!] == '@') {
+      
+      final text = widget.controller.text;
+      final newText = text.replaceRange(_triggerIndex!, _triggerIndex! + 1, '');
+      
+      int newSelectionIndex = widget.controller.selection.baseOffset;
+      if (newSelectionIndex > _triggerIndex!) {
+        newSelectionIndex -= 1;
+      }
+      
       widget.controller.value = TextEditingValue(
         text: newText,
-        selection: TextSelection.collapsed(offset: selection.start - 1),
+        selection: TextSelection.collapsed(offset: newSelectionIndex),
       );
     }
     
-    _removeOverlay();
+    _animateClose();
+    // Restore focus to input
+    _focusNode.requestFocus();
   }
 
   @override
@@ -290,6 +345,7 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea> {
               },
               child: fluent.TextBox(
                 controller: widget.controller,
+                focusNode: _focusNode,
                 placeholder: l10n.desktopInputHint,
                 maxLines: 5,
                 minLines: 1,

@@ -603,7 +603,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get desktopInputHint =>
-      'Type something... (Enter for new line, Ctrl + Enter to send)';
+      'Type something... (Enter for new line, Ctrl + Enter to send, @ to switch model)';
 
   @override
   String get mobileInputHint => 'Type something...';

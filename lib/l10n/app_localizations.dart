@@ -1235,7 +1235,7 @@ abstract class AppLocalizations {
   /// No description provided for @desktopInputHint.
   ///
   /// In zh, this message translates to:
-  /// **'随便输入点什么吧 (Enter 换行，Ctrl + Enter 发送)'**
+  /// **'随便输入点什么吧 (Enter 换行，Ctrl + Enter 发送，@ 切换模型)'**
   String get desktopInputHint;
 
   /// No description provided for @mobileInputHint.
