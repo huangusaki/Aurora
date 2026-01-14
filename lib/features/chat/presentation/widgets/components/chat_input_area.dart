@@ -6,6 +6,23 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 import '../../chat_provider.dart';
 import '../../../../settings/presentation/settings_provider.dart';
+import '../custom_dropdown_overlay.dart'; // for generateColorFromString
+
+class ModelOption {
+  final String providerId;
+  final String providerName;
+  final String modelId;
+  final String? color;
+
+  ModelOption({
+    required this.providerId,
+    required this.providerName,
+    required this.modelId,
+    this.color,
+  });
+
+  String get displayName => '$modelId ($providerName)';
+}
 
 class DesktopChatInputArea extends ConsumerStatefulWidget {
   final TextEditingController controller;
@@ -35,7 +52,7 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
   final LayerLink _layerLink = LayerLink();
   OverlayEntry? _overlayEntry;
   int _selectedIndex = 0;
-  List<String> _filteredModels = [];
+  List<ModelOption> _filteredModels = [];
   final ScrollController _scrollController = ScrollController();
   static const double _itemHeight = 40.0;
   int? _triggerIndex;
@@ -74,9 +91,6 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
     super.dispose();
   }
 
-
-
-
   void _onTextChanged() {
     if (_overlayEntry != null && _triggerIndex != null) {
       // If the trigger character is gone or changed, close the overlay
@@ -101,12 +115,14 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
 
   Future<void> _animateClose() async {
     if (_overlayEntry == null) return;
-    _animationController.reverse(); // Don't await - let animation play while overlay is removed
+    _animationController
+        .reverse(); // Don't await - let animation play while overlay is removed
     _removeOverlay();
   }
 
   void _cancelTrigger() {
-    if (_triggerIndex != null && _triggerIndex! < widget.controller.text.length) {
+    if (_triggerIndex != null &&
+        _triggerIndex! < widget.controller.text.length) {
       final text = widget.controller.text;
       // Remove the '@' character
       final newText = text.replaceRange(_triggerIndex!, _triggerIndex! + 1, '');
@@ -134,7 +150,7 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
   }
 
   void _showModelSelector(
-      BuildContext context, List<String> models, String currentModel) {
+      BuildContext context, List<ModelOption> models, String currentModelId) {
     if (_overlayEntry != null) return;
 
     // Capture where the '@' WILL BE inserted (key event fires before character is typed)
@@ -146,7 +162,8 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
     }
 
     _filteredModels = List.from(models);
-    _selectedIndex = _filteredModels.indexOf(currentModel);
+    _selectedIndex =
+        _filteredModels.indexWhere((m) => m.modelId == currentModelId);
     if (_selectedIndex == -1) _selectedIndex = 0;
 
     // Scroll to initial selection after frame
@@ -194,23 +211,30 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
                               padding: const EdgeInsets.symmetric(vertical: 4),
                               shrinkWrap: true,
                               itemCount: _filteredModels.length,
-                              itemExtent:
-                                  _itemHeight, // Optimize for fixed height
+                              itemExtent: _itemHeight,
                               itemBuilder: (context, index) {
                                 final isSelected = index == _selectedIndex;
+                                final model = _filteredModels[index];
                                 final theme = fluent.FluentTheme.of(context);
+                                Color? itemColor;
+                                if (model.color != null &&
+                                    model.color!.isNotEmpty) {
+                                  itemColor = Color(int.tryParse(model.color!
+                                          .replaceFirst('#', '0xFF')) ??
+                                      0xFF000000);
+                                }
                                 return Container(
                                   color: isSelected
-                                      ? theme.accentColor.withOpacity(0.1)
-                                      : Colors.transparent,
+                                      ? (itemColor?.withOpacity(0.3) ??
+                                          theme.accentColor.withOpacity(0.1))
+                                      : (itemColor?.withOpacity(0.1) ??
+                                          Colors.transparent),
                                   child: fluent.ListTile(
                                     title: Text(
-                                      _filteredModels[index],
+                                      model.displayName,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
-                                          fontSize:
-                                              13), // Adjust font size for compact list
+                                      style: const TextStyle(fontSize: 13),
                                     ),
                                     onPressed: () =>
                                         _selectModel(_filteredModels[index]),
@@ -239,28 +263,35 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
     _scrollToIndex(_selectedIndex);
   }
 
-  void _selectModel(String model) {
-    ref.read(settingsProvider.notifier).setSelectedModel(model);
+  void _selectModel(ModelOption option) async {
+    // If the selected model belongs to a different provider, switch provider first
+    final settings = ref.read(settingsProvider);
+    if (settings.activeProviderId != option.providerId) {
+      await ref
+          .read(settingsProvider.notifier)
+          .selectProvider(option.providerId);
+    }
+
+    ref.read(settingsProvider.notifier).setSelectedModel(option.modelId);
 
     // Remove the '@' character using the captured trigger index
-    if (_triggerIndex != null && 
+    if (_triggerIndex != null &&
         _triggerIndex! < widget.controller.text.length &&
         widget.controller.text[_triggerIndex!] == '@') {
-      
       final text = widget.controller.text;
       final newText = text.replaceRange(_triggerIndex!, _triggerIndex! + 1, '');
-      
+
       int newSelectionIndex = widget.controller.selection.baseOffset;
       if (newSelectionIndex > _triggerIndex!) {
         newSelectionIndex -= 1;
       }
-      
+
       widget.controller.value = TextEditingValue(
         text: newText,
         selection: TextSelection.collapsed(offset: newSelectionIndex),
       );
     }
-    
+
     _animateClose();
     // Restore focus to input
     _focusNode.requestFocus();
@@ -271,11 +302,29 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
     final theme = fluent.FluentTheme.of(context);
     final l10n = AppLocalizations.of(context)!;
     final settings = ref.watch(settingsProvider);
-    final models = settings.providers
-            .firstWhere((p) => p.id == settings.activeProviderId,
-                orElse: () => settings.providers.first)
-            .models ??
-        [];
+
+    // Aggregate models from all enabled providers
+    final List<ModelOption> allModels = [];
+    for (final provider in settings.providers) {
+      if (provider.isEnabled && provider.models.isNotEmpty) {
+        // Get color: use set color or generate from provider ID
+        String? colorValue = provider.color;
+        if (colorValue == null || colorValue.isEmpty) {
+          // Generate a hex color string from the provider ID
+          final generatedColor = generateColorFromString(provider.id);
+          colorValue =
+              '#${generatedColor.value.toRadixString(16).substring(2).toUpperCase()}';
+        }
+        for (final model in provider.models) {
+          allModels.add(ModelOption(
+            providerId: provider.id,
+            providerName: provider.name,
+            modelId: model,
+            color: colorValue,
+          ));
+        }
+      }
+    }
 
     return Container(
       decoration: BoxDecoration(
@@ -293,8 +342,9 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
             child: Focus(
               onKeyEvent: (node, event) {
                 // Allow both KeyDownEvent and KeyRepeatEvent for continuous scrolling
-                if (event is! KeyDownEvent && event is! KeyRepeatEvent) return KeyEventResult.ignored;
-                
+                if (event is! KeyDownEvent && event is! KeyRepeatEvent)
+                  return KeyEventResult.ignored;
+
                 final isControl = HardwareKeyboard.instance.isControlPressed;
                 final isShift = HardwareKeyboard.instance.isShiftPressed;
 
@@ -325,20 +375,23 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
                     _removeOverlay();
                     return KeyEventResult.handled;
                   } else if (event.logicalKey == LogicalKeyboardKey.arrowLeft ||
-                             event.logicalKey == LogicalKeyboardKey.arrowRight) {
+                      event.logicalKey == LogicalKeyboardKey.arrowRight) {
                     // Close overlay when cursor moves horizontally
                     _animateClose();
-                    return KeyEventResult.ignored; // Let the text field handle cursor movement
+                    return KeyEventResult
+                        .ignored; // Let the text field handle cursor movement
                   }
                 }
 
                 // Handle Shortcuts
-                if ((isControl && event.logicalKey == LogicalKeyboardKey.keyV) ||
-                    (isShift && event.logicalKey == LogicalKeyboardKey.insert)) {
+                if ((isControl &&
+                        event.logicalKey == LogicalKeyboardKey.keyV) ||
+                    (isShift &&
+                        event.logicalKey == LogicalKeyboardKey.insert)) {
                   widget.onPaste();
                   return KeyEventResult.handled;
                 }
-                
+
                 if (isControl && event.logicalKey == LogicalKeyboardKey.enter) {
                   widget.onSend();
                   return KeyEventResult.handled;
@@ -346,16 +399,17 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
 
                 // Handle '@' trigger
                 if (isShift && event.logicalKey == LogicalKeyboardKey.digit2) {
-                   if (_overlayEntry != null) {
-                     // If overlay is already open, update trigger index synchronously
-                     // Current cursor position is where the new @ will be inserted
-                     if (widget.controller.selection.isValid) {
-                       _triggerIndex = widget.controller.selection.baseOffset;
-                     }
-                   } else if (models.isNotEmpty) {
-                     // Show model selector for the first '@'
-                     _showModelSelector(context, models, settings.selectedModel ?? '');
-                   }
+                  if (_overlayEntry != null) {
+                    // If overlay is already open, update trigger index synchronously
+                    // Current cursor position is where the new @ will be inserted
+                    if (widget.controller.selection.isValid) {
+                      _triggerIndex = widget.controller.selection.baseOffset;
+                    }
+                  } else if (allModels.isNotEmpty) {
+                    // Show model selector for the first '@'
+                    _showModelSelector(
+                        context, allModels, settings.selectedModel ?? '');
+                  }
                 }
 
                 return KeyEventResult.ignored;
@@ -674,7 +728,8 @@ class MobileChatInputArea extends ConsumerWidget {
               const Spacer(),
               if (isLoading)
                 IconButton(
-                  icon: const Icon(fluent.FluentIcons.stop, color: Colors.red, size: 18),
+                  icon: const Icon(fluent.FluentIcons.stop,
+                      color: Colors.red, size: 18),
                   onPressed: () =>
                       ref.read(historyChatProvider).abortGeneration(),
                 )

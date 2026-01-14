@@ -7,6 +7,7 @@ class ProviderConfigEntity {
   @Index(unique: true, replace: true)
   late String providerId;
   late String name;
+  String? color;
   late String apiKey;
   late String baseUrl;
   bool isCustom = false;

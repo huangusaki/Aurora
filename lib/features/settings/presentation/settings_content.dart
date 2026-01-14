@@ -20,6 +20,7 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
   final TextEditingController _apiKeyController = TextEditingController();
   final TextEditingController _baseUrlController = TextEditingController();
   final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _colorController = TextEditingController();
   final TextEditingController _userNameController = TextEditingController();
   final TextEditingController _llmNameController = TextEditingController();
   @override
@@ -32,6 +33,7 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
     _apiKeyController.dispose();
     _baseUrlController.dispose();
     _nameController.dispose();
+    _colorController.dispose();
     _userNameController.dispose();
     _llmNameController.dispose();
     super.dispose();
@@ -46,6 +48,9 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
     }
     if (_nameController.text != provider.name) {
       _nameController.text = provider.name;
+    }
+    if (_colorController.text != (provider.color ?? '')) {
+      _colorController.text = provider.color ?? '';
     }
   }
 
@@ -310,6 +315,40 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
                           ref.read(settingsProvider.notifier).updateProvider(
                               id: viewingProvider.id, name: value);
                         },
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    fluent.InfoLabel(
+                      label: 'Color (Hex)',
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              color: _colorController.text.isNotEmpty
+                                  ? Color(int.tryParse(_colorController.text
+                                          .replaceFirst('#', '0xFF')) ??
+                                      0xFF000000)
+                                  : Colors.transparent,
+                              border: Border.all(color: fluent.Colors.grey),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: fluent.TextBox(
+                              controller: _colorController,
+                              placeholder: '#FF0000',
+                              onChanged: (value) {
+                                ref
+                                    .read(settingsProvider.notifier)
+                                    .updateProvider(
+                                        id: viewingProvider.id, color: value);
+                              },
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     const SizedBox(height: 16),

@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'dart:math';
+import 'package:flutter/painting.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import '../data/settings_storage.dart';
@@ -9,6 +11,7 @@ import '../data/chat_preset_entity.dart';
 class ProviderConfig {
   final String id;
   final String name;
+  final String? color;
   final String apiKey;
   final String baseUrl;
   final bool isCustom;
@@ -20,6 +23,7 @@ class ProviderConfig {
   ProviderConfig({
     required this.id,
     required this.name,
+    this.color,
     this.apiKey = '',
     this.baseUrl = 'https://api.openai.com/v1',
     this.isCustom = false,
@@ -31,6 +35,7 @@ class ProviderConfig {
   });
   ProviderConfig copyWith({
     String? name,
+    String? color,
     String? apiKey,
     String? baseUrl,
     Map<String, dynamic>? customParameters,
@@ -42,6 +47,7 @@ class ProviderConfig {
     return ProviderConfig(
       id: id,
       name: name ?? this.name,
+      color: color ?? this.color,
       apiKey: apiKey ?? this.apiKey,
       baseUrl: baseUrl ?? this.baseUrl,
       isCustom: isCustom,
@@ -220,6 +226,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
   Future<void> updateProvider({
     required String id,
     String? name,
+    String? color,
     String? apiKey,
     String? baseUrl,
     Map<String, dynamic>? customParameters,
@@ -232,6 +239,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
       if (p.id == id) {
         return p.copyWith(
           name: name,
+          color: color,
           apiKey: apiKey,
           baseUrl: baseUrl,
           customParameters: customParameters,
@@ -248,6 +256,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     final entity = ProviderConfigEntity()
       ..providerId = updatedProvider.id
       ..name = updatedProvider.name
+      ..color = updatedProvider.color
       ..apiKey = updatedProvider.apiKey
       ..baseUrl = updatedProvider.baseUrl
       ..isCustom = updatedProvider.isCustom
@@ -271,9 +280,20 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
 
   Future<void> addProvider() async {
     final newId = 'custom_${DateTime.now().millisecondsSinceEpoch}';
+
+    // Generate random pastel-ish color
+    final random = Random();
+    final hue = random.nextDouble() * 360;
+    final saturation = 0.5 + random.nextDouble() * 0.3; // 0.5-0.8
+    final lightness = 0.4 + random.nextDouble() * 0.2; // 0.4-0.6
+    final color = HSLColor.fromAHSL(1.0, hue, saturation, lightness).toColor();
+    final colorHex =
+        '#${color.value.toRadixString(16).substring(2).toUpperCase()}';
+
     final newProvider = ProviderConfig(
       id: newId,
       name: 'New Provider',
+      color: colorHex,
       isCustom: true,
       models: [],
     );
@@ -281,7 +301,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
       providers: [...state.providers, newProvider],
       viewingProviderId: newId,
     );
-    await updateProvider(id: newId, name: 'New Provider');
+    await updateProvider(id: newId, name: 'New Provider', color: colorHex);
   }
 
   Future<void> toggleProviderEnabled(String id) async {

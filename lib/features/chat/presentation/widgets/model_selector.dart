@@ -51,7 +51,7 @@ class _ModelSelectorState extends ConsumerState<ModelSelector> {
           backgroundColor: theme.menuColor,
           borderColor: theme.resources.surfaceStrokeColorDefault,
           width: 280,
-          items: _buildDropdownItems(theme),
+          coloredItems: _buildColoredItems(theme),
         ),
       ),
     );
@@ -59,13 +59,12 @@ class _ModelSelectorState extends ConsumerState<ModelSelector> {
     setState(() => _isOpen = true);
   }
 
-  List<fluent.CommandBarItem> _buildDropdownItems(
-      fluent.FluentThemeData theme) {
+  List<ColoredDropdownItem> _buildColoredItems(fluent.FluentThemeData theme) {
     final settingsState = ref.watch(settingsProvider);
     final selected = settingsState.selectedModel;
     final activeProvider = settingsState.activeProvider;
     final providers = settingsState.providers;
-    final List<fluent.CommandBarItem> items = [];
+    final List<ColoredDropdownItem> items = [];
     Future<void> switchModel(String providerId, String model) async {
       _removeOverlay();
       WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -76,44 +75,48 @@ class _ModelSelectorState extends ConsumerState<ModelSelector> {
 
     for (final provider in providers) {
       if (!provider.isEnabled || provider.models.isEmpty) continue;
-      items.add(fluent.CommandBarButton(
-        onPressed: () {},
-        label: Text(
-          provider.name,
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: theme.typography.caption?.color ?? fluent.Colors.grey,
-            fontSize: 12,
-          ),
-        ),
+
+      // Get provider color: use set color or generate from ID
+      Color providerColor;
+      if (provider.color != null && provider.color!.isNotEmpty) {
+        providerColor = Color(
+            int.tryParse(provider.color!.replaceFirst('#', '0xFF')) ??
+                0xFF000000);
+      } else {
+        providerColor = generateColorFromString(provider.id);
+      }
+
+      // Add provider header
+      items.add(ColoredDropdownItem(
+        label: provider.name,
+        backgroundColor: providerColor,
+        isBold: true,
+        textColor: theme.typography.caption?.color ?? fluent.Colors.grey,
       ));
+
+      // Add models
       for (final model in provider.models) {
         final isSelected =
             activeProvider.id == provider.id && selected == model;
-        items.add(fluent.CommandBarButton(
+        items.add(ColoredDropdownItem(
+          label: model,
           onPressed: () => switchModel(provider.id, model),
-          label: fluent.Padding(
-              padding: const EdgeInsets.only(left: 12),
-              child: Text(
-                model,
-                style: TextStyle(
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                  color: isSelected
-                      ? theme.accentColor
-                      : theme.typography.body?.color,
-                ),
-              )),
+          backgroundColor: providerColor,
+          isSelected: isSelected,
+          textColor: isSelected ? theme.accentColor : null,
           icon: isSelected
               ? fluent.Icon(fluent.FluentIcons.check_mark,
                   size: 12, color: theme.accentColor)
               : null,
         ));
       }
+
+      // Add separator
       if (provider != providers.last &&
           providers.any((p) =>
               providers.indexOf(p) > providers.indexOf(provider) &&
               p.models.isNotEmpty)) {
-        items.add(const fluent.CommandBarSeparator());
+        items.add(const DropdownSeparator());
       }
     }
     return items;

@@ -1,4 +1,13 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
 part of 'provider_config_entity.dart';
+
+// **************************************************************************
+// IsarCollectionGenerator
+// **************************************************************************
+
+// coverage:ignore-file
+// ignore_for_file: duplicate_ignore, non_constant_identifier_names, constant_identifier_names, invalid_use_of_protected_member, unnecessary_cast, prefer_const_constructors, lines_longer_than_80_chars, require_trailing_commas, inference_failure_on_function_invocation, unnecessary_parenthesis, unnecessary_raw_strings, unnecessary_null_checks, join_return_with_assignment, prefer_final_locals, avoid_js_rounded_ints, avoid_positional_boolean_parameters, always_specify_types
 
 extension GetProviderConfigEntityCollection on Isar {
   IsarCollection<ProviderConfigEntity> get providerConfigEntitys =>
@@ -19,48 +28,53 @@ const ProviderConfigEntitySchema = CollectionSchema(
       name: r'baseUrl',
       type: IsarType.string,
     ),
-    r'customParametersJson': PropertySchema(
+    r'color': PropertySchema(
       id: 2,
+      name: r'color',
+      type: IsarType.string,
+    ),
+    r'customParametersJson': PropertySchema(
+      id: 3,
       name: r'customParametersJson',
       type: IsarType.string,
     ),
     r'isActive': PropertySchema(
-      id: 3,
+      id: 4,
       name: r'isActive',
       type: IsarType.bool,
     ),
     r'isCustom': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'isCustom',
       type: IsarType.bool,
     ),
     r'isEnabled': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'isEnabled',
       type: IsarType.bool,
     ),
     r'lastSelectedModel': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'lastSelectedModel',
       type: IsarType.string,
     ),
     r'modelSettingsJson': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'modelSettingsJson',
       type: IsarType.string,
     ),
     r'name': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'name',
       type: IsarType.string,
     ),
     r'providerId': PropertySchema(
-      id: 9,
+      id: 10,
       name: r'providerId',
       type: IsarType.string,
     ),
     r'savedModels': PropertySchema(
-      id: 10,
+      id: 11,
       name: r'savedModels',
       type: IsarType.stringList,
     )
@@ -92,6 +106,7 @@ const ProviderConfigEntitySchema = CollectionSchema(
   attach: _providerConfigEntityAttach,
   version: '3.1.0+1',
 );
+
 int _providerConfigEntityEstimateSize(
   ProviderConfigEntity object,
   List<int> offsets,
@@ -100,6 +115,12 @@ int _providerConfigEntityEstimateSize(
   var bytesCount = offsets.last;
   bytesCount += 3 + object.apiKey.length * 3;
   bytesCount += 3 + object.baseUrl.length * 3;
+  {
+    final value = object.color;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   {
     final value = object.customParametersJson;
     if (value != null) {
@@ -138,15 +159,16 @@ void _providerConfigEntitySerialize(
 ) {
   writer.writeString(offsets[0], object.apiKey);
   writer.writeString(offsets[1], object.baseUrl);
-  writer.writeString(offsets[2], object.customParametersJson);
-  writer.writeBool(offsets[3], object.isActive);
-  writer.writeBool(offsets[4], object.isCustom);
-  writer.writeBool(offsets[5], object.isEnabled);
-  writer.writeString(offsets[6], object.lastSelectedModel);
-  writer.writeString(offsets[7], object.modelSettingsJson);
-  writer.writeString(offsets[8], object.name);
-  writer.writeString(offsets[9], object.providerId);
-  writer.writeStringList(offsets[10], object.savedModels);
+  writer.writeString(offsets[2], object.color);
+  writer.writeString(offsets[3], object.customParametersJson);
+  writer.writeBool(offsets[4], object.isActive);
+  writer.writeBool(offsets[5], object.isCustom);
+  writer.writeBool(offsets[6], object.isEnabled);
+  writer.writeString(offsets[7], object.lastSelectedModel);
+  writer.writeString(offsets[8], object.modelSettingsJson);
+  writer.writeString(offsets[9], object.name);
+  writer.writeString(offsets[10], object.providerId);
+  writer.writeStringList(offsets[11], object.savedModels);
 }
 
 ProviderConfigEntity _providerConfigEntityDeserialize(
@@ -158,16 +180,17 @@ ProviderConfigEntity _providerConfigEntityDeserialize(
   final object = ProviderConfigEntity();
   object.apiKey = reader.readString(offsets[0]);
   object.baseUrl = reader.readString(offsets[1]);
-  object.customParametersJson = reader.readStringOrNull(offsets[2]);
+  object.color = reader.readStringOrNull(offsets[2]);
+  object.customParametersJson = reader.readStringOrNull(offsets[3]);
   object.id = id;
-  object.isActive = reader.readBool(offsets[3]);
-  object.isCustom = reader.readBool(offsets[4]);
-  object.isEnabled = reader.readBool(offsets[5]);
-  object.lastSelectedModel = reader.readStringOrNull(offsets[6]);
-  object.modelSettingsJson = reader.readStringOrNull(offsets[7]);
-  object.name = reader.readString(offsets[8]);
-  object.providerId = reader.readString(offsets[9]);
-  object.savedModels = reader.readStringList(offsets[10]) ?? [];
+  object.isActive = reader.readBool(offsets[4]);
+  object.isCustom = reader.readBool(offsets[5]);
+  object.isEnabled = reader.readBool(offsets[6]);
+  object.lastSelectedModel = reader.readStringOrNull(offsets[7]);
+  object.modelSettingsJson = reader.readStringOrNull(offsets[8]);
+  object.name = reader.readString(offsets[9]);
+  object.providerId = reader.readString(offsets[10]);
+  object.savedModels = reader.readStringList(offsets[11]) ?? [];
   return object;
 }
 
@@ -185,20 +208,22 @@ P _providerConfigEntityDeserializeProp<P>(
     case 2:
       return (reader.readStringOrNull(offset)) as P;
     case 3:
-      return (reader.readBool(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 4:
       return (reader.readBool(offset)) as P;
     case 5:
       return (reader.readBool(offset)) as P;
     case 6:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 7:
       return (reader.readStringOrNull(offset)) as P;
     case 8:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 9:
       return (reader.readString(offset)) as P;
     case 10:
+      return (reader.readString(offset)) as P;
+    case 11:
       return (reader.readStringList(offset) ?? []) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -675,6 +700,162 @@ extension ProviderConfigEntityQueryFilter on QueryBuilder<ProviderConfigEntity,
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.greaterThan(
         property: r'baseUrl',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity,
+      QAfterFilterCondition> colorIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'color',
+      ));
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity,
+      QAfterFilterCondition> colorIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'color',
+      ));
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity,
+      QAfterFilterCondition> colorEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'color',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity,
+      QAfterFilterCondition> colorGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'color',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity,
+      QAfterFilterCondition> colorLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'color',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity,
+      QAfterFilterCondition> colorBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'color',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity,
+      QAfterFilterCondition> colorStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'color',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity,
+      QAfterFilterCondition> colorEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'color',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity,
+          QAfterFilterCondition>
+      colorContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'color',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity,
+          QAfterFilterCondition>
+      colorMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'color',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity,
+      QAfterFilterCondition> colorIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'color',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity,
+      QAfterFilterCondition> colorIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'color',
         value: '',
       ));
     });
@@ -1775,6 +1956,20 @@ extension ProviderConfigEntityQuerySortBy
   }
 
   QueryBuilder<ProviderConfigEntity, ProviderConfigEntity, QAfterSortBy>
+      sortByColor() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'color', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity, QAfterSortBy>
+      sortByColorDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'color', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity, QAfterSortBy>
       sortByCustomParametersJson() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'customParametersJson', Sort.asc);
@@ -1914,6 +2109,20 @@ extension ProviderConfigEntityQuerySortThenBy
       thenByBaseUrlDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'baseUrl', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity, QAfterSortBy>
+      thenByColor() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'color', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity, QAfterSortBy>
+      thenByColorDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'color', Sort.desc);
     });
   }
 
@@ -2061,6 +2270,13 @@ extension ProviderConfigEntityQueryWhereDistinct
   }
 
   QueryBuilder<ProviderConfigEntity, ProviderConfigEntity, QDistinct>
+      distinctByColor({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'color', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity, QDistinct>
       distinctByCustomParametersJson({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'customParametersJson',
@@ -2150,6 +2366,13 @@ extension ProviderConfigEntityQueryProperty on QueryBuilder<
   }
 
   QueryBuilder<ProviderConfigEntity, String?, QQueryOperations>
+      colorProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'color');
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, String?, QQueryOperations>
       customParametersJsonProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'customParametersJson');
@@ -2211,6 +2434,9 @@ extension ProviderConfigEntityQueryProperty on QueryBuilder<
     });
   }
 }
+
+// coverage:ignore-file
+// ignore_for_file: duplicate_ignore, non_constant_identifier_names, constant_identifier_names, invalid_use_of_protected_member, unnecessary_cast, prefer_const_constructors, lines_longer_than_80_chars, require_trailing_commas, inference_failure_on_function_invocation, unnecessary_parenthesis, unnecessary_raw_strings, unnecessary_null_checks, join_return_with_assignment, prefer_final_locals, avoid_js_rounded_ints, avoid_positional_boolean_parameters, always_specify_types
 
 extension GetAppSettingsEntityCollection on Isar {
   IsarCollection<AppSettingsEntity> get appSettingsEntitys => this.collection();
@@ -2319,6 +2545,7 @@ const AppSettingsEntitySchema = CollectionSchema(
   attach: _appSettingsEntityAttach,
   version: '3.1.0+1',
 );
+
 int _appSettingsEntityEstimateSize(
   AppSettingsEntity object,
   List<int> offsets,

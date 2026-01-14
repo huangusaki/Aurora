@@ -18,11 +18,13 @@ class _MobileSettingsPageState extends ConsumerState<MobileSettingsPage> {
   final TextEditingController _apiKeyController = TextEditingController();
   final TextEditingController _baseUrlController = TextEditingController();
   final TextEditingController _userNameController = TextEditingController();
+  final TextEditingController _colorController = TextEditingController();
   @override
   void dispose() {
     _apiKeyController.dispose();
     _baseUrlController.dispose();
     _userNameController.dispose();
+    _colorController.dispose();
     super.dispose();
   }
 
@@ -59,6 +61,32 @@ class _MobileSettingsPageState extends ConsumerState<MobileSettingsPage> {
                   subtitle: Text(activeProvider?.name ?? l10n.notConfigured),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => _showProviderPicker(context, settingsState),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.palette),
+                  title: const Text('Color'),
+                  subtitle: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (activeProvider?.color != null &&
+                          activeProvider!.color!.isNotEmpty)
+                        Container(
+                          width: 16,
+                          height: 16,
+                          margin: const EdgeInsets.only(right: 8),
+                          decoration: BoxDecoration(
+                            color: Color(int.tryParse(activeProvider.color!
+                                    .replaceFirst('#', '0xFF')) ??
+                                0xFF000000),
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(color: Colors.grey),
+                          ),
+                        ),
+                      Text(activeProvider?.color ?? l10n.notConfigured),
+                    ],
+                  ),
+                  trailing: const Icon(Icons.edit),
+                  onTap: () => _showColorEditor(context, activeProvider),
                 ),
                 ListTile(
                   leading: const Icon(Icons.key),
@@ -391,6 +419,49 @@ class _MobileSettingsPageState extends ConsumerState<MobileSettingsPage> {
               ref.read(settingsProvider.notifier).updateProvider(
                     id: provider.id,
                     baseUrl: _baseUrlController.text,
+                  );
+              Navigator.pop(ctx);
+            },
+            child: Text(l10n.save),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showColorEditor(BuildContext context, ProviderConfig? provider) {
+    if (provider == null) return;
+    final l10n = AppLocalizations.of(context)!;
+    _colorController.text = provider.color ?? '';
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Theme.of(context).brightness == Brightness.dark
+            ? const Color(0xFF202020)
+            : Colors.white,
+        surfaceTintColor: Colors.transparent,
+        title: const Text('Edit Color'),
+        content: TextField(
+          controller: _colorController,
+          decoration: const InputDecoration(
+            hintText: '#FF0000',
+            labelText: 'Hex Color',
+            border: OutlineInputBorder(),
+          ),
+          onChanged: (value) {
+            // Force rebuild if needed
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(l10n.cancel),
+          ),
+          TextButton(
+            onPressed: () {
+              ref.read(settingsProvider.notifier).updateProvider(
+                    id: provider.id,
+                    color: _colorController.text,
                   );
               Navigator.pop(ctx);
             },
