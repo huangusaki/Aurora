@@ -1,4 +1,5 @@
 name: "Package Application"
+run-name: ${{ github.ref_type == 'tag' && format('Release {0}', github.ref_name) || format('Manual Build - {0}', github.event.head_commit.message) }}
 
 permissions:
   contents: write
