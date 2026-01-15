@@ -3,7 +3,7 @@ import 'package:fluent_ui/fluent_ui.dart' as fluent;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
+import '../selectable_markdown/selectable_markdown.dart';
 import 'package:super_clipboard/super_clipboard.dart';
 import '../../chat_provider.dart';
 import '../../../domain/message.dart';
@@ -11,7 +11,7 @@ import '../chat_image_bubble.dart';
 import '../reasoning_display.dart';
 import 'chat_utils.dart';
 import 'tool_output.dart';
-import 'code_block_builder.dart';
+
 
 class MergedMessageBubble extends ConsumerStatefulWidget {
   final MergedGroupItem group;
@@ -34,6 +34,7 @@ class _MergedMessageBubbleState extends ConsumerState<MergedMessageBubble>
   bool _isEditing = false;
   late TextEditingController _editController;
   final FocusNode _focusNode = FocusNode();
+  final ScrollController _editScrollController = ScrollController();
   @override
   bool get wantKeepAlive => true;
   @override
@@ -47,6 +48,7 @@ class _MergedMessageBubbleState extends ConsumerState<MergedMessageBubble>
   void dispose() {
     _editController.dispose();
     _focusNode.dispose();
+    _editScrollController.dispose();
     super.dispose();
   }
 
@@ -60,20 +62,17 @@ class _MergedMessageBubbleState extends ConsumerState<MergedMessageBubble>
       case 'edit':
         setState(() {
           _isEditing = true;
-          _editController.text = group.messages.last.content;
         });
         WidgetsBinding.instance
             .addPostFrameCallback((_) => _focusNode.requestFocus());
         break;
       case 'copy':
-        final text = group.messages.map((m) => m.content).join('\n').trim();
         final item = DataWriterItem();
-        item.add(Formats.plainText(
-            text.isNotEmpty ? text : group.messages.last.content));
+        item.add(Formats.plainText(widget.group.messages.last.content));
         SystemClipboard.instance?.write([item]);
         break;
       case 'delete':
-        for (final msg in group.messages) {
+        for (final msg in widget.group.messages) {
           notifier.deleteMessage(msg.id);
         }
         break;
@@ -199,6 +198,8 @@ class _MergedMessageBubbleState extends ConsumerState<MergedMessageBubble>
                         ],
                         if (_isEditing)
                           Container(
+                            key: ValueKey(
+                                'merged_edit_container_${widget.group.messages.last.id}'),
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 12, vertical: 8),
                             decoration: BoxDecoration(
@@ -208,25 +209,31 @@ class _MergedMessageBubbleState extends ConsumerState<MergedMessageBubble>
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
-                                fluent.TextBox(
-                                  controller: _editController,
-                                  focusNode: _focusNode,
-                                  maxLines: null,
-                                  minLines: 1,
-                                  decoration:
-                                      const fluent.WidgetStatePropertyAll(
-                                          fluent.BoxDecoration(
-                                    color: Colors.transparent,
-                                    border:
-                                        Border.fromBorderSide(BorderSide.none),
-                                  )),
-                                  highlightColor: Colors.transparent,
-                                  unfocusedColor: Colors.transparent,
-                                  style: TextStyle(
-                                      fontSize: 14,
-                                      height: 1.5,
-                                      color: theme.typography.body?.color),
-                                  onSubmitted: (_) => _saveEdit(),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: fluent.TextBox(
+                                      key: ValueKey(
+                                          'merged_edit_box_${widget.group.messages.last.id}'),
+                                      controller: _editController,
+                                      scrollController: _editScrollController,
+                                      focusNode: _focusNode,
+                                      maxLines: 15,
+                                      minLines: 1,
+                                      decoration:
+                                          const fluent.WidgetStatePropertyAll(
+                                              fluent.BoxDecoration(
+                                        color: Colors.transparent,
+                                        border: Border.fromBorderSide(
+                                            BorderSide.none),
+                                      )),
+                                      highlightColor: Colors.transparent,
+                                      unfocusedColor: Colors.transparent,
+                                      style: TextStyle(
+                                          fontSize: 14,
+                                          height: 1.5,
+                                          color: theme.typography.body?.color),
+                                      onSubmitted: (_) => _saveEdit(),
+                                  ),
                                 ),
                                 const SizedBox(height: 8),
                                 Row(
@@ -343,96 +350,10 @@ class _MergedMessageBubbleState extends ConsumerState<MergedMessageBubble>
     if (message.content.isNotEmpty) {
       parts.add(fluent.FluentTheme(
         data: theme,
-        child: MarkdownBody(
+        child: SelectableMarkdown(
           data: message.content,
-          selectable: false,
-          softLineBreak: true,
-          builders: {
-            'pre': CodeBlockBuilder(
-              isDarkMode: theme.brightness == Brightness.dark,
-            ),
-          },
-          styleSheet: MarkdownStyleSheet(
-            p: TextStyle(
-              fontSize: 14,
-              height: 1.5,
-              color: theme.typography.body!.color,
-              fontFamily: Platform.isWindows ? 'Microsoft YaHei' : null,
-            ),
-            h1: TextStyle(
-              fontSize: Platform.isWindows ? 28 : 20,
-              fontWeight: FontWeight.bold,
-              height: 1.4,
-              color: theme.typography.body!.color,
-              fontFamily: Platform.isWindows ? 'Microsoft YaHei' : null,
-            ),
-            h2: TextStyle(
-              fontSize: Platform.isWindows ? 24 : 18,
-              fontWeight: FontWeight.bold,
-              height: 1.4,
-              color: theme.typography.body!.color,
-              fontFamily: Platform.isWindows ? 'Microsoft YaHei' : null,
-            ),
-            h3: TextStyle(
-              fontSize: Platform.isWindows ? 20 : 16,
-              fontWeight: FontWeight.w600,
-              height: 1.4,
-              color: theme.typography.body!.color,
-              fontFamily: Platform.isWindows ? 'Microsoft YaHei' : null,
-            ),
-            h4: TextStyle(
-              fontSize: Platform.isWindows ? 18 : 15,
-              fontWeight: FontWeight.w600,
-              height: 1.4,
-              color: theme.typography.body!.color,
-              fontFamily: Platform.isWindows ? 'Microsoft YaHei' : null,
-            ),
-            h5: TextStyle(
-              fontSize: Platform.isWindows ? 16 : 14,
-              fontWeight: FontWeight.w600,
-              height: 1.4,
-              color: theme.typography.body!.color,
-              fontFamily: Platform.isWindows ? 'Microsoft YaHei' : null,
-            ),
-            h6: TextStyle(
-              fontSize: Platform.isWindows ? 14 : 13,
-              fontWeight: FontWeight.w600,
-              height: 1.4,
-              color: theme.typography.body!.color,
-              fontFamily: Platform.isWindows ? 'Microsoft YaHei' : null,
-            ),
-            code: TextStyle(
-              color: theme.brightness == Brightness.dark
-                  ? const Color(0xFFE5C07B)
-                  : const Color(0xFF986801),
-              fontSize: Platform.isWindows ? 13 : 12,
-              fontFamily: Platform.isWindows ? 'Consolas' : 'monospace',
-            ),
-            codeblockDecoration: const BoxDecoration(),
-            codeblockPadding: EdgeInsets.zero,
-            tableBody: TextStyle(
-              fontSize: Platform.isWindows ? 14 : 12,
-              color: theme.typography.body!.color,
-              fontFamily: Platform.isWindows ? 'Microsoft YaHei' : null,
-            ),
-            tableHead: TextStyle(
-              fontSize: Platform.isWindows ? 14 : 12,
-              fontWeight: FontWeight.bold,
-              color: theme.typography.body!.color,
-              fontFamily: Platform.isWindows ? 'Microsoft YaHei' : null,
-            ),
-            blockquote: TextStyle(
-              fontSize: Platform.isWindows ? 14 : 13,
-              color: theme.typography.body!.color?.withOpacity(0.8),
-              fontStyle: FontStyle.italic,
-              fontFamily: Platform.isWindows ? 'Microsoft YaHei' : null,
-            ),
-            listBullet: TextStyle(
-              fontSize: 14,
-              color: theme.typography.body!.color,
-              fontFamily: Platform.isWindows ? 'Microsoft YaHei' : null,
-            ),
-          ),
+          isDark: theme.brightness == Brightness.dark,
+          textColor: theme.typography.body!.color!,
         ),
       ));
     }

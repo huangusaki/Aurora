@@ -520,215 +520,211 @@ class ChatViewState extends ConsumerState<ChatView> {
                     return false;
                   },
                   child: Platform.isWindows
-                      ? SelectionArea(
-                          child: Padding(
-                            padding: const EdgeInsets.only(
-                                right: 4.0, top: 2.0, bottom: 2.0),
-                            child: fluent.Scrollbar(
-                              controller: _scrollController,
-                              thumbVisibility: true,
-                              style: const fluent.ScrollbarThemeData(
-                                thickness: 6,
-                                hoveringThickness: 10,
-                              ),
-                              child: ScrollConfiguration(
-                                behavior: ScrollConfiguration.of(context)
-                                    .copyWith(scrollbars: false),
-                                child: ListView.builder(
-                                  cacheExtent: 2000,
-                                  key: ValueKey(ref
-                                      .watch(selectedHistorySessionIdProvider)),
-                                  controller: _scrollController,
-                                  reverse: true,
-                                  padding: const EdgeInsets.all(16),
-                                  itemCount: displayItems.length,
-                                  itemBuilder: (context, index) {
-                                    final reversedIndex =
-                                        displayItems.length - 1 - index;
-                                    final item = displayItems[reversedIndex];
-                                    final isLatest = index == 0;
-                                    final isGenerating = isLatest && isLoading;
-                                    if (item is MergedGroupItem) {
-                                      return MergedMessageBubble(
-                                        key: ValueKey(item.id),
-                                        group: item,
+                      ? Padding(
+                          padding: const EdgeInsets.only(
+                              right: 4.0, top: 2.0, bottom: 2.0),
+                          child: fluent.Scrollbar(
+                            controller: _scrollController,
+                            thumbVisibility: true,
+                            style: const fluent.ScrollbarThemeData(
+                              thickness: 6,
+                              hoveringThickness: 10,
+                            ),
+                            child: ScrollConfiguration(
+                              behavior: ScrollConfiguration.of(context)
+                                  .copyWith(scrollbars: false),
+                              child: ListView.builder(
+                                cacheExtent: 20000,
+                                key: ValueKey(ref
+                                    .watch(selectedHistorySessionIdProvider)),
+                                controller: _scrollController,
+                                reverse: true,
+                                padding: const EdgeInsets.all(16),
+                                itemCount: displayItems.length,
+                                itemBuilder: (context, index) {
+                                  final reversedIndex =
+                                      displayItems.length - 1 - index;
+                                  final item = displayItems[reversedIndex];
+                                  final isLatest = index == 0;
+                                  final isGenerating = isLatest && isLoading;
+                                  if (item is MergedGroupItem) {
+                                    return MergedMessageBubble(
+                                      key: ValueKey(item.id),
+                                      group: item,
+                                      isLast: isLatest,
+                                      isGenerating: isGenerating,
+                                    );
+                                  } else if (item is SingleMessageItem) {
+                                    final msg = item.message;
+                                    bool mergeTop = false;
+                                    if (reversedIndex > 0) {
+                                      final prevItem =
+                                          displayItems[reversedIndex - 1];
+                                      if (prevItem is SingleMessageItem &&
+                                          prevItem.message.isUser) {
+                                        mergeTop = true;
+                                      }
+                                    }
+                                    bool mergeBottom = false;
+                                    if (reversedIndex <
+                                        displayItems.length - 1) {
+                                      final nextItem =
+                                          displayItems[reversedIndex + 1];
+                                      if (nextItem is SingleMessageItem &&
+                                          nextItem.message.isUser) {
+                                        mergeBottom = true;
+                                      }
+                                    }
+                                    bool showAvatar = !mergeTop;
+                                    final bubble = MessageBubble(
+                                        key: ValueKey(msg.id),
+                                        message: msg,
                                         isLast: isLatest,
-                                        isGenerating: isGenerating,
+                                        isGenerating: false,
+                                        showAvatar: showAvatar,
+                                        mergeTop: mergeTop,
+                                        mergeBottom: mergeBottom);
+                                    if (isLatest) {
+                                      return TweenAnimationBuilder<double>(
+                                        tween: Tween(begin: 0.0, end: 1.0),
+                                        duration:
+                                            const Duration(milliseconds: 300),
+                                        curve: Curves.easeOutCubic,
+                                        builder: (context, value, child) {
+                                          return Opacity(
+                                            opacity: value,
+                                            child: Transform.translate(
+                                              offset:
+                                                  Offset(0, 20 * (1 - value)),
+                                              child: child,
+                                            ),
+                                          );
+                                        },
+                                        child: bubble,
                                       );
-                                    } else if (item is SingleMessageItem) {
-                                      final msg = item.message;
-                                      bool mergeTop = false;
-                                      if (reversedIndex > 0) {
-                                        final prevItem =
-                                            displayItems[reversedIndex - 1];
-                                        if (prevItem is SingleMessageItem &&
-                                            prevItem.message.isUser) {
-                                          mergeTop = true;
+                                    }
+                                    return bubble;
+                                  }
+                                  return const SizedBox.shrink();
+                                },
+                                physics: const ClampingScrollPhysics(),
+                              ),
+                            ),
+                          ),
+                        )
+                      : CustomScrollView(
+                          controller: _scrollController,
+                          physics: const AlwaysScrollableScrollPhysics(
+                              parent: BouncingScrollPhysics()),
+                          reverse: true,
+                          slivers: [
+                            SliverFillRemaining(
+                              hasScrollBody: false,
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                verticalDirection: VerticalDirection.up,
+                                children: [
+                                  for (int index = 0;
+                                      index < displayItems.length;
+                                      index++)
+                                    Builder(builder: (context) {
+                                      final reversedIndex =
+                                          displayItems.length - 1 - index;
+                                      final item =
+                                          displayItems[reversedIndex];
+                                      final isLatest = index == 0;
+                                      final isGenerating =
+                                          isLatest && isLoading;
+                                      if (item is MergedGroupItem) {
+                                        final bubble = MergedMessageBubble(
+                                          key: ValueKey(item.id),
+                                          group: item,
+                                          isLast: isLatest,
+                                          isGenerating: isGenerating,
+                                        );
+                                        if (isLatest) {
+                                          return TweenAnimationBuilder<
+                                              double>(
+                                            key: ValueKey(item.id),
+                                            tween:
+                                                Tween(begin: 0.0, end: 1.0),
+                                            duration: const Duration(
+                                                milliseconds: 300),
+                                            curve: Curves.easeOutCubic,
+                                            builder: (context, value, child) {
+                                              return Opacity(
+                                                opacity: value,
+                                                child: Transform.translate(
+                                                  offset: Offset(
+                                                      0, 20 * (1 - value)),
+                                                  child: child,
+                                                ),
+                                              );
+                                            },
+                                            child: bubble,
+                                          );
                                         }
-                                      }
-                                      bool mergeBottom = false;
-                                      if (reversedIndex <
-                                          displayItems.length - 1) {
-                                        final nextItem =
-                                            displayItems[reversedIndex + 1];
-                                        if (nextItem is SingleMessageItem &&
-                                            nextItem.message.isUser) {
-                                          mergeBottom = true;
+                                        return bubble;
+                                      } else if (item is SingleMessageItem) {
+                                        final msg = item.message;
+                                        bool mergeTop = false;
+                                        if (reversedIndex > 0) {
+                                          final prevItem =
+                                              displayItems[reversedIndex - 1];
+                                          if (prevItem is SingleMessageItem &&
+                                              prevItem.message.isUser)
+                                            mergeTop = true;
                                         }
-                                      }
-                                      bool showAvatar = !mergeTop;
-                                      final bubble = MessageBubble(
+                                        bool mergeBottom = false;
+                                        if (reversedIndex <
+                                            displayItems.length - 1) {
+                                          final nextItem =
+                                              displayItems[reversedIndex + 1];
+                                          if (nextItem is SingleMessageItem &&
+                                              nextItem.message.isUser)
+                                            mergeBottom = true;
+                                        }
+                                        bool showAvatar = !mergeTop;
+                                        final bubble = MessageBubble(
                                           key: ValueKey(msg.id),
                                           message: msg,
                                           isLast: isLatest,
                                           isGenerating: false,
                                           showAvatar: showAvatar,
                                           mergeTop: mergeTop,
-                                          mergeBottom: mergeBottom);
-                                      if (isLatest) {
-                                        return TweenAnimationBuilder<double>(
-                                          tween: Tween(begin: 0.0, end: 1.0),
-                                          duration:
-                                              const Duration(milliseconds: 300),
-                                          curve: Curves.easeOutCubic,
-                                          builder: (context, value, child) {
-                                            return Opacity(
-                                              opacity: value,
-                                              child: Transform.translate(
-                                                offset:
-                                                    Offset(0, 20 * (1 - value)),
-                                                child: child,
-                                              ),
-                                            );
-                                          },
-                                          child: bubble,
+                                          mergeBottom: mergeBottom,
                                         );
+                                        if (isLatest) {
+                                          return TweenAnimationBuilder<
+                                              double>(
+                                            key: ValueKey(msg.id),
+                                            tween:
+                                                Tween(begin: 0.0, end: 1.0),
+                                            duration: const Duration(
+                                                milliseconds: 300),
+                                            curve: Curves.easeOutCubic,
+                                            builder: (context, value, child) {
+                                              return Opacity(
+                                                opacity: value,
+                                                child: Transform.translate(
+                                                  offset: Offset(
+                                                      0, 20 * (1 - value)),
+                                                  child: child,
+                                                ),
+                                              );
+                                            },
+                                            child: bubble,
+                                          );
+                                        }
+                                        return bubble;
                                       }
-                                      return bubble;
-                                    }
-                                    return const SizedBox.shrink();
-                                  },
-                                  physics: const ClampingScrollPhysics(),
-                                ),
+                                      return const SizedBox.shrink();
+                                    }),
+                                  const SizedBox(height: 16),
+                                ],
                               ),
                             ),
-                          ),
-                        )
-                      : SelectionArea(
-                          child: CustomScrollView(
-                            controller: _scrollController,
-                            physics: const AlwaysScrollableScrollPhysics(
-                                parent: BouncingScrollPhysics()),
-                            reverse: true,
-                            slivers: [
-                              SliverFillRemaining(
-                                hasScrollBody: false,
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.end,
-                                  verticalDirection: VerticalDirection.up,
-                                  children: [
-                                    for (int index = 0;
-                                        index < displayItems.length;
-                                        index++)
-                                      Builder(builder: (context) {
-                                        final reversedIndex =
-                                            displayItems.length - 1 - index;
-                                        final item =
-                                            displayItems[reversedIndex];
-                                        final isLatest = index == 0;
-                                        final isGenerating =
-                                            isLatest && isLoading;
-                                        if (item is MergedGroupItem) {
-                                          final bubble = MergedMessageBubble(
-                                            key: ValueKey(item.id),
-                                            group: item,
-                                            isLast: isLatest,
-                                            isGenerating: isGenerating,
-                                          );
-                                          if (isLatest) {
-                                            return TweenAnimationBuilder<
-                                                double>(
-                                              key: ValueKey(item.id),
-                                              tween:
-                                                  Tween(begin: 0.0, end: 1.0),
-                                              duration: const Duration(
-                                                  milliseconds: 300),
-                                              curve: Curves.easeOutCubic,
-                                              builder: (context, value, child) {
-                                                return Opacity(
-                                                  opacity: value,
-                                                  child: Transform.translate(
-                                                    offset: Offset(
-                                                        0, 20 * (1 - value)),
-                                                    child: child,
-                                                  ),
-                                                );
-                                              },
-                                              child: bubble,
-                                            );
-                                          }
-                                          return bubble;
-                                        } else if (item is SingleMessageItem) {
-                                          final msg = item.message;
-                                          bool mergeTop = false;
-                                          if (reversedIndex > 0) {
-                                            final prevItem =
-                                                displayItems[reversedIndex - 1];
-                                            if (prevItem is SingleMessageItem &&
-                                                prevItem.message.isUser)
-                                              mergeTop = true;
-                                          }
-                                          bool mergeBottom = false;
-                                          if (reversedIndex <
-                                              displayItems.length - 1) {
-                                            final nextItem =
-                                                displayItems[reversedIndex + 1];
-                                            if (nextItem is SingleMessageItem &&
-                                                nextItem.message.isUser)
-                                              mergeBottom = true;
-                                          }
-                                          bool showAvatar = !mergeTop;
-                                          final bubble = MessageBubble(
-                                            key: ValueKey(msg.id),
-                                            message: msg,
-                                            isLast: isLatest,
-                                            isGenerating: false,
-                                            showAvatar: showAvatar,
-                                            mergeTop: mergeTop,
-                                            mergeBottom: mergeBottom,
-                                          );
-                                          if (isLatest) {
-                                            return TweenAnimationBuilder<
-                                                double>(
-                                              key: ValueKey(msg.id),
-                                              tween:
-                                                  Tween(begin: 0.0, end: 1.0),
-                                              duration: const Duration(
-                                                  milliseconds: 300),
-                                              curve: Curves.easeOutCubic,
-                                              builder: (context, value, child) {
-                                                return Opacity(
-                                                  opacity: value,
-                                                  child: Transform.translate(
-                                                    offset: Offset(
-                                                        0, 20 * (1 - value)),
-                                                    child: child,
-                                                  ),
-                                                );
-                                              },
-                                              child: bubble,
-                                            );
-                                          }
-                                          return bubble;
-                                        }
-                                        return const SizedBox.shrink();
-                                      }),
-                                    const SizedBox(height: 16),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
+                          ],
                         ),
                 ),
               ),

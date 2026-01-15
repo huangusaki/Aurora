@@ -4,7 +4,7 @@ import 'package:fluent_ui/fluent_ui.dart' as fluent;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
+import '../selectable_markdown/selectable_markdown.dart';
 import 'package:super_clipboard/super_clipboard.dart';
 import 'package:pasteboard/pasteboard.dart';
 import 'package:file_selector/file_selector.dart';
@@ -17,7 +17,7 @@ import '../../../../history/presentation/widgets/hover_image_preview.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 import 'chat_utils.dart';
 import 'tool_output.dart';
-import 'code_block_builder.dart';
+
 
 class MessageBubble extends ConsumerStatefulWidget {
   final Message message;
@@ -43,7 +43,9 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
   bool _isHovering = false;
   bool _isEditing = false;
   late TextEditingController _editController;
+
   final FocusNode _focusNode = FocusNode();
+  final ScrollController _editScrollController = ScrollController();
   late List<String> _newAttachments;
   @override
   void initState() {
@@ -207,6 +209,7 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
   void dispose() {
     _editController.dispose();
     _focusNode.dispose();
+    _editScrollController.dispose();
     super.dispose();
   }
 
@@ -399,6 +402,8 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
                                   crossAxisAlignment: CrossAxisAlignment.end,
                                   children: [
                                     Container(
+                                      key: ValueKey(
+                                          'edit_container_${widget.message.id}'),
                                       padding: const EdgeInsets.symmetric(
                                           horizontal: 12, vertical: 8),
                                       decoration: BoxDecoration(
@@ -439,39 +444,46 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
                                                 }
                                                 return KeyEventResult.ignored;
                                               },
-                                              child: fluent.TextBox(
-                                                controller: _editController,
-                                                focusNode: _focusNode,
-                                                maxLines: null,
-                                                minLines: 1,
-                                                placeholder: '编辑消息...',
-                                                decoration: const fluent
-                                                    .WidgetStatePropertyAll(
-                                                    fluent.BoxDecoration(
-                                                  color: Colors.transparent,
-                                                  border: Border.fromBorderSide(
-                                                      BorderSide.none),
-                                                )),
-                                                highlightColor:
-                                                    fluent.Colors.transparent,
-                                                unfocusedColor:
-                                                    fluent.Colors.transparent,
-                                                foregroundDecoration: const fluent
-                                                    .WidgetStatePropertyAll(
-                                                    fluent.BoxDecoration(
-                                                  border: Border.fromBorderSide(
-                                                      BorderSide.none),
-                                                )),
-                                                style: TextStyle(
-                                                    fontSize: 14,
-                                                    height: 1.5,
-                                                    color: theme
-                                                        .typography.body?.color),
-                                                cursorColor: theme.accentColor,
-                                                textInputAction:
-                                                    TextInputAction.send,
-                                                // onSubmitted removed as we handle it in Focus manually now for finer control
-                                                // onSubmitted: (_) => _saveEdit(), 
+                                              child: SizedBox(
+                                                width: double.infinity,
+                                                child: fluent.TextBox(
+                                                    key: ValueKey(
+                                                        'edit_box_${widget.message.id}'),
+                                                    controller: _editController,
+                                                    scrollController:
+                                                        _editScrollController,
+                                                    focusNode: _focusNode,
+                                                    maxLines: 15,
+                                                    minLines: 1,
+                                                    placeholder: '编辑消息...',
+                                                    decoration: const fluent
+                                                        .WidgetStatePropertyAll(
+                                                        fluent.BoxDecoration(
+                                                      color: Colors.transparent,
+                                                      border: Border.fromBorderSide(
+                                                          BorderSide.none),
+                                                    )),
+                                                    highlightColor:
+                                                        fluent.Colors.transparent,
+                                                    unfocusedColor:
+                                                        fluent.Colors.transparent,
+                                                    foregroundDecoration: const fluent
+                                                        .WidgetStatePropertyAll(
+                                                        fluent.BoxDecoration(
+                                                      border: Border.fromBorderSide(
+                                                          BorderSide.none),
+                                                    )),
+                                                    style: TextStyle(
+                                                        fontSize: 14,
+                                                        height: 1.5,
+                                                        color: theme
+                                                            .typography.body?.color),
+                                                    cursorColor: theme.accentColor,
+                                                    textInputAction:
+                                                        TextInputAction.send,
+                                                    // onSubmitted removed as we handle it in Focus manually now for finer control
+                                                  // onSubmitted: (_) => _saveEdit(), 
+                                                ),
                                               ),
                                             ),
                                           ),
@@ -630,91 +642,10 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
                               else
                                 fluent.FluentTheme(
                                   data: theme,
-                                  child: MarkdownBody(
+                                  child: SelectableMarkdown(
                                     data: message.content,
-                                    selectable: false,
-                                    softLineBreak: true,
-                                    builders: {
-                                      'code': CodeBlockBuilder(
-                                        isDarkMode:
-                                            theme.brightness == Brightness.dark,
-                                      ),
-                                    },
-                                    styleSheet: MarkdownStyleSheet(
-                                      p: TextStyle(
-                                        fontSize: 14,
-                                        height: 1.5,
-                                        color: theme.typography.body!.color,
-                                      ),
-                                      h1: TextStyle(
-                                        fontSize: Platform.isWindows ? 28 : 20,
-                                        fontWeight: FontWeight.bold,
-                                        height: 1.4,
-                                        color: theme.typography.body!.color,
-                                      ),
-                                      h2: TextStyle(
-                                        fontSize: Platform.isWindows ? 24 : 18,
-                                        fontWeight: FontWeight.bold,
-                                        height: 1.4,
-                                        color: theme.typography.body!.color,
-                                      ),
-                                      h3: TextStyle(
-                                        fontSize: Platform.isWindows ? 20 : 16,
-                                        fontWeight: FontWeight.w600,
-                                        height: 1.4,
-                                        color: theme.typography.body!.color,
-                                      ),
-                                      h4: TextStyle(
-                                        fontSize: Platform.isWindows ? 18 : 15,
-                                        fontWeight: FontWeight.w600,
-                                        height: 1.4,
-                                        color: theme.typography.body!.color,
-                                      ),
-                                      h5: TextStyle(
-                                        fontSize: Platform.isWindows ? 16 : 14,
-                                        fontWeight: FontWeight.w600,
-                                        height: 1.4,
-                                        color: theme.typography.body!.color,
-                                      ),
-                                      h6: TextStyle(
-                                        fontSize: Platform.isWindows ? 14 : 13,
-                                        fontWeight: FontWeight.w600,
-                                        height: 1.4,
-                                        color: theme.typography.body!.color,
-                                      ),
-                                      code: TextStyle(
-                                        color:
-                                            theme.brightness == Brightness.dark
-                                                ? const Color(0xFFE5C07B)
-                                                : const Color(0xFF986801),
-                                        fontSize: Platform.isWindows ? 13 : 12,
-                                        fontFamily: Platform.isWindows
-                                            ? 'Consolas'
-                                            : 'monospace',
-                                      ),
-                                      codeblockDecoration:
-                                          const BoxDecoration(color: Colors.transparent),
-                                      codeblockPadding: EdgeInsets.zero,
-                                      tableBody: TextStyle(
-                                        fontSize: Platform.isWindows ? 14 : 12,
-                                        color: theme.typography.body!.color,
-                                      ),
-                                      tableHead: TextStyle(
-                                        fontSize: Platform.isWindows ? 14 : 12,
-                                        fontWeight: FontWeight.bold,
-                                        color: theme.typography.body!.color,
-                                      ),
-                                      blockquote: TextStyle(
-                                        fontSize: Platform.isWindows ? 14 : 13,
-                                        color: theme.typography.body!.color
-                                            ?.withOpacity(0.8),
-                                        fontStyle: FontStyle.italic,
-                                      ),
-                                      listBullet: TextStyle(
-                                        fontSize: 14,
-                                        color: theme.typography.body!.color,
-                                      ),
-                                    ),
+                                    isDark: theme.brightness == Brightness.dark,
+                                    textColor: theme.typography.body!.color!,
                                   ),
                                 ),
                               if (isUser &&

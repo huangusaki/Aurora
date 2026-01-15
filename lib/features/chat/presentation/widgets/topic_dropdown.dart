@@ -15,18 +15,7 @@ class TopicDropdown extends ConsumerStatefulWidget {
 
 class _TopicDropdownState extends ConsumerState<TopicDropdown> {
   final fluent.FlyoutController _flyoutController = fluent.FlyoutController();
-  // Only use GlobalKey on desktop to avoid "Duplicate GlobalKey" issues on mobile
-  // when widget might be rebuilt or reparented.
-  GlobalKey? _buttonKey;
-
-  @override
-  void initState() {
-    super.initState();
-    if (!widget.isMobile) {
-      _buttonKey = GlobalKey();
-    }
-  }
-
+  final GlobalKey _buttonKey = GlobalKey();
   @override
   void dispose() {
     _flyoutController.dispose();
@@ -177,7 +166,7 @@ class _TopicDropdownState extends ConsumerState<TopicDropdown> {
             key: _buttonKey,
             onPressed: () {
               final renderBox =
-                  _buttonKey?.currentContext?.findRenderObject() as RenderBox?;
+                  _buttonKey.currentContext?.findRenderObject() as RenderBox?;
               final width = renderBox?.size.width;
               _flyoutController.showFlyout(
                   placementMode: fluent.FlyoutPlacementMode.bottomLeft,

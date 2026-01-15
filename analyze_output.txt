@@ -1,0 +1,63 @@
+Resolving dependencies...
+Downloading packages...
+  _fe_analyzer_shared 61.0.0 (93.0.0 available)
+  analyzer 5.13.0 (10.0.0 available)
+  analyzer_plugin 0.11.2 (0.14.0 available)
+  build 2.4.1 (4.0.4 available)
+  build_config 1.1.2 (1.2.0 available)
+  build_resolvers 2.4.2 (3.0.4 available)
+  build_runner 2.4.13 (2.10.5 available)
+  build_runner_core 7.3.2 (9.3.2 available)
+  built_value 8.12.1 (8.12.3 available)
+  characters 1.4.0 (1.4.1 available)
+  code_builder 4.11.0 (4.11.1 available)
+  custom_lint_core 0.6.3 (0.8.2 available)
+  dart_style 2.3.2 (3.1.4 available)
+  device_info_plus 11.5.0 (12.3.0 available)
+  ffi 2.1.4 (2.1.5 available)
+  file_selector_ios 0.5.3+4 (0.5.3+5 available)
+  flutter_displaymode 0.6.0 (0.7.0 available)
+  flutter_lints 5.0.0 (6.0.0 available)
+  flutter_markdown 0.7.7+1 (discontinued replaced by flutter_markdown_plus)
+  flutter_riverpod 2.6.1 (3.1.0 available)
+  freezed_annotation 2.4.4 (3.1.0 available)
+  js 0.6.7 (0.7.2 available)
+  lints 5.1.1 (6.0.0 available)
+  matcher 0.12.17 (0.12.18 available)
+  material_color_utilities 0.11.1 (0.13.0 available)
+  math_expressions 2.7.0 (3.1.0 available)
+  path_provider_foundation 2.5.1 (2.6.0 available)
+  permission_handler 11.4.0 (12.0.1 available)
+  permission_handler_android 12.1.0 (13.0.1 available)
+  petitparser 6.1.0 (7.0.1 available)
+  riverpod 2.6.1 (3.1.0 available)
+  riverpod_analyzer_utils 0.5.1 (0.5.10 available)
+  riverpod_annotation 2.6.1 (4.0.0 available)
+  riverpod_generator 2.4.0 (4.0.0+1 available)
+  shelf_web_socket 2.0.1 (3.0.0 available)
+  source_gen 1.5.0 (4.1.2 available)
+  test_api 0.7.7 (0.7.9 available)
+  watcher 1.2.0 (1.2.1 available)
+  window_manager 0.4.3 (0.5.1 available)
+  xml 6.5.0 (6.6.1 available)
+Got dependencies!
+1 package is discontinued.
+39 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+Analyzing 2 items...                                            
+
+   info - The import of 'package:flutter/services.dart' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart' - lib\features\chat\presentation\widgets\components\merged_message_bubble.dart:4:8 - unnecessary_import
+warning - The value of the field '_isHovering' isn't used - lib\features\chat\presentation\widgets\components\merged_message_bubble.dart:33:8 - unused_field
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\chat\presentation\widgets\components\merged_message_bubble.dart:191:45 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\chat\presentation\widgets\components\merged_message_bubble.dart:388:56 - deprecated_member_use
+warning - Unused import: '../../../../history/presentation/widgets/hover_image_preview.dart' - lib\features\chat\presentation\widgets\components\message_bubble.dart:16:8 - unused_import
+warning - The value of the field '_isHovering' isn't used - lib\features\chat\presentation\widgets\components\message_bubble.dart:43:8 - unused_field
+warning - The receiver can't be null, so the null-aware operator '?.' is unnecessary - lib\features\chat\presentation\widgets\components\message_bubble.dart:321:136 - invalid_null_aware_operator
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\chat\presentation\widgets\components\message_bubble.dart:378:49 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\chat\presentation\widgets\components\message_bubble.dart:522:64 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\chat\presentation\widgets\components\message_bubble.dart:531:68 - deprecated_member_use
+   info - 'ButtonState' is deprecated and shouldn't be used. Use WidgetStateProperty instead. Will be removed in the next version - lib\features\chat\presentation\widgets\components\message_bubble.dart:582:62 - deprecated_member_use
+   info - 'isHovering' is deprecated and shouldn't be used. Use isHovered instead. Will be removed in the next version - lib\features\chat\presentation\widgets\components\message_bubble.dart:584:64 - deprecated_member_use
+   info - Statements in an if should be enclosed in a block - lib\features\chat\presentation\widgets\components\message_bubble.dart:585:55 - curly_braces_in_flow_control_structures
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\chat\presentation\widgets\components\message_bubble.dart:691:49 - deprecated_member_use
+
