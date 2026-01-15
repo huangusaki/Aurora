@@ -76,7 +76,7 @@ class _DesktopChatScreenState extends ConsumerState<DesktopChatScreen> {
               child: Row(
                 children: [
                   SizedBox(
-                    width: 50,
+                    width: 40,
                     height: 32,
                     child: Center(
                       child: fluent.IconButton(
@@ -91,7 +91,7 @@ class _DesktopChatScreenState extends ConsumerState<DesktopChatScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 3),
                   const ModelSelector(isWindows: true),
                   if (currentSessionId.isNotEmpty &&
                       currentSessionId != 'translation') ...[
@@ -114,7 +114,7 @@ class _DesktopChatScreenState extends ConsumerState<DesktopChatScreen> {
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 150),
                         curve: Curves.easeOut,
-                        width: isExpanded ? 120 : 50,
+                        width: isExpanded ? 120 : 40,
                         child: ClipRect(
                           child: OverflowBox(
                             minWidth: 120,
@@ -177,9 +177,10 @@ class _DesktopChatScreenState extends ConsumerState<DesktopChatScreen> {
                                                 BorderRadius.circular(6),
                                           ),
                                           child: Row(
+                                            crossAxisAlignment: CrossAxisAlignment.center,
                                             children: [
                                               Container(
-                                                width: 40,
+                                                width: 26,
                                                 height: 36,
                                                 margin: const EdgeInsets.all(2),
                                                 decoration: BoxDecoration(
@@ -192,12 +193,13 @@ class _DesktopChatScreenState extends ConsumerState<DesktopChatScreen> {
                                                 ),
                                                 child: Center(
                                                   child: fluent.Icon(item.icon,
-                                                      size: 20,
+                                                      size: 16,
                                                       color: isSelected
                                                           ? theme.accentColor
                                                           : null),
                                                 ),
                                               ),
+                                              const SizedBox(width: 10),
                                               Expanded(
                                                 child: Padding(
                                                   padding:
@@ -247,17 +249,19 @@ class _DesktopChatScreenState extends ConsumerState<DesktopChatScreen> {
                                                 BorderRadius.circular(6),
                                           ),
                                           child: Row(
+                                            crossAxisAlignment: CrossAxisAlignment.center,
                                             children: [
                                               SizedBox(
-                                                width: 40,
+                                                width: 30,
                                                 child: Center(
                                                   child: fluent.Icon(item.icon,
-                                                      size: 20,
+                                                      size: 16,
                                                       color: isSelected
                                                           ? theme.accentColor
                                                           : null),
                                                 ),
                                               ),
+                                              const SizedBox(width: 10),
                                               Expanded(
                                                 child: Padding(
                                                   padding:
@@ -316,18 +320,20 @@ class _DesktopChatScreenState extends ConsumerState<DesktopChatScreen> {
                                                   BorderRadius.circular(6),
                                             ),
                                             child: Row(
+                                              crossAxisAlignment: CrossAxisAlignment.center,
                                               children: [
                                                 SizedBox(
-                                                  width: 40,
+                                                  width: 30,
                                                   child: Center(
                                                     child: fluent.Icon(icon,
-                                                        size: 20,
+                                                        size: 16,
                                                         color: theme
                                                             .typography
                                                             .body
                                                             ?.color),
                                                   ),
                                                 ),
+                                                const SizedBox(width: 10),
                                                 Expanded(
                                                   child: Padding(
                                                     padding:

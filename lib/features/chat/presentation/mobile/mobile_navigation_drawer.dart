@@ -50,6 +50,7 @@ class MobileNavigationDrawer extends ConsumerWidget {
                           ref.read(sessionSearchQueryProvider.notifier).state =
                               value;
                         },
+                        textAlignVertical: TextAlignVertical.center,
                         decoration: InputDecoration(
                           hintText:
                               AppLocalizations.of(context)!.searchChatHistory,
@@ -59,7 +60,7 @@ class MobileNavigationDrawer extends ConsumerWidget {
                               size: 20, color: Colors.grey[600]),
                           border: InputBorder.none,
                           contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 10),
+                              horizontal: 12),
                         ),
                         style: const TextStyle(fontSize: 14),
                       ),

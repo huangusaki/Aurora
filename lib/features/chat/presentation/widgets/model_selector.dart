@@ -155,9 +155,6 @@ class _ModelSelectorState extends ConsumerState<ModelSelector> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  fluent.Icon(fluent.FluentIcons.auto_enhance_on,
-                      color: fluent.Colors.yellow, size: 14),
-                  const SizedBox(width: 8),
                   Container(
                     width: 200,
                     child: fluent.Text(
