@@ -78,7 +78,7 @@
   "goToSettings": "Go to Settings",
   "selectGenerationModel": "Select Topic Generation Model",
   "pickImageFailed": "Failed to pick image",
-  "textTranslation": "Text Translation",
+  "textTranslation": "Translate",
   "selectLanguage": "Select Language",
   "sourceText": "Source",
   "targetText": "Translation",

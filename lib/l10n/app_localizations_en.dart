@@ -163,7 +163,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pickImageFailed => 'Failed to pick image';
 
   @override
-  String get textTranslation => 'Text Translation';
+  String get textTranslation => 'Translate';
 
   @override
   String get selectLanguage => 'Select Language';

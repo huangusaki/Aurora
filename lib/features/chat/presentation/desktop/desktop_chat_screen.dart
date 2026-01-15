@@ -202,7 +202,7 @@ class _DesktopChatScreenState extends ConsumerState<DesktopChatScreen> {
                                                 child: Padding(
                                                   padding:
                                                       const EdgeInsets.only(
-                                                          left: 8.0),
+                                                          left: 0.0),
                                                   child: Text(item.label,
                                                       style: TextStyle(
                                                           color: isSelected
@@ -248,18 +248,8 @@ class _DesktopChatScreenState extends ConsumerState<DesktopChatScreen> {
                                           ),
                                           child: Row(
                                             children: [
-                                              Container(
+                                              SizedBox(
                                                 width: 40,
-                                                height: 36,
-                                                margin: const EdgeInsets.all(2),
-                                                decoration: BoxDecoration(
-                                                  color: isSelected
-                                                      ? theme.accentColor
-                                                          .withOpacity(0.1)
-                                                      : Colors.transparent,
-                                                  borderRadius:
-                                                      BorderRadius.circular(6),
-                                                ),
                                                 child: Center(
                                                   child: fluent.Icon(item.icon,
                                                       size: 20,
@@ -272,7 +262,7 @@ class _DesktopChatScreenState extends ConsumerState<DesktopChatScreen> {
                                                 child: Padding(
                                                   padding:
                                                       const EdgeInsets.only(
-                                                          left: 8.0),
+                                                          left: 0.0),
                                                   child: Text(item.label,
                                                       style: TextStyle(
                                                           color: isSelected
@@ -342,7 +332,7 @@ class _DesktopChatScreenState extends ConsumerState<DesktopChatScreen> {
                                                   child: Padding(
                                                     padding:
                                                         const EdgeInsets.only(
-                                                            left: 8.0),
+                                                            left: 0.0),
                                                     child: Text(l10n.theme,
                                                         style: const TextStyle(
                                                             fontWeight:
