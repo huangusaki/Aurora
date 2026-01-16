@@ -13,102 +13,107 @@ class UsageStatsView extends ConsumerWidget {
     final statsState = ref.watch(usageStatsProvider);
     final theme = fluent.FluentTheme.of(context);
     final l10n = AppLocalizations.of(context)!;
-    return fluent.ScaffoldPage(
-      header: fluent.PageHeader(
-        title: fluent.Text(l10n.usageStats),
-      ),
-      content: statsState.isLoading
-          ? const Center(child: fluent.ProgressRing())
-          : statsState.stats.isEmpty && statsState.dailyStats.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(fluent.FluentIcons.analytics_view,
-                          size: 64,
-                          color: theme.resources.textFillColorSecondary),
-                      const SizedBox(height: 16),
-                      Text(l10n.noUsageData,
-                          style: TextStyle(
-                              color: theme.resources.textFillColorSecondary)),
-                    ],
-                  ),
-                )
-              : SingleChildScrollView(
-                  padding: const EdgeInsets.only(left: 24.0, top: 24.0, bottom: 24.0, right: 40.0),
-                  child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
+    if (statsState.isLoading) {
+      return const Center(child: fluent.ProgressRing());
+    }
+
+    if (statsState.stats.isEmpty && statsState.dailyStats.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(fluent.FluentIcons.analytics_view,
+                size: 64,
+                color: theme.resources.textFillColorSecondary),
+            const SizedBox(height: 16),
+            Text(l10n.noUsageData,
+                style: TextStyle(
+                    color: theme.resources.textFillColorSecondary)),
+          ],
+        ),
+      );
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          fluent.Text(l10n.usageStats,
+              style: theme.typography.subtitle),
+          const SizedBox(height: 24),
+
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          children: [
-                            Text(l10n.usageStats,
-                                style: const TextStyle(
-                                    fontSize: 24, fontWeight: FontWeight.bold)),
-                            const SizedBox(width: 16),
-                            Container(
-                              height: 28,
-                              decoration: BoxDecoration(
-                                border: Border.all(color: theme.resources.dividerStrokeColorDefault),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: fluent.Button(
-                                style: fluent.ButtonStyle(
-                                  padding: fluent.ButtonState.all(const EdgeInsets.symmetric(horizontal: 10, vertical: 4)),
-                                  backgroundColor: fluent.ButtonState.resolveWith((states) {
-                                     if (states.isHovering) return theme.resources.subtleFillColorSecondary;
-                                     return Colors.transparent;
-                                  }),
-                                ),
-                                onPressed: () async {
-                                  final confirmed = await showDialog<bool>(
-                                    context: context,
-                                    builder: (context) => fluent.ContentDialog(
-                                      title: Text(_getLoc(context, 'clearStats')),
-                                      content: Text(_getLoc(context, 'clearStatsConfirm')),
-                                      actions: [
-                                        fluent.Button(
-                                          child: Text(l10n.cancel),
-                                          onPressed: () =>
-                                              Navigator.pop(context, false),
-                                        ),
-                                        fluent.FilledButton(
-                                          child: Text(_getLoc(context, 'clearData')),
-                                          onPressed: () =>
-                                              Navigator.pop(context, true),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                  if (confirmed == true) {
-                                    ref.read(usageStatsProvider.notifier)
-                                        .clearStats();
-                                  }
-                                },
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(fluent.FluentIcons.delete, size: 14, color: theme.resources.textFillColorSecondary),
-                                    const SizedBox(width: 6),
-                                    Text(_getLoc(context, 'clearData'), style: TextStyle(
-                                      fontSize: 12,
-                                      color: theme.resources.textFillColorSecondary
-                                    )),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 24),
-                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Expanded(
-                                child: _buildSummaryCardPC(
-                                    theme,
-                                    l10n.totalCalls,
-                                    statsState.totalCalls,
-                                    Colors.blue)),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  children: [
+                                    _buildSummaryCardPC(
+                                        theme,
+                                        l10n.totalCalls,
+                                        statsState.totalCalls,
+                                        Colors.blue),
+                                    const SizedBox(height: 12),
+                                    Container(
+                                      height: 32,
+                                      decoration: BoxDecoration(
+                                        border: Border.all(color: theme.resources.dividerStrokeColorDefault),
+                                        borderRadius: BorderRadius.circular(4),
+                                        color: theme.cardColor,
+                                      ),
+                                      child: fluent.Button(
+                                        style: fluent.ButtonStyle(
+                                          // border: fluent.ButtonState.all(BorderSide.none), // Removed as invalid
+                                          padding: fluent.ButtonState.all(const EdgeInsets.symmetric(horizontal: 10, vertical: 4)),
+                                          backgroundColor: fluent.ButtonState.resolveWith((states) {
+                                             if (states.isHovering) return theme.resources.subtleFillColorSecondary;
+                                             return Colors.transparent;
+                                          }),
+                                        ),
+                                        onPressed: () async {
+                                          final confirmed = await showDialog<bool>(
+                                            context: context,
+                                            builder: (context) => fluent.ContentDialog(
+                                              title: Text(_getLoc(context, 'clearStats')),
+                                              content: Text(_getLoc(context, 'clearStatsConfirm')),
+                                              actions: [
+                                                fluent.Button(
+                                                  child: Text(l10n.cancel),
+                                                  onPressed: () =>
+                                                      Navigator.pop(context, false),
+                                                ),
+                                                fluent.FilledButton(
+                                                  child: Text(_getLoc(context, 'clearData')),
+                                                  onPressed: () =>
+                                                      Navigator.pop(context, true),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                          if (confirmed == true) {
+                                            ref.read(usageStatsProvider.notifier)
+                                                .clearStats();
+                                          }
+                                        },
+                                        child: Row(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          mainAxisSize: MainAxisSize.max,
+                                          children: [
+                                            Icon(fluent.FluentIcons.delete, size: 14, color: theme.resources.textFillColorSecondary),
+                                            const SizedBox(width: 6),
+                                            Text(_getLoc(context, 'clearData'), style: TextStyle(
+                                              fontSize: 12,
+                                              color: theme.resources.textFillColorSecondary
+                                            )),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                )),
                             const SizedBox(width: 16),
                             Expanded(
                                 child: _buildSummaryCardPC(theme, l10n.success,
@@ -183,7 +188,6 @@ class UsageStatsView extends ConsumerWidget {
                         _buildChartSection(context, statsState, theme),
                       ],
                     ),
-                  ),
     );
   }
 
@@ -193,7 +197,11 @@ class UsageStatsView extends ConsumerWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(title,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            style: TextStyle(
+                fontSize: 20, 
+                fontWeight: FontWeight.w600,
+                color: fluent.FluentTheme.of(context).resources.textFillColorPrimary
+            )),
       ],
     );
   }
@@ -531,10 +539,14 @@ class _ModelStatsList extends StatelessWidget {
         : sortedEntries
             .map((e) => e.value.success + e.value.failure)
             .reduce((a, b) => a > b ? a : b);
+    
+    // Calculate grand total for percentage
+    final grandTotal = sortedEntries.fold<int>(0, (sum, e) => sum + e.value.success + e.value.failure);
+
     if (isMobile) {
       return Column(
         children: sortedEntries
-            .map((entry) => _buildItem(context, entry, maxTotal))
+            .map((entry) => _buildItem(context, entry, maxTotal, grandTotal))
             .toList(),
       );
     } else {
@@ -543,7 +555,7 @@ class _ModelStatsList extends StatelessWidget {
         physics: const NeverScrollableScrollPhysics(),
         itemCount: sortedEntries.length,
         itemBuilder: (context, index) =>
-            _buildItem(context, sortedEntries[index], maxTotal),
+            _buildItem(context, sortedEntries[index], maxTotal, grandTotal),
         separatorBuilder: (context, index) => const SizedBox(height: 16),
       );
     }
@@ -570,11 +582,13 @@ class _ModelStatsList extends StatelessWidget {
                 int errorUnknownCount,
               })>
           entry,
-      int maxTotal) {
+      int maxTotal,
+      int grandTotal) {
     final modelName = entry.key;
     final stats = entry.value;
     final total = stats.success + stats.failure;
-    final relativeFactor = maxTotal > 0 ? total / maxTotal : 0.0;
+    final relativeFactor = grandTotal > 0 ? total / grandTotal : 0.0;
+    final percentage = grandTotal > 0 ? (total / grandTotal * 100).toStringAsFixed(1) : '0.0';
     
     // Theme helpers
     final themeData = isMobile ? null : fluent.FluentTheme.of(context);
@@ -607,9 +621,18 @@ class _ModelStatsList extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              Text(
-                l10n.callsCount(total),
-                style: TextStyle(fontSize: 12, color: subTextColor),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (stats.success > 0)
+                    Text(l10n.successCount(stats.success),
+                        style: const TextStyle(fontSize: 10, color: Colors.green)),
+                  if (stats.success > 0 && stats.failure > 0)
+                    Text(' | ', style: TextStyle(fontSize: 10, color: subTextColor)),
+                  if (stats.failure > 0)
+                    Text(l10n.failureCount(stats.failure),
+                        style: const TextStyle(fontSize: 10, color: Colors.red)),
+                ],
               ),
             ],
           ),
@@ -618,63 +641,67 @@ class _ModelStatsList extends StatelessWidget {
             final fullWidth = constraints.maxWidth;
             final barWidth = fullWidth * relativeFactor;
             final actualBarWidth = (barWidth < 4 && total > 0) ? 4.0 : barWidth;
-            return Row(
+            final displayedPercentageText = total / grandTotal * 100;
+            return Stack(
               children: [
-                Container(
-                  width: actualBarWidth,
-                  height: 12,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(6),
-                    child: Row(
-                      children: [
-                        if (stats.success > 0)
-                          Expanded(
-                            flex: stats.success,
-                            child: Container(color: Colors.green),
-                          ),
-                        if (stats.failure > 0)
-                          Expanded(
-                            flex: stats.failure,
-                            child: Container(color: Colors.red),
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
-                if (total < maxTotal)
-                  Expanded(
-                    child: Container(
-                      height: 12,
-                      margin: const EdgeInsets.only(left: 4),
+                Row(
+                  children: [
+                    Container(
+                      width: actualBarWidth,
+                      height: 16,
                       decoration: BoxDecoration(
-                        color: Colors.grey.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(6),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Row(
+                          children: [
+                            if (stats.success > 0)
+                              Expanded(
+                                flex: stats.success,
+                                child: Container(color: Colors.green),
+                              ),
+                            if (stats.failure > 0)
+                              Expanded(
+                                flex: stats.failure,
+                                child: Container(color: Colors.red),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    if (total < grandTotal)
+                      Expanded(
+                        child: Container(
+                          height: 16,
+                          margin: const EdgeInsets.only(left: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                Positioned(
+                  right: 4,
+                  top: 0,
+                  bottom: 0,
+                  child: Center(
+                    child: Text(
+                      '${displayedPercentageText.toStringAsFixed(1)}%',
+                      style: TextStyle(
+                        fontSize: 10, 
+                        color: subTextColor, 
+                        height: 1.0,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
+                ),
               ],
             );
           }),
-          Padding(
-            padding: const EdgeInsets.only(top: 4),
-            child: Row(
-              children: [
-                if (stats.success > 0)
-                  Text(l10n.successCount(stats.success),
-                      style:
-                          const TextStyle(fontSize: 10, color: Colors.green)),
-                if (stats.success > 0 && stats.failure > 0)
-                  Text(' | ',
-                      style: TextStyle(fontSize: 10, color: subTextColor)),
-                if (stats.failure > 0)
-                  Text(l10n.failureCount(stats.failure),
-                      style: const TextStyle(fontSize: 10, color: Colors.red)),
-              ],
-            ),
-          ),
           const SizedBox(height: 8),
           LayoutBuilder(builder: (context, constraints) {
              final avgDuration = stats.validDurationCount > 0 
@@ -686,13 +713,34 @@ class _ModelStatsList extends StatelessWidget {
              final tps = stats.totalDurationMs > 0 
                 ? (stats.totalTokenCount / (stats.totalDurationMs / 1000)).toStringAsFixed(1) 
                 : '0.0';
+
+             // Thresholds for coloring (Green/Yellow/Red)
+             // TPS: 30/60/90. Large->Small: Green/Yellow/Red.
+             // Implies: >= 60 Green, >= 30 Orange, < 30 Red.
+             final tpsVal = double.tryParse(tps) ?? 0.0;
+             final tpsColor = tpsVal >= 60.0 ? Colors.green 
+                            : (tpsVal >= 30.0 ? Colors.orange : Colors.red);
+
+             // First Token: 5/10/15. Small->Large: Green/Yellow/Red.
+             // Implies: <= 5 Green, <= 10 Orange, > 10 Red.
+             final ftVal = double.tryParse(avgFirstToken) ?? 0.0;
+             final ftColor = ftVal <= 5.0 ? Colors.green 
+                           : (ftVal <= 10.0 ? Colors.orange : Colors.red);
+
+             // Duration: 30/60/90. Small->Large: Green/Yellow/Red.
+             // Implies: <= 30 Green, <= 60 Orange, > 60 Red.
+             final durationVal = double.tryParse(avgDuration) ?? 0.0;
+             final durationColor = durationVal <= 30.0 ? Colors.green 
+                                 : (durationVal <= 60.0 ? Colors.orange : Colors.red);
+
+
              return Row(
                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                children: [
-                 _buildMetricItem(isMobile, _getLoc(context, 'cumulativeToken'), '${stats.totalTokenCount}', Colors.teal),
-                 _buildMetricItem(isMobile, _getLoc(context, 'tokensPerSecond'), tps, Colors.blue),
-                 _buildMetricItem(isMobile, _getLoc(context, 'averageFirstToken'), '${avgFirstToken}s', Colors.orange),
-                 _buildMetricItem(isMobile, _getLoc(context, 'averageDuration'), '${avgDuration}s', Colors.purple),
+                 _buildMetricItem(isMobile, themeData, mobileTheme, _getLoc(context, 'cumulativeToken'), '${stats.totalTokenCount}', null),
+                 _buildMetricItem(isMobile, themeData, mobileTheme, _getLoc(context, 'tokensPerSecond'), tps, tpsColor),
+                 _buildMetricItem(isMobile, themeData, mobileTheme, _getLoc(context, 'averageFirstToken'), '${avgFirstToken}s', ftColor),
+                 _buildMetricItem(isMobile, themeData, mobileTheme, _getLoc(context, 'averageDuration'), '${avgDuration}s', durationColor),
                ],
              );
           }),
@@ -701,18 +749,27 @@ class _ModelStatsList extends StatelessWidget {
     );
   }
 
-  Widget _buildMetricItem(bool isMobile, String label, String value, Color color) {
+  Widget _buildMetricItem(bool isMobile, fluent.FluentThemeData? themeData, ThemeData? mobileTheme, String label, String value, Color? valueColorOverride) {
+    final labelColor = isMobile 
+        ? mobileTheme!.textTheme.bodySmall?.color 
+        : themeData!.resources.textFillColorSecondary;
+    final valueColor = valueColorOverride ?? (isMobile 
+        ? mobileTheme!.textTheme.bodyMedium?.color 
+        : themeData!.resources.textFillColorPrimary);
+        
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label, style: TextStyle(
-          fontSize: isMobile ? 10 : 11,
-          color: Colors.grey
+          fontSize: isMobile ? 10 : 12,
+          color: labelColor
         )),
+        const SizedBox(height: 2),
         Text(value, style: TextStyle(
-          fontSize: isMobile ? 12 : 13,
+          fontSize: isMobile ? 12 : 14,
           fontWeight: FontWeight.w600,
-          color: color
+          color: valueColor,
+          fontFamily: 'Segoe UI Variable', // Ensure fluent font
         )),
       ],
     );
@@ -785,11 +842,11 @@ class _ErrorDistributionList extends StatelessWidget {
     final list = [
       ('Timeout', timeout, Colors.orange), 
       ('Network Error', network, Colors.red),
-      ('Rate Limit (429)', rateLimit, Colors.amber),
-      ('Unauthorized (401)', unauthorized, Colors.grey),
-      ('Server Error (5XX)', server, Colors.red[900]!),
-      ('Bad Request (400)', badRequest, Colors.purple),
-      ('Other Error', unknown, Colors.blueGrey),
+      ('Rate Limit (429)', rateLimit, Colors.orange.withOpacity(0.8)),
+      ('Unauthorized (401)', unauthorized, Colors.red.withOpacity(0.7)),
+      ('Server Error (5XX)', server, Colors.red),
+      ('Bad Request (400)', badRequest, Colors.orange),
+      ('Other Error', unknown, Colors.grey),
     ];
     
     // Sort by count desc
@@ -814,45 +871,68 @@ class _ErrorDistributionList extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(label, style: TextStyle(
-                color: theme.resources.textFillColorPrimary,
-                fontSize: 14,
-                fontWeight: FontWeight.w500
-              )),
-              Text('($count)', style: TextStyle(
+              Expanded(
+                child: Text(label, style: TextStyle(
+                  color: theme.resources.textFillColorPrimary,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600
+                )),
+              ),
+              Text('$count', style: TextStyle(
                  color: theme.resources.textFillColorSecondary,
                  fontSize: 12
               )),
             ],
           ),
-          const SizedBox(height: 4),
-          Row(
-            children: [
-              Expanded(
-                flex: (percentage * 100).toInt(),
-                child: Container(
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: color,
-                    borderRadius: BorderRadius.circular(4)
-                  ),
-                ),
-              ),
-              if (percentage < 1.0)
-                Expanded(
-                  flex: ((1 - percentage) * 100).toInt(),
-                  child: Container(
-                    height: 8,
-                    color: Colors.grey.withOpacity(0.1),
-                  ),
-                )
-            ],
-          ),
-          Text('${(percentage * 100).toStringAsFixed(1)}%', 
-             style: TextStyle(
-               color: theme.resources.textFillColorSecondary,
-               fontSize: 10
-             )),
+          const SizedBox(height: 6),
+          LayoutBuilder(builder: (context, constraints) {
+             final fullWidth = constraints.maxWidth;
+             // Ensure at least 4px width if there are calls
+             final barWidth = percentage * fullWidth;
+             final actualBarWidth = (barWidth < 4 && count > 0) ? 4.0 : barWidth;
+             
+             return Stack(
+               children: [
+                 Row(
+                   children: [
+                     Container(
+                       width: actualBarWidth,
+                       height: 16, // Match Usage Stats height
+                       decoration: BoxDecoration(
+                         color: color,
+                         borderRadius: BorderRadius.circular(8)
+                       ),
+                     ),
+                     if (percentage < 1.0)
+                       Expanded(
+                         child: Container(
+                           height: 16,
+                           margin: const EdgeInsets.only(left: 4),
+                           decoration: BoxDecoration(
+                             color: Colors.grey.withOpacity(0.1),
+                             borderRadius: BorderRadius.circular(8)
+                           ),
+                         ),
+                       )
+                   ],
+                 ),
+                 Positioned(
+                   right: 4,
+                   top: 0,
+                   bottom: 0,
+                   child: Center(
+                     child: Text('${(percentage * 100).toStringAsFixed(1)}%', 
+                       style: TextStyle(
+                         color: theme.resources.textFillColorSecondary,
+                         fontSize: 10,
+                         height: 1.0,
+                         fontWeight: FontWeight.bold
+                       )),
+                   ),
+                 ),
+               ],
+             );
+          }),
         ],
       ),
     );
