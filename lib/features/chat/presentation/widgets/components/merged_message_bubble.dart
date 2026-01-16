@@ -164,12 +164,7 @@ class _MergedMessageBubbleState extends ConsumerState<MergedMessageBubble>
                           style:
                               TextStyle(color: Colors.grey[600], fontSize: 12),
                         ),
-                        const SizedBox(width: 8),
-                        Text(
-                          '${headerMsg.timestamp.month}/${headerMsg.timestamp.day} ${headerMsg.timestamp.hour.toString().padLeft(2, '0')}:${headerMsg.timestamp.minute.toString().padLeft(2, '0')}',
-                          style:
-                              TextStyle(color: Colors.grey[600], fontSize: 11),
-                        ),
+
                       ],
                     ),
                   ),
@@ -401,13 +396,13 @@ class _MergedMessageBubbleState extends ConsumerState<MergedMessageBubble>
         ),
       );
     }
-    if (message.tokenCount != null && message.tokenCount! > 0) {
-      parts.add(
-        Padding(
-          padding: const EdgeInsets.only(top: 4.0),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
+    parts.add(
+      Padding(
+        padding: const EdgeInsets.only(top: 4.0),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (message.tokenCount != null && message.tokenCount! > 0) ...[
               Text(
                 '${message.tokenCount} Tokens',
                 style: TextStyle(
@@ -415,8 +410,7 @@ class _MergedMessageBubbleState extends ConsumerState<MergedMessageBubble>
                   color: theme.typography.body!.color!.withOpacity(0.5),
                 ),
               ),
-              if (message.firstTokenMs != null &&
-                  message.firstTokenMs! > 0) ...[
+              if (message.firstTokenMs != null && message.firstTokenMs! > 0) ...[
                 Text(
                   ' | ',
                   style: TextStyle(
@@ -451,11 +445,25 @@ class _MergedMessageBubbleState extends ConsumerState<MergedMessageBubble>
                   ),
                 ),
               ],
+              Text(
+                ' | ',
+                style: TextStyle(
+                  fontSize: 10,
+                  color: theme.typography.body!.color!.withOpacity(0.5),
+                ),
+              ),
             ],
-          ),
+            Text(
+              '${message.timestamp.month}/${message.timestamp.day} ${message.timestamp.hour.toString().padLeft(2, '0')}:${message.timestamp.minute.toString().padLeft(2, '0')}',
+              style: TextStyle(
+                fontSize: 10,
+                color: theme.typography.body!.color!.withOpacity(0.5),
+              ),
+            ),
+          ],
         ),
-      );
-    }
+      ),
+    );
     return parts;
   }
 }

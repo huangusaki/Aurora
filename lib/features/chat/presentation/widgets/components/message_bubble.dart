@@ -303,12 +303,7 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
                             textBaseline: TextBaseline.alphabetic,
                             children: [
                               if (isUser) ...[
-                                Text(
-                                  '${message.timestamp.month}/${message.timestamp.day} ${message.timestamp.hour.toString().padLeft(2, '0')}:${message.timestamp.minute.toString().padLeft(2, '0')}',
-                                  style: TextStyle(
-                                      color: Colors.grey[600], fontSize: 11),
-                                ),
-                                const SizedBox(width: 8),
+
                                 Text(
                                   settingsState.userName.isNotEmpty
                                       ? settingsState.userName
@@ -322,12 +317,7 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
                                   style: TextStyle(
                                       color: Colors.grey[600], fontSize: 12),
                                 ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  '${message.timestamp.month}/${message.timestamp.day} ${message.timestamp.hour.toString().padLeft(2, '0')}:${message.timestamp.minute.toString().padLeft(2, '0')}',
-                                  style: TextStyle(
-                                      color: Colors.grey[600], fontSize: 11),
-                                ),
+
                               ],
                             ],
                           ),
@@ -685,62 +675,70 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
                                       .toList(),
                                 ),
                               ],
-                              if (!isUser &&
-                                  message.tokenCount != null &&
-                                  message.tokenCount! > 0)
                                 Padding(
                                   padding: const EdgeInsets.only(top: 4.0),
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
+                                    mainAxisAlignment: MainAxisAlignment.end,
                                     children: [
+                                      if (message.tokenCount != null && message.tokenCount! > 0) ...[
+                                        Text(
+                                          '${message.tokenCount} Tokens',
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            color: theme.typography.body?.color?.withOpacity(0.5),
+                                          ),
+                                        ),
+                                        if (message.firstTokenMs != null && message.firstTokenMs! > 0) ...[
+                                          Text(
+                                            ' | ',
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              color: theme.typography.body?.color?.withOpacity(0.5),
+                                            ),
+                                          ),
+                                          Text(
+                                            'FirstToken: ${(message.firstTokenMs! / 1000).toStringAsFixed(2)}s',
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              color: theme.typography.body?.color?.withOpacity(0.5),
+                                            ),
+                                          ),
+                                        ],
+                                        if (message.durationMs != null &&
+                                            message.durationMs! > 0 &&
+                                            message.tokenCount != null &&
+                                            message.tokenCount! > 0) ...[
+                                          Text(
+                                            ' | ',
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              color: theme.typography.body?.color?.withOpacity(0.5),
+                                            ),
+                                          ),
+                                          Text(
+                                            'Token/s: ${(message.tokenCount! / (message.durationMs! / 1000)).toStringAsFixed(2)}',
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              color: theme.typography.body?.color?.withOpacity(0.5),
+                                            ),
+                                          ),
+                                        ],
+                                        Text(
+                                          ' | ',
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            color: theme.typography.body?.color?.withOpacity(0.5),
+                                          ),
+                                        ),
+                                      ],
                                       Text(
-                                        '${message.tokenCount} Tokens',
+                                        '${message.timestamp.month}/${message.timestamp.day} ${message.timestamp.hour.toString().padLeft(2, '0')}:${message.timestamp.minute.toString().padLeft(2, '0')}',
                                         style: TextStyle(
                                           fontSize: 10,
-                                          color: theme.typography.body?.color
-                                              ?.withOpacity(0.5),
+                                          color: theme.typography.body?.color?.withOpacity(0.5),
                                         ),
                                       ),
-                                      if (message.firstTokenMs != null &&
-                                          message.firstTokenMs! > 0) ...[
-                                        Text(
-                                          ' | ',
-                                          style: TextStyle(
-                                            fontSize: 10,
-                                            color: theme.typography.body?.color
-                                                ?.withOpacity(0.5),
-                                          ),
-                                        ),
-                                        Text(
-                                          'FirstToken: ${(message.firstTokenMs! / 1000).toStringAsFixed(2)}s',
-                                          style: TextStyle(
-                                            fontSize: 10,
-                                            color: theme.typography.body?.color
-                                                ?.withOpacity(0.5),
-                                          ),
-                                        ),
-                                      ],
-                                      if (message.durationMs != null &&
-                                          message.durationMs! > 0 &&
-                                          message.tokenCount != null &&
-                                          message.tokenCount! > 0) ...[
-                                        Text(
-                                          ' | ',
-                                          style: TextStyle(
-                                            fontSize: 10,
-                                            color: theme.typography.body?.color
-                                                ?.withOpacity(0.5),
-                                          ),
-                                        ),
-                                        Text(
-                                          'Token/s: ${(message.tokenCount! / (message.durationMs! / 1000)).toStringAsFixed(2)}',
-                                          style: TextStyle(
-                                            fontSize: 10,
-                                            color: theme.typography.body?.color
-                                                ?.withOpacity(0.5),
-                                          ),
-                                        ),
-                                      ],
                                     ],
                                   ),
                                 ),

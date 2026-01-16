@@ -57,12 +57,9 @@ class _SelectableMarkdownState extends State<SelectableMarkdown> {
       return const SizedBox.shrink();
     }
 
-    return SizedBox(
-      width: double.infinity,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: _children,
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: _children,
     );
   }
 }
