@@ -809,13 +809,13 @@ abstract class AppLocalizations {
   /// No description provided for @clearStats.
   ///
   /// In zh, this message translates to:
-  /// **'清除统计数据'**
+  /// **'清除数据'**
   String get clearStats;
 
   /// No description provided for @clearStatsConfirm.
   ///
   /// In zh, this message translates to:
-  /// **'确定要清除所有使用统计吗？此操作无法撤销。'**
+  /// **'确定要清除所有统计数据吗？此操作无法撤销。'**
   String get clearStatsConfirm;
 
   /// No description provided for @clearData.
@@ -833,7 +833,7 @@ abstract class AppLocalizations {
   /// No description provided for @noUsageData.
   ///
   /// In zh, this message translates to:
-  /// **'暂无使用数据'**
+  /// **'暂无数据'**
   String get noUsageData;
 
   /// No description provided for @callsCount.
@@ -857,13 +857,13 @@ abstract class AppLocalizations {
   /// No description provided for @averageDuration.
   ///
   /// In zh, this message translates to:
-  /// **'平均耗时'**
+  /// **'平均'**
   String averageDuration(String duration);
 
   /// No description provided for @averageFirstToken.
   ///
   /// In zh, this message translates to:
-  /// **'首字延迟'**
+  /// **'FirstToken'**
   String averageFirstToken(String duration);
 
   /// No description provided for @totalTokensCount.
@@ -1513,6 +1513,12 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'其他错误'**
   String get errorUnknown;
+
+  /// No description provided for @cumulativeToken.
+  ///
+  /// In zh, this message translates to:
+  /// **'累计Token'**
+  String get cumulativeToken;
 }
 
 class _AppLocalizationsDelegate

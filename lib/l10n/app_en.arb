@@ -340,7 +340,12 @@
   "errorServerError": "Server Error (5XX)",
   "errorRateLimit": "Rate Limit (429)",
   "errorUnknown": "Other Error",
-  "averageDuration": "Avg Duration",
-  "averageFirstToken": "First Token",
-  "tokensPerSecond": "Tokens/s"
+  "averageDuration": "Average",
+  "averageFirstToken": "FirstToken",
+  "tokensPerSecond": "Tokens/s",
+  "cumulativeToken": "Total Tokens",
+  "clearStats": "Clear Stats",
+  "clearStatsConfirm": "Are you sure you want to clear all statistics? This cannot be undone.",
+  "clearData": "Clear Data",
+  "noUsageData": "No data available"
 }

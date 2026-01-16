@@ -371,10 +371,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get modelCallDistribution => '模型调用分布';
 
   @override
-  String get clearStats => '清除统计数据';
+  String get clearStats => '清除数据';
 
   @override
-  String get clearStatsConfirm => '确定要清除所有使用统计吗？此操作无法撤销。';
+  String get clearStatsConfirm => '确定要清除所有统计数据吗？此操作无法撤销。';
 
   @override
   String get clearData => '清除数据';
@@ -383,7 +383,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get clearDataConfirm => '确定要清除所有统计数据吗？';
 
   @override
-  String get noUsageData => '暂无使用数据';
+  String get noUsageData => '暂无数据';
 
   @override
   String callsCount(int count) {
@@ -402,12 +402,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String averageDuration(String duration) {
-    return '平均耗时';
+    return '平均';
   }
 
   @override
   String averageFirstToken(String duration) {
-    return '首字延迟';
+    return 'FirstToken';
   }
 
   @override
@@ -739,4 +739,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get errorUnknown => '其他错误';
+
+  @override
+  String get cumulativeToken => '累计Token';
 }

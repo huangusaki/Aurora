@@ -34,12 +34,73 @@ class UsageStatsView extends ConsumerWidget {
                     ],
                   ),
                 )
-              : Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: SingleChildScrollView(
-                    child: Column(
+              : SingleChildScrollView(
+                  padding: const EdgeInsets.only(left: 24.0, top: 24.0, bottom: 24.0, right: 40.0),
+                  child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          children: [
+                            Text(l10n.usageStats,
+                                style: const TextStyle(
+                                    fontSize: 24, fontWeight: FontWeight.bold)),
+                            const SizedBox(width: 16),
+                            Container(
+                              height: 28,
+                              decoration: BoxDecoration(
+                                border: Border.all(color: theme.resources.dividerStrokeColorDefault),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: fluent.Button(
+                                style: fluent.ButtonStyle(
+                                  padding: fluent.ButtonState.all(const EdgeInsets.symmetric(horizontal: 10, vertical: 4)),
+                                  backgroundColor: fluent.ButtonState.resolveWith((states) {
+                                     if (states.isHovering) return theme.resources.subtleFillColorSecondary;
+                                     return Colors.transparent;
+                                  }),
+                                ),
+                                onPressed: () async {
+                                  final confirmed = await showDialog<bool>(
+                                    context: context,
+                                    builder: (context) => fluent.ContentDialog(
+                                      title: Text(_getLoc(context, 'clearStats')),
+                                      content: Text(_getLoc(context, 'clearStatsConfirm')),
+                                      actions: [
+                                        fluent.Button(
+                                          child: Text(l10n.cancel),
+                                          onPressed: () =>
+                                              Navigator.pop(context, false),
+                                        ),
+                                        fluent.FilledButton(
+                                          child: Text(_getLoc(context, 'clearData')),
+                                          onPressed: () =>
+                                              Navigator.pop(context, true),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                  if (confirmed == true) {
+                                    ref.read(usageStatsProvider.notifier)
+                                        .clearStats();
+                                  }
+                                },
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(fluent.FluentIcons.delete, size: 14, color: theme.resources.textFillColorSecondary),
+                                    const SizedBox(width: 6),
+                                    Text(_getLoc(context, 'clearData'), style: TextStyle(
+                                      fontSize: 12,
+                                      color: theme.resources.textFillColorSecondary
+                                    )),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 24),
                         Row(
                           children: [
                             Expanded(
@@ -123,50 +184,16 @@ class UsageStatsView extends ConsumerWidget {
                       ],
                     ),
                   ),
-                ),
     );
   }
 
   Widget _buildSectionHeader(
       BuildContext context, String title, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context)!;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(title,
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        fluent.Button(
-          onPressed: () async {
-            final confirmed = await showDialog<bool>(
-              context: context,
-              builder: (context) => fluent.ContentDialog(
-                title: Text(l10n.clearStats),
-                content: Text(l10n.clearStatsConfirm),
-                actions: [
-                  fluent.Button(
-                    child: Text(l10n.cancel),
-                    onPressed: () => Navigator.pop(context, false),
-                  ),
-                  fluent.FilledButton(
-                    child: Text(l10n.clearData),
-                    onPressed: () => Navigator.pop(context, true),
-                  ),
-                ],
-              ),
-            );
-            if (confirmed == true) {
-              ref.read(usageStatsProvider.notifier).clearStats();
-            }
-          },
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(fluent.FluentIcons.delete, size: 12),
-              const SizedBox(width: 8),
-              Text(l10n.clearData),
-            ],
-          ),
-        ),
       ],
     );
   }
@@ -349,6 +376,28 @@ class UsageStatsView extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  String _getLoc(BuildContext context, String key) {
+    final isZh = Localizations.localeOf(context).languageCode == 'zh';
+    switch (key) {
+      case 'cumulativeToken':
+        return isZh ? '累计Token' : 'Total Tokens';
+      case 'tokensPerSecond':
+        return isZh ? 'Token/s' : 'Tokens/s';
+      case 'averageFirstToken':
+        return isZh ? 'FirstToken' : 'First Token';
+      case 'averageDuration':
+        return isZh ? '平均' : 'Average';
+      case 'clearStats':
+        return isZh ? '清除数据' : 'Clear Stats';
+      case 'clearStatsConfirm':
+        return isZh ? '确定要清除所有统计数据吗？此操作无法撤销。' : 'Are you sure you want to clear all statistics? This cannot be undone.';
+      case 'clearData':
+        return isZh ? '清除数据' : 'Clear Data';
+      default:
+        return key;
+    }
   }
 }
 
@@ -640,10 +689,10 @@ class _ModelStatsList extends StatelessWidget {
              return Row(
                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                children: [
-                 _buildMetricItem(isMobile, '累计Token', '${stats.totalTokenCount}', Colors.teal),
-                 _buildMetricItem(isMobile, 'Token/s', tps, Colors.blue),
-                 _buildMetricItem(isMobile, 'FirstToken', '${avgFirstToken}s', Colors.orange),
-                 _buildMetricItem(isMobile, '平均', '${avgDuration}s', Colors.purple),
+                 _buildMetricItem(isMobile, _getLoc(context, 'cumulativeToken'), '${stats.totalTokenCount}', Colors.teal),
+                 _buildMetricItem(isMobile, _getLoc(context, 'tokensPerSecond'), tps, Colors.blue),
+                 _buildMetricItem(isMobile, _getLoc(context, 'averageFirstToken'), '${avgFirstToken}s', Colors.orange),
+                 _buildMetricItem(isMobile, _getLoc(context, 'averageDuration'), '${avgDuration}s', Colors.purple),
                ],
              );
           }),
@@ -667,6 +716,22 @@ class _ModelStatsList extends StatelessWidget {
         )),
       ],
     );
+  }
+
+  String _getLoc(BuildContext context, String key) {
+    final isZh = Localizations.localeOf(context).languageCode == 'zh';
+    switch (key) {
+      case 'cumulativeToken':
+        return isZh ? '累计Token' : 'Total Tokens';
+      case 'tokensPerSecond':
+        return isZh ? 'Token/s' : 'Tokens/s';
+      case 'averageFirstToken':
+        return isZh ? 'FirstToken' : 'First Token';
+      case 'averageDuration':
+        return isZh ? '平均' : 'Average';
+      default:
+        return key;
+    }
   }
 }
 

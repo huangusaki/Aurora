@@ -340,7 +340,12 @@
   "errorServerError": "服务器错误 (5XX)",
   "errorRateLimit": "限流 (429)",
   "errorUnknown": "其他错误",
-  "averageDuration": "平均耗时",
-  "averageFirstToken": "首字延迟",
-  "tokensPerSecond": "Token/s"
+  "averageDuration": "平均",
+  "averageFirstToken": "FirstToken",
+  "tokensPerSecond": "Token/s",
+  "cumulativeToken": "累计Token",
+  "clearStats": "清除数据",
+  "clearStatsConfirm": "确定要清除所有统计数据吗？此操作无法撤销。",
+  "clearData": "清除数据",
+  "noUsageData": "暂无数据"
 }

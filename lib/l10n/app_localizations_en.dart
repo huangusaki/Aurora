@@ -377,11 +377,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get modelCallDistribution => 'Model Call Distribution';
 
   @override
-  String get clearStats => 'Clear Statistics';
+  String get clearStats => 'Clear Stats';
 
   @override
   String get clearStatsConfirm =>
-      'Are you sure you want to clear all usage statistics? This action cannot be undone.';
+      'Are you sure you want to clear all statistics? This cannot be undone.';
 
   @override
   String get clearData => 'Clear Data';
@@ -391,7 +391,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Are you sure you want to clear all statistics?';
 
   @override
-  String get noUsageData => 'No usage data';
+  String get noUsageData => 'No data available';
 
   @override
   String callsCount(int count) {
@@ -410,12 +410,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String averageDuration(String duration) {
-    return 'Avg Duration';
+    return 'Average';
   }
 
   @override
   String averageFirstToken(String duration) {
-    return 'First Token';
+    return 'FirstToken';
   }
 
   @override
@@ -752,4 +752,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get errorUnknown => 'Other Error';
+
+  @override
+  String get cumulativeToken => 'Total Tokens';
 }
