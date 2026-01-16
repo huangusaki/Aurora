@@ -329,5 +329,18 @@
       }
     }
   },
-  "fillRequiredFields": "请填写所有必填字段"
+  "fillRequiredFields": "请填写所有必填字段",
+  
+  "callTrend": "调用趋势 (最近30天)",
+  "errorDistribution": "错误分布",
+  "errorTimeout": "超时",
+  "errorNetwork": "网络错误",
+  "errorBadRequest": "请求错误 (400)",
+  "errorUnauthorized": "鉴权失败 (401)",
+  "errorServerError": "服务器错误 (5XX)",
+  "errorRateLimit": "限流 (429)",
+  "errorUnknown": "其他错误",
+  "averageDuration": "平均耗时",
+  "averageFirstToken": "首字延迟",
+  "tokensPerSecond": "Token/s"
 }

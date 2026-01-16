@@ -13,4 +13,13 @@ class UsageStatsEntity {
   int totalFirstTokenMs = 0;
   int validFirstTokenCount = 0;
   int totalTokenCount = 0;
+
+  // Error Classification Counts
+  int errorTimeoutCount = 0;
+  int errorNetworkCount = 0;
+  int errorBadRequestCount = 0;
+  int errorUnauthorizedCount = 0;
+  int errorServerCount = 0;
+  int errorRateLimitCount = 0;
+  int errorUnknownCount = 0;
 }

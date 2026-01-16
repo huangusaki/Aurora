@@ -410,12 +410,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String averageDuration(String duration) {
-    return 'Avg: ${duration}s';
+    return 'Avg Duration';
   }
 
   @override
   String averageFirstToken(String duration) {
-    return 'FirstToken: ${duration}s';
+    return 'First Token';
   }
 
   @override
@@ -425,7 +425,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String tokensPerSecond(String tps) {
-    return 'Token/s: $tps';
+    return 'Tokens/s';
   }
 
   @override
@@ -725,4 +725,31 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get fillRequiredFields => 'Please fill in all required fields';
+
+  @override
+  String get callTrend => 'Call Trend (Last 30 Days)';
+
+  @override
+  String get errorDistribution => 'Error Distribution';
+
+  @override
+  String get errorTimeout => 'Timeout';
+
+  @override
+  String get errorNetwork => 'Network Error';
+
+  @override
+  String get errorBadRequest => 'Bad Request (400)';
+
+  @override
+  String get errorUnauthorized => 'Unauthorized (401)';
+
+  @override
+  String get errorServerError => 'Server Error (5XX)';
+
+  @override
+  String get errorRateLimit => 'Rate Limit (429)';
+
+  @override
+  String get errorUnknown => 'Other Error';
 }

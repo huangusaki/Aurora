@@ -857,13 +857,13 @@ abstract class AppLocalizations {
   /// No description provided for @averageDuration.
   ///
   /// In zh, this message translates to:
-  /// **'平均: {duration}秒'**
+  /// **'平均耗时'**
   String averageDuration(String duration);
 
   /// No description provided for @averageFirstToken.
   ///
   /// In zh, this message translates to:
-  /// **'FirstToken: {duration}秒'**
+  /// **'首字延迟'**
   String averageFirstToken(String duration);
 
   /// No description provided for @totalTokensCount.
@@ -875,7 +875,7 @@ abstract class AppLocalizations {
   /// No description provided for @tokensPerSecond.
   ///
   /// In zh, this message translates to:
-  /// **'Token/s: {tps}'**
+  /// **'Token/s'**
   String tokensPerSecond(String tps);
 
   /// No description provided for @mobileSettings.
@@ -1459,6 +1459,60 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'请填写所有必填字段'**
   String get fillRequiredFields;
+
+  /// No description provided for @callTrend.
+  ///
+  /// In zh, this message translates to:
+  /// **'调用趋势 (最近30天)'**
+  String get callTrend;
+
+  /// No description provided for @errorDistribution.
+  ///
+  /// In zh, this message translates to:
+  /// **'错误分布'**
+  String get errorDistribution;
+
+  /// No description provided for @errorTimeout.
+  ///
+  /// In zh, this message translates to:
+  /// **'超时'**
+  String get errorTimeout;
+
+  /// No description provided for @errorNetwork.
+  ///
+  /// In zh, this message translates to:
+  /// **'网络错误'**
+  String get errorNetwork;
+
+  /// No description provided for @errorBadRequest.
+  ///
+  /// In zh, this message translates to:
+  /// **'请求错误 (400)'**
+  String get errorBadRequest;
+
+  /// No description provided for @errorUnauthorized.
+  ///
+  /// In zh, this message translates to:
+  /// **'鉴权失败 (401)'**
+  String get errorUnauthorized;
+
+  /// No description provided for @errorServerError.
+  ///
+  /// In zh, this message translates to:
+  /// **'服务器错误 (5XX)'**
+  String get errorServerError;
+
+  /// No description provided for @errorRateLimit.
+  ///
+  /// In zh, this message translates to:
+  /// **'限流 (429)'**
+  String get errorRateLimit;
+
+  /// No description provided for @errorUnknown.
+  ///
+  /// In zh, this message translates to:
+  /// **'其他错误'**
+  String get errorUnknown;
 }
 
 class _AppLocalizationsDelegate

@@ -8,6 +8,8 @@ import 'package:image/image.dart' as img;
 import '../../features/chat/domain/message.dart';
 import '../../features/settings/presentation/settings_provider.dart';
 import 'llm_service.dart';
+import '../../core/error/app_exception.dart';
+import '../../core/error/app_error_type.dart';
 
 Future<List<Map<String, dynamic>>> _compressImagesTask(
     List<Map<String, dynamic>> apiMessages) async {
@@ -501,6 +503,27 @@ You MUST cite your sources using the format `[index](link)`.
       }
       final statusCode = e.response?.statusCode;
       String errorMsg = 'HTTP Error';
+      AppErrorType errorType = AppErrorType.unknown;
+
+      // Determine Error Type
+      if (e.type == DioExceptionType.connectionTimeout || 
+          e.type == DioExceptionType.sendTimeout || 
+          e.type == DioExceptionType.receiveTimeout) {
+        errorType = AppErrorType.timeout;
+      } else if (e.type == DioExceptionType.connectionError) {
+        errorType = AppErrorType.network;
+      } else if (e.type == DioExceptionType.badResponse) {
+        if (statusCode == 400) {
+          errorType = AppErrorType.badRequest;
+        } else if (statusCode == 401 || statusCode == 403) {
+          errorType = AppErrorType.unauthorized;
+        } else if (statusCode == 429) {
+          errorType = AppErrorType.rateLimit;
+        } else if (statusCode != null && statusCode >= 500) {
+          errorType = AppErrorType.serverError;
+        }
+      }
+
       try {
         if (e.response?.data != null) {
           final responseData = e.response?.data;
@@ -563,9 +586,13 @@ You MUST cite your sources using the format `[index](link)`.
       } catch (readError) {
         errorMsg = 'HTTP $statusCode: ${e.message}';
       }
-      throw Exception(errorMsg);
+      throw AppException(type: errorType, message: errorMsg, statusCode: statusCode);
     } catch (e) {
-      rethrow;
+      if (e is AppException) rethrow; // Pass through our custom exceptions
+      throw AppException(
+        type: AppErrorType.unknown, 
+        message: e.toString()
+      );
     }
   }
 

@@ -16,6 +16,8 @@ import 'package:aurora/shared/services/tool_manager.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:uuid/uuid.dart';
 import 'topic_provider.dart';
+import '../../../core/error/app_error_type.dart';
+import '../../../core/error/app_exception.dart';
 
 enum SearchEngine { duckduckgo, google, bing }
 
@@ -497,8 +499,14 @@ class ChatNotifier extends StateNotifier<ChatState> {
             _ref.read(settingsProvider).activeProvider?.selectedModel;
         if (currentModel != null && currentModel.isNotEmpty) {
           final duration = DateTime.now().difference(startTime).inMilliseconds;
+          
+          AppErrorType errorType = AppErrorType.unknown;
+          if (e is AppException) {
+            errorType = e.type;
+          }
+
           _ref.read(usageStatsProvider.notifier).incrementUsage(currentModel,
-              success: false, durationMs: duration);
+              success: false, durationMs: duration, errorType: errorType);
         }
       }
     } finally {

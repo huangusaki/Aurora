@@ -3,7 +3,9 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
+import '../../../core/error/app_error_type.dart';
 import 'chat_preset_entity.dart';
+import 'daily_usage_stats_entity.dart';
 import 'provider_config_entity.dart';
 import 'usage_stats_entity.dart';
 import '../../chat/data/message_entity.dart';
@@ -22,6 +24,7 @@ class SettingsStorage {
         MessageEntitySchema,
         SessionEntitySchema,
         UsageStatsEntitySchema,
+        DailyUsageStatsEntitySchema,
         TopicEntitySchema,
         ChatPresetEntitySchema,
       ],
@@ -184,8 +187,13 @@ class SettingsStorage {
       {bool success = true,
       int durationMs = 0,
       int firstTokenMs = 0,
-      int tokenCount = 0}) async {
+      int tokenCount = 0,
+      AppErrorType? errorType}) async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
     await _isar.writeTxn(() async {
+      // 1. Update per-model stats
       var existing = await _isar.usageStatsEntitys
           .filter()
           .modelNameEqualTo(modelName)
@@ -200,11 +208,18 @@ class SettingsStorage {
           ..totalFirstTokenMs = firstTokenMs > 0 ? firstTokenMs : 0
           ..validFirstTokenCount = firstTokenMs > 0 ? 1 : 0
           ..totalTokenCount = tokenCount;
+        
+        if (errorType != null) {
+          _updateErrorCount(existing, errorType);
+        }
       } else {
         if (success) {
           existing.successCount++;
         } else {
           existing.failureCount++;
+          if (errorType != null) {
+            _updateErrorCount(existing, errorType);
+          }
         }
         if (durationMs > 0) {
           existing.totalDurationMs += durationMs;
@@ -217,16 +232,77 @@ class SettingsStorage {
         existing.totalTokenCount += tokenCount;
       }
       await _isar.usageStatsEntitys.put(existing);
+
+      // 2. Update daily stats
+      var daily = await _isar.dailyUsageStatsEntitys
+          .filter()
+          .dateEqualTo(today)
+          .findFirst();
+      
+      if (daily == null) {
+        daily = DailyUsageStatsEntity()
+          ..date = today
+          ..totalCalls = 1
+          ..successCount = success ? 1 : 0
+          ..failureCount = success ? 0 : 1
+          ..tokenCount = tokenCount;
+      } else {
+        daily.totalCalls++;
+        if (success) {
+          daily.successCount++;
+        } else {
+          daily.failureCount++;
+        }
+        daily.tokenCount += tokenCount;
+      }
+      await _isar.dailyUsageStatsEntitys.put(daily);
     });
+  }
+
+  void _updateErrorCount(UsageStatsEntity entity, AppErrorType errorType) {
+    switch (errorType) {
+      case AppErrorType.timeout:
+        entity.errorTimeoutCount++;
+        break;
+      case AppErrorType.network:
+        entity.errorNetworkCount++;
+        break;
+      case AppErrorType.badRequest:
+        entity.errorBadRequestCount++;
+        break;
+      case AppErrorType.unauthorized:
+        entity.errorUnauthorizedCount++;
+        break;
+      case AppErrorType.serverError:
+        entity.errorServerCount++;
+        break;
+      case AppErrorType.rateLimit:
+        entity.errorRateLimitCount++;
+        break;
+      case AppErrorType.unknown:
+        entity.errorUnknownCount++;
+        break;
+    }
   }
 
   Future<List<UsageStatsEntity>> loadAllUsageStats() async {
     return await _isar.usageStatsEntitys.where().findAll();
   }
 
+  Future<List<DailyUsageStatsEntity>> loadDailyStats(int limit) async {
+    return await _isar.dailyUsageStatsEntitys
+        .where()
+        .sortByDate() // Assuming you want oldest to newest? Or newest to oldest? Chart needs sorted by date.
+        // Wait, Isar's sortByDate sorts ascending by default.
+        // To get "last 30 days", we probably want to simpler just fetch all or filter > date.
+        // For simplicity let's fetch all and filter in memory or Use filter.
+        .findAll();
+  }
+
   Future<void> clearUsageStats() async {
     await _isar.writeTxn(() async {
       await _isar.usageStatsEntitys.clear();
+      await _isar.dailyUsageStatsEntitys.clear();
     });
   }
 

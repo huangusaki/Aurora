@@ -402,12 +402,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String averageDuration(String duration) {
-    return '平均: $duration秒';
+    return '平均耗时';
   }
 
   @override
   String averageFirstToken(String duration) {
-    return 'FirstToken: $duration秒';
+    return '首字延迟';
   }
 
   @override
@@ -417,7 +417,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String tokensPerSecond(String tps) {
-    return 'Token/s: $tps';
+    return 'Token/s';
   }
 
   @override
@@ -712,4 +712,31 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get fillRequiredFields => '请填写所有必填字段';
+
+  @override
+  String get callTrend => '调用趋势 (最近30天)';
+
+  @override
+  String get errorDistribution => '错误分布';
+
+  @override
+  String get errorTimeout => '超时';
+
+  @override
+  String get errorNetwork => '网络错误';
+
+  @override
+  String get errorBadRequest => '请求错误 (400)';
+
+  @override
+  String get errorUnauthorized => '鉴权失败 (401)';
+
+  @override
+  String get errorServerError => '服务器错误 (5XX)';
+
+  @override
+  String get errorRateLimit => '限流 (429)';
+
+  @override
+  String get errorUnknown => '其他错误';
 }

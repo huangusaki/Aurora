@@ -329,5 +329,18 @@
       }
     }
   },
-  "fillRequiredFields": "Please fill in all required fields"
+  "fillRequiredFields": "Please fill in all required fields",
+  
+  "callTrend": "Call Trend (Last 30 Days)",
+  "errorDistribution": "Error Distribution",
+  "errorTimeout": "Timeout",
+  "errorNetwork": "Network Error",
+  "errorBadRequest": "Bad Request (400)",
+  "errorUnauthorized": "Unauthorized (401)",
+  "errorServerError": "Server Error (5XX)",
+  "errorRateLimit": "Rate Limit (429)",
+  "errorUnknown": "Other Error",
+  "averageDuration": "Avg Duration",
+  "averageFirstToken": "First Token",
+  "tokensPerSecond": "Tokens/s"
 }
