@@ -122,7 +122,8 @@ class SettingsStorage {
       ..lastTopicId = existing.lastTopicId
       ..language = existing.language
       ..lastPresetId = existing.lastPresetId
-      ..themeColor = existing.themeColor;
+      ..themeColor = existing.themeColor
+      ..backgroundColor = existing.backgroundColor;
     await _isar.writeTxn(() async {
       await _isar.appSettingsEntitys.clear();
       await _isar.appSettingsEntitys.put(settings);
@@ -158,7 +159,8 @@ class SettingsStorage {
       ..lastTopicId = existing.lastTopicId
       ..language = existing.language
       ..lastPresetId = existing.lastPresetId
-      ..themeColor = existing.themeColor;
+      ..themeColor = existing.themeColor
+      ..backgroundColor = existing.backgroundColor;
     await _isar.writeTxn(() async {
       await _isar.appSettingsEntitys.clear();
       await _isar.appSettingsEntitys.put(settings);
@@ -332,7 +334,8 @@ class SettingsStorage {
       ..lastTopicId = topicId
       ..language = existing.language
       ..lastPresetId = existing.lastPresetId
-      ..themeColor = existing.themeColor;
+      ..themeColor = existing.themeColor
+      ..backgroundColor = existing.backgroundColor;
     await _isar.writeTxn(() async {
       await _isar.appSettingsEntitys.clear();
       await _isar.appSettingsEntitys.put(settings);
