@@ -70,6 +70,34 @@ class _MobileUserPageState extends ConsumerState<MobileUserPage> {
               );
             },
           ),
+          ListTile(
+            leading: const Icon(Icons.brightness_6),
+            title: Text(l10n.themeMode),
+            subtitle: Text(_getThemeModeLabel(settingsState.themeMode, l10n)),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => _showThemeModePicker(context, settingsState, l10n),
+          ),
+          ListTile(
+            leading: const Icon(Icons.color_lens),
+            title: Text(l10n.accentColor),
+            trailing: Container(
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(
+                color: _getAccentColorPreview(settingsState.themeColor),
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+            ),
+            onTap: () => _showAccentColorPicker(context, settingsState),
+          ),
+          ListTile(
+            leading: const Icon(Icons.gradient),
+            title: Text(l10n.backgroundStyle),
+            subtitle: Text(_getBackgroundStyleLabel(settingsState.backgroundColor, l10n)),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => _showBackgroundStylePicker(context, settingsState, l10n),
+          ),
           const Divider(),
           _SectionHeader(
               title: l10n.chatExperience, icon: Icons.chat_bubble_outline),
@@ -389,6 +417,231 @@ class _MobileUserPageState extends ConsumerState<MobileUserPage> {
           ),
         );
       },
+    );
+  }
+
+  String _getThemeModeLabel(String mode, AppLocalizations l10n) {
+    switch (mode) {
+      case 'light': return l10n.themeLight;
+      case 'dark': return l10n.themeDark;
+      default: return l10n.themeSystem;
+    }
+  }
+
+  Color _getAccentColorPreview(String colorName) {
+    switch (colorName) {
+      case 'teal': return Colors.teal;
+      case 'blue': return Colors.blue;
+      case 'red': return Colors.red;
+      case 'orange': return Colors.orange;
+      case 'green': return Colors.green;
+      case 'purple': return Colors.purple;
+      case 'magenta': return Colors.pink;
+      case 'yellow': return Colors.yellow;
+      default: return Colors.teal;
+    }
+  }
+
+  String _getBackgroundStyleLabel(String style, AppLocalizations l10n) {
+    switch (style) {
+      case 'default': return l10n.bgDefault;
+      case 'pure_black': return l10n.bgPureBlack;
+      case 'warm': return l10n.bgWarm;
+      case 'cool': return l10n.bgCool;
+      case 'rose': return l10n.bgRose;
+      case 'lavender': return l10n.bgLavender;
+      case 'mint': return l10n.bgMint;
+      case 'sky': return l10n.bgSky;
+      case 'gray': return l10n.bgGray;
+      case 'sunset': return l10n.bgSunset;
+      case 'ocean': return l10n.bgOcean;
+      case 'forest': return l10n.bgForest;
+      case 'dream': return l10n.bgDream;
+      case 'aurora': return l10n.bgAurora;
+      case 'volcano': return l10n.bgVolcano;
+      case 'midnight': return l10n.bgMidnight;
+      case 'dawn': return l10n.bgDawn;
+      case 'neon': return l10n.bgNeon;
+      case 'blossom': return l10n.bgBlossom;
+      default: return l10n.bgDefault;
+    }
+  }
+
+  void _showThemeModePicker(BuildContext context, SettingsState settings, AppLocalizations l10n) {
+    showDialog(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: Text(l10n.themeMode),
+        children: [
+          SimpleDialogOption(
+            onPressed: () {
+              ref.read(settingsProvider.notifier).setThemeMode('light');
+              Navigator.pop(ctx);
+            },
+            child: Row(
+              children: [
+                Icon(Icons.light_mode, color: settings.themeMode == 'light' ? Theme.of(context).primaryColor : null),
+                const SizedBox(width: 12),
+                Text(l10n.themeLight),
+                if (settings.themeMode == 'light') ...[
+                  const Spacer(),
+                  Icon(Icons.check, color: Theme.of(context).primaryColor),
+                ],
+              ],
+            ),
+          ),
+          SimpleDialogOption(
+            onPressed: () {
+              ref.read(settingsProvider.notifier).setThemeMode('dark');
+              Navigator.pop(ctx);
+            },
+            child: Row(
+              children: [
+                Icon(Icons.dark_mode, color: settings.themeMode == 'dark' ? Theme.of(context).primaryColor : null),
+                const SizedBox(width: 12),
+                Text(l10n.themeDark),
+                if (settings.themeMode == 'dark') ...[
+                  const Spacer(),
+                  Icon(Icons.check, color: Theme.of(context).primaryColor),
+                ],
+              ],
+            ),
+          ),
+          SimpleDialogOption(
+            onPressed: () {
+              ref.read(settingsProvider.notifier).setThemeMode('system');
+              Navigator.pop(ctx);
+            },
+            child: Row(
+              children: [
+                Icon(Icons.brightness_auto, color: settings.themeMode == 'system' ? Theme.of(context).primaryColor : null),
+                const SizedBox(width: 12),
+                Text(l10n.themeSystem),
+                if (settings.themeMode == 'system') ...[
+                  const Spacer(),
+                  Icon(Icons.check, color: Theme.of(context).primaryColor),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAccentColorPicker(BuildContext context, SettingsState settings) {
+    final colors = [
+      ('Teal', 'teal', Colors.teal),
+      ('Blue', 'blue', Colors.blue),
+      ('Red', 'red', Colors.red),
+      ('Orange', 'orange', Colors.orange),
+      ('Green', 'green', Colors.green),
+      ('Purple', 'purple', Colors.purple),
+      ('Magenta', 'magenta', Colors.pink),
+      ('Yellow', 'yellow', Colors.yellow),
+    ];
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(AppLocalizations.of(context)!.accentColor, 
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 20),
+            Wrap(
+              spacing: 16,
+              runSpacing: 16,
+              children: colors.map((c) {
+                final isSelected = settings.themeColor == c.$2;
+                return GestureDetector(
+                  onTap: () {
+                    ref.read(settingsProvider.notifier).setThemeColor(c.$2);
+                    Navigator.pop(ctx);
+                  },
+                  child: Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: c.$3,
+                      shape: BoxShape.circle,
+                      border: isSelected ? Border.all(color: Colors.white, width: 3) : null,
+                      boxShadow: isSelected ? [BoxShadow(color: c.$3.withOpacity(0.5), blurRadius: 8, spreadRadius: 2)] : null,
+                    ),
+                    child: isSelected ? Icon(Icons.check, color: c.$2 == 'yellow' ? Colors.black : Colors.white) : null,
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showBackgroundStylePicker(BuildContext context, SettingsState settings, AppLocalizations l10n) {
+    final styles = [
+      ('default', l10n.bgDefault),
+      ('pure_black', l10n.bgPureBlack),
+      ('warm', l10n.bgWarm),
+      ('cool', l10n.bgCool),
+      ('rose', l10n.bgRose),
+      ('lavender', l10n.bgLavender),
+      ('mint', l10n.bgMint),
+      ('sky', l10n.bgSky),
+      ('gray', l10n.bgGray),
+      ('sunset', l10n.bgSunset),
+      ('ocean', l10n.bgOcean),
+      ('forest', l10n.bgForest),
+      ('dream', l10n.bgDream),
+      ('aurora', l10n.bgAurora),
+      ('volcano', l10n.bgVolcano),
+      ('midnight', l10n.bgMidnight),
+      ('dawn', l10n.bgDawn),
+      ('neon', l10n.bgNeon),
+      ('blossom', l10n.bgBlossom),
+    ];
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => Container(
+        constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.6),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(l10n.backgroundStyle, 
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            ),
+            const Divider(height: 1),
+            Expanded(
+              child: ListView.builder(
+                itemCount: styles.length,
+                itemBuilder: (context, index) {
+                  final style = styles[index];
+                  final isSelected = settings.backgroundColor == style.$1;
+                  return ListTile(
+                    leading: Icon(
+                      isSelected ? Icons.check_circle : Icons.circle_outlined,
+                      color: isSelected ? Theme.of(context).primaryColor : null,
+                    ),
+                    title: Text(style.$2),
+                    selected: isSelected,
+                    onTap: () {
+                      ref.read(settingsProvider.notifier).setBackgroundColor(style.$1);
+                      Navigator.pop(ctx);
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

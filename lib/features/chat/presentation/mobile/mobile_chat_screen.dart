@@ -100,21 +100,19 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
       }
     }
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final backgroundGradient = _getBackgroundGradient(settingsState.backgroundColor, isDark);
     return WillPopScope(
       onWillPop: _onWillPop,
       child: Stack(
         children: [
-          if (!isDark)
+          if (backgroundGradient != null)
             Positioned.fill(
               child: Container(
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                    colors: [
-                      Color(0xFFE0F7FA), // Cyan 50
-                      Color(0xFFF1F8E9), // Light Green 50
-                    ],
+                    colors: backgroundGradient,
                   ),
                 ),
               ),
@@ -463,5 +461,36 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
         ],
       ),
     );
+  }
+
+  List<Color>? _getBackgroundGradient(String style, bool isDark) {
+    if (style == 'pure_black') {
+      return isDark ? [const Color(0xFF000000), const Color(0xFF000000)] : null;
+    }
+    
+    final gradients = <String, (List<Color>, List<Color>)>{
+      'default': ([const Color(0xFF2B2B2B), const Color(0xFF2B2B2B)], [const Color(0xFFE0F7FA), const Color(0xFFF1F8E9)]),
+      'warm': ([const Color(0xFF1E1C1A), const Color(0xFF2E241E)], [const Color(0xFFFFF8F0), const Color(0xFFFFEBD6)]),
+      'cool': ([const Color(0xFF1A1C1E), const Color(0xFF1E252E)], [const Color(0xFFF0F8FF), const Color(0xFFD6EAFF)]),
+      'rose': ([const Color(0xFF2D1A1E), const Color(0xFF3B1E26)], [const Color(0xFFFFF0F5), const Color(0xFFFFD6E4)]),
+      'lavender': ([const Color(0xFF1F1A2D), const Color(0xFF261E3B)], [const Color(0xFFF3E5F5), const Color(0xFFE6D6FF)]),
+      'mint': ([const Color(0xFF1A2D24), const Color(0xFF1E3B2E)], [const Color(0xFFE0F2F1), const Color(0xFFC2E8DC)]),
+      'sky': ([const Color(0xFF1A202D), const Color(0xFF1E263B)], [const Color(0xFFE1F5FE), const Color(0xFFC7E6FF)]),
+      'gray': ([const Color(0xFF1E1E1E), const Color(0xFF2C2C2C)], [const Color(0xFFF5F5F5), const Color(0xFFE0E0E0)]),
+      'sunset': ([const Color(0xFF1A0B0E), const Color(0xFF4A1F28)], [const Color(0xFFFFF3E0), const Color(0xFFFFCCBC)]),
+      'ocean': ([const Color(0xFF05101A), const Color(0xFF0D2B42)], [const Color(0xFFE1F5FE), const Color(0xFF81D4FA)]),
+      'forest': ([const Color(0xFF051408), const Color(0xFF0E3316)], [const Color(0xFFE8F5E9), const Color(0xFFA5D6A7)]),
+      'dream': ([const Color(0xFF120817), const Color(0xFF261233)], [const Color(0xFFF3E5F5), const Color(0xFFBBDEFB)]),
+      'aurora': ([const Color(0xFF051715), const Color(0xFF181533)], [const Color(0xFFE0F2F1), const Color(0xFFD1C4E9)]),
+      'volcano': ([const Color(0xFF1F0808), const Color(0xFF3E1212)], [const Color(0xFFFFEBEE), const Color(0xFFFFCCBC)]),
+      'midnight': ([const Color(0xFF020205), const Color(0xFF141426)], [const Color(0xFFECEFF1), const Color(0xFF90A4AE)]),
+      'dawn': ([const Color(0xFF141005), const Color(0xFF33260D)], [const Color(0xFFFFF8E1), const Color(0xFFFFE082)]),
+      'neon': ([const Color(0xFF08181A), const Color(0xFF240C21)], [const Color(0xFFE0F7FA), const Color(0xFFE1BEE7)]),
+      'blossom': ([const Color(0xFF1F050B), const Color(0xFF3D0F19)], [const Color(0xFFFCE4EC), const Color(0xFFF8BBD0)]),
+    };
+    
+    final gradient = gradients[style];
+    if (gradient == null) return isDark ? null : [const Color(0xFFE0F7FA), const Color(0xFFF1F8E9)];
+    return isDark ? gradient.$1 : gradient.$2;
   }
 }
