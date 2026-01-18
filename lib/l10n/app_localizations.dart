@@ -1681,6 +1681,24 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'输入新名称'**
   String get renameSessionHint;
+
+  /// No description provided for @providerColor.
+  ///
+  /// In zh, this message translates to:
+  /// **'颜色 (Hex)'**
+  String get providerColor;
+
+  /// No description provided for @apiKeyPlaceholder.
+  ///
+  /// In zh, this message translates to:
+  /// **'sk-xxxxxxxx'**
+  String get apiKeyPlaceholder;
+
+  /// No description provided for @baseUrlPlaceholder.
+  ///
+  /// In zh, this message translates to:
+  /// **'https://api.openai.com/v1'**
+  String get baseUrlPlaceholder;
 }
 
 class _AppLocalizationsDelegate

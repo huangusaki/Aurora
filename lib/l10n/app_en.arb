@@ -374,5 +374,8 @@
   "accentColor": "Accent Color",
   "backgroundStyle": "Background Style",
   "renameSession": "Rename",
-  "renameSessionHint": "Enter new name"
+  "renameSessionHint": "Enter new name",
+  "providerColor": "Color (Hex)",
+  "apiKeyPlaceholder": "sk-xxxxxxxx",
+  "baseUrlPlaceholder": "https://api.openai.com/v1"
 }

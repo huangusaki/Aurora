@@ -823,4 +823,13 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get renameSessionHint => '输入新名称';
+
+  @override
+  String get providerColor => '颜色 (Hex)';
+
+  @override
+  String get apiKeyPlaceholder => 'sk-xxxxxxxx';
+
+  @override
+  String get baseUrlPlaceholder => 'https://api.openai.com/v1';
 }

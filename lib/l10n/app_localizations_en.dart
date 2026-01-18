@@ -836,4 +836,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get renameSessionHint => 'Enter new name';
+
+  @override
+  String get providerColor => 'Color (Hex)';
+
+  @override
+  String get apiKeyPlaceholder => 'sk-xxxxxxxx';
+
+  @override
+  String get baseUrlPlaceholder => 'https://api.openai.com/v1';
 }

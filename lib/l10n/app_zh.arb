@@ -374,5 +374,8 @@
   "accentColor": "强调色",
   "backgroundStyle": "背景风格",
   "renameSession": "重命名",
-  "renameSessionHint": "输入新名称"
+  "renameSessionHint": "输入新名称",
+  "providerColor": "颜色 (Hex)",
+  "apiKeyPlaceholder": "sk-xxxxxxxx",
+  "baseUrlPlaceholder": "https://api.openai.com/v1"
 }
