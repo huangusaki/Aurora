@@ -315,6 +315,7 @@ class _SessionList extends ConsumerWidget {
                                 .state = null;
                           }
                         },
+                        isMobile: isMobile,
                       ),
                     );
                   },
@@ -332,6 +333,7 @@ class _SessionItem extends StatefulWidget {
   final VoidCallback onTap;
   final VoidCallback onDelete;
   final void Function(String newTitle) onRename;
+  final bool isMobile;
   const _SessionItem({
     required this.session,
     required this.isSelected,
@@ -339,6 +341,7 @@ class _SessionItem extends StatefulWidget {
     required this.onTap,
     required this.onDelete,
     required this.onRename,
+    this.isMobile = false,
   });
   @override
   State<_SessionItem> createState() => _SessionItemState();
@@ -480,7 +483,8 @@ class _SessionItemState extends State<_SessionItem> {
                     ],
                   ),
                 ),
-                if ((widget.isSelected || _isHovering) && !_isRenaming) ...[
+                if ((widget.isSelected || _isHovering || widget.isMobile) &&
+                    !_isRenaming) ...[
                   fluent.IconButton(
                     icon: const fluent.Icon(fluent.FluentIcons.edit, size: 14),
                     onPressed: _startRenaming,
@@ -499,6 +503,8 @@ class _SessionItemState extends State<_SessionItem> {
     );
   }
 }
+
+
 
 class SessionListWidget extends ConsumerWidget {
   final SessionsState sessionsState;

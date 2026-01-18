@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:markdown/markdown.dart' as md;
 import 'package:url_launcher/url_launcher.dart';
+import 'package:file_selector/file_selector.dart';
+import 'dart:io';
+import 'dart:convert';
 
 /// Generates a list of widgets from markdown text.
 /// Continuous inline/block text is merged into SelectableText.rich,
@@ -24,6 +27,7 @@ class MarkdownGenerator {
     final document = md.Document(
       extensionSet: md.ExtensionSet.gitHubWeb,
       encodeHtml: false,
+      inlineSyntaxes: [CjkBoldSyntax()],
     );
     final nodes = document.parseLines(preprocessedText.split('\n'));
 
@@ -230,30 +234,53 @@ class MarkdownGenerator {
           break;
         case 'em':
         case 'i':
+          // Use bold styling (same as **text**)
           style = (style ?? const TextStyle())
-              .copyWith(fontStyle: FontStyle.italic);
+              .copyWith(fontWeight: FontWeight.bold);
           break;
         case 'del':
         case 's':
           style = (style ?? const TextStyle())
               .copyWith(decoration: TextDecoration.lineThrough);
           break;
-        case 'code':
-          style = (style ?? const TextStyle()).copyWith(
-            fontFamily: 'monospace',
-            backgroundColor:
-                isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05),
-          );
-          break;
         case 'a':
-          style = (style ?? const TextStyle()).copyWith(
-            color: Colors.blue,
-            decoration: TextDecoration.underline,
-          );
-          // Link handling needs tap recognizer, which requires TextSpan specific logic.
-          // We'll handle it below.
+          style = (style ?? const TextStyle())
+              .copyWith(decoration: TextDecoration.underline);
+          break;
+        case 'code':
+          // We use WidgetSpan now for rounded corners, handled below
           break;
       }
+
+      // Handle 'code' explicitly to use WidgetSpan (TextSpan doesn't support border radius)
+      if (tag == 'code') {
+        final codeText = node.textContent;
+        return [
+          WidgetSpan(
+            alignment: PlaceholderAlignment.middle,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+              margin: const EdgeInsets.symmetric(horizontal: 1),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.25)
+                    : Colors.black.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                codeText,
+                style: (context.currentStyle ?? const TextStyle()).copyWith(
+                  fontFamily: 'monospace',
+                  color: textColor, // Ensure text is visible
+                  fontSize: (baseFontSize - 1), // Slightly smaller for code
+                ),
+              ),
+            ),
+          )
+        ];
+      }
+
+
 
       final childContext = context.copyWith(currentStyle: style);
       final List<InlineSpan> childrenSpans = [];
@@ -377,7 +404,6 @@ class MarkdownGenerator {
     spans.add(TextSpan(
       text: marker,
       style: (context.currentStyle ?? const TextStyle()).copyWith(
-        fontWeight: FontWeight.bold,
         fontFamily: 'monospace',
       ),
     ));
@@ -459,62 +485,12 @@ class MarkdownGenerator {
       code = code.substring(0, code.length - 1);
     }
 
-    return Container(
+    return _ExpandableCodeBlock(
       key: ValueKey('code_$index'),
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E1E1E) : const Color(0xFFF5F5F5),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: isDark ? Colors.white24 : Colors.black12,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: isDark
-                  ? Colors.white10
-                  : Colors.black.withValues(alpha: 0.03),
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(7)),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  language ?? 'code',
-                  style: TextStyle(
-                    color: textColor.withValues(alpha: 0.6),
-                    fontSize: 12,
-                    fontFamily: 'monospace',
-                  ),
-                ),
-                _CopyButton(
-                  text: code,
-                  color: textColor.withValues(alpha: 0.6),
-                ),
-              ],
-            ),
-          ),
-          SelectionArea(
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Text(
-                code,
-                style: TextStyle(
-                  color: textColor,
-                  fontSize: 13,
-                  fontFamily: 'monospace',
-                  height: 1.4,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
+      code: code,
+      language: language,
+      isDark: isDark,
+      textColor: textColor,
     );
   }
 
@@ -716,5 +692,273 @@ class _CopyButtonState extends State<_CopyButton> {
         ),
       ),
     );
+  }
+}
+
+class _DownloadButton extends StatelessWidget {
+  final String code;
+  final String? language;
+  final Color color;
+
+  const _DownloadButton({
+    required this.code,
+    this.language,
+    required this.color,
+  });
+
+  String _getFileExtension(String? language) {
+    if (language == null) return '.txt';
+    
+    switch (language.toLowerCase()) {
+      case 'dart': return '.dart';
+      case 'python': 
+      case 'py': return '.py';
+      case 'javascript':
+      case 'js': return '.js';
+      case 'typescript':
+      case 'ts': return '.ts';
+      case 'html': return '.html';
+      case 'css': return '.css';
+      case 'json': return '.json';
+      case 'xml': return '.xml';
+      case 'yaml':
+      case 'yml': return '.yaml';
+      case 'c': return '.c';
+      case 'cpp':
+      case 'c++': return '.cpp';
+      case 'h': return '.h';
+      case 'hpp': return '.hpp';
+      case 'java': return '.java';
+      case 'kotlin':
+      case 'kt': return '.kt';
+      case 'swift': return '.swift';
+      case 'php': return '.php';
+      case 'go': return '.go';
+      case 'rust':
+      case 'rs': return '.rs';
+      case 'ruby':
+      case 'rb': return '.rb';
+      case 'shell':
+      case 'sh':
+      case 'bash': return '.sh';
+      case 'powershell':
+      case 'ps1': return '.ps1';
+      case 'sql': return '.sql';
+      case 'markdown':
+      case 'md': return '.md';
+      default: return '.txt';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () async {
+        final ext = _getFileExtension(language);
+        final fileName = 'code$ext';
+        
+        try {
+          final FileSaveLocation? result = await getSaveLocation(
+            suggestedName: fileName,
+            acceptedTypeGroups: [
+              XTypeGroup(
+                label: language ?? 'Text',
+                extensions: [ext.replaceAll('.', '')],
+              ),
+            ],
+          );
+
+          if (result != null) {
+            final file = File(result.path);
+            await file.writeAsString(code);
+          }
+        } catch (e) {
+          debugPrint('Error saving file: $e');
+        }
+      },
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.all(4),
+        child: Icon(
+          Icons.download_rounded,
+          size: 16,
+          color: color,
+        ),
+      ),
+    );
+  }
+}
+
+class _ExpandableCodeBlock extends StatefulWidget {
+  final String code;
+  final String? language;
+  final bool isDark;
+  final Color textColor;
+
+  const _ExpandableCodeBlock({
+    super.key,
+    required this.code,
+    this.language,
+    required this.isDark,
+    required this.textColor,
+  });
+
+  @override
+  State<_ExpandableCodeBlock> createState() => _ExpandableCodeBlockState();
+}
+
+class _ExpandableCodeBlockState extends State<_ExpandableCodeBlock> {
+  bool _isExpanded = true;
+  bool _isHovering = false;
+  final GlobalKey _headerKey = GlobalKey();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      decoration: BoxDecoration(
+        color: widget.isDark ? const Color(0xFF1E1E1E) : const Color(0xFFF5F5F5),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: widget.isDark ? Colors.white24 : Colors.black12,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                _isExpanded = !_isExpanded;
+              });
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted && _headerKey.currentContext != null) {
+                  Scrollable.ensureVisible(
+                    _headerKey.currentContext!,
+                    duration: const Duration(milliseconds: 300),
+                    alignment: 0.5,
+                    curve: Curves.easeInOut,
+                  );
+                }
+              });
+            },
+            behavior: HitTestBehavior.opaque,
+            child: MouseRegion(
+              onEnter: (_) => setState(() => _isHovering = true),
+              onExit: (_) => setState(() => _isHovering = false),
+              child: Container(
+                key: _headerKey,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: widget.isDark
+                      ? (_isHovering ? Colors.white24 : Colors.white10)
+                      : (_isHovering
+                          ? Colors.black.withValues(alpha: 0.08)
+                          : Colors.black.withValues(alpha: 0.03)),
+                  borderRadius: BorderRadius.vertical(
+                      top: const Radius.circular(7),
+                      bottom:
+                          _isExpanded ? Radius.zero : const Radius.circular(7)),
+                ),
+                child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      widget.language ?? 'code',
+                      style: TextStyle(
+                        color: widget.textColor.withValues(alpha: 0.6),
+                        fontSize: 12,
+                        fontFamily: 'monospace',
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _DownloadButton(
+                        code: widget.code,
+                        language: widget.language,
+                        color: widget.textColor.withValues(alpha: 0.6),
+                      ),
+                      const SizedBox(width: 8),
+                      _CopyButton(
+                        text: widget.code,
+                        color: widget.textColor.withValues(alpha: 0.6),
+                      ),
+                      const SizedBox(width: 8),
+                      Padding(
+                        padding: const EdgeInsets.all(4),
+                        child: Icon(
+                          _isExpanded
+                              ? Icons.keyboard_arrow_up_rounded
+                              : Icons.keyboard_arrow_down_rounded,
+                          size: 16,
+                          color: widget.textColor.withValues(alpha: 0.6),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          ),
+          if (_isExpanded)
+            SelectionArea(
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Text(
+                  widget.code,
+                  style: TextStyle(
+                    color: widget.textColor,
+                    fontSize: 13,
+                    fontFamily: 'monospace',
+                    height: 1.4,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Custom syntax to handle CJK (Chinese/Japanese/Korean) bold rendering issues.
+/// Standard markdown parsers often fail to recognize `**` as bold markers when
+/// they are directly adjacent to CJK characters (without spaces), especially
+/// when followed by punctuation (e.g. `是**“foo”**`).
+///
+/// This syntax uses a regex to explicitly catch `[CJK Char]**[Content]**` patterns
+/// and force them to be parsed as Strong/Bold elements.
+class CjkBoldSyntax extends md.InlineSyntax {
+  // Regex matches:
+  // Group 1: A CJK character (Unified Ideographs 4E00-9FFF) or Fullwidth Punctuation (FF00-FFEF).
+  //         This ensures we only trigger this specific CJK fix and don't interfere with normal text.
+  // Group 2: The content inside the bold markers (Lazy match).
+  //         We use a negative lookahead `(?![...])` to ensure the content does NOT start with
+  //         punctuation or whitespace. This prevents falsy matches where a confusing closing `**`
+  //         (followed by a comma) is mistaken for a new opening `**`.
+  CjkBoldSyntax() : super(r'([\u4e00-\u9fff\uff00-\uffef])\*\*(?![，。、；：？！”’）》\],.\?!\s])(.+?)\*\*');
+
+  @override
+  bool onMatch(md.InlineParser parser, Match match) {
+    // 1. Add the preceding character back as a Text node.
+    // We consumed it in the regex, so we must restore it.
+    parser.addNode(md.Text(match[1]!));
+
+    // 2. Parse the inner content recursively.
+    // This ensures that markdown inside the bold tags (like `*italics*`) is still processed.
+    final innerContent = match[2]!;
+    final innerParser = md.InlineParser(innerContent, parser.document);
+    final children = innerParser.parse();
+
+    // 3. Create and add the Strong element.
+    final element = md.Element('strong', children);
+    parser.addNode(element);
+
+    return true;
   }
 }
