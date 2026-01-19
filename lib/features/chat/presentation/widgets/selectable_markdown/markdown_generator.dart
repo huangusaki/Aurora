@@ -5,7 +5,7 @@ import 'package:markdown/markdown.dart' as md;
 import 'package:url_launcher/url_launcher.dart';
 import 'package:file_selector/file_selector.dart';
 import 'dart:io';
-import 'dart:convert';
+
 
 /// Generates a list of widgets from markdown text.
 /// Continuous inline/block text is merged into SelectableText.rich,

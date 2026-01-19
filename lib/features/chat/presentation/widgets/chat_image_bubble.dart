@@ -1,16 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:file_selector/file_selector.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/material.dart' as material
-    show
-        CircularProgressIndicator,
-        InteractiveViewer,
-        Scaffold,
-        AppBar,
-        IconButton,
-        Icons;
+    show CircularProgressIndicator;
 import 'package:super_clipboard/super_clipboard.dart';
 import 'package:flutter/foundation.dart';
 import 'windows_image_viewer.dart';

@@ -90,12 +90,24 @@ class _MobileSettingsPageState extends ConsumerState<MobileSettingsPage> {
                 ),
                 ListTile(
                   leading: const Icon(Icons.key),
-                  title: const Text('API Key'),
-                  subtitle: Text(activeProvider?.apiKey.isNotEmpty == true
-                      ? '••••••••'
+                  title: Text(l10n.apiKeys),
+                  subtitle: Text(activeProvider?.apiKeys.isNotEmpty == true
+                      ? '${activeProvider!.apiKeys.length} ${activeProvider.apiKeys.length > 1 ? "keys" : "key"}'
                       : l10n.notConfigured),
-                  trailing: const Icon(Icons.edit),
-                  onTap: () => _showApiKeyEditor(context, activeProvider),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (activeProvider != null && activeProvider.apiKeys.length > 1)
+                        Switch(
+                          value: activeProvider.autoRotateKeys,
+                          onChanged: (v) => ref
+                              .read(settingsProvider.notifier)
+                              .setAutoRotateKeys(activeProvider.id, v),
+                        ),
+                      const Icon(Icons.chevron_right),
+                    ],
+                  ),
+                  onTap: () => _showApiKeysManager(context, activeProvider),
                 ),
                 ListTile(
                   leading: const Icon(Icons.link),
@@ -308,8 +320,13 @@ class _MobileSettingsPageState extends ConsumerState<MobileSettingsPage> {
   void _showModelConfigDialog(
       BuildContext context, ProviderConfig provider, String modelName) {
     final currentSettings = provider.modelSettings[modelName] ?? {};
-    showDialog(
+    showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
       builder: (ctx) => _ModelConfigDialog(
         modelName: modelName,
         initialSettings: currentSettings,
@@ -368,21 +385,146 @@ class _MobileSettingsPageState extends ConsumerState<MobileSettingsPage> {
     );
   }
 
-  void _showApiKeyEditor(BuildContext context, ProviderConfig? provider) {
+  void _showApiKeysManager(BuildContext context, ProviderConfig? provider) {
     if (provider == null) return;
     final l10n = AppLocalizations.of(context)!;
-    _apiKeyController.text = provider.apiKey;
+    
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).brightness == Brightness.dark
+          ? const Color(0xFF202020)
+          : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) {
+          // Re-fetch provider to get latest state
+          final currentProvider = ref.read(settingsProvider).providers
+              .firstWhere((p) => p.id == provider.id, orElse: () => provider);
+          
+          return DraggableScrollableSheet(
+            initialChildSize: 0.6,
+            minChildSize: 0.3,
+            maxChildSize: 0.9,
+            expand: false,
+            builder: (context, scrollController) => Column(
+              children: [
+                // Handle bar
+                Container(
+                  margin: const EdgeInsets.only(top: 12, bottom: 8),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[400],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                // Header
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Row(
+                    children: [
+                      Text(
+                        l10n.apiKeys,
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      const Spacer(),
+                      // Add key button
+                      IconButton(
+                        icon: const Icon(Icons.add_circle_outline),
+                        onPressed: () => _showAddKeyDialog(context, provider.id, () {
+                          setModalState(() {});
+                        }),
+                      ),
+                    ],
+                  ),
+                ),
+                // Auto-rotate toggle
+                if (currentProvider.apiKeys.length > 1)
+                  SwitchListTile(
+                    title: Text(l10n.autoRotateKeys),
+                    value: currentProvider.autoRotateKeys,
+                    onChanged: (v) {
+                      ref.read(settingsProvider.notifier)
+                          .setAutoRotateKeys(provider.id, v);
+                      setModalState(() {});
+                    },
+                  ),
+                const Divider(),
+                // Key list
+                Expanded(
+                  child: currentProvider.apiKeys.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.key_off, size: 48, color: Colors.grey),
+                              const SizedBox(height: 8),
+                              Text(l10n.notConfigured, style: const TextStyle(color: Colors.grey)),
+                              const SizedBox(height: 16),
+                              ElevatedButton.icon(
+                                onPressed: () => _showAddKeyDialog(context, provider.id, () {
+                                  setModalState(() {});
+                                }),
+                                icon: const Icon(Icons.add),
+                                label: Text(l10n.addApiKey),
+                              ),
+                            ],
+                          ),
+                        )
+                      : ListView.builder(
+                          controller: scrollController,
+                          itemCount: currentProvider.apiKeys.length,
+                          itemBuilder: (context, index) {
+                            final key = currentProvider.apiKeys[index];
+                            final isCurrent = index == currentProvider.safeCurrentKeyIndex;
+                            
+                            return _ApiKeyListItem(
+                              apiKey: key,
+                              isCurrent: isCurrent,
+                              onSelect: () {
+                                ref.read(settingsProvider.notifier)
+                                    .setCurrentKeyIndex(provider.id, index);
+                                setModalState(() {});
+                              },
+                              onEdit: (newValue) {
+                                ref.read(settingsProvider.notifier)
+                                    .updateApiKeyAtIndex(provider.id, index, newValue);
+                                setModalState(() {});
+                              },
+                              onDelete: () {
+                                ref.read(settingsProvider.notifier)
+                                    .removeApiKey(provider.id, index);
+                                setModalState(() {});
+                              },
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _showAddKeyDialog(BuildContext context, String providerId, VoidCallback onAdded) {
+    final l10n = AppLocalizations.of(context)!;
+    final controller = TextEditingController();
+    
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: Theme.of(context).brightness == Brightness.dark
             ? const Color(0xFF202020)
             : Colors.white,
-        surfaceTintColor: Colors.transparent,
-        title: Text(l10n.editApiKey),
+        title: Text(l10n.addApiKey),
         content: TextField(
-          controller: _apiKeyController,
-          obscureText: true,
+          controller: controller,
+          autofocus: true,
           decoration: const InputDecoration(
             hintText: 'sk-xxxxxxxx',
             border: OutlineInputBorder(),
@@ -395,19 +537,10 @@ class _MobileSettingsPageState extends ConsumerState<MobileSettingsPage> {
           ),
           TextButton(
             onPressed: () {
-              final newKey = _apiKeyController.text.trim();
+              final newKey = controller.text.trim();
               if (newKey.isNotEmpty) {
-                if (provider.apiKeys.isEmpty) {
-                  // Add as first key
-                  ref.read(settingsProvider.notifier).addApiKey(provider.id, newKey);
-                } else {
-                  // Update the current key
-                  ref.read(settingsProvider.notifier).updateApiKeyAtIndex(
-                    provider.id, 
-                    provider.safeCurrentKeyIndex, 
-                    newKey,
-                  );
-                }
+                ref.read(settingsProvider.notifier).addApiKey(providerId, newKey);
+                onAdded();
               }
               Navigator.pop(ctx);
             },
@@ -422,37 +555,71 @@ class _MobileSettingsPageState extends ConsumerState<MobileSettingsPage> {
     if (provider == null) return;
     final l10n = AppLocalizations.of(context)!;
     _baseUrlController.text = provider.baseUrl;
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: Theme.of(context).brightness == Brightness.dark
-            ? const Color(0xFF202020)
-            : Colors.white,
-        surfaceTintColor: Colors.transparent,
-        title: Text(l10n.editBaseUrl),
-        content: TextField(
-          controller: _baseUrlController,
-          decoration: const InputDecoration(
-            hintText: 'https://api.openai.com/v1',
-            border: OutlineInputBorder(),
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(ctx).viewInsets.bottom,
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                margin: const EdgeInsets.only(top: 12, bottom: 8),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[400],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(l10n.editBaseUrl, style: Theme.of(context).textTheme.titleMedium),
+              ),
+              const Divider(height: 1),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: TextField(
+                  controller: _baseUrlController,
+                  autofocus: true,
+                  decoration: const InputDecoration(
+                    hintText: 'https://api.openai.com/v1',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: Text(l10n.cancel),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton(
+                      onPressed: () {
+                        ref.read(settingsProvider.notifier).updateProvider(
+                              id: provider.id,
+                              baseUrl: _baseUrlController.text,
+                            );
+                        Navigator.pop(ctx);
+                      },
+                      child: Text(l10n.save),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(l10n.cancel),
-          ),
-          TextButton(
-            onPressed: () {
-              ref.read(settingsProvider.notifier).updateProvider(
-                    id: provider.id,
-                    baseUrl: _baseUrlController.text,
-                  );
-              Navigator.pop(ctx);
-            },
-            child: Text(l10n.save),
-          ),
-        ],
       ),
     );
   }
@@ -461,41 +628,72 @@ class _MobileSettingsPageState extends ConsumerState<MobileSettingsPage> {
     if (provider == null) return;
     final l10n = AppLocalizations.of(context)!;
     _colorController.text = provider.color ?? '';
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: Theme.of(context).brightness == Brightness.dark
-            ? const Color(0xFF202020)
-            : Colors.white,
-        surfaceTintColor: Colors.transparent,
-        title: const Text('Edit Color'),
-        content: TextField(
-          controller: _colorController,
-          decoration: const InputDecoration(
-            hintText: '#FF0000',
-            labelText: 'Hex Color',
-            border: OutlineInputBorder(),
-          ),
-          onChanged: (value) {
-            // Force rebuild if needed
-          },
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(ctx).viewInsets.bottom,
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(l10n.cancel),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                margin: const EdgeInsets.only(top: 12, bottom: 8),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[400],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text('Edit Color', style: Theme.of(context).textTheme.titleMedium),
+              ),
+              const Divider(height: 1),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: TextField(
+                  controller: _colorController,
+                  autofocus: true,
+                  decoration: const InputDecoration(
+                    hintText: '#FF0000',
+                    labelText: 'Hex Color',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: Text(l10n.cancel),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton(
+                      onPressed: () {
+                        ref.read(settingsProvider.notifier).updateProvider(
+                              id: provider.id,
+                              color: _colorController.text,
+                            );
+                        Navigator.pop(ctx);
+                      },
+                      child: Text(l10n.save),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () {
-              ref.read(settingsProvider.notifier).updateProvider(
-                    id: provider.id,
-                    color: _colorController.text,
-                  );
-              Navigator.pop(ctx);
-            },
-            child: Text(l10n.save),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -723,140 +921,160 @@ class _ModelConfigDialogState extends State<_ModelConfigDialog> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     // Extract custom params for display (exclude _aurora_ keys)
     final customParams = Map<String, dynamic>.fromEntries(
       _modelSettings.entries.where((e) => !e.key.startsWith('_aurora_'))
     );
 
-    return AlertDialog(
-      backgroundColor: isDark ? const Color(0xFF202020) : Colors.white,
-      surfaceTintColor: Colors.transparent,
-      title: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.85,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Text(widget.modelName,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          Text(l10n.modelConfig,
-              style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+          // Drag handle
+          Container(
+            margin: const EdgeInsets.only(top: 12, bottom: 8),
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey[400],
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          // Header
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(widget.modelName,
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                Text(l10n.modelConfig,
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          // Scrollable content
+          Flexible(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Thinking Configuration Card
+                  _buildSectionCard(
+                    context,
+                    title: l10n.thinkingConfig,
+                    icon: Icons.lightbulb_outline,
+                    headerAction: Switch(
+                      value: _thinkingEnabled,
+                      onChanged: (v) => _saveSettings(thinkingEnabled: v),
+                    ),
+                    child: _thinkingEnabled ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 16),
+                        const Divider(),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: TextEditingController(text: _thinkingBudget)
+                            ..selection = TextSelection.collapsed(offset: _thinkingBudget.length),
+                          decoration: InputDecoration(
+                            labelText: l10n.thinkingBudget,
+                            hintText: l10n.thinkingBudgetHint,
+                            border: const OutlineInputBorder(),
+                            isDense: true,
+                          ),
+                          onChanged: (v) => _saveSettings(thinkingBudget: v),
+                        ),
+                        const SizedBox(height: 12),
+                        DropdownButtonFormField<String>(
+                          value: _thinkingMode,
+                          decoration: InputDecoration(
+                            labelText: l10n.transmissionMode,
+                            border: const OutlineInputBorder(),
+                            isDense: true,
+                          ),
+                          items: [
+                            DropdownMenuItem(value: 'auto', child: Text(l10n.modeAuto)),
+                            DropdownMenuItem(value: 'extra_body', child: Text(l10n.modeExtraBody)),
+                            DropdownMenuItem(value: 'reasoning_effort', child: Text(l10n.modeReasoningEffort)),
+                          ],
+                          onChanged: (v) {
+                            if (v != null) _saveSettings(thinkingMode: v);
+                          },
+                        ),
+                      ],
+                    ) : null,
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Custom Parameters Card
+                  _buildSectionCard(
+                    context,
+                    title: l10n.configureModelParams,
+                    subtitle: l10n.paramsHigherPriority,
+                    icon: Icons.settings_outlined,
+                    headerAction: null,
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 16),
+                        if (customParams.isEmpty)
+                          Container(
+                            padding: const EdgeInsets.all(24),
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey.withOpacity(0.3)),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Column(
+                              children: [
+                                const Icon(Icons.tune, size: 32, color: Colors.grey),
+                                const SizedBox(height: 8),
+                                Text(
+                                  l10n.noCustomParams,
+                                  style: const TextStyle(color: Colors.grey),
+                                ),
+                                const SizedBox(height: 8),
+                                TextButton(
+                                  child: Text(l10n.addCustomParam),
+                                   onPressed: () => _showEditDialog(),
+                                )
+                              ],
+                            ),
+                          )
+                        else
+                          ...customParams.entries.map((e) {
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 8.0),
+                              child: _buildParamItem(e.key, e.value, theme),
+                            );
+                          }),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          // Done button
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(l10n.done),
+              ),
+            ),
+          ),
         ],
       ),
-      content: SizedBox(
-        width: double.maxFinite,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Thinking Configuration Card
-              _buildSectionCard(
-                context,
-                title: l10n.thinkingConfig,
-                icon: Icons.lightbulb_outline,
-                headerAction: Switch(
-                  value: _thinkingEnabled,
-                  onChanged: (v) => _saveSettings(thinkingEnabled: v),
-                ),
-                child: _thinkingEnabled ? Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 16),
-                    const Divider(),
-                    const SizedBox(height: 16),
-                    TextField(
-                      controller: TextEditingController(text: _thinkingBudget)
-                        ..selection = TextSelection.collapsed(offset: _thinkingBudget.length),
-                      decoration: InputDecoration(
-                        labelText: l10n.thinkingBudget,
-                        hintText: l10n.thinkingBudgetHint,
-                        border: const OutlineInputBorder(),
-                        isDense: true,
-                      ),
-                      onChanged: (v) => _saveSettings(thinkingBudget: v),
-                    ),
-                    const SizedBox(height: 12),
-                    DropdownButtonFormField<String>(
-                      value: _thinkingMode,
-                      decoration: InputDecoration(
-                        labelText: l10n.transmissionMode,
-                        border: const OutlineInputBorder(),
-                        isDense: true,
-                      ),
-                      items: [
-                        DropdownMenuItem(value: 'auto', child: Text(l10n.modeAuto)),
-                        DropdownMenuItem(value: 'extra_body', child: Text(l10n.modeExtraBody)),
-                        DropdownMenuItem(value: 'reasoning_effort', child: Text(l10n.modeReasoningEffort)),
-                      ],
-                      onChanged: (v) {
-                        if (v != null) _saveSettings(thinkingMode: v);
-                      },
-                    ),
-                  ],
-                ) : null,
-              ),
-
-              const SizedBox(height: 16),
-
-              // Custom Parameters Card
-              _buildSectionCard(
-                context,
-                title: l10n.configureModelParams, // Or l10n.customParameters if available
-                subtitle: l10n.paramsHigherPriority,
-                icon: Icons.settings_outlined,
-                headerAction: IconButton(
-                  icon: const Icon(Icons.add),
-                  onPressed: () => _showEditDialog(),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                  visualDensity: VisualDensity.compact,
-                ),
-                child: Column(
-                  children: [
-                    const SizedBox(height: 16),
-                    if (customParams.isEmpty)
-                      Container(
-                        padding: const EdgeInsets.all(24),
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey.withOpacity(0.3)),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Column(
-                          children: [
-                            const Icon(Icons.tune, size: 32, color: Colors.grey),
-                            const SizedBox(height: 8),
-                            Text(
-                              l10n.noCustomParams,
-                              style: const TextStyle(color: Colors.grey),
-                            ),
-                            const SizedBox(height: 8),
-                            TextButton(
-                              child: Text(l10n.addCustomParam),
-                               onPressed: () => _showEditDialog(),
-                            )
-                          ],
-                        ),
-                      )
-                    else
-                      ...customParams.entries.map((e) {
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 8.0),
-                          child: _buildParamItem(e.key, e.value, theme),
-                        );
-                      }),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text(l10n.done),
-        ),
-      ],
     );
   }
 
@@ -1126,6 +1344,97 @@ class _ParameterConfigDialogState extends State<_ParameterConfigDialog> {
           child: Text(isEditing ? l10n.save : l10n.add),
         ),
       ],
+    );
+  }
+}
+
+class _ApiKeyListItem extends StatefulWidget {
+  final String apiKey;
+  final bool isCurrent;
+  final VoidCallback onSelect;
+  final ValueChanged<String> onEdit;
+  final VoidCallback onDelete;
+
+  const _ApiKeyListItem({
+    super.key,
+    required this.apiKey,
+    required this.isCurrent,
+    required this.onSelect,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  @override
+  State<_ApiKeyListItem> createState() => _ApiKeyListItemState();
+}
+
+class _ApiKeyListItemState extends State<_ApiKeyListItem> {
+  late TextEditingController _controller;
+  bool _isVisible = false;
+  final FocusNode _focusNode = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.apiKey);
+  }
+
+  @override
+  void didUpdateWidget(_ApiKeyListItem oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.apiKey != _controller.text) {
+      _controller.text = widget.apiKey;
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: Radio<bool>(
+        value: true,
+        groupValue: widget.isCurrent,
+        onChanged: (v) {
+          if (v == true) widget.onSelect();
+        },
+      ),
+      title: TextField(
+        controller: _controller,
+        focusNode: _focusNode,
+        obscureText: !_isVisible,
+        onChanged: widget.onEdit,
+        decoration: InputDecoration(
+          border: InputBorder.none,
+          hintText: 'sk-xxxxxxxx',
+          suffixIcon: IconButton(
+            icon: Icon(
+              _isVisible ? Icons.visibility_off : Icons.visibility,
+              size: 20,
+              color: Colors.grey,
+            ),
+            onPressed: () {
+              setState(() {
+                _isVisible = !_isVisible;
+              });
+            },
+          ),
+        ),
+        style: TextStyle(
+          fontFamily: 'monospace',
+          fontSize: 14,
+          letterSpacing: _isVisible ? 0 : 2,
+        ),
+      ),
+      trailing: IconButton(
+        icon: const Icon(Icons.delete_outline, color: Colors.red),
+        onPressed: widget.onDelete,
+      ),
     );
   }
 }

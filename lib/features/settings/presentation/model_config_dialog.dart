@@ -192,10 +192,7 @@ class _ModelConfigDialogState extends ConsumerState<ModelConfigDialog> {
               title: l10n.configureModelParams, // 'Configure Model Params' or 'Custom Parameters'
               subtitle: l10n.paramsHigherPriority,
               icon: FluentIcons.settings,
-              headerAction: IconButton(
-                icon: const Icon(FluentIcons.add, size: 16),
-                onPressed: () => _addParam(customParams),
-              ),
+              headerAction: null,
               child: Column(
                 children: [
                   const SizedBox(height: 16),

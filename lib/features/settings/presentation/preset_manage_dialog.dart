@@ -1,7 +1,7 @@
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
-import 'package:uuid/uuid.dart';
+
 import '../../settings/domain/chat_preset.dart';
 import '../../settings/presentation/settings_provider.dart';
 

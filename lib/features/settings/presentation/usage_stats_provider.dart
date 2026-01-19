@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/settings_storage.dart';
-import '../../chat/data/message_entity.dart';
+
 import '../../../core/error/app_error_type.dart';
 import '../data/usage_stats_entity.dart';
 import '../data/daily_usage_stats_entity.dart';

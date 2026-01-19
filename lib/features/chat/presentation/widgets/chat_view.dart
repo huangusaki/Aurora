@@ -1,26 +1,26 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:convert';
-import 'dart:math' as math;
+
+
 import 'package:fluent_ui/fluent_ui.dart' as fluent;
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_selector/file_selector.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
+
 import 'package:super_clipboard/super_clipboard.dart';
-import 'package:path_provider/path_provider.dart';
+
 import 'package:pasteboard/pasteboard.dart';
 import 'package:image_picker/image_picker.dart';
 import '../chat_provider.dart';
-import '../../domain/message.dart';
-import 'reasoning_display.dart';
-import 'chat_image_bubble.dart';
+
+
+
 import '../../../settings/presentation/settings_provider.dart';
 import '../../../history/presentation/widgets/hover_image_preview.dart';
-import 'package:aurora/l10n/app_localizations.dart';
+
 import 'components/chat_utils.dart';
-import 'components/tool_output.dart';
+
 import 'components/message_bubble.dart';
 import 'components/merged_message_bubble.dart';
 import 'components/chat_input_area.dart';

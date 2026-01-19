@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../settings/presentation/settings_provider.dart';
 import 'custom_dropdown_overlay.dart';
-import '../chat_provider.dart';
+
 import 'package:aurora/l10n/app_localizations.dart';
 
 class ModelSelector extends ConsumerStatefulWidget {
@@ -193,47 +193,8 @@ class _ModelSelectorState extends ConsumerState<ModelSelector> {
         ),
       );
     } else {
-      final List<PopupMenuEntry<String>> items = [];
-      for (final provider in providers) {
-        if (!provider.isEnabled || provider.models.isEmpty) continue;
-        items.add(PopupMenuItem<String>(
-          enabled: false,
-          child: Text(provider.name,
-              style: const TextStyle(
-                  fontWeight: FontWeight.bold, color: Colors.grey)),
-        ));
-        for (final model in provider.models) {
-          if (!provider.isModelEnabled(model)) continue;
-          items.add(PopupMenuItem<String>(
-            value: '${provider.id}|$model',
-            height: 32,
-            child: Padding(
-              padding: const EdgeInsets.only(left: 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(model),
-                  if (activeProvider.id == provider.id && selected == model)
-                    const Icon(Icons.check, size: 16, color: Colors.blue),
-                ],
-              ),
-            ),
-          ));
-        }
-        if (provider != providers.last) {
-          items.add(const PopupMenuDivider());
-        }
-      }
-      return PopupMenuButton<String>(
-        tooltip: AppLocalizations.of(context)!.switchModel,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        onSelected: (value) {
-          final parts = value.split('|');
-          if (parts.length == 2) {
-            switchModel(parts[0], parts[1]);
-          }
-        },
-        itemBuilder: (context) => items,
+      return GestureDetector(
+        onTap: () => _showMobileModelBottomSheet(context, providers, activeProvider, selected, switchModel),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           child: Row(
@@ -270,5 +231,93 @@ class _ModelSelectorState extends ConsumerState<ModelSelector> {
         ),
       );
     }
+  }
+
+  void _showMobileModelBottomSheet(
+    BuildContext context,
+    List<ProviderConfig> providers,
+    ProviderConfig activeProvider,
+    String? selected,
+    Future<void> Function(String, String) switchModel,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) {
+        return Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.7,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                margin: const EdgeInsets.only(top: 12, bottom: 8),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[400],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  AppLocalizations.of(context)!.switchModel,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ),
+              const Divider(height: 1),
+              Flexible(
+                child: ListView(
+                  shrinkWrap: true,
+                  children: [
+                    for (final provider in providers) ...[
+                      if (provider.isEnabled && provider.models.isNotEmpty) ...[
+                        ListTile(
+                          dense: true,
+                          enabled: false,
+                          title: Text(
+                            provider.name,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ),
+                        for (final model in provider.models)
+                          if (provider.isModelEnabled(model))
+                            ListTile(
+                              contentPadding: const EdgeInsets.only(left: 32, right: 16),
+                              leading: Icon(
+                                activeProvider.id == provider.id && selected == model
+                                    ? Icons.check_circle
+                                    : Icons.circle_outlined,
+                                color: activeProvider.id == provider.id && selected == model
+                                    ? Theme.of(context).primaryColor
+                                    : null,
+                              ),
+                              title: Text(model),
+                              onTap: () async {
+                                Navigator.pop(ctx);
+                                await switchModel(provider.id, model);
+                              },
+                            ),
+                        if (provider != providers.where((p) => p.isEnabled && p.models.isNotEmpty).last)
+                          const Divider(),
+                      ],
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 }

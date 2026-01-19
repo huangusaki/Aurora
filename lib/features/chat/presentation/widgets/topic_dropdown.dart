@@ -39,95 +39,8 @@ class _TopicDropdownState extends ConsumerState<TopicDropdown> {
             l10n.allChats;
     if (widget.isMobile) {
       return LayoutBuilder(builder: (context, constraints) {
-        return PopupMenuButton<dynamic>(
-          offset: const Offset(0, 42),
-          elevation: 4,
-          color: theme.menuColor,
-          constraints: BoxConstraints.tightFor(width: constraints.maxWidth),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: BorderSide(
-                color: theme.resources.surfaceStrokeColorDefault, width: 0.5),
-          ),
-          onSelected: (value) {
-            if (value == 'all') {
-              ref.read(selectedTopicIdProvider.notifier).state = null;
-            } else if (value == 'create') {
-              _showCreateDialog(context, ref);
-            } else if (value == 'manage') {
-              _showManageTopicsDialog(context, ref);
-            } else if (value is int) {
-              ref.read(selectedTopicIdProvider.notifier).state = value;
-            }
-          },
-          itemBuilder: (context) => [
-            PopupMenuItem(
-              value: 'all',
-              height: 42,
-              child: Row(
-                children: [
-                  Icon(Icons.all_inclusive, size: 16, color: theme.accentColor),
-                  const SizedBox(width: 12),
-                  Expanded(
-                      child: Text(l10n.allChats,
-                          style: const TextStyle(fontSize: 14))),
-                  if (selectedTopicId == null)
-                    Icon(Icons.check, size: 16, color: theme.accentColor),
-                ],
-              ),
-            ),
-            const PopupMenuDivider(height: 1),
-            ...topicsAsync.when(
-              data: (topics) => topics.map((topic) => PopupMenuItem(
-                    value: topic.id,
-                    height: 42,
-                    child: Row(
-                      children: [
-                        const SizedBox(width: 16),
-                        const SizedBox(width: 12),
-                        Expanded(
-                            child: Text(topic.name,
-                                style: const TextStyle(fontSize: 14))),
-                        if (selectedTopicId == topic.id)
-                          Icon(Icons.check, size: 16, color: theme.accentColor),
-                      ],
-                    ),
-                  )),
-              loading: () => [
-                const PopupMenuItem(
-                    enabled: false, value: null, child: Text('Loading...'))
-              ],
-              error: (_, __) => [
-                const PopupMenuItem(
-                    enabled: false, value: null, child: Text('Error'))
-              ],
-            ),
-            const PopupMenuDivider(height: 1),
-            PopupMenuItem(
-              value: 'create',
-              height: 42,
-              child: Row(
-                children: [
-                  Icon(Icons.add_circle_outline,
-                      size: 16, color: theme.typography.body?.color),
-                  const SizedBox(width: 12),
-                  Text(l10n.createTopic, style: const TextStyle(fontSize: 14)),
-                ],
-              ),
-            ),
-            PopupMenuItem(
-              value: 'manage',
-              height: 42,
-              child: Row(
-                children: [
-                  Icon(Icons.settings_outlined,
-                      size: 16, color: theme.typography.body?.color),
-                  const SizedBox(width: 12),
-                  Text(l10n.topics, style: const TextStyle(fontSize: 14)),
-                ],
-              ),
-            ),
-          ],
+        return GestureDetector(
+          onTap: () => _showMobileTopicBottomSheet(context, topicsAsync, selectedTopicId, theme, l10n),
           child: Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -295,6 +208,112 @@ class _TopicDropdownState extends ConsumerState<TopicDropdown> {
           ),
         ),
       ],
+    );
+  }
+
+  void _showMobileTopicBottomSheet(
+    BuildContext context,
+    AsyncValue<List<TopicEntity>> topicsAsync,
+    int? selectedTopicId,
+    fluent.FluentThemeData theme,
+    AppLocalizations l10n,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) {
+        return Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.6,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                margin: const EdgeInsets.only(top: 12, bottom: 8),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[400],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  l10n.topics,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ),
+              const Divider(height: 1),
+              Flexible(
+                child: ListView(
+                  shrinkWrap: true,
+                  children: [
+                    ListTile(
+                      leading: Icon(Icons.all_inclusive, size: 20, color: theme.accentColor),
+                      title: Text(l10n.allChats),
+                      trailing: selectedTopicId == null
+                          ? Icon(Icons.check, size: 20, color: theme.accentColor)
+                          : null,
+                      onTap: () {
+                        ref.read(selectedTopicIdProvider.notifier).state = null;
+                        Navigator.pop(ctx);
+                      },
+                    ),
+                    const Divider(height: 1),
+                    ...topicsAsync.when(
+                      data: (topics) => topics.map((topic) => ListTile(
+                            contentPadding: const EdgeInsets.only(left: 32, right: 16),
+                            title: Text(topic.name),
+                            trailing: selectedTopicId == topic.id
+                                ? Icon(Icons.check, size: 20, color: theme.accentColor)
+                                : null,
+                            onTap: () {
+                              ref.read(selectedTopicIdProvider.notifier).state = topic.id;
+                              Navigator.pop(ctx);
+                            },
+                          )),
+                      loading: () => [
+                        const ListTile(
+                          title: Text('Loading...'),
+                          enabled: false,
+                        )
+                      ],
+                      error: (_, __) => [
+                        const ListTile(
+                          title: Text('Error'),
+                          enabled: false,
+                        )
+                      ],
+                    ),
+                    const Divider(height: 1),
+                    ListTile(
+                      leading: const Icon(Icons.add_circle_outline, size: 20),
+                      title: Text(l10n.createTopic),
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        _showCreateDialog(context, ref);
+                      },
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.settings_outlined, size: 20),
+                      title: Text(l10n.topics),
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        _showManageTopicsDialog(context, ref);
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 

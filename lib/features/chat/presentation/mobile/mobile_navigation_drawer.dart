@@ -27,8 +27,10 @@ class MobileNavigationDrawer extends ConsumerWidget {
   });
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Drawer(
-      backgroundColor: fluent.FluentTheme.of(context).scaffoldBackgroundColor,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      surfaceTintColor: Colors.transparent,
       child: SafeArea(
         child: Column(
           children: [
@@ -40,9 +42,7 @@ class MobileNavigationDrawer extends ConsumerWidget {
                     child: Container(
                       height: 40,
                       decoration: BoxDecoration(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .surfaceContainerHighest,
+                        color: isDark ? Colors.grey[800] : Colors.grey[200],
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: TextField(
@@ -59,8 +59,8 @@ class MobileNavigationDrawer extends ConsumerWidget {
                           prefixIcon: Icon(Icons.search,
                               size: 20, color: Colors.grey[600]),
                           border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 12),
+                          isDense: true,
+                          contentPadding: EdgeInsets.zero,
                         ),
                         style: const TextStyle(fontSize: 14),
                       ),

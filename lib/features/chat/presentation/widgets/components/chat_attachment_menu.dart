@@ -1,6 +1,6 @@
 import 'package:fluent_ui/fluent_ui.dart' as fluent;
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
+
 import 'package:aurora/l10n/app_localizations.dart';
 
 class ChatAttachmentMenu {

@@ -241,7 +241,7 @@ packages:
     source: path
     version: "0.3.1"
   device_info_plus:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: device_info_plus
       sha256: "98f28b42168cc509abc92f88518882fd58061ea372d7999aecc424345c7bff6a"
@@ -413,14 +413,6 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "0.7.0"
-  flutter_highlighter:
-    dependency: "direct main"
-    description:
-      name: flutter_highlighter
-      sha256: "93173afd47a9ada53f3176371755e7ea4a1065362763976d06d6adfb4d946e10"
-      url: "https://pub.flutter-io.cn"
-    source: hosted
-    version: "0.1.1"
   flutter_launcher_icons:
     dependency: "direct dev"
     description:
@@ -540,14 +532,6 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "0.7.0"
-  highlighter:
-    dependency: transitive
-    description:
-      name: highlighter
-      sha256: "92180c72b9da8758e1acf39a45aa305a97dcfe2fdc8f3d1d2947c23f2772bfbc"
-      url: "https://pub.flutter-io.cn"
-    source: hosted
-    version: "0.1.1"
   html:
     dependency: transitive
     description:

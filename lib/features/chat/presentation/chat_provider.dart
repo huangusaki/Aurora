@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:device_info_plus/device_info_plus.dart';
+
 import '../../settings/presentation/settings_provider.dart';
 import '../../settings/presentation/usage_stats_provider.dart';
 import 'package:aurora/shared/services/openai_llm_service.dart';

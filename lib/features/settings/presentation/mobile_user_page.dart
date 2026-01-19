@@ -45,30 +45,7 @@ class _MobileUserPageState extends ConsumerState<MobileUserPage> {
             title: Text(l10n.language),
             subtitle: Text(settingsState.language == 'zh' ? '简体中文' : 'English'),
             trailing: const Icon(Icons.chevron_right),
-            onTap: () {
-              showDialog(
-                context: context,
-                builder: (context) => SimpleDialog(
-                  title: Text(l10n.language),
-                  children: [
-                    SimpleDialogOption(
-                      onPressed: () {
-                        ref.read(settingsProvider.notifier).setLanguage('zh');
-                        Navigator.pop(context);
-                      },
-                      child: const Text('简体中文'),
-                    ),
-                    SimpleDialogOption(
-                      onPressed: () {
-                        ref.read(settingsProvider.notifier).setLanguage('en');
-                        Navigator.pop(context);
-                      },
-                      child: const Text('English'),
-                    ),
-                  ],
-                ),
-              );
-            },
+            onTap: () => _showLanguagePicker(context),
           ),
           ListTile(
             leading: const Icon(Icons.brightness_6),
@@ -198,31 +175,68 @@ class _MobileUserPageState extends ConsumerState<MobileUserPage> {
       Function(String) onSave) {
     final controller = TextEditingController(text: currentValue);
     final l10n = AppLocalizations.of(context)!;
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('${l10n.edit}$title'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: InputDecoration(
-            hintText: '${l10n.pleaseEnter}$title',
-            border: const OutlineInputBorder(),
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(ctx).viewInsets.bottom,
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                margin: const EdgeInsets.only(top: 12, bottom: 8),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[400],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text('${l10n.edit}$title', style: Theme.of(context).textTheme.titleMedium),
+              ),
+              const Divider(height: 1),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: TextField(
+                  controller: controller,
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    hintText: '${l10n.pleaseEnter}$title',
+                    border: const OutlineInputBorder(),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: Text(l10n.cancel),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton(
+                      onPressed: () {
+                        onSave(controller.text);
+                        Navigator.pop(ctx);
+                      },
+                      child: Text(l10n.save),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(l10n.cancel),
-          ),
-          TextButton(
-            onPressed: () {
-              onSave(controller.text);
-              Navigator.pop(ctx);
-            },
-            child: Text(l10n.save),
-          ),
-        ],
       ),
     );
   }
@@ -420,6 +434,55 @@ class _MobileUserPageState extends ConsumerState<MobileUserPage> {
     );
   }
 
+  void _showLanguagePicker(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final currentLang = ref.read(settingsProvider).language;
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              margin: const EdgeInsets.only(top: 12, bottom: 8),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[400],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(l10n.language, style: Theme.of(context).textTheme.titleMedium),
+            ),
+            const Divider(height: 1),
+            ListTile(
+              title: const Text('简体中文'),
+              trailing: currentLang == 'zh' ? Icon(Icons.check, color: Theme.of(context).primaryColor) : null,
+              onTap: () {
+                ref.read(settingsProvider.notifier).setLanguage('zh');
+                Navigator.pop(ctx);
+              },
+            ),
+            ListTile(
+              title: const Text('English'),
+              trailing: currentLang == 'en' ? Icon(Icons.check, color: Theme.of(context).primaryColor) : null,
+              onTap: () {
+                ref.read(settingsProvider.notifier).setLanguage('en');
+                Navigator.pop(ctx);
+              },
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
   String _getThemeModeLabel(String mode, AppLocalizations l10n) {
     switch (mode) {
       case 'light': return l10n.themeLight;
@@ -468,63 +531,59 @@ class _MobileUserPageState extends ConsumerState<MobileUserPage> {
   }
 
   void _showThemeModePicker(BuildContext context, SettingsState settings, AppLocalizations l10n) {
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => SimpleDialog(
-        title: Text(l10n.themeMode),
-        children: [
-          SimpleDialogOption(
-            onPressed: () {
-              ref.read(settingsProvider.notifier).setThemeMode('light');
-              Navigator.pop(ctx);
-            },
-            child: Row(
-              children: [
-                Icon(Icons.light_mode, color: settings.themeMode == 'light' ? Theme.of(context).primaryColor : null),
-                const SizedBox(width: 12),
-                Text(l10n.themeLight),
-                if (settings.themeMode == 'light') ...[
-                  const Spacer(),
-                  Icon(Icons.check, color: Theme.of(context).primaryColor),
-                ],
-              ],
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              margin: const EdgeInsets.only(top: 12, bottom: 8),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[400],
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
-          ),
-          SimpleDialogOption(
-            onPressed: () {
-              ref.read(settingsProvider.notifier).setThemeMode('dark');
-              Navigator.pop(ctx);
-            },
-            child: Row(
-              children: [
-                Icon(Icons.dark_mode, color: settings.themeMode == 'dark' ? Theme.of(context).primaryColor : null),
-                const SizedBox(width: 12),
-                Text(l10n.themeDark),
-                if (settings.themeMode == 'dark') ...[
-                  const Spacer(),
-                  Icon(Icons.check, color: Theme.of(context).primaryColor),
-                ],
-              ],
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(l10n.themeMode, style: Theme.of(context).textTheme.titleMedium),
             ),
-          ),
-          SimpleDialogOption(
-            onPressed: () {
-              ref.read(settingsProvider.notifier).setThemeMode('system');
-              Navigator.pop(ctx);
-            },
-            child: Row(
-              children: [
-                Icon(Icons.brightness_auto, color: settings.themeMode == 'system' ? Theme.of(context).primaryColor : null),
-                const SizedBox(width: 12),
-                Text(l10n.themeSystem),
-                if (settings.themeMode == 'system') ...[
-                  const Spacer(),
-                  Icon(Icons.check, color: Theme.of(context).primaryColor),
-                ],
-              ],
+            const Divider(height: 1),
+            ListTile(
+              leading: Icon(Icons.light_mode, color: settings.themeMode == 'light' ? Theme.of(context).primaryColor : null),
+              title: Text(l10n.themeLight),
+              trailing: settings.themeMode == 'light' ? Icon(Icons.check, color: Theme.of(context).primaryColor) : null,
+              onTap: () {
+                ref.read(settingsProvider.notifier).setThemeMode('light');
+                Navigator.pop(ctx);
+              },
             ),
-          ),
-        ],
+            ListTile(
+              leading: Icon(Icons.dark_mode, color: settings.themeMode == 'dark' ? Theme.of(context).primaryColor : null),
+              title: Text(l10n.themeDark),
+              trailing: settings.themeMode == 'dark' ? Icon(Icons.check, color: Theme.of(context).primaryColor) : null,
+              onTap: () {
+                ref.read(settingsProvider.notifier).setThemeMode('dark');
+                Navigator.pop(ctx);
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.brightness_auto, color: settings.themeMode == 'system' ? Theme.of(context).primaryColor : null),
+              title: Text(l10n.themeSystem),
+              trailing: settings.themeMode == 'system' ? Icon(Icons.check, color: Theme.of(context).primaryColor) : null,
+              onTap: () {
+                ref.read(settingsProvider.notifier).setThemeMode('system');
+                Navigator.pop(ctx);
+              },
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
       ),
     );
   }

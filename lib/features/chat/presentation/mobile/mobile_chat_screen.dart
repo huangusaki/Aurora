@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fluent_ui/fluent_ui.dart' as fluent;
 import '../chat_provider.dart';
 import '../../../settings/presentation/settings_provider.dart';
-import '../../../history/presentation/history_content.dart';
+
 import '../widgets/chat_view.dart';
 import '../widgets/mobile_preset_selector.dart';
 import '../../../settings/presentation/mobile_settings_page.dart';

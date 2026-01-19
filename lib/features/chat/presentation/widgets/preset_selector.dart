@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../settings/presentation/settings_provider.dart';
 import '../chat_provider.dart';
-import '../../../settings/domain/chat_preset.dart';
+
 import 'custom_dropdown_overlay.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 
