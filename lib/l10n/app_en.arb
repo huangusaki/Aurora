@@ -45,7 +45,11 @@
   "userInfo": "User Info",
   "userName": "User Name",
   "userAvatar": "User Avatar",
-  "clickToChangeAvatar": "Tap to change avatar",
+  "assistantAvatar": "Assistant Avatar",
+  "globalConfig": "Global Config",
+  "excludedModels": "Excluded Models",
+  "excludedModelsHint": "Global config will not apply to these models",
+  "enterModelNameHint": "Enter model name and press enter to add",
   "aiInfo": "AI Info",
   "aiName": "AI Name",
   "aiAvatar": "AI Avatar",
@@ -381,5 +385,14 @@
   "apiKeys": "API Keys",
   "addApiKey": "Add Key",
   "autoRotateKeys": "Auto Rotate",
-  "editApiKey": "Edit API Key"
+  "editApiKey": "Edit API Key",
+
+  "generationConfig": "Generation Config",
+  "customParams": "Custom Parameters",
+  "temperature": "Temperature",
+  "temperatureHint": "0.0 - 2.0, lower = more focused",
+  "maxTokens": "Max Tokens",
+  "maxTokensHint": "Maximum output tokens (e.g. 4096)",
+  "contextLength": "Context Length",
+  "contextLengthHint": "Number of messages to include in context"
 }

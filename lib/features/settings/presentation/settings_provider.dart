@@ -20,6 +20,8 @@ class ProviderConfig {
   final bool isCustom;
   final Map<String, dynamic> customParameters;
   final Map<String, Map<String, dynamic>> modelSettings;
+  final Map<String, dynamic> globalSettings;
+  final List<String> globalExcludeModels;
   final List<String> models;
   final String? selectedModel;
   final bool isEnabled;
@@ -48,6 +50,8 @@ class ProviderConfig {
     this.isCustom = false,
     this.customParameters = const {},
     this.modelSettings = const {},
+    this.globalSettings = const {},
+    this.globalExcludeModels = const [],
     this.models = const [],
     this.selectedModel,
     this.isEnabled = true,
@@ -62,6 +66,8 @@ class ProviderConfig {
     String? baseUrl,
     Map<String, dynamic>? customParameters,
     Map<String, Map<String, dynamic>>? modelSettings,
+    Map<String, dynamic>? globalSettings,
+    List<String>? globalExcludeModels,
     List<String>? models,
     String? selectedModel,
     bool? isEnabled,
@@ -77,6 +83,8 @@ class ProviderConfig {
       isCustom: isCustom,
       customParameters: customParameters ?? this.customParameters,
       modelSettings: modelSettings ?? this.modelSettings,
+      globalSettings: globalSettings ?? this.globalSettings,
+      globalExcludeModels: globalExcludeModels ?? this.globalExcludeModels,
       models: models ?? this.models,
       selectedModel: selectedModel ?? this.selectedModel,
       isEnabled: isEnabled ?? this.isEnabled,
@@ -279,6 +287,8 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     String? baseUrl,
     Map<String, dynamic>? customParameters,
     Map<String, Map<String, dynamic>>? modelSettings,
+    Map<String, dynamic>? globalSettings,
+    List<String>? globalExcludeModels,
     List<String>? models,
     String? selectedModel,
     bool? isEnabled,
@@ -294,6 +304,8 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
           baseUrl: baseUrl,
           customParameters: customParameters,
           modelSettings: modelSettings,
+          globalSettings: globalSettings,
+          globalExcludeModels: globalExcludeModels,
           models: models,
           selectedModel: selectedModel,
           isEnabled: isEnabled,
@@ -314,6 +326,8 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
       ..isCustom = updatedProvider.isCustom
       ..customParametersJson = jsonEncode(updatedProvider.customParameters)
       ..modelSettingsJson = jsonEncode(updatedProvider.modelSettings)
+      ..globalSettingsJson = jsonEncode(updatedProvider.globalSettings)
+      ..globalExcludeModels = updatedProvider.globalExcludeModels
       ..savedModels = updatedProvider.models
       ..lastSelectedModel = updatedProvider.selectedModel
       ..isEnabled = updatedProvider.isEnabled;

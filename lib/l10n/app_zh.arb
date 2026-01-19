@@ -45,6 +45,11 @@
   "userInfo": "用户信息",
   "userName": "用户名称",
   "userAvatar": "用户头像",
+  "assistantAvatar": "助理头像",
+  "globalConfig": "全局配置",
+  "excludedModels": "排除模型",
+  "excludedModelsHint": "全局配置在这些模型上不生效",
+  "enterModelNameHint": "输入模型名称并回车添加",
   "clickToChangeAvatar": "点击更换头像",
   "aiInfo": "AI 信息",
   "aiName": "AI 名称",
@@ -381,5 +386,14 @@
   "apiKeys": "API Keys",
   "addApiKey": "添加 Key",
   "autoRotateKeys": "自动轮询",
-  "editApiKey": "编辑 API Key"
+  "editApiKey": "编辑 API Key",
+
+  "generationConfig": "生成配置",
+  "customParams": "自定义参数",
+  "temperature": "温度",
+  "temperatureHint": "0.0 - 2.0，越低越聚焦",
+  "maxTokens": "最大Token数",
+  "maxTokensHint": "最大输出 Token 数（如 4096）",
+  "contextLength": "上下文长度",
+  "contextLengthHint": "上下文中包含的消息数量"
 }

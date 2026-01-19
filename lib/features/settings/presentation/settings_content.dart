@@ -12,6 +12,7 @@ import 'usage_stats_view.dart';
 import 'preset_settings_page.dart';
 import '../../../shared/utils/avatar_cropper.dart';
 import 'model_config_dialog.dart';
+import 'global_config_dialog.dart';
 
 
 class SettingsContent extends ConsumerStatefulWidget {
@@ -438,6 +439,8 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
                                         },
                                       ),
                                       const SizedBox(width: 4),
+
+
                                       fluent.IconButton(
                                         icon: Icon(fluent.FluentIcons.delete,
                                             size: 12,
@@ -504,10 +507,28 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    fluent.Text(l10n.modelConfig,
-                        style: fluent.FluentTheme.of(context)
-                            .typography
-                            .subtitle),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        fluent.Text(l10n.modelConfig,
+                            style: fluent.FluentTheme.of(context)
+                                .typography
+                                .subtitle),
+                        const SizedBox(width: 12),
+                        fluent.IconButton(
+                          icon: Icon(fluent.FluentIcons.settings,
+                              size: 20,
+                              color: fluent.FluentTheme.of(context).accentColor),
+                          onPressed: () {
+                            showDialog(
+                              context: context,
+                              builder: (context) =>
+                                  GlobalConfigDialog(provider: viewingProvider),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
                     fluent.ToggleSwitch(
                       checked: viewingProvider.isEnabled,
                       onChanged: (v) {

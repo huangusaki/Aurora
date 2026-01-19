@@ -53,43 +53,53 @@ const ProviderConfigEntitySchema = CollectionSchema(
       name: r'customParametersJson',
       type: IsarType.string,
     ),
-    r'isActive': PropertySchema(
+    r'globalExcludeModels': PropertySchema(
       id: 7,
+      name: r'globalExcludeModels',
+      type: IsarType.stringList,
+    ),
+    r'globalSettingsJson': PropertySchema(
+      id: 8,
+      name: r'globalSettingsJson',
+      type: IsarType.string,
+    ),
+    r'isActive': PropertySchema(
+      id: 9,
       name: r'isActive',
       type: IsarType.bool,
     ),
     r'isCustom': PropertySchema(
-      id: 8,
+      id: 10,
       name: r'isCustom',
       type: IsarType.bool,
     ),
     r'isEnabled': PropertySchema(
-      id: 9,
+      id: 11,
       name: r'isEnabled',
       type: IsarType.bool,
     ),
     r'lastSelectedModel': PropertySchema(
-      id: 10,
+      id: 12,
       name: r'lastSelectedModel',
       type: IsarType.string,
     ),
     r'modelSettingsJson': PropertySchema(
-      id: 11,
+      id: 13,
       name: r'modelSettingsJson',
       type: IsarType.string,
     ),
     r'name': PropertySchema(
-      id: 12,
+      id: 14,
       name: r'name',
       type: IsarType.string,
     ),
     r'providerId': PropertySchema(
-      id: 13,
+      id: 15,
       name: r'providerId',
       type: IsarType.string,
     ),
     r'savedModels': PropertySchema(
-      id: 14,
+      id: 16,
       name: r'savedModels',
       type: IsarType.stringList,
     )
@@ -149,6 +159,19 @@ int _providerConfigEntityEstimateSize(
       bytesCount += 3 + value.length * 3;
     }
   }
+  bytesCount += 3 + object.globalExcludeModels.length * 3;
+  {
+    for (var i = 0; i < object.globalExcludeModels.length; i++) {
+      final value = object.globalExcludeModels[i];
+      bytesCount += value.length * 3;
+    }
+  }
+  {
+    final value = object.globalSettingsJson;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   {
     final value = object.lastSelectedModel;
     if (value != null) {
@@ -186,14 +209,16 @@ void _providerConfigEntitySerialize(
   writer.writeString(offsets[4], object.color);
   writer.writeLong(offsets[5], object.currentKeyIndex);
   writer.writeString(offsets[6], object.customParametersJson);
-  writer.writeBool(offsets[7], object.isActive);
-  writer.writeBool(offsets[8], object.isCustom);
-  writer.writeBool(offsets[9], object.isEnabled);
-  writer.writeString(offsets[10], object.lastSelectedModel);
-  writer.writeString(offsets[11], object.modelSettingsJson);
-  writer.writeString(offsets[12], object.name);
-  writer.writeString(offsets[13], object.providerId);
-  writer.writeStringList(offsets[14], object.savedModels);
+  writer.writeStringList(offsets[7], object.globalExcludeModels);
+  writer.writeString(offsets[8], object.globalSettingsJson);
+  writer.writeBool(offsets[9], object.isActive);
+  writer.writeBool(offsets[10], object.isCustom);
+  writer.writeBool(offsets[11], object.isEnabled);
+  writer.writeString(offsets[12], object.lastSelectedModel);
+  writer.writeString(offsets[13], object.modelSettingsJson);
+  writer.writeString(offsets[14], object.name);
+  writer.writeString(offsets[15], object.providerId);
+  writer.writeStringList(offsets[16], object.savedModels);
 }
 
 ProviderConfigEntity _providerConfigEntityDeserialize(
@@ -210,15 +235,17 @@ ProviderConfigEntity _providerConfigEntityDeserialize(
   object.color = reader.readStringOrNull(offsets[4]);
   object.currentKeyIndex = reader.readLong(offsets[5]);
   object.customParametersJson = reader.readStringOrNull(offsets[6]);
+  object.globalExcludeModels = reader.readStringList(offsets[7]) ?? [];
+  object.globalSettingsJson = reader.readStringOrNull(offsets[8]);
   object.id = id;
-  object.isActive = reader.readBool(offsets[7]);
-  object.isCustom = reader.readBool(offsets[8]);
-  object.isEnabled = reader.readBool(offsets[9]);
-  object.lastSelectedModel = reader.readStringOrNull(offsets[10]);
-  object.modelSettingsJson = reader.readStringOrNull(offsets[11]);
-  object.name = reader.readString(offsets[12]);
-  object.providerId = reader.readString(offsets[13]);
-  object.savedModels = reader.readStringList(offsets[14]) ?? [];
+  object.isActive = reader.readBool(offsets[9]);
+  object.isCustom = reader.readBool(offsets[10]);
+  object.isEnabled = reader.readBool(offsets[11]);
+  object.lastSelectedModel = reader.readStringOrNull(offsets[12]);
+  object.modelSettingsJson = reader.readStringOrNull(offsets[13]);
+  object.name = reader.readString(offsets[14]);
+  object.providerId = reader.readString(offsets[15]);
+  object.savedModels = reader.readStringList(offsets[16]) ?? [];
   return object;
 }
 
@@ -244,20 +271,24 @@ P _providerConfigEntityDeserializeProp<P>(
     case 6:
       return (reader.readStringOrNull(offset)) as P;
     case 7:
-      return (reader.readBool(offset)) as P;
+      return (reader.readStringList(offset) ?? []) as P;
     case 8:
-      return (reader.readBool(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 9:
       return (reader.readBool(offset)) as P;
     case 10:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 11:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 12:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 13:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 14:
+      return (reader.readString(offset)) as P;
+    case 15:
+      return (reader.readString(offset)) as P;
+    case 16:
       return (reader.readStringList(offset) ?? []) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -1345,6 +1376,391 @@ extension ProviderConfigEntityQueryFilter on QueryBuilder<ProviderConfigEntity,
   }
 
   QueryBuilder<ProviderConfigEntity, ProviderConfigEntity,
+      QAfterFilterCondition> globalExcludeModelsElementEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'globalExcludeModels',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity,
+      QAfterFilterCondition> globalExcludeModelsElementGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'globalExcludeModels',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity,
+      QAfterFilterCondition> globalExcludeModelsElementLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'globalExcludeModels',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity,
+      QAfterFilterCondition> globalExcludeModelsElementBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'globalExcludeModels',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity,
+      QAfterFilterCondition> globalExcludeModelsElementStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'globalExcludeModels',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity,
+      QAfterFilterCondition> globalExcludeModelsElementEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'globalExcludeModels',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity,
+          QAfterFilterCondition>
+      globalExcludeModelsElementContains(String value,
+          {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'globalExcludeModels',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity,
+          QAfterFilterCondition>
+      globalExcludeModelsElementMatches(String pattern,
+          {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'globalExcludeModels',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity,
+      QAfterFilterCondition> globalExcludeModelsElementIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'globalExcludeModels',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity,
+      QAfterFilterCondition> globalExcludeModelsElementIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'globalExcludeModels',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity,
+      QAfterFilterCondition> globalExcludeModelsLengthEqualTo(int length) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'globalExcludeModels',
+        length,
+        true,
+        length,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity,
+      QAfterFilterCondition> globalExcludeModelsIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'globalExcludeModels',
+        0,
+        true,
+        0,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity,
+      QAfterFilterCondition> globalExcludeModelsIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'globalExcludeModels',
+        0,
+        false,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity,
+      QAfterFilterCondition> globalExcludeModelsLengthLessThan(
+    int length, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'globalExcludeModels',
+        0,
+        true,
+        length,
+        include,
+      );
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity,
+      QAfterFilterCondition> globalExcludeModelsLengthGreaterThan(
+    int length, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'globalExcludeModels',
+        length,
+        include,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity,
+      QAfterFilterCondition> globalExcludeModelsLengthBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'globalExcludeModels',
+        lower,
+        includeLower,
+        upper,
+        includeUpper,
+      );
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity,
+      QAfterFilterCondition> globalSettingsJsonIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'globalSettingsJson',
+      ));
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity,
+      QAfterFilterCondition> globalSettingsJsonIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'globalSettingsJson',
+      ));
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity,
+      QAfterFilterCondition> globalSettingsJsonEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'globalSettingsJson',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity,
+      QAfterFilterCondition> globalSettingsJsonGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'globalSettingsJson',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity,
+      QAfterFilterCondition> globalSettingsJsonLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'globalSettingsJson',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity,
+      QAfterFilterCondition> globalSettingsJsonBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'globalSettingsJson',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity,
+      QAfterFilterCondition> globalSettingsJsonStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'globalSettingsJson',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity,
+      QAfterFilterCondition> globalSettingsJsonEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'globalSettingsJson',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity,
+          QAfterFilterCondition>
+      globalSettingsJsonContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'globalSettingsJson',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity,
+          QAfterFilterCondition>
+      globalSettingsJsonMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'globalSettingsJson',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity,
+      QAfterFilterCondition> globalSettingsJsonIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'globalSettingsJson',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity,
+      QAfterFilterCondition> globalSettingsJsonIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'globalSettingsJson',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity,
       QAfterFilterCondition> idEqualTo(Id value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -2339,6 +2755,20 @@ extension ProviderConfigEntityQuerySortBy
   }
 
   QueryBuilder<ProviderConfigEntity, ProviderConfigEntity, QAfterSortBy>
+      sortByGlobalSettingsJson() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'globalSettingsJson', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity, QAfterSortBy>
+      sortByGlobalSettingsJsonDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'globalSettingsJson', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity, QAfterSortBy>
       sortByIsActive() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isActive', Sort.asc);
@@ -2524,6 +2954,20 @@ extension ProviderConfigEntityQuerySortThenBy
   }
 
   QueryBuilder<ProviderConfigEntity, ProviderConfigEntity, QAfterSortBy>
+      thenByGlobalSettingsJson() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'globalSettingsJson', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity, QAfterSortBy>
+      thenByGlobalSettingsJsonDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'globalSettingsJson', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity, QAfterSortBy>
       thenById() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'id', Sort.asc);
@@ -2689,6 +3133,21 @@ extension ProviderConfigEntityQueryWhereDistinct
   }
 
   QueryBuilder<ProviderConfigEntity, ProviderConfigEntity, QDistinct>
+      distinctByGlobalExcludeModels() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'globalExcludeModels');
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity, QDistinct>
+      distinctByGlobalSettingsJson({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'globalSettingsJson',
+          caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity, QDistinct>
       distinctByIsActive() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'isActive');
@@ -2801,6 +3260,20 @@ extension ProviderConfigEntityQueryProperty on QueryBuilder<
       customParametersJsonProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'customParametersJson');
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, List<String>, QQueryOperations>
+      globalExcludeModelsProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'globalExcludeModels');
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, String?, QQueryOperations>
+      globalSettingsJsonProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'globalSettingsJson');
     });
   }
 

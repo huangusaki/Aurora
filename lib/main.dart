@@ -53,6 +53,8 @@ void main() async {
     initialProviders = providerEntities.map((e) {
       Map<String, dynamic> customParams = {};
       Map<String, Map<String, dynamic>> modelSettings = {};
+      Map<String, dynamic> globalSettings = {};
+
       if (e.customParametersJson != null &&
           e.customParametersJson!.isNotEmpty) {
         try {
@@ -67,6 +69,12 @@ void main() async {
             modelSettings = decoded.map((key, value) =>
                 MapEntry(key.toString(), value as Map<String, dynamic>));
           }
+        } catch (_) {}
+      }
+      if (e.globalSettingsJson != null && e.globalSettingsJson!.isNotEmpty) {
+        try {
+          globalSettings =
+              jsonDecode(e.globalSettingsJson!) as Map<String, dynamic>;
         } catch (_) {}
       }
       // Migrate from legacy apiKey to apiKeys if needed
@@ -85,6 +93,8 @@ void main() async {
         isCustom: e.isCustom,
         customParameters: customParams,
         modelSettings: modelSettings,
+        globalSettings: globalSettings,
+        globalExcludeModels: e.globalExcludeModels,
         models: e.savedModels,
         selectedModel: e.lastSelectedModel,
         isEnabled: e.isEnabled,

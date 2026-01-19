@@ -27,6 +27,11 @@ class _ModelConfigDialogState extends ConsumerState<ModelConfigDialog> {
   String _thinkingBudget = '';
   String _thinkingMode = 'auto';
 
+  // Generation config temporary state
+  String _temperature = '';
+  String _maxTokens = '';
+  String _contextLength = '';
+
   @override
   void initState() {
     super.initState();
@@ -51,18 +56,36 @@ class _ModelConfigDialogState extends ConsumerState<ModelConfigDialog> {
       _thinkingBudget = '';
       _thinkingMode = 'auto';
     }
+
+    // Load generation config
+    final generationConfig = _modelSettings['_aurora_generation_config'];
+    if (generationConfig != null && generationConfig is Map) {
+      _temperature = generationConfig['temperature']?.toString() ?? '';
+      _maxTokens = generationConfig['max_tokens']?.toString() ?? '';
+      _contextLength = generationConfig['context_length']?.toString() ?? '';
+    } else {
+      _temperature = '';
+      _maxTokens = '';
+      _contextLength = '';
+    }
   }
 
   void _saveSettings({
     bool? thinkingEnabled,
     String? thinkingBudget,
     String? thinkingMode,
+    String? temperature,
+    String? maxTokens,
+    String? contextLength,
     Map<String, dynamic>? customParams,
   }) {
     // Update local state
     if (thinkingEnabled != null) _thinkingEnabled = thinkingEnabled;
     if (thinkingBudget != null) _thinkingBudget = thinkingBudget;
     if (thinkingMode != null) _thinkingMode = thinkingMode;
+    if (temperature != null) _temperature = temperature;
+    if (maxTokens != null) _maxTokens = maxTokens;
+    if (contextLength != null) _contextLength = contextLength;
 
     // Construct new settings map
     final newSettings = Map<String, dynamic>.from(_modelSettings);
@@ -76,6 +99,17 @@ class _ModelConfigDialogState extends ConsumerState<ModelConfigDialog> {
       };
     } else {
       newSettings.remove('_aurora_thinking_config');
+    }
+
+    // Handle Generation Config
+    if (_temperature.isNotEmpty || _maxTokens.isNotEmpty || _contextLength.isNotEmpty) {
+      newSettings['_aurora_generation_config'] = {
+        if (_temperature.isNotEmpty) 'temperature': _temperature,
+        if (_maxTokens.isNotEmpty) 'max_tokens': _maxTokens,
+        if (_contextLength.isNotEmpty) 'context_length': _contextLength,
+      };
+    } else {
+      newSettings.remove('_aurora_generation_config');
     }
 
     // Handle Custom Params
@@ -187,11 +221,55 @@ class _ModelConfigDialogState extends ConsumerState<ModelConfigDialog> {
 
             const SizedBox(height: 16),
 
+            // Generation Configuration Card
+            _buildSectionCard(
+              title: l10n.generationConfig,
+              icon: FluentIcons.settings,
+              headerAction: null,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 16),
+                  InfoLabel(
+                    label: l10n.temperature,
+                    child: TextBox(
+                      placeholder: l10n.temperatureHint,
+                      controller: TextEditingController(text: _temperature)
+                        ..selection = TextSelection.collapsed(offset: _temperature.length),
+                      onChanged: (v) => _saveSettings(temperature: v),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  InfoLabel(
+                    label: l10n.maxTokens,
+                    child: TextBox(
+                      placeholder: l10n.maxTokensHint,
+                      controller: TextEditingController(text: _maxTokens)
+                        ..selection = TextSelection.collapsed(offset: _maxTokens.length),
+                      onChanged: (v) => _saveSettings(maxTokens: v),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  InfoLabel(
+                    label: l10n.contextLength,
+                    child: TextBox(
+                      placeholder: l10n.contextLengthHint,
+                      controller: TextEditingController(text: _contextLength)
+                        ..selection = TextSelection.collapsed(offset: _contextLength.length),
+                      onChanged: (v) => _saveSettings(contextLength: v),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
             // Custom Parameters Card
             _buildSectionCard(
-              title: l10n.configureModelParams, // 'Configure Model Params' or 'Custom Parameters'
+              title: l10n.customParams,
               subtitle: l10n.paramsHigherPriority,
-              icon: FluentIcons.settings,
+              icon: FluentIcons.edit,
               headerAction: null,
               child: Column(
                 children: [

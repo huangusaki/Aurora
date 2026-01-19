@@ -186,14 +186,34 @@ class OpenAILLMService implements LLMService {
       } else {
         apiMessages.insert(0, {'role': 'system', 'content': timeInstruction});
       }
+
+      // Determine effective model settings
+      Map<String, dynamic> activeParams = {};
+
+      // 1. Get Global Settings (if enabled and not excluded)
+      final bool isExcluded = provider.globalExcludeModels.contains(model);
+      if (!isExcluded) {
+        activeParams.addAll(provider.globalSettings);
+      }
+
+      // 2. Override with Specific Model Settings
+      if (provider.modelSettings.containsKey(model)) {
+        final specific = provider.modelSettings[model]!;
+        activeParams.addAll(specific);
+      }
+
       final Map<String, dynamic> requestData = {
         'model': model,
         'messages': apiMessages,
         'stream': true,
         'stream_options': {'include_usage': true},
       };
-      // Text-based search: inject search instructions into system prompt instead of using tools
-      if (tools != null && tools.isNotEmpty) {
+
+      if (tools != null) {
+        requestData['tools'] = tools;
+        if (toolChoice != null) {
+          requestData['tool_choice'] = toolChoice;
+        }
         final sysIdx = apiMessages.indexWhere((m) => m['role'] == 'system');
         if (sysIdx != -1) {
           final oldContent = apiMessages[sysIdx]['content'];
@@ -219,21 +239,71 @@ Use search for:
           }
         }
       }
-      // Filter out sensitive/invalid fields from customParameters before adding to request
-      final safeCustomParams = Map<String, dynamic>.from(provider.customParameters)
-        ..remove('api_keys')
-        ..remove('apiKeys')
-        ..remove('api_key')
-        ..remove('apiKey');
-      requestData.addAll(safeCustomParams);
-      if (provider.modelSettings.containsKey(model)) {
-        final modelParams = provider.modelSettings[model]!;
-        final thinkingEnabled = modelParams['_aurora_thinking_enabled'] == true;
+
+      // Add Custom Parameters (Global + Specific merged)
+      final filteredParams = Map<String, dynamic>.fromEntries(
+        activeParams.entries.where((e) => !e.key.startsWith('_aurora_'))
+      );
+      // Provider-level customParameters are always added (Base)
+
+      final providerParams = Map<String, dynamic>.fromEntries(
+        provider.customParameters.entries.where((e) {
+             final key = e.key.toLowerCase();
+             return key != 'api_keys' &&
+                    key != 'base_url' &&
+                    key != 'id' &&
+                    key != 'name' &&
+                    key != 'models' &&
+                    key != 'color' &&
+                    key != 'is_custom' &&
+                    key != 'is_enabled' &&
+                    !e.key.startsWith('_aurora_');
+        })
+      );
+      requestData.addAll(providerParams);
+      requestData.addAll(filteredParams);
+
+      // Handle Generation Config (temperature, max_tokens, context_length)
+      final generationConfig = activeParams['_aurora_generation_config'];
+      if (generationConfig != null && generationConfig is Map) {
+         final temp = generationConfig['temperature'];
+         if (temp != null && temp.toString().isNotEmpty) {
+           final tempVal = double.tryParse(temp.toString());
+           if (tempVal != null) requestData['temperature'] = tempVal;
+         }
+         final maxTok = generationConfig['max_tokens'];
+         if (maxTok != null && maxTok.toString().isNotEmpty) {
+           final maxTokVal = int.tryParse(maxTok.toString());
+           if (maxTokVal != null) requestData['max_tokens'] = maxTokVal;
+         }
+         // Handle Context Length (Truncate history)
+         final ctxLen = generationConfig['context_length'];
+         if (ctxLen != null && ctxLen.toString().isNotEmpty) {
+           final limit = int.tryParse(ctxLen.toString());
+           if (limit != null && limit > 0) {
+             apiMessages = _limitContextLength(apiMessages, limit);
+             requestData['messages'] = apiMessages; // Update messages in request
+           }
+         }
+      }
+
+      // Handle Thinking Config
+      final thinkingConfig = activeParams['_aurora_thinking_config'];
+      bool thinkingEnabled = false;
+      String thinkingValue = '';
+      String thinkingMode = 'auto';
+
+      if (thinkingConfig != null && thinkingConfig is Map) {
+         thinkingEnabled = thinkingConfig['enabled'] == true;
+         thinkingValue = thinkingConfig['budget']?.toString() ?? '';
+         thinkingMode = thinkingConfig['mode']?.toString() ?? 'auto';
+      } else {
+         thinkingEnabled = activeParams['_aurora_thinking_enabled'] == true;
+         thinkingValue = activeParams['_aurora_thinking_value']?.toString() ?? '';
+         thinkingMode = activeParams['_aurora_thinking_mode']?.toString() ?? 'auto';
+      }
+
         if (thinkingEnabled) {
-          final thinkingValue =
-              modelParams['_aurora_thinking_value']?.toString() ?? '';
-          var thinkingMode =
-              modelParams['_aurora_thinking_mode']?.toString() ?? 'auto';
           if (thinkingMode == 'auto') {
             final isGemini3 = RegExp(r'gemini[_-]?3[_-]', caseSensitive: false)
                 .hasMatch(model);
@@ -309,10 +379,8 @@ Use search for:
             }
           }
         }
-        final filteredParams = Map<String, dynamic>.fromEntries(
-            modelParams.entries.where((e) => !e.key.startsWith('_aurora_')));
-        requestData.addAll(filteredParams);
-      }
+
+
       _logRequest('${baseUrl}chat/completions', requestData);
       final response = await _dio.post(
         '${baseUrl}chat/completions',
@@ -782,36 +850,108 @@ Use search for:
       } else {
         apiMessages.insert(0, {'role': 'system', 'content': timeInstruction});
       }
+
+      // Determine effective model settings
+      Map<String, dynamic> activeParams = {};
+
+      // 1. Get Global Settings (if enabled and not excluded)
+      final bool isExcluded = provider.globalExcludeModels.contains(model);
+      if (!isExcluded) {
+        activeParams.addAll(provider.globalSettings);
+      }
+
+      // 2. Override with Specific Model Settings
+      if (provider.modelSettings.containsKey(model)) {
+        final specific = provider.modelSettings[model]!;
+        activeParams.addAll(specific);
+      }
+
       final Map<String, dynamic> requestData = {
         'model': model,
         'messages': apiMessages,
         'stream': false,
         'stream_options': {'include_usage': true},
       };
+
       if (tools != null) {
         requestData['tools'] = tools;
         if (toolChoice != null) {
-          requestData['tool_choice'] = toolChoice;
+           requestData['tool_choice'] = toolChoice;
         }
         final sysIdx = apiMessages.indexWhere((m) => m['role'] == 'system');
         if (sysIdx != -1) {
           final oldContent = apiMessages[sysIdx]['content'];
-          final searchGuide =
+          const searchGuide =
               'You have access to a web search tool. Use it for current information.';
           if (!oldContent.toString().contains('web search tool')) {
-            apiMessages[sysIdx]['content'] = '$oldContent\n\n$searchGuide';
+             apiMessages[sysIdx]['content'] = '$oldContent\n\n$searchGuide';
           }
         }
       }
-      requestData.addAll(provider.customParameters);
-      if (provider.modelSettings.containsKey(model)) {
-        final modelParams = provider.modelSettings[model]!;
-        final thinkingEnabled = modelParams['_aurora_thinking_enabled'] == true;
+
+      // Add Custom Parameters (Global + Specific merged)
+      final filteredParams = Map<String, dynamic>.fromEntries(
+        activeParams.entries.where((e) => !e.key.startsWith('_aurora_'))
+      );
+      // Provider-level customParameters are always added (Base)
+      final providerParams = Map<String, dynamic>.fromEntries(
+        provider.customParameters.entries.where((e) {
+             final key = e.key.toLowerCase();
+             return key != 'api_keys' &&
+                    key != 'base_url' &&
+                    key != 'id' &&
+                    key != 'name' &&
+                    key != 'models' &&
+                    key != 'color' &&
+                    key != 'is_custom' &&
+                    key != 'is_enabled' &&
+                    !e.key.startsWith('_aurora_');
+        })
+      );
+      requestData.addAll(providerParams);
+      requestData.addAll(filteredParams);
+
+      // Handle Generation Config (temperature, max_tokens)
+      final generationConfig = activeParams['_aurora_generation_config'];
+      if (generationConfig != null && generationConfig is Map) {
+        final temp = generationConfig['temperature'];
+        if (temp != null && temp.toString().isNotEmpty) {
+           final tempVal = double.tryParse(temp.toString());
+           if (tempVal != null) requestData['temperature'] = tempVal;
+        }
+         final maxTok = generationConfig['max_tokens'];
+         if (maxTok != null && maxTok.toString().isNotEmpty) {
+            final maxTokVal = int.tryParse(maxTok.toString());
+            if (maxTokVal != null) requestData['max_tokens'] = maxTokVal;
+         }
+         // Handle Context Length (Truncate history)
+         final ctxLen = generationConfig['context_length'];
+         if (ctxLen != null && ctxLen.toString().isNotEmpty) {
+           final limit = int.tryParse(ctxLen.toString());
+           if (limit != null && limit > 0) {
+             apiMessages = _limitContextLength(apiMessages, limit);
+             requestData['messages'] = apiMessages; // Update messages in request
+           }
+         }
+      }
+
+      // Handle Thinking Config
+      final thinkingConfig = activeParams['_aurora_thinking_config'];
+      bool thinkingEnabled = false;
+      String thinkingValue = '';
+      String thinkingMode = 'auto';
+
+      if (thinkingConfig != null && thinkingConfig is Map) {
+         thinkingEnabled = thinkingConfig['enabled'] == true;
+         thinkingValue = thinkingConfig['budget']?.toString() ?? '';
+         thinkingMode = thinkingConfig['mode']?.toString() ?? 'auto';
+      } else {
+         thinkingEnabled = activeParams['_aurora_thinking_enabled'] == true;
+         thinkingValue = activeParams['_aurora_thinking_value']?.toString() ?? '';
+         thinkingMode = activeParams['_aurora_thinking_mode']?.toString() ?? 'auto';
+      }
+
         if (thinkingEnabled) {
-          final thinkingValue =
-              modelParams['_aurora_thinking_value']?.toString() ?? '';
-          var thinkingMode =
-              modelParams['_aurora_thinking_mode']?.toString() ?? 'auto';
           if (thinkingMode == 'auto') {
             final isGemini3 = RegExp(r'gemini[_-]?3[_-]', caseSensitive: false)
                 .hasMatch(model);
@@ -859,10 +999,8 @@ Use search for:
             }
           }
         }
-        final filteredParams = Map<String, dynamic>.fromEntries(
-            modelParams.entries.where((e) => !e.key.startsWith('_aurora_')));
-        requestData.addAll(filteredParams);
-      }
+
+
       _logRequest('${baseUrl}chat/completions', requestData);
       final response = await _dio.post(
         '${baseUrl}chat/completions',
@@ -934,6 +1072,27 @@ Use search for:
       }
       final statusCode = e.response?.statusCode;
       String errorMsg = 'HTTP Error';
+      AppErrorType errorType = AppErrorType.unknown;
+
+      // Determine Error Type
+      if (e.type == DioExceptionType.connectionTimeout || 
+          e.type == DioExceptionType.sendTimeout || 
+          e.type == DioExceptionType.receiveTimeout) {
+        errorType = AppErrorType.timeout;
+      } else if (e.type == DioExceptionType.connectionError) {
+        errorType = AppErrorType.network;
+      } else if (e.type == DioExceptionType.badResponse) {
+        if (statusCode == 400) {
+          errorType = AppErrorType.badRequest;
+        } else if (statusCode == 401 || statusCode == 403) {
+          errorType = AppErrorType.unauthorized;
+        } else if (statusCode == 429) {
+          errorType = AppErrorType.rateLimit;
+        } else if (statusCode != null && statusCode >= 500) {
+          errorType = AppErrorType.serverError;
+        }
+      }
+      
       try {
         if (e.response?.data != null) {
           final data = e.response?.data;
@@ -989,9 +1148,37 @@ Use search for:
       } catch (readError) {
         errorMsg = 'HTTP $statusCode: ${e.message}';
       }
-      throw Exception(errorMsg);
+      throw AppException(type: errorType, message: errorMsg, statusCode: statusCode);
     } catch (e) {
-      rethrow;
+      if (e is AppException) rethrow; // Pass through our custom exceptions
+      throw AppException(
+        type: AppErrorType.unknown, 
+        message: e.toString()
+      );
     }
+  }
+
+  List<Map<String, dynamic>> _limitContextLength(
+      List<Map<String, dynamic>> messages, int limit) {
+    if (messages.length <= limit) return messages;
+
+    final systemMessages =
+        messages.where((m) => m['role'] == 'system').toList();
+    final otherMessages =
+        messages.where((m) => m['role'] != 'system').toList();
+
+    // If limit is less than system messages count, only return system messages (up to limit)
+    if (limit <= systemMessages.length) {
+      return systemMessages.take(limit).toList();
+    }
+
+    // Available slots for other messages
+    final available = limit - systemMessages.length;
+    // Take the LAST 'available' messages (most recent)
+    final keptOthers = otherMessages.length > available
+        ? otherMessages.sublist(otherMessages.length - available)
+        : otherMessages;
+
+    return [...systemMessages, ...keptOthers];
   }
 }

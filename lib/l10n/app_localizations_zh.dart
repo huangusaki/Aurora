@@ -119,6 +119,21 @@ class AppLocalizationsZh extends AppLocalizations {
   String get userAvatar => '用户头像';
 
   @override
+  String get assistantAvatar => '助理头像';
+
+  @override
+  String get globalConfig => '全局配置';
+
+  @override
+  String get excludedModels => '排除模型';
+
+  @override
+  String get excludedModelsHint => '全局配置在这些模型上不生效';
+
+  @override
+  String get enterModelNameHint => '输入模型名称并回车添加';
+
+  @override
   String get clickToChangeAvatar => '点击更换头像';
 
   @override
@@ -841,4 +856,28 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get autoRotateKeys => '自动轮询';
+
+  @override
+  String get generationConfig => '生成配置';
+
+  @override
+  String get customParams => '自定义参数';
+
+  @override
+  String get temperature => '温度';
+
+  @override
+  String get temperatureHint => '0.0 - 2.0，越低越聚焦';
+
+  @override
+  String get maxTokens => '最大Token数';
+
+  @override
+  String get maxTokensHint => '最大输出 Token 数（如 4096）';
+
+  @override
+  String get contextLength => '上下文长度';
+
+  @override
+  String get contextLengthHint => '上下文中包含的消息数量';
 }

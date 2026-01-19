@@ -17,6 +17,8 @@ class ProviderConfigEntity {
   bool isCustom = false;
   String? customParametersJson;
   String? modelSettingsJson;
+  String? globalSettingsJson;
+  List<String> globalExcludeModels = [];
   List<String> savedModels = [];
   String? lastSelectedModel;
   bool isActive = false;

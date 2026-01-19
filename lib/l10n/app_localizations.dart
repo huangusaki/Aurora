@@ -314,6 +314,36 @@ abstract class AppLocalizations {
   /// **'用户头像'**
   String get userAvatar;
 
+  /// No description provided for @assistantAvatar.
+  ///
+  /// In zh, this message translates to:
+  /// **'助理头像'**
+  String get assistantAvatar;
+
+  /// No description provided for @globalConfig.
+  ///
+  /// In zh, this message translates to:
+  /// **'全局配置'**
+  String get globalConfig;
+
+  /// No description provided for @excludedModels.
+  ///
+  /// In zh, this message translates to:
+  /// **'排除模型'**
+  String get excludedModels;
+
+  /// No description provided for @excludedModelsHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'全局配置在这些模型上不生效'**
+  String get excludedModelsHint;
+
+  /// No description provided for @enterModelNameHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'输入模型名称并回车添加'**
+  String get enterModelNameHint;
+
   /// No description provided for @clickToChangeAvatar.
   ///
   /// In zh, this message translates to:
@@ -1717,6 +1747,54 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'自动轮询'**
   String get autoRotateKeys;
+
+  /// No description provided for @generationConfig.
+  ///
+  /// In zh, this message translates to:
+  /// **'生成配置'**
+  String get generationConfig;
+
+  /// No description provided for @customParams.
+  ///
+  /// In zh, this message translates to:
+  /// **'自定义参数'**
+  String get customParams;
+
+  /// No description provided for @temperature.
+  ///
+  /// In zh, this message translates to:
+  /// **'温度'**
+  String get temperature;
+
+  /// No description provided for @temperatureHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'0.0 - 2.0，越低越聚焦'**
+  String get temperatureHint;
+
+  /// No description provided for @maxTokens.
+  ///
+  /// In zh, this message translates to:
+  /// **'最大Token数'**
+  String get maxTokens;
+
+  /// No description provided for @maxTokensHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'最大输出 Token 数（如 4096）'**
+  String get maxTokensHint;
+
+  /// No description provided for @contextLength.
+  ///
+  /// In zh, this message translates to:
+  /// **'上下文长度'**
+  String get contextLength;
+
+  /// No description provided for @contextLengthHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'上下文中包含的消息数量'**
+  String get contextLengthHint;
 }
 
 class _AppLocalizationsDelegate

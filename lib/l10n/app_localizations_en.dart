@@ -121,7 +121,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get userAvatar => 'User Avatar';
 
   @override
-  String get clickToChangeAvatar => 'Tap to change avatar';
+  String get assistantAvatar => 'Assistant Avatar';
+
+  @override
+  String get globalConfig => 'Global Config';
+
+  @override
+  String get excludedModels => 'Excluded Models';
+
+  @override
+  String get excludedModelsHint =>
+      'Global config will not apply to these models';
+
+  @override
+  String get enterModelNameHint => 'Enter model name and press enter to add';
+
+  @override
+  String get clickToChangeAvatar => '点击更换头像';
 
   @override
   String get aiInfo => 'AI Info';
@@ -854,4 +870,28 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get autoRotateKeys => 'Auto Rotate';
+
+  @override
+  String get generationConfig => 'Generation Config';
+
+  @override
+  String get customParams => 'Custom Parameters';
+
+  @override
+  String get temperature => 'Temperature';
+
+  @override
+  String get temperatureHint => '0.0 - 2.0, lower = more focused';
+
+  @override
+  String get maxTokens => 'Max Tokens';
+
+  @override
+  String get maxTokensHint => 'Maximum output tokens (e.g. 4096)';
+
+  @override
+  String get contextLength => 'Context Length';
+
+  @override
+  String get contextLengthHint => 'Number of messages to include in context';
 }
