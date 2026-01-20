@@ -1110,4 +1110,32 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get contextLengthHint => 'Number of messages to include in context';
+
+  @override
+  String get studioDescription =>
+      'Configure and orchestrate your intelligent assistants here';
+
+  @override
+  String get novelWritingDescription =>
+      'Configure writing, review, and outline models';
+
+  @override
+  String get schedulePlanning => 'Schedule Planning';
+
+  @override
+  String get schedulePlanningDescription =>
+      'Plan and manage your creative schedule';
+
+  @override
+  String get imageManagement => 'Image Management';
+
+  @override
+  String get imageManagementDescription =>
+      'Organize and manage your project images';
+
+  @override
+  String get comingSoon => 'Coming Soon';
+
+  @override
+  String get generating => 'Generating...';
 }

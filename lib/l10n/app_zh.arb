@@ -470,5 +470,14 @@
   "maxTokens": "最大Token数",
   "maxTokensHint": "最大输出 Token 数（如 4096）",
   "contextLength": "上下文长度",
-  "contextLengthHint": "上下文中包含的消息数量"
+  "contextLengthHint": "上下文中包含的消息数量",
+
+  "studioDescription": "在这里配置和编排你的智能助手",
+  "novelWritingDescription": "配置写作、审查、大纲模型",
+  "schedulePlanning": "日程规划",
+  "schedulePlanningDescription": "规划和管理你的创作日程",
+  "imageManagement": "图片管理",
+  "imageManagementDescription": "整理和管理项目图片素材",
+  "comingSoon": "即将推出",
+  "generating": "生成中..."
 }

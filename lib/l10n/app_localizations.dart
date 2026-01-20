@@ -2215,6 +2215,54 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'上下文中包含的消息数量'**
   String get contextLengthHint;
+
+  /// No description provided for @studioDescription.
+  ///
+  /// In zh, this message translates to:
+  /// **'在这里配置和编排你的智能助手'**
+  String get studioDescription;
+
+  /// No description provided for @novelWritingDescription.
+  ///
+  /// In zh, this message translates to:
+  /// **'配置写作、审查、大纲模型'**
+  String get novelWritingDescription;
+
+  /// No description provided for @schedulePlanning.
+  ///
+  /// In zh, this message translates to:
+  /// **'日程规划'**
+  String get schedulePlanning;
+
+  /// No description provided for @schedulePlanningDescription.
+  ///
+  /// In zh, this message translates to:
+  /// **'规划和管理你的创作日程'**
+  String get schedulePlanningDescription;
+
+  /// No description provided for @imageManagement.
+  ///
+  /// In zh, this message translates to:
+  /// **'图片管理'**
+  String get imageManagement;
+
+  /// No description provided for @imageManagementDescription.
+  ///
+  /// In zh, this message translates to:
+  /// **'整理和管理项目图片素材'**
+  String get imageManagementDescription;
+
+  /// No description provided for @comingSoon.
+  ///
+  /// In zh, this message translates to:
+  /// **'即将推出'**
+  String get comingSoon;
+
+  /// No description provided for @generating.
+  ///
+  /// In zh, this message translates to:
+  /// **'生成中...'**
+  String get generating;
 }
 
 class _AppLocalizationsDelegate

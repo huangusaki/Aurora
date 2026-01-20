@@ -29,7 +29,7 @@ class DesktopChatInputArea extends ConsumerStatefulWidget {
   final bool isLoading;
   final VoidCallback onSend;
   final VoidCallback onPickFiles;
-  final VoidCallback onPaste;
+  final Future<void> Function() onPaste;
   final Function(String message, IconData icon) onShowToast;
 
   const DesktopChatInputArea({
@@ -393,7 +393,10 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
                         event.logicalKey == LogicalKeyboardKey.keyV) ||
                     (isShift &&
                         event.logicalKey == LogicalKeyboardKey.insert)) {
-                  widget.onPaste();
+                  widget.onPaste().then((_) {
+                    // Restore focus after paste
+                    _focusNode.requestFocus();
+                  });
                   return KeyEventResult.handled;
                 }
 
@@ -473,7 +476,11 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
                   foregroundColor: fluent.WidgetStatePropertyAll(
                       theme.resources.textFillColorSecondary),
                 ),
-                onPressed: widget.onPaste,
+                onPressed: () {
+                  widget.onPaste().then((_) {
+                    _focusNode.requestFocus();
+                  });
+                },
               ),
               const SizedBox(width: 4),
               fluent.IconButton(

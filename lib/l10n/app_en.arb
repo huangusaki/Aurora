@@ -469,5 +469,14 @@
   "maxTokens": "Max Tokens",
   "maxTokensHint": "Maximum output tokens (e.g. 4096)",
   "contextLength": "Context Length",
-  "contextLengthHint": "Number of messages to include in context"
+  "contextLengthHint": "Number of messages to include in context",
+
+  "studioDescription": "Configure and orchestrate your intelligent assistants here",
+  "novelWritingDescription": "Configure writing, review, and outline models",
+  "schedulePlanning": "Schedule Planning",
+  "schedulePlanningDescription": "Plan and manage your creative schedule",
+  "imageManagement": "Image Management",
+  "imageManagementDescription": "Organize and manage your project images",
+  "comingSoon": "Coming Soon",
+  "generating": "Generating..."
 }

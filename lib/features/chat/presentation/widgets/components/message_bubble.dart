@@ -478,97 +478,65 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
                                               ),
                                             ),
                                           ),
-                                          if (_newAttachments.isNotEmpty)
-                                            Container(
-                                              height: 40,
-                                              margin:
-                                                  const EdgeInsets.only(top: 8),
-                                              child: ListView.builder(
-                                                scrollDirection:
-                                                    Axis.horizontal,
-                                                itemCount:
-                                                    _newAttachments.length,
-                                                itemBuilder: (context, index) =>
-                                                    Padding(
-                                                  padding:
-                                                      const EdgeInsets.only(
-                                                          right: 8),
-                                                  child: HoverImagePreview(
-                                                    imagePath:
-                                                        _newAttachments[index],
-                                                    child: MouseRegion(
-                                                      cursor: SystemMouseCursors
-                                                          .click,
-                                                      child: GestureDetector(
-                                                        onTap: () => setState(
-                                                            () =>
-                                                                _newAttachments
-                                                                    .removeAt(
-                                                                        index)),
-                                                        child: Container(
-                                                          padding:
-                                                              const EdgeInsets
-                                                                  .symmetric(
-                                                                  horizontal: 8,
-                                                                  vertical: 4),
-                                                          decoration:
-                                                              BoxDecoration(
-                                                            color: theme
-                                                                .accentColor
-                                                                .withOpacity(
-                                                                    0.1),
-                                                            borderRadius:
-                                                                BorderRadius
-                                                                    .circular(
-                                                                        12),
-                                                            border: Border.all(
-                                                                color: theme
-                                                                    .accentColor
-                                                                    .withOpacity(
-                                                                        0.3)),
-                                                          ),
-                                                          child: Row(
-                                                            mainAxisSize:
-                                                                MainAxisSize
-                                                                    .min,
-                                                            children: [
-                                                              ConstrainedBox(
-                                                                constraints:
-                                                                    const BoxConstraints(
-                                                                        maxWidth:
-                                                                            100),
-                                                                child: Text(
-                                                                  _newAttachments[
-                                                                          index]
-                                                                      .split(Platform
-                                                                          .pathSeparator)
-                                                                      .last,
-                                                                  style: const TextStyle(
-                                                                      fontSize:
-                                                                          12),
-                                                                  overflow:
-                                                                      TextOverflow
-                                                                          .ellipsis,
+                                          // Always render to prevent focus loss on first paste
+                                          AnimatedContainer(
+                                            duration: const Duration(milliseconds: 200),
+                                            height: _newAttachments.isNotEmpty ? 48 : 0,
+                                            child: _newAttachments.isNotEmpty
+                                                ? Container(
+                                                    height: 40,
+                                                    margin: const EdgeInsets.only(top: 8),
+                                                    child: ListView.builder(
+                                                      primary: false,
+                                                      scrollDirection: Axis.horizontal,
+                                                      itemCount: _newAttachments.length,
+                                                      itemBuilder: (context, index) => Padding(
+                                                        padding: const EdgeInsets.only(right: 8),
+                                                        child: HoverImagePreview(
+                                                          imagePath: _newAttachments[index],
+                                                          child: MouseRegion(
+                                                            cursor: SystemMouseCursors.click,
+                                                            child: GestureDetector(
+                                                              onTap: () => setState(() =>
+                                                                  _newAttachments.removeAt(index)),
+                                                              child: Container(
+                                                                padding: const EdgeInsets.symmetric(
+                                                                    horizontal: 8, vertical: 4),
+                                                                decoration: BoxDecoration(
+                                                                  color: theme.accentColor.withOpacity(0.1),
+                                                                  borderRadius: BorderRadius.circular(12),
+                                                                  border: Border.all(
+                                                                      color: theme.accentColor.withOpacity(0.3)),
+                                                                ),
+                                                                child: Row(
+                                                                  mainAxisSize: MainAxisSize.min,
+                                                                  children: [
+                                                                    ConstrainedBox(
+                                                                      constraints: const BoxConstraints(maxWidth: 100),
+                                                                      child: Text(
+                                                                        _newAttachments[index]
+                                                                            .split(Platform.pathSeparator)
+                                                                            .last,
+                                                                        style: const TextStyle(fontSize: 12),
+                                                                        overflow: TextOverflow.ellipsis,
+                                                                      ),
+                                                                    ),
+                                                                    const SizedBox(width: 4),
+                                                                    Icon(
+                                                                        fluent.FluentIcons.chrome_close,
+                                                                        size: 8,
+                                                                        color: theme.accentColor),
+                                                                  ],
                                                                 ),
                                                               ),
-                                                              const SizedBox(
-                                                                  width: 4),
-                                                              Icon(
-                                                                  fluent
-                                                                      .FluentIcons
-                                                                      .chrome_close,
-                                                                  size: 8,
-                                                                  color: theme
-                                                                      .accentColor),
-                                                            ],
+                                                            ),
                                                           ),
                                                         ),
                                                       ),
                                                     ),
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
+                                                  )
+                                                : null,
+                                          ),
                                         ],
                                       ),
                                     ),

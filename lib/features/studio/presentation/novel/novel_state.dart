@@ -330,6 +330,8 @@ class NovelWritingState {
   final bool isRunning;
   final bool isPaused;
   final bool isReviewEnabled;
+  final bool isDecomposing;  // 新增：拆解中状态
+  final bool isGeneratingOutline;  // 新增：生成大纲中状态
 
   // Model Configurations
   final NovelModelConfig? outlineModel;
@@ -346,6 +348,8 @@ class NovelWritingState {
     this.isRunning = false,
     this.isPaused = false,
     this.isReviewEnabled = false,
+    this.isDecomposing = false,
+    this.isGeneratingOutline = false,
     this.outlineModel,
     this.decomposeModel,
     this.writerModel,
@@ -373,6 +377,8 @@ class NovelWritingState {
     bool? isRunning,
     bool? isPaused,
     bool? isReviewEnabled,
+    bool? isDecomposing,
+    bool? isGeneratingOutline,
     NovelModelConfig? outlineModel,
     NovelModelConfig? decomposeModel,
     NovelModelConfig? writerModel,
@@ -387,6 +393,8 @@ class NovelWritingState {
       isRunning: isRunning ?? this.isRunning,
       isPaused: isPaused ?? this.isPaused,
       isReviewEnabled: isReviewEnabled ?? this.isReviewEnabled,
+      isDecomposing: isDecomposing ?? this.isDecomposing,
+      isGeneratingOutline: isGeneratingOutline ?? this.isGeneratingOutline,
       outlineModel: outlineModel ?? this.outlineModel,
       decomposeModel: decomposeModel ?? this.decomposeModel,
       writerModel: writerModel ?? this.writerModel,

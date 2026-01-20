@@ -358,7 +358,7 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.all(12),
-                  child: !hasOutline ? _buildOutlineEmptyState(theme, l10n, notifier) : _buildOutlineEditor(theme, l10n, notifier, outline),
+                  child: !hasOutline ? _buildOutlineEmptyState(theme, l10n, notifier, state) : _buildOutlineEditor(theme, l10n, notifier, outline),
                 ),
               ),
               if (hasOutline)
@@ -372,15 +372,24 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
                     children: [
                       Expanded(
                         child: FilledButton(
-                          onPressed: () => _handleDecompose(context, l10n, state, notifier),
+                          onPressed: state.isDecomposing ? null : () => _handleDecompose(context, l10n, state, notifier),
                           child: Padding(
                             padding: const EdgeInsets.symmetric(vertical: 6),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(state.selectedProject!.chapters.isEmpty ? FluentIcons.add : FluentIcons.refresh, size: 16),
+                                if (state.isDecomposing)
+                                  const SizedBox(
+                                    width: 16, 
+                                    height: 16, 
+                                    child: ProgressRing(strokeWidth: 2),
+                                  )
+                                else
+                                  Icon(state.selectedProject!.chapters.isEmpty ? FluentIcons.add : FluentIcons.refresh, size: 16),
                                 const SizedBox(width: 8),
-                                Text(state.selectedProject!.chapters.isEmpty ? l10n.generateChapters : l10n.regenerateChapters),
+                                Text(state.isDecomposing 
+                                    ? l10n.generating 
+                                    : (state.selectedProject!.chapters.isEmpty ? l10n.generateChapters : l10n.regenerateChapters)),
                               ],
                             ),
                           ),
@@ -393,7 +402,7 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
           );
         }
 
-        Widget _buildOutlineEmptyState(FluentThemeData theme, AppLocalizations l10n, NovelNotifier notifier) {
+        Widget _buildOutlineEmptyState(FluentThemeData theme, AppLocalizations l10n, NovelNotifier notifier, NovelWritingState state) {
           return Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -411,7 +420,7 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
               ),
               const SizedBox(height: 16),
               FilledButton(
-                onPressed: () {
+                onPressed: state.isGeneratingOutline ? null : () {
                   final text = _taskInputController.text.trim();
                   if (text.isNotEmpty) {
                     notifier.generateOutline(text);
@@ -420,7 +429,21 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
                 },
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                  child: Text(l10n.generateOutline),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (state.isGeneratingOutline)
+                        const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: ProgressRing(strokeWidth: 2),
+                        )
+                      else
+                        const SizedBox.shrink(),
+                      if (state.isGeneratingOutline) const SizedBox(width: 8),
+                      Text(state.isGeneratingOutline ? l10n.generating : l10n.generateOutline),
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -590,15 +613,16 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
   }
 
   Widget _buildExportView(BuildContext context, AppLocalizations l10n, FluentThemeData theme, NovelWritingState state, NovelNotifier notifier) {
-    if (state.selectedChapterId == null) {
-      return Center(child: Text(l10n.pleaseSelectChapter));
+    if (state.selectedProject == null) {
+      return Center(child: Text(l10n.selectProject));
     }
 
-    final content = notifier.exportChapterContent(state.selectedChapterId!);
-    final chapterTitle = state.selectedProject?.chapters.firstWhere(
-      (c) => c.id == state.selectedChapterId,
-      orElse: () => NovelChapter(id: '', title: l10n.unknownChapter, order: 0),
-    ).title ?? '';
+    final content = notifier.exportFullNovel();
+    final stats = notifier.getNovelStats();
+    final projectName = state.selectedProject?.name ?? '';
+    final totalChapters = stats['totalChapters'] ?? 0;
+    final completedChapters = stats['completedChapters'] ?? 0;
+    final totalWords = stats['totalWords'] ?? 0;
     
     return Container(
       padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
@@ -611,7 +635,17 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
               padding: const EdgeInsets.all(24),
               child: Row(
                 children: [
-                  Text('${l10n.preview}: $chapterTitle', style: theme.typography.subtitle),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('${l10n.preview}: $projectName', style: theme.typography.subtitle),
+                      const SizedBox(height: 4),
+                      Text(
+                        '$completedChapters/$totalChapters 章完成 · $totalWords 字',
+                        style: theme.typography.caption?.copyWith(color: theme.inactiveColor),
+                      ),
+                    ],
+                  ),
                   const Spacer(),
                   FilledButton(
                     child: Row(

@@ -1091,4 +1091,28 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get contextLengthHint => '上下文中包含的消息数量';
+
+  @override
+  String get studioDescription => '在这里配置和编排你的智能助手';
+
+  @override
+  String get novelWritingDescription => '配置写作、审查、大纲模型';
+
+  @override
+  String get schedulePlanning => '日程规划';
+
+  @override
+  String get schedulePlanningDescription => '规划和管理你的创作日程';
+
+  @override
+  String get imageManagement => '图片管理';
+
+  @override
+  String get imageManagementDescription => '整理和管理项目图片素材';
+
+  @override
+  String get comingSoon => '即将推出';
+
+  @override
+  String get generating => '生成中...';
 }

@@ -728,49 +728,57 @@ class ChatViewState extends ConsumerState<ChatView> {
                         ),
                 ),
               ),
-              if (_attachments.isNotEmpty)
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  height: 60,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: _attachments.length,
-                    itemBuilder: (context, index) {
-                      final path = _attachments[index];
-                      return HoverImagePreview(
-                        imagePath: path,
-                        child: Container(
-                          margin: const EdgeInsets.only(right: 8),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: fluent.FluentTheme.of(context).cardColor,
-                            borderRadius: BorderRadius.circular(4),
-                            border: Border.all(
-                                color: fluent.FluentTheme.of(context)
-                                    .resources
-                                    .dividerStrokeColorDefault),
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.attach_file, size: 14),
-                              const SizedBox(width: 4),
-                              Text(path.split(Platform.pathSeparator).last,
-                                  style: const TextStyle(fontSize: 12)),
-                              const SizedBox(width: 4),
-                              GestureDetector(
-                                onTap: () => setState(
-                                    () => _attachments.removeAt(index)),
-                                child: const Icon(Icons.close, size: 14),
+              // Always render attachments container to prevent widget tree structure change
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeInOut,
+                height: _attachments.isNotEmpty ? 60 : 0,
+                child: _attachments.isNotEmpty
+                    ? Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
+                        child: ListView.builder(
+                          primary: false, // Prevent ListView from stealing focus
+                          scrollDirection: Axis.horizontal,
+                          itemCount: _attachments.length,
+                          itemBuilder: (context, index) {
+                            final path = _attachments[index];
+                            return HoverImagePreview(
+                              imagePath: path,
+                              child: Container(
+                                margin: const EdgeInsets.only(right: 8),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color:
+                                      fluent.FluentTheme.of(context).cardColor,
+                                  borderRadius: BorderRadius.circular(4),
+                                  border: Border.all(
+                                      color: fluent.FluentTheme.of(context)
+                                          .resources
+                                          .dividerStrokeColorDefault),
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.attach_file, size: 14),
+                                    const SizedBox(width: 4),
+                                    Text(path.split(Platform.pathSeparator).last,
+                                        style: const TextStyle(fontSize: 12)),
+                                    const SizedBox(width: 4),
+                                    GestureDetector(
+                                      onTap: () => setState(
+                                          () => _attachments.removeAt(index)),
+                                      child: const Icon(Icons.close, size: 14),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ],
-                          ),
+                            );
+                          },
                         ),
-                      );
-                    },
-                  ),
-                ),
+                      )
+                    : null,
+              ),
               Container(
                 padding: EdgeInsets.fromLTRB(
                     Platform.isWindows ? 12 : 0,
@@ -779,6 +787,7 @@ class ChatViewState extends ConsumerState<ChatView> {
                     Platform.isWindows ? 12 : 0),
                 child: Platform.isWindows
                     ? DesktopChatInputArea(
+                        key: const ValueKey('desktop_chat_input'), // Preserve State across rebuilds
                         controller: _controller,
                         isLoading: isLoading,
                         onSend: _sendMessage,

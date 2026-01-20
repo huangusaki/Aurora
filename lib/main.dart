@@ -22,7 +22,7 @@ void main() async {
   if (Platform.isWindows) {
     await windowManager.ensureInitialized();
     WindowOptions windowOptions = const WindowOptions(
-      size: Size(800, 600),
+      size: Size(1080, 640),
       center: true,
       backgroundColor: null,
       skipTaskbar: false,
@@ -31,7 +31,7 @@ void main() async {
     windowManager.waitUntilReadyToShow(windowOptions, () async {
       await windowManager.show();
       await windowManager.focus();
-      await windowManager.setMinimumSize(const Size(900, 600));
+      await windowManager.setMinimumSize(const Size(1080, 640));
     });
     WindowsInjector.instance.injectKeyData();
   } else if (Platform.isAndroid) {

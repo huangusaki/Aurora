@@ -32,74 +32,146 @@ class _StudioContentState extends State<StudioContent> {
     return Container(
       color: Colors.transparent,
       child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              FluentIcons.toolbox,
-              size: 64,
-              color: theme.accentColor,
-            ),
-            const SizedBox(height: 20),
-            Text(
-              l10n.studio,
-              style: theme.typography.title,
-            ),
-            const SizedBox(height: 10),
-            Text(
-              '在这里配置和编排你的智能助手', 
-              style: theme.typography.body,
-            ),
-            const SizedBox(height: 40),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _buildFeatureCard(
-                  context,
-                  icon: FluentIcons.edit_mail,
-                  title: l10n.novelWriting,
-                  description: '配置写作、审查、大纲模型\n细分、拆解与分配工作',
-                  onTap: () {
-                    setState(() {
-                      _viewIndex = 1;
-                    });
-                  },
-                ),
-              ],
-            ),
-          ],
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                FluentIcons.toolbox,
+                size: 64,
+                color: theme.accentColor,
+              ),
+              const SizedBox(height: 20),
+              Text(
+                l10n.studio,
+                style: theme.typography.title,
+              ),
+              const SizedBox(height: 10),
+              Text(
+                l10n.studioDescription, 
+                style: theme.typography.body,
+              ),
+              const SizedBox(height: 40),
+              Wrap(
+                spacing: 16,
+                runSpacing: 16,
+                alignment: WrapAlignment.center,
+                children: [
+                  _buildFeatureCard(
+                    context,
+                    icon: FluentIcons.edit_mail,
+                    title: l10n.novelWriting,
+                    description: l10n.novelWritingDescription,
+                    onTap: () {
+                      setState(() {
+                        _viewIndex = 1;
+                      });
+                    },
+                  ),
+                  _buildFeatureCard(
+                    context,
+                    icon: FluentIcons.calendar,
+                    title: l10n.schedulePlanning,
+                    description: l10n.schedulePlanningDescription,
+                    comingSoon: true,
+                    onTap: null,
+                  ),
+                  _buildFeatureCard(
+                    context,
+                    icon: FluentIcons.photo2,
+                    title: l10n.imageManagement,
+                    description: l10n.imageManagementDescription,
+                    comingSoon: true,
+                    onTap: null,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 40),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildFeatureCard(BuildContext context,
-      {required IconData icon,
-      required String title,
-      required String description,
-      required VoidCallback onTap}) {
+  Widget _buildFeatureCard(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String description,
+    bool comingSoon = false,
+    VoidCallback? onTap,
+  }) {
     final theme = FluentTheme.of(context);
+    final l10n = AppLocalizations.of(context)!;
+    
     return Card(
       padding: EdgeInsets.zero,
+      borderRadius: BorderRadius.circular(12),
       child: HoverButton(
         onPressed: onTap,
+        cursor: comingSoon ? SystemMouseCursors.basic : SystemMouseCursors.click,
         builder: (context, states) {
           return Container(
-            width: 250,
-            height: 150,
-            color: states.isHovering ? theme.accentColor.withOpacity(0.05) : Colors.transparent,
-            padding: const EdgeInsets.all(16),
+            width: 220,
+            height: 180,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              color: states.isHovering && !comingSoon 
+                  ? theme.accentColor.withAlpha(15) 
+                  : Colors.transparent,
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Icon(icon, size: 32, color: theme.accentColor),
-                const SizedBox(height: 16),
-                Text(title, style: theme.typography.subtitle),
+                // Badge or Placeholder for alignment
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: comingSoon ? theme.accentColor.withAlpha(30) : Colors.transparent,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    l10n.comingSoon,
+                    style: theme.typography.caption?.copyWith(
+                      color: comingSoon ? theme.accentColor : Colors.transparent,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 8),
+                Icon(
+                  icon, 
+                  size: 32, 
+                  color: comingSoon 
+                      ? theme.inactiveColor 
+                      : theme.accentColor,
+                ),
+                const SizedBox(height: 12),
                 Text(
-                  description,
-                  style: theme.typography.caption,
+                  title, 
+                  style: theme.typography.bodyStrong?.copyWith( // Reduced from subtitle
+                    fontSize: 16,
+                    color: comingSoon ? theme.inactiveColor : null,
+                  ),
                   textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 6),
+                Expanded(
+                  child: Center( // Center content vertically in remaining space
+                    child: Text(
+                      description,
+                      style: theme.typography.caption?.copyWith(
+                        color: comingSoon ? theme.inactiveColor : null,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
                 ),
               ],
             ),
