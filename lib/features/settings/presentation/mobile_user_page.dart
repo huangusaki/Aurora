@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import '../../../shared/utils/avatar_cropper.dart';
 import 'settings_provider.dart';
 import 'package:aurora/l10n/app_localizations.dart';
+import '../../sync/presentation/mobile_sync_settings_page.dart';
 
 class MobileUserPage extends ConsumerStatefulWidget {
   final VoidCallback? onBack;
@@ -99,6 +100,21 @@ class _MobileUserPageState extends ConsumerState<MobileUserPage> {
                 _showModelPicker(context, settingsState);
               },
             ),
+          const Divider(),
+          _SectionHeader(title: 'WebDAV 数据同步', icon: Icons.cloud_sync_outlined),
+          ListTile(
+            leading: const Icon(Icons.cloud_upload_outlined),
+            title: const Text('数据备份与恢复'),
+            subtitle: const Text('备份聊天记录到 WebDAV 服务器'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => const MobileSyncSettingsPage()),
+              );
+            },
+          ),
           const Divider(),
           const Divider(),
           _SectionHeader(title: l10n.userInfo, icon: Icons.person_outline),

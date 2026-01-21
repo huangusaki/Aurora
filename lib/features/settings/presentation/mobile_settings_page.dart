@@ -7,6 +7,7 @@ import 'package:file_selector/file_selector.dart';
 import 'settings_provider.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 import 'package:aurora/l10n/app_localizations.dart';
+import '../../sync/presentation/mobile_sync_settings_page.dart';
 
 class MobileSettingsPage extends ConsumerStatefulWidget {
   final VoidCallback? onBack;

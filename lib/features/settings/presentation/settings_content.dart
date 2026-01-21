@@ -13,6 +13,7 @@ import 'preset_settings_page.dart';
 import '../../../shared/utils/avatar_cropper.dart';
 import 'model_config_dialog.dart';
 import 'global_config_dialog.dart';
+import '../../sync/presentation/sync_settings_section.dart';
 
 
 class SettingsContent extends ConsumerStatefulWidget {
@@ -1324,6 +1325,10 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          const SyncSettingsSection(),
+          const SizedBox(height: 32),
+          const fluent.Divider(),
+          const SizedBox(height: 32),
           fluent.Text(l10n.dataSettings,
               style: fluent.FluentTheme.of(context).typography.subtitle),
           const SizedBox(height: 24),

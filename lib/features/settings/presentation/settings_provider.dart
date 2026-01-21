@@ -205,6 +205,7 @@ const Object _settingsSentinel = Object();
 
 class SettingsNotifier extends StateNotifier<SettingsState> {
   final SettingsStorage _storage;
+  SettingsStorage get storage => _storage;
   SettingsNotifier({
     required SettingsStorage storage,
     required List<ProviderConfig> initialProviders,
