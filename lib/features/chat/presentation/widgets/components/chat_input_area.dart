@@ -24,6 +24,18 @@ class ModelOption {
   String get displayName => '$modelId ($providerName)';
 }
 
+class PresetOption {
+  final String? id;
+  final String name;
+  final String systemPrompt;
+
+  PresetOption({
+    this.id,
+    required this.name,
+    required this.systemPrompt,
+  });
+}
+
 class DesktopChatInputArea extends ConsumerStatefulWidget {
   final TextEditingController controller;
   final bool isLoading;
@@ -50,12 +62,21 @@ class DesktopChatInputArea extends ConsumerStatefulWidget {
 class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
     with SingleTickerProviderStateMixin {
   final LayerLink _layerLink = LayerLink();
+  // Model selector state
   OverlayEntry? _overlayEntry;
   int _selectedIndex = 0;
   List<ModelOption> _filteredModels = [];
   final ScrollController _scrollController = ScrollController();
   static const double _itemHeight = 40.0;
   int? _triggerIndex;
+  
+  // Preset selector state
+  OverlayEntry? _presetOverlayEntry;
+  int _presetSelectedIndex = 0;
+  List<PresetOption> _filteredPresets = [];
+  final ScrollController _presetScrollController = ScrollController();
+  int? _presetTriggerIndex;
+  
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
@@ -85,13 +106,16 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
   void dispose() {
     widget.controller.removeListener(_onTextChanged);
     _removeOverlay();
+    _removePresetOverlay();
     _scrollController.dispose();
+    _presetScrollController.dispose();
     _animationController.dispose();
     _focusNode.dispose();
     super.dispose();
   }
 
   void _onTextChanged() {
+    // Handle model overlay (@)
     if (_overlayEntry != null && _triggerIndex != null) {
       // If the trigger character is gone or changed, close the overlay
       // Also close if cursor moves before or onto the trigger (e.g. deletion)
@@ -101,6 +125,15 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
           widget.controller.selection.baseOffset <= _triggerIndex! ||
           widget.controller.selection.baseOffset > _triggerIndex! + 1) {
         _animateClose();
+      }
+    }
+    // Handle preset overlay (/)
+    if (_presetOverlayEntry != null && _presetTriggerIndex != null) {
+      if (widget.controller.text.length <= _presetTriggerIndex! ||
+          widget.controller.text[_presetTriggerIndex!] != '/' ||
+          widget.controller.selection.baseOffset <= _presetTriggerIndex! ||
+          widget.controller.selection.baseOffset > _presetTriggerIndex! + 1) {
+        _animateClosePreset();
       }
     }
   }
@@ -133,6 +166,191 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
       );
     }
     _animateClose();
+  }
+
+  // ========== Preset Overlay Methods ==========
+  
+  void _removePresetOverlay() {
+    _presetOverlayEntry?.remove();
+    _presetOverlayEntry = null;
+    _filteredPresets = [];
+    _presetSelectedIndex = 0;
+    _presetTriggerIndex = null;
+  }
+
+  Future<void> _animateClosePreset() async {
+    if (_presetOverlayEntry == null) return;
+    _animationController.reverse();
+    _removePresetOverlay();
+  }
+
+  void _cancelPresetTrigger() {
+    if (_presetTriggerIndex != null &&
+        _presetTriggerIndex! < widget.controller.text.length) {
+      final text = widget.controller.text;
+      // Remove the '/' character
+      final newText = text.replaceRange(_presetTriggerIndex!, _presetTriggerIndex! + 1, '');
+      final newSelection = TextSelection.collapsed(offset: _presetTriggerIndex!);
+      widget.controller.value = TextEditingValue(
+        text: newText,
+        selection: newSelection,
+      );
+    }
+    _animateClosePreset();
+  }
+
+  void _scrollToPresetIndex(int index) {
+    if (!_presetScrollController.hasClients) return;
+
+    final double targetOffset = index * _itemHeight;
+    final double currentOffset = _presetScrollController.offset;
+    final double viewportHeight = _presetScrollController.position.viewportDimension;
+
+    if (targetOffset < currentOffset) {
+      _presetScrollController.jumpTo(targetOffset);
+    } else if (targetOffset + _itemHeight > currentOffset + viewportHeight) {
+      _presetScrollController.jumpTo(targetOffset + _itemHeight - viewportHeight);
+    }
+  }
+
+  void _showPresetSelector(BuildContext context, List<PresetOption> presets) {
+    if (_presetOverlayEntry != null) return;
+
+    // Capture where the '/' WILL BE inserted
+    if (widget.controller.selection.isValid) {
+      _presetTriggerIndex = widget.controller.selection.baseOffset;
+    } else {
+      _presetTriggerIndex = widget.controller.text.length;
+    }
+
+    _filteredPresets = List.from(presets);
+    _presetSelectedIndex = 0;
+
+    // Scroll to initial selection after frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToPresetIndex(_presetSelectedIndex);
+      _animationController.forward(from: 0.0);
+    });
+
+    _presetOverlayEntry = OverlayEntry(
+      builder: (context) {
+        return Stack(
+          children: [
+            GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onTap: _cancelPresetTrigger,
+            ),
+            Positioned(
+              width: 300,
+              child: CompositedTransformFollower(
+                link: _layerLink,
+                showWhenUnlinked: false,
+                targetAnchor: Alignment.topLeft,
+                followerAnchor: Alignment.bottomLeft,
+                offset: const Offset(0, -8),
+                child: ScaleTransition(
+                  scale: _scaleAnimation,
+                  child: FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: Material(
+                      elevation: 8,
+                      borderRadius: BorderRadius.circular(8),
+                      color: fluent.FluentTheme.of(context).menuColor,
+                      child: Container(
+                        constraints: const BoxConstraints(maxHeight: 200),
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: fluent.FluentTheme.of(context)
+                                .resources
+                                .dividerStrokeColorDefault,
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: StatefulBuilder(
+                          builder: (context, setState) {
+                            return ListView.builder(
+                              controller: _presetScrollController,
+                              padding: const EdgeInsets.symmetric(vertical: 4),
+                              shrinkWrap: true,
+                              itemCount: _filteredPresets.length,
+                              itemExtent: _itemHeight,
+                              itemBuilder: (context, index) {
+                                final isSelected = index == _presetSelectedIndex;
+                                final preset = _filteredPresets[index];
+                                final theme = fluent.FluentTheme.of(context);
+                                return Container(
+                                  margin: const EdgeInsets.symmetric(
+                                      horizontal: 4, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(6),
+                                    color: isSelected
+                                        ? theme.accentColor.withOpacity(0.1)
+                                        : Colors.transparent,
+                                  ),
+                                  child: fluent.ListTile(
+                                    title: Text(
+                                      preset.name,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(fontSize: 13),
+                                    ),
+                                    onPressed: () =>
+                                        _selectPreset(_filteredPresets[index]),
+                                  ),
+                                );
+                              },
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    Overlay.of(context).insert(_presetOverlayEntry!);
+  }
+
+  void _updatePresetOverlay() {
+    _presetOverlayEntry?.markNeedsBuild();
+    _scrollToPresetIndex(_presetSelectedIndex);
+  }
+
+  void _selectPreset(PresetOption option) {
+    final sessionId = ref.read(selectedHistorySessionIdProvider);
+    if (sessionId != null) {
+      ref
+          .read(chatSessionManagerProvider)
+          .getOrCreate(sessionId)
+          .updateSystemPrompt(option.systemPrompt, option.id == null ? null : option.name);
+    }
+
+    // Remove the '/' character using the captured trigger index
+    if (_presetTriggerIndex != null &&
+        _presetTriggerIndex! < widget.controller.text.length &&
+        widget.controller.text[_presetTriggerIndex!] == '/') {
+      final text = widget.controller.text;
+      final newText = text.replaceRange(_presetTriggerIndex!, _presetTriggerIndex! + 1, '');
+
+      int newSelectionIndex = widget.controller.selection.baseOffset;
+      if (newSelectionIndex > _presetTriggerIndex!) {
+        newSelectionIndex -= 1;
+      }
+
+      widget.controller.value = TextEditingValue(
+        text: newText,
+        selection: TextSelection.collapsed(offset: newSelectionIndex),
+      );
+    }
+
+    _animateClosePreset();
+    // Restore focus to input
+    _focusNode.requestFocus();
   }
 
   void _scrollToIndex(int index) {
@@ -331,6 +549,16 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
       }
     }
 
+    // Aggregate presets for '/' trigger
+    final List<PresetOption> allPresets = [
+      PresetOption(id: null, name: l10n.defaultPreset, systemPrompt: ''),
+      ...settings.presets.map((p) => PresetOption(
+        id: p.id,
+        name: p.name,
+        systemPrompt: p.systemPrompt,
+      )),
+    ];
+
     return Container(
       decoration: BoxDecoration(
         color: theme.cardColor,
@@ -353,7 +581,7 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
                 final isControl = HardwareKeyboard.instance.isControlPressed;
                 final isShift = HardwareKeyboard.instance.isShiftPressed;
 
-                // Handle Overlay Navigation
+                // Handle Model Overlay Navigation (@)
                 if (_overlayEntry != null) {
                   if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
                     // Cycle to first item if at the end
@@ -388,6 +616,37 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
                   }
                 }
 
+                // Handle Preset Overlay Navigation (/)
+                if (_presetOverlayEntry != null) {
+                  if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+                    if (_presetSelectedIndex < _filteredPresets.length - 1) {
+                      _presetSelectedIndex++;
+                    } else {
+                      _presetSelectedIndex = 0;
+                    }
+                    _updatePresetOverlay();
+                    return KeyEventResult.handled;
+                  } else if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+                    if (_presetSelectedIndex > 0) {
+                      _presetSelectedIndex--;
+                    } else {
+                      _presetSelectedIndex = _filteredPresets.length - 1;
+                    }
+                    _updatePresetOverlay();
+                    return KeyEventResult.handled;
+                  } else if (event.logicalKey == LogicalKeyboardKey.enter) {
+                    _selectPreset(_filteredPresets[_presetSelectedIndex]);
+                    return KeyEventResult.handled;
+                  } else if (event.logicalKey == LogicalKeyboardKey.escape) {
+                    _cancelPresetTrigger();
+                    return KeyEventResult.handled;
+                  } else if (event.logicalKey == LogicalKeyboardKey.arrowLeft ||
+                      event.logicalKey == LogicalKeyboardKey.arrowRight) {
+                    _animateClosePreset();
+                    return KeyEventResult.ignored;
+                  }
+                }
+
                 // Handle Shortcuts
                 if ((isControl &&
                         event.logicalKey == LogicalKeyboardKey.keyV) ||
@@ -417,6 +676,19 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
                     // Show model selector for the first '@'
                     _showModelSelector(
                         context, allModels, settings.selectedModel ?? '');
+                  }
+                }
+
+                // Handle '/' trigger for preset selector
+                if (event.character == '/') {
+                  if (_presetOverlayEntry != null) {
+                    // If preset overlay is already open, update trigger index
+                    if (widget.controller.selection.isValid) {
+                      _presetTriggerIndex = widget.controller.selection.baseOffset;
+                    }
+                  } else if (allPresets.isNotEmpty) {
+                    // Show preset selector for the first '/'
+                    _showPresetSelector(context, allPresets);
                   }
                 }
 
