@@ -2467,6 +2467,72 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'分支'**
   String get branch;
+
+  /// No description provided for @trayShow.
+  ///
+  /// In zh, this message translates to:
+  /// **'显示程序'**
+  String get trayShow;
+
+  /// No description provided for @trayExit.
+  ///
+  /// In zh, this message translates to:
+  /// **'退出程序'**
+  String get trayExit;
+
+  /// No description provided for @confirmClose.
+  ///
+  /// In zh, this message translates to:
+  /// **'确认关闭'**
+  String get confirmClose;
+
+  /// No description provided for @minimizeToTray.
+  ///
+  /// In zh, this message translates to:
+  /// **'是否最小化到系统托盘？'**
+  String get minimizeToTray;
+
+  /// No description provided for @minimize.
+  ///
+  /// In zh, this message translates to:
+  /// **'最小化'**
+  String get minimize;
+
+  /// No description provided for @exit.
+  ///
+  /// In zh, this message translates to:
+  /// **'退出'**
+  String get exit;
+
+  /// No description provided for @rememberChoice.
+  ///
+  /// In zh, this message translates to:
+  /// **'记住我的选择'**
+  String get rememberChoice;
+
+  /// No description provided for @closeBehavior.
+  ///
+  /// In zh, this message translates to:
+  /// **'关闭行为'**
+  String get closeBehavior;
+
+  /// No description provided for @askEveryTime.
+  ///
+  /// In zh, this message translates to:
+  /// **'每次询问'**
+  String get askEveryTime;
+
+  /// No description provided for @minimizeToTrayOption.
+  ///
+  /// In zh, this message translates to:
+  /// **'最小化到托盘'**
+  String get minimizeToTrayOption;
+
+  /// No description provided for @exitApplicationOption.
+  ///
+  /// In zh, this message translates to:
+  /// **'直接退出程序'**
+  String get exitApplicationOption;
 }
 
 class _AppLocalizationsDelegate

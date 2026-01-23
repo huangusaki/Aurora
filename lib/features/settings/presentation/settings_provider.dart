@@ -123,6 +123,7 @@ class SettingsState {
   final String? lastPresetId;
   final String themeColor;
   final String backgroundColor;
+  final int closeBehavior;
   SettingsState({
     required this.providers,
     required this.activeProviderId,
@@ -144,6 +145,7 @@ class SettingsState {
     this.lastPresetId,
     this.themeColor = 'teal',
     this.backgroundColor = 'default',
+    this.closeBehavior = 0,
   });
   ProviderConfig get activeProvider =>
       providers.firstWhere((p) => p.id == activeProviderId);
@@ -173,6 +175,7 @@ class SettingsState {
     Object? lastPresetId = _settingsSentinel,
     String? themeColor,
     String? backgroundColor,
+    int? closeBehavior,
   }) {
     return SettingsState(
       providers: providers ?? this.providers,
@@ -197,6 +200,7 @@ class SettingsState {
           : lastPresetId as String?,
       themeColor: themeColor ?? this.themeColor,
       backgroundColor: backgroundColor ?? this.backgroundColor,
+      closeBehavior: closeBehavior ?? this.closeBehavior,
     );
   }
 }
@@ -223,6 +227,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     String language = 'zh',
     String themeColor = 'teal',
     String backgroundColor = 'default',
+    int closeBehavior = 0,
   })  : _storage = storage,
         super(SettingsState(
           providers: initialProviders,
@@ -242,6 +247,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
           presets: [],
           themeColor: themeColor,
           backgroundColor: backgroundColor,
+          closeBehavior: closeBehavior,
         )) {
     loadPresets();
   }
@@ -672,6 +678,14 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     await _storage.saveAppSettings(
       activeProviderId: state.activeProviderId,
       backgroundColor: color,
+    );
+  }
+
+  Future<void> setCloseBehavior(int behavior) async {
+    state = state.copyWith(closeBehavior: behavior);
+    await _storage.saveAppSettings(
+      activeProviderId: state.activeProviderId,
+      closeBehavior: behavior,
     );
   }
 }

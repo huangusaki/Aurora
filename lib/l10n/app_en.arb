@@ -512,5 +512,16 @@
   "imageManagementDescription": "Organize and manage your project images",
   "comingSoon": "Coming Soon",
   "generating": "Generating...",
-  "branch": "Branch"
+  "branch": "Branch",
+  "trayShow": "Show Application",
+  "trayExit": "Exit Application",
+  "confirmClose": "Confirm Close",
+  "minimizeToTray": "Minimize to system tray?",
+  "minimize": "Minimize",
+  "exit": "Exit",
+  "rememberChoice": "Remember my choice",
+  "closeBehavior": "Close Behavior",
+  "askEveryTime": "Ask every time",
+  "minimizeToTrayOption": "Minimize to tray",
+  "exitApplicationOption": "Exit application"
 }

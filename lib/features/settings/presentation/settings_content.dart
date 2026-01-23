@@ -1121,6 +1121,39 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
               ],
             ),
           ),
+          const SizedBox(height: 24),
+          const fluent.Divider(),
+          const SizedBox(height: 24),
+          fluent.InfoLabel(
+            label: l10n.closeBehavior,
+            child: Row(
+              children: [
+                fluent.RadioButton(
+                  checked: settingsState.closeBehavior == 0,
+                  onChanged: (v) {
+                    if (v) ref.read(settingsProvider.notifier).setCloseBehavior(0);
+                  },
+                  content: Text(l10n.askEveryTime),
+                ),
+                const SizedBox(width: 24),
+                fluent.RadioButton(
+                  checked: settingsState.closeBehavior == 1,
+                  onChanged: (v) {
+                    if (v) ref.read(settingsProvider.notifier).setCloseBehavior(1);
+                  },
+                  content: Text(l10n.minimizeToTrayOption),
+                ),
+                const SizedBox(width: 24),
+                fluent.RadioButton(
+                  checked: settingsState.closeBehavior == 2,
+                  onChanged: (v) {
+                    if (v) ref.read(settingsProvider.notifier).setCloseBehavior(2);
+                  },
+                  content: Text(l10n.exitApplicationOption),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );

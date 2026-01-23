@@ -780,12 +780,26 @@ class ChatNotifier extends StateNotifier<ChatState> {
     await Future.delayed(const Duration(milliseconds: 100));
     final rootMsg = state.messages[index];
     List<Message> historyToKeep;
+    
+    // Determine the user message to update
+    Message? userMsgToUpdate;
+
     if (rootMsg.isUser) {
       historyToKeep = state.messages.sublist(0, index + 1);
+      userMsgToUpdate = rootMsg;
     } else {
       if (index == 0) return;
       historyToKeep = state.messages.sublist(0, index);
+      // The last message in historyToKeep (which is index - 1 in original list) is the user message
+      userMsgToUpdate = historyToKeep.last;
     }
+
+    if (userMsgToUpdate != null && userMsgToUpdate.isUser) {
+      final updatedUserMsg = userMsgToUpdate.copyWith(timestamp: DateTime.now());
+      await _storage.updateMessage(updatedUserMsg);
+      historyToKeep[historyToKeep.length - 1] = updatedUserMsg;
+    }
+
     final oldMessages = state.messages;
     state = state.copyWith(
         messages: historyToKeep,

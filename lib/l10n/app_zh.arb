@@ -513,5 +513,16 @@
   "imageManagementDescription": "整理和管理项目图片素材",
   "comingSoon": "即将推出",
   "generating": "生成中...",
-  "branch": "分支"
+  "branch": "分支",
+  "trayShow": "显示程序",
+  "trayExit": "退出程序",
+  "confirmClose": "确认关闭",
+  "minimizeToTray": "是否最小化到系统托盘？",
+  "minimize": "最小化",
+  "exit": "退出",
+  "rememberChoice": "记住我的选择",
+  "closeBehavior": "关闭行为",
+  "askEveryTime": "每次询问",
+  "minimizeToTrayOption": "最小化到托盘",
+  "exitApplicationOption": "直接退出程序"
 }

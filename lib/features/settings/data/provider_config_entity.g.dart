@@ -3359,83 +3359,88 @@ const AppSettingsEntitySchema = CollectionSchema(
       name: r'backgroundColor',
       type: IsarType.string,
     ),
-    r'enableSmartTopic': PropertySchema(
+    r'closeBehavior': PropertySchema(
       id: 3,
+      name: r'closeBehavior',
+      type: IsarType.long,
+    ),
+    r'enableSmartTopic': PropertySchema(
+      id: 4,
       name: r'enableSmartTopic',
       type: IsarType.bool,
     ),
     r'isSearchEnabled': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'isSearchEnabled',
       type: IsarType.bool,
     ),
     r'isStreamEnabled': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'isStreamEnabled',
       type: IsarType.bool,
     ),
     r'language': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'language',
       type: IsarType.string,
     ),
     r'lastPresetId': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'lastPresetId',
       type: IsarType.string,
     ),
     r'lastSessionId': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'lastSessionId',
       type: IsarType.string,
     ),
     r'lastTopicId': PropertySchema(
-      id: 9,
+      id: 10,
       name: r'lastTopicId',
       type: IsarType.string,
     ),
     r'llmAvatar': PropertySchema(
-      id: 10,
+      id: 11,
       name: r'llmAvatar',
       type: IsarType.string,
     ),
     r'llmName': PropertySchema(
-      id: 11,
+      id: 12,
       name: r'llmName',
       type: IsarType.string,
     ),
     r'searchEngine': PropertySchema(
-      id: 12,
+      id: 13,
       name: r'searchEngine',
       type: IsarType.string,
     ),
     r'selectedModel': PropertySchema(
-      id: 13,
+      id: 14,
       name: r'selectedModel',
       type: IsarType.string,
     ),
     r'themeColor': PropertySchema(
-      id: 14,
+      id: 15,
       name: r'themeColor',
       type: IsarType.string,
     ),
     r'themeMode': PropertySchema(
-      id: 15,
+      id: 16,
       name: r'themeMode',
       type: IsarType.string,
     ),
     r'topicGenerationModel': PropertySchema(
-      id: 16,
+      id: 17,
       name: r'topicGenerationModel',
       type: IsarType.string,
     ),
     r'userAvatar': PropertySchema(
-      id: 17,
+      id: 18,
       name: r'userAvatar',
       type: IsarType.string,
     ),
     r'userName': PropertySchema(
-      id: 18,
+      id: 19,
       name: r'userName',
       type: IsarType.string,
     )
@@ -3445,7 +3450,21 @@ const AppSettingsEntitySchema = CollectionSchema(
   deserialize: _appSettingsEntityDeserialize,
   deserializeProp: _appSettingsEntityDeserializeProp,
   idName: r'id',
-  indexes: {},
+  indexes: {
+    r'closeBehavior': IndexSchema(
+      id: 4163181497371265681,
+      name: r'closeBehavior',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'closeBehavior',
+          type: IndexType.value,
+          caseSensitive: false,
+        )
+      ],
+    )
+  },
   links: {},
   embeddedSchemas: {},
   getId: _appSettingsEntityGetId,
@@ -3539,22 +3558,23 @@ void _appSettingsEntitySerialize(
   writer.writeString(offsets[0], object.activeProviderId);
   writer.writeStringList(offsets[1], object.availableModels);
   writer.writeString(offsets[2], object.backgroundColor);
-  writer.writeBool(offsets[3], object.enableSmartTopic);
-  writer.writeBool(offsets[4], object.isSearchEnabled);
-  writer.writeBool(offsets[5], object.isStreamEnabled);
-  writer.writeString(offsets[6], object.language);
-  writer.writeString(offsets[7], object.lastPresetId);
-  writer.writeString(offsets[8], object.lastSessionId);
-  writer.writeString(offsets[9], object.lastTopicId);
-  writer.writeString(offsets[10], object.llmAvatar);
-  writer.writeString(offsets[11], object.llmName);
-  writer.writeString(offsets[12], object.searchEngine);
-  writer.writeString(offsets[13], object.selectedModel);
-  writer.writeString(offsets[14], object.themeColor);
-  writer.writeString(offsets[15], object.themeMode);
-  writer.writeString(offsets[16], object.topicGenerationModel);
-  writer.writeString(offsets[17], object.userAvatar);
-  writer.writeString(offsets[18], object.userName);
+  writer.writeLong(offsets[3], object.closeBehavior);
+  writer.writeBool(offsets[4], object.enableSmartTopic);
+  writer.writeBool(offsets[5], object.isSearchEnabled);
+  writer.writeBool(offsets[6], object.isStreamEnabled);
+  writer.writeString(offsets[7], object.language);
+  writer.writeString(offsets[8], object.lastPresetId);
+  writer.writeString(offsets[9], object.lastSessionId);
+  writer.writeString(offsets[10], object.lastTopicId);
+  writer.writeString(offsets[11], object.llmAvatar);
+  writer.writeString(offsets[12], object.llmName);
+  writer.writeString(offsets[13], object.searchEngine);
+  writer.writeString(offsets[14], object.selectedModel);
+  writer.writeString(offsets[15], object.themeColor);
+  writer.writeString(offsets[16], object.themeMode);
+  writer.writeString(offsets[17], object.topicGenerationModel);
+  writer.writeString(offsets[18], object.userAvatar);
+  writer.writeString(offsets[19], object.userName);
 }
 
 AppSettingsEntity _appSettingsEntityDeserialize(
@@ -3567,23 +3587,24 @@ AppSettingsEntity _appSettingsEntityDeserialize(
   object.activeProviderId = reader.readString(offsets[0]);
   object.availableModels = reader.readStringList(offsets[1]) ?? [];
   object.backgroundColor = reader.readStringOrNull(offsets[2]);
-  object.enableSmartTopic = reader.readBool(offsets[3]);
+  object.closeBehavior = reader.readLong(offsets[3]);
+  object.enableSmartTopic = reader.readBool(offsets[4]);
   object.id = id;
-  object.isSearchEnabled = reader.readBool(offsets[4]);
-  object.isStreamEnabled = reader.readBool(offsets[5]);
-  object.language = reader.readString(offsets[6]);
-  object.lastPresetId = reader.readStringOrNull(offsets[7]);
-  object.lastSessionId = reader.readStringOrNull(offsets[8]);
-  object.lastTopicId = reader.readStringOrNull(offsets[9]);
-  object.llmAvatar = reader.readStringOrNull(offsets[10]);
-  object.llmName = reader.readString(offsets[11]);
-  object.searchEngine = reader.readString(offsets[12]);
-  object.selectedModel = reader.readStringOrNull(offsets[13]);
-  object.themeColor = reader.readStringOrNull(offsets[14]);
-  object.themeMode = reader.readString(offsets[15]);
-  object.topicGenerationModel = reader.readStringOrNull(offsets[16]);
-  object.userAvatar = reader.readStringOrNull(offsets[17]);
-  object.userName = reader.readString(offsets[18]);
+  object.isSearchEnabled = reader.readBool(offsets[5]);
+  object.isStreamEnabled = reader.readBool(offsets[6]);
+  object.language = reader.readString(offsets[7]);
+  object.lastPresetId = reader.readStringOrNull(offsets[8]);
+  object.lastSessionId = reader.readStringOrNull(offsets[9]);
+  object.lastTopicId = reader.readStringOrNull(offsets[10]);
+  object.llmAvatar = reader.readStringOrNull(offsets[11]);
+  object.llmName = reader.readString(offsets[12]);
+  object.searchEngine = reader.readString(offsets[13]);
+  object.selectedModel = reader.readStringOrNull(offsets[14]);
+  object.themeColor = reader.readStringOrNull(offsets[15]);
+  object.themeMode = reader.readString(offsets[16]);
+  object.topicGenerationModel = reader.readStringOrNull(offsets[17]);
+  object.userAvatar = reader.readStringOrNull(offsets[18]);
+  object.userName = reader.readString(offsets[19]);
   return object;
 }
 
@@ -3601,15 +3622,15 @@ P _appSettingsEntityDeserializeProp<P>(
     case 2:
       return (reader.readStringOrNull(offset)) as P;
     case 3:
-      return (reader.readBool(offset)) as P;
+      return (reader.readLong(offset)) as P;
     case 4:
       return (reader.readBool(offset)) as P;
     case 5:
       return (reader.readBool(offset)) as P;
     case 6:
-      return (reader.readString(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 7:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 8:
       return (reader.readStringOrNull(offset)) as P;
     case 9:
@@ -3617,20 +3638,22 @@ P _appSettingsEntityDeserializeProp<P>(
     case 10:
       return (reader.readStringOrNull(offset)) as P;
     case 11:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 12:
       return (reader.readString(offset)) as P;
     case 13:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 14:
       return (reader.readStringOrNull(offset)) as P;
     case 15:
-      return (reader.readString(offset)) as P;
-    case 16:
       return (reader.readStringOrNull(offset)) as P;
+    case 16:
+      return (reader.readString(offset)) as P;
     case 17:
       return (reader.readStringOrNull(offset)) as P;
     case 18:
+      return (reader.readStringOrNull(offset)) as P;
+    case 19:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -3656,6 +3679,15 @@ extension AppSettingsEntityQueryWhereSort
   QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterWhere> anyId() {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(const IdWhereClause.any());
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterWhere>
+      anyCloseBehavior() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        const IndexWhereClause.any(indexName: r'closeBehavior'),
+      );
     });
   }
 }
@@ -3725,6 +3757,99 @@ extension AppSettingsEntityQueryWhere
         lower: lowerId,
         includeLower: includeLower,
         upper: upperId,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterWhereClause>
+      closeBehaviorEqualTo(int closeBehavior) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'closeBehavior',
+        value: [closeBehavior],
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterWhereClause>
+      closeBehaviorNotEqualTo(int closeBehavior) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'closeBehavior',
+              lower: [],
+              upper: [closeBehavior],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'closeBehavior',
+              lower: [closeBehavior],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'closeBehavior',
+              lower: [closeBehavior],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'closeBehavior',
+              lower: [],
+              upper: [closeBehavior],
+              includeUpper: false,
+            ));
+      }
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterWhereClause>
+      closeBehaviorGreaterThan(
+    int closeBehavior, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'closeBehavior',
+        lower: [closeBehavior],
+        includeLower: include,
+        upper: [],
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterWhereClause>
+      closeBehaviorLessThan(
+    int closeBehavior, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'closeBehavior',
+        lower: [],
+        upper: [closeBehavior],
+        includeUpper: include,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterWhereClause>
+      closeBehaviorBetween(
+    int lowerCloseBehavior,
+    int upperCloseBehavior, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'closeBehavior',
+        lower: [lowerCloseBehavior],
+        includeLower: includeLower,
+        upper: [upperCloseBehavior],
         includeUpper: includeUpper,
       ));
     });
@@ -4246,6 +4371,62 @@ extension AppSettingsEntityQueryFilter
       return query.addFilterCondition(FilterCondition.greaterThan(
         property: r'backgroundColor',
         value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      closeBehaviorEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'closeBehavior',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      closeBehaviorGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'closeBehavior',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      closeBehaviorLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'closeBehavior',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      closeBehaviorBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'closeBehavior',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
       ));
     });
   }
@@ -6286,6 +6467,20 @@ extension AppSettingsEntityQuerySortBy
   }
 
   QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      sortByCloseBehavior() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'closeBehavior', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      sortByCloseBehaviorDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'closeBehavior', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
       sortByEnableSmartTopic() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'enableSmartTopic', Sort.asc);
@@ -6537,6 +6732,20 @@ extension AppSettingsEntityQuerySortThenBy
       thenByBackgroundColorDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'backgroundColor', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      thenByCloseBehavior() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'closeBehavior', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      thenByCloseBehaviorDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'closeBehavior', Sort.desc);
     });
   }
 
@@ -6804,6 +7013,13 @@ extension AppSettingsEntityQueryWhereDistinct
   }
 
   QueryBuilder<AppSettingsEntity, AppSettingsEntity, QDistinct>
+      distinctByCloseBehavior() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'closeBehavior');
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QDistinct>
       distinctByEnableSmartTopic() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'enableSmartTopic');
@@ -6945,6 +7161,13 @@ extension AppSettingsEntityQueryProperty
       backgroundColorProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'backgroundColor');
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, int, QQueryOperations>
+      closeBehaviorProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'closeBehavior');
     });
   }
 

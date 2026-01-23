@@ -1243,4 +1243,37 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get branch => 'Branch';
+
+  @override
+  String get trayShow => 'Show Application';
+
+  @override
+  String get trayExit => 'Exit Application';
+
+  @override
+  String get confirmClose => 'Confirm Close';
+
+  @override
+  String get minimizeToTray => 'Minimize to system tray?';
+
+  @override
+  String get minimize => 'Minimize';
+
+  @override
+  String get exit => 'Exit';
+
+  @override
+  String get rememberChoice => 'Remember my choice';
+
+  @override
+  String get closeBehavior => 'Close Behavior';
+
+  @override
+  String get askEveryTime => 'Ask every time';
+
+  @override
+  String get minimizeToTrayOption => 'Minimize to tray';
+
+  @override
+  String get exitApplicationOption => 'Exit application';
 }

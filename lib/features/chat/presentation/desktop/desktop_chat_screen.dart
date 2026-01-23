@@ -1,7 +1,10 @@
+import 'dart:io';
 import 'package:fluent_ui/fluent_ui.dart' as fluent;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:window_manager/window_manager.dart';
+import 'package:tray_manager/tray_manager.dart';
+import 'package:path/path.dart' as p;
 import 'package:aurora/l10n/app_localizations.dart';
 import '../../../settings/presentation/settings_content.dart';
 import '../../../settings/presentation/settings_provider.dart';
@@ -20,9 +23,193 @@ class DesktopChatScreen extends ConsumerStatefulWidget {
   ConsumerState<DesktopChatScreen> createState() => _DesktopChatScreenState();
 }
 
-class _DesktopChatScreenState extends ConsumerState<DesktopChatScreen> {
+
+
+class _DesktopChatScreenState extends ConsumerState<DesktopChatScreen> with WindowListener, TrayListener {
+  final _trayManager = TrayManager.instance;
+  final _windowManager = WindowManager.instance;
+
+  @override
+  void initState() {
+    _windowManager.addListener(this);
+    _trayManager.addListener(this);
+    // 延迟初始化托盘，确保 UI 和上下文已就绪
+    WidgetsBinding.instance.addPostFrameCallback((_) => _initTray());
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    _windowManager.removeListener(this);
+    _trayManager.removeListener(this);
+    super.dispose();
+  }
+
+  Future<void> _initTray() async {
+    try {
+      String? iconPath;
+      if (Platform.isWindows) {
+        final String exePath = Platform.resolvedExecutable;
+        final String exeDir = File(exePath).parent.path;
+        final List<String> possiblePaths = [
+          p.join(exeDir, 'data', 'flutter_assets', 'assets', 'icon', 'app_icon.ico'),
+          p.join(exeDir, 'assets', 'icon', 'app_icon.ico'),
+        ];
+        for (final path in possiblePaths) {
+          if (File(path).existsSync()) {
+            iconPath = path;
+            break;
+          }
+        }
+      }
+      iconPath ??= 'assets/icon/app_icon.ico';
+      await _trayManager.setIcon(iconPath);
+      await _trayManager.setToolTip('Aurora');
+
+      _updateTrayMenu();
+      
+      await _windowManager.setPreventClose(true);
+    } catch (e) {
+      // 保持静默失败或在非调试模式下忽略
+    }
+  }
+
+  void _updateTrayMenu() {
+    if (!mounted) return;
+    final l10n = AppLocalizations.of(context);
+    if (l10n == null) return;
+
+    Menu menu = Menu(
+      items: [
+        MenuItem(
+          key: 'show_window',
+          label: l10n.trayShow,
+        ),
+        MenuItem(
+          key: 'exit_app',
+          label: l10n.trayExit,
+        ),
+      ],
+    );
+    _trayManager.setContextMenu(menu);
+  }
+
+  @override
+  void onTrayIconMouseDown() {
+    _windowManager.show();
+    _windowManager.focus();
+  }
+
+  @override
+  void onTrayIconRightMouseDown() {
+    // 获取焦点有助于菜单在点击外部时正常消失
+    _windowManager.focus().then((_) {
+      _trayManager.popUpContextMenu();
+    });
+  }
+
+  @override
+  void onTrayIconMouseUp() {}
+
+  @override
+  void onTrayIconRightMouseUp() {}
+
+  @override
+  void onTrayMenuItemClick(MenuItem menuItem) {
+    if (menuItem.key == 'show_window') {
+      _windowManager.show();
+      _windowManager.focus();
+    } else if (menuItem.key == 'exit_app') {
+      _windowManager.setPreventClose(false);
+      _windowManager.close();
+    }
+  }
+
+  @override
+  void onWindowClose() async {
+    final closeBehavior = ref.read(settingsProvider).closeBehavior;
+    
+    if (closeBehavior == 1) {
+      // 记忆为最小化
+      _windowManager.hide();
+      return;
+    } else if (closeBehavior == 2) {
+      // 记忆为退出
+      _windowManager.setPreventClose(false);
+      _windowManager.close();
+      return;
+    }
+
+    bool isPreventClose = await _windowManager.isPreventClose();
+    if (isPreventClose) {
+      if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
+      bool remember = false;
+
+      showDialog(
+        context: context,
+        builder: (context) {
+          return StatefulBuilder(
+            builder: (context, setState) {
+              return fluent.ContentDialog(
+                title: Text(l10n.confirmClose),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(l10n.minimizeToTray),
+                    const SizedBox(height: 16),
+                    fluent.Checkbox(
+                      checked: remember,
+                      onChanged: (v) => setState(() => remember = v ?? false),
+                      content: Text(l10n.rememberChoice),
+                    ),
+                  ],
+                ),
+                actions: [
+                  fluent.Button(
+                    onPressed: () {
+                      if (remember) {
+                        ref.read(settingsProvider.notifier).setCloseBehavior(1);
+                      }
+                      Navigator.pop(context);
+                      _windowManager.hide();
+                    },
+                    child: Text(l10n.minimize),
+                  ),
+                  fluent.FilledButton(
+                    child: Text(l10n.exit),
+                    onPressed: () {
+                      if (remember) {
+                        ref.read(settingsProvider.notifier).setCloseBehavior(2);
+                      }
+                      Navigator.pop(context);
+                      _windowManager.setPreventClose(false);
+                      _windowManager.close();
+                    },
+                  ),
+                  fluent.Button(
+                    child: Text(l10n.cancel),
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    // 监听语言变化以更新托盘菜单
+    ref.listen(settingsProvider.select((s) => s.language), (_, __) {
+      _updateTrayMenu();
+    });
+    
     final theme = fluent.FluentTheme.of(context);
     final isExpanded = ref.watch(isSidebarExpandedProvider);
     final selectedIndex = ref.watch(desktopActiveTabProvider);

@@ -128,6 +128,7 @@ void main() async {
               (Platform.localeName.startsWith('zh') ? 'zh' : 'en'),
           themeColor: appSettings?.themeColor ?? 'teal',
           backgroundColor: appSettings?.backgroundColor ?? 'default',
+          closeBehavior: appSettings?.closeBehavior ?? 0,
         );
       }),
     ],

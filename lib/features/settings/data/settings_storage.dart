@@ -85,6 +85,7 @@ class SettingsStorage {
     String? language,
     String? themeColor,
     String? backgroundColor,
+    int? closeBehavior,
   }) async {
     final existing = await loadAppSettings();
     final settings = AppSettingsEntity()
@@ -108,7 +109,8 @@ class SettingsStorage {
       ..language = language ?? existing?.language ?? 'zh'
       ..lastPresetId = existing?.lastPresetId
       ..themeColor = themeColor ?? existing?.themeColor
-      ..backgroundColor = backgroundColor ?? existing?.backgroundColor;
+      ..backgroundColor = backgroundColor ?? existing?.backgroundColor
+      ..closeBehavior = closeBehavior ?? existing?.closeBehavior ?? 0;
     await _isar.writeTxn(() async {
       await _isar.appSettingsEntitys.clear();
       await _isar.appSettingsEntitys.put(settings);
@@ -137,7 +139,8 @@ class SettingsStorage {
       ..language = existing.language
       ..lastPresetId = existing.lastPresetId
       ..themeColor = existing.themeColor
-      ..backgroundColor = existing.backgroundColor;
+      ..backgroundColor = existing.backgroundColor
+      ..closeBehavior = existing.closeBehavior;
     await _isar.writeTxn(() async {
       await _isar.appSettingsEntitys.clear();
       await _isar.appSettingsEntitys.put(settings);
@@ -174,7 +177,8 @@ class SettingsStorage {
       ..language = existing.language
       ..lastPresetId = existing.lastPresetId
       ..themeColor = existing.themeColor
-      ..backgroundColor = existing.backgroundColor;
+      ..backgroundColor = existing.backgroundColor
+      ..closeBehavior = existing.closeBehavior;
     await _isar.writeTxn(() async {
       await _isar.appSettingsEntitys.clear();
       await _isar.appSettingsEntitys.put(settings);
@@ -413,7 +417,8 @@ class SettingsStorage {
       ..language = existing.language
       ..lastPresetId = existing.lastPresetId
       ..themeColor = existing.themeColor
-      ..backgroundColor = existing.backgroundColor;
+      ..backgroundColor = existing.backgroundColor
+      ..closeBehavior = existing.closeBehavior;
     await _isar.writeTxn(() async {
       await _isar.appSettingsEntitys.clear();
       await _isar.appSettingsEntitys.put(settings);
@@ -461,7 +466,8 @@ class SettingsStorage {
       ..language = existing.language
       ..lastPresetId = presetId
       ..themeColor = existing.themeColor
-      ..backgroundColor = existing.backgroundColor;
+      ..backgroundColor = existing.backgroundColor
+      ..closeBehavior = existing.closeBehavior;
     await _isar.writeTxn(() async {
       await _isar.appSettingsEntitys.clear();
       await _isar.appSettingsEntitys.put(settings);

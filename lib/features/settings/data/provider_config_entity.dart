@@ -47,4 +47,6 @@ class AppSettingsEntity {
   String? lastPresetId;
   String? themeColor;
   String? backgroundColor;
+  @Index()
+  int closeBehavior = 0; // 0: ask, 1: minimize, 2: exit
 }
