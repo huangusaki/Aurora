@@ -137,7 +137,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get enterModelNameHint => 'Enter model name and press enter to add';
 
   @override
-  String get clickToChangeAvatar => '点击更换头像';
+  String get clickToChangeAvatar => 'Click to change avatar';
 
   @override
   String get aiInfo => 'AI Info';
