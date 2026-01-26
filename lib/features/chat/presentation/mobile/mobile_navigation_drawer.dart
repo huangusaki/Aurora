@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fluent_ui/fluent_ui.dart' as fluent;
 import '../chat_provider.dart';
@@ -39,6 +38,7 @@ class MobileNavigationDrawer extends ConsumerWidget {
               padding: const EdgeInsets.all(12),
               child: Row(
                 children: [
+                  const SizedBox(width: 4),
                   Expanded(
                     child: Container(
                       height: 40,
@@ -189,16 +189,13 @@ class MobileNavigationDrawer extends ConsumerWidget {
                               label: AppLocalizations.of(context)!.translation,
                               onTap: () => onNavigate('__translation__')),
                         ),
-                        Consumer(builder: (context, ref, _) {
-                          return Expanded(
-                            child: _MobileDrawerNavItem(
-                              icon: _getThemeIcon(
-                                  ref.watch(settingsProvider).themeMode),
-                              label: AppLocalizations.of(context)!.theme,
-                              onTap: onThemeCycle,
-                            ),
-                          );
-                        }),
+                        Expanded(
+                          child: _MobileDrawerNavItem(
+                            icon: _getThemeIcon(ref.watch(settingsProvider).themeMode),
+                            label: AppLocalizations.of(context)!.theme,
+                            onTap: onThemeCycle,
+                          ),
+                        ),
                         Expanded(
                           child: _MobileDrawerNavItem(
                               icon: Icons.cloud_sync_outlined,
@@ -247,69 +244,9 @@ class MobileNavigationDrawer extends ConsumerWidget {
                         ),
                         Expanded(
                           child: _MobileDrawerNavItem(
-                              icon: Icons.info_outline,
-                              label: AppLocalizations.of(context)!.about,
-                              onTap: () async {
-                                FocusManager.instance.primaryFocus?.unfocus();
-                                Navigator.pop(context);
-                                await Future.delayed(
-                                    const Duration(milliseconds: 100));
-                                if (context.mounted) {
-                                  showDialog(
-                                    context: context,
-                                    builder: (context) => AlertDialog(
-                                      title: Text(AppLocalizations.of(context)!
-                                          .aboutAurora),
-                                      content: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(AppLocalizations.of(context)!
-                                              .crossPlatformLlmClient),
-                                          const SizedBox(height: 16),
-                                          InkWell(
-                                            onTap: () async {
-                                              const url =
-                                                  'https://github.com/huangusaki/Aurora';
-                                              final uri = Uri.parse(url);
-                                              if (await canLaunchUrl(uri)) {
-                                                await launchUrl(uri,
-                                                    mode: LaunchMode
-                                                        .externalApplication);
-                                              }
-                                            },
-                                            child: Row(
-                                              children: [
-                                                const Icon(Icons.code,
-                                                    size: 18),
-                                                const SizedBox(width: 8),
-                                                Text(
-                                                  AppLocalizations.of(context)!
-                                                      .githubProject,
-                                                  style: const TextStyle(
-                                                      color: Colors.blue,
-                                                      decoration: TextDecoration
-                                                          .underline),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () =>
-                                              Navigator.pop(context),
-                                          child: Text(
-                                              AppLocalizations.of(context)!
-                                                  .close),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                }
-                              }),
+                              icon: Icons.settings_outlined,
+                              label: AppLocalizations.of(context)!.settings,
+                              onTap: () => onNavigate('__app_settings__')),
                         ),
                       ],
                     ),

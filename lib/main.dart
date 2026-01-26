@@ -111,16 +111,18 @@ void main() async {
     overrides: [
       settingsStorageProvider.overrideWithValue(storage),
       settingsProvider.overrideWith((ref) {
-        // Load skills from a default directory
-        Future.microtask(() {
-          final skillsDir =
-              '${Directory.current.path}${Platform.pathSeparator}skills';
-          final language = appSettings?.language ??
-              (Platform.localeName.startsWith('zh') ? 'zh' : 'en');
-          ref
-              .read(skillProvider.notifier)
-              .loadSkills(skillsDir, language: language);
-        });
+          // Load skills from a default directory (Desktop only)
+          if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+            Future.microtask(() {
+              final skillsDir =
+                  '${Directory.current.path}${Platform.pathSeparator}skills';
+              final language = appSettings?.language ??
+                  (Platform.localeName.startsWith('zh') ? 'zh' : 'en');
+              ref
+                  .read(skillProvider.notifier)
+                  .loadSkills(skillsDir, language: language);
+            });
+          }
 
         return SettingsNotifier(
           storage: storage,

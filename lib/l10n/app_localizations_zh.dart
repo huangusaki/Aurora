@@ -260,6 +260,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get agentSkills => '技能';
 
   @override
+  String get executionModel => '执行模型';
+
+  @override
+  String get defaultModelSameAsChat => '默认 (跟随主对话)';
+
+  @override
   String get agentSkillsDescription =>
       '插件从应用根目录下的 \'./skills\' 文件夹加载。创建一个包含 \'SKILL.md\' 文件的文件夹即可添加新插件。';
 
@@ -512,7 +518,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get about => '关于';
 
   @override
-  String get studio => '工作室';
+  String get studio => '工坊';
 
   @override
   String get novelWriting => '小说写作';

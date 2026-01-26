@@ -13,10 +13,12 @@ import 'package:aurora/shared/services/llm_service.dart';
 import '../data/chat_storage.dart';
 import '../data/session_entity.dart';
 import 'package:aurora/shared/services/tool_manager.dart';
+import 'package:aurora/shared/services/worker_service.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:uuid/uuid.dart';
 import 'topic_provider.dart';
 import '../../skills/presentation/skill_provider.dart';
+import '../../skills/domain/skill_entity.dart';
 import '../../../core/error/app_error_type.dart';
 import '../../../core/error/app_exception.dart';
 
@@ -266,30 +268,62 @@ class ChatNotifier extends StateNotifier<ChatState> {
           Message.ai('', model: currentModel, provider: currentProvider);
       state = state.copyWith(messages: [...state.messages, aiMsg]);
       final currentPlatform = Platform.operatingSystem;
-      final activeSkills = _ref.read(skillProvider).skills.where((s) => s.isEnabled && s.forAI && s.isCompatible(currentPlatform)).toList();
+      final isMobile = Platform.isAndroid || Platform.isIOS;
+      final activeSkills = isMobile 
+          ? <Skill>[] 
+          : _ref.read(skillProvider).skills.where((s) => s.isEnabled && s.forAI && s.isCompatible(currentPlatform)).toList();
       List<Map<String, dynamic>>? tools;
       if (settings.isSearchEnabled || activeSkills.isNotEmpty) {
         tools = toolManager.getTools(skills: activeSkills);
       } else {}
 
-      // Inject instructions from skills into system prompt
+      // Inject ONLY Descriptions for Routing
       if (activeSkills.isNotEmpty) {
-        final skillInstructions = activeSkills.map((s) => '## Skill: ${s.name}\n${s.instructions}').join('\n\n');
+        final skillDescriptions = activeSkills.map((s) => '- [${s.name}]: ${s.description}').join('\n');
+        final routingPrompt = '''
+# Specialized Skills
+You have access to the following specialized agents. Delegate tasks to them when the user's request matches their capabilities.
+
+## Registry
+$skillDescriptions
+
+To invoke a skill, usage of the `call_skill` tool is mandatory. Provide the `skill_name` and a detailed `query` for the worker agent.
+''';
         final systemMsg = messagesForApi.where((m) => m.role == 'system').firstOrNull;
         if (systemMsg != null) {
           final index = messagesForApi.indexOf(systemMsg);
           messagesForApi[index] = systemMsg.copyWith(
-            content: '${systemMsg.content}\n\n# Dynamic Skills Instructions\n$skillInstructions'
+            content: '${systemMsg.content}\n\n$routingPrompt'
           );
         } else {
           messagesForApi.insert(0, Message(
             id: const Uuid().v4(),
             role: 'system',
-            content: '# Dynamic Skills Instructions\n$skillInstructions',
+            content: routingPrompt,
             timestamp: DateTime.now(),
             isUser: false,
           ));
         }
+        
+        // Add call_skill tool
+        final callSkillTool = {
+          'type': 'function',
+          'function': {
+            'name': 'call_skill',
+            'description': 'Route a complex task to a specialized worker agent with full documentation access.',
+            'parameters': {
+              'type': 'object',
+              'required': ['skill_name', 'query'],
+              'properties': {
+                'skill_name': {'type': 'string', 'description': 'The exact identifier of the skill from the registry'},
+                'query': {'type': 'string', 'description': 'The full natural language task description for the worker'}
+              }
+            }
+          }
+        };
+        // Merge with existing tools
+        tools ??= [];
+        tools.add(callSkillTool);
       }
       bool continueGeneration = true;
       int turns = 0;
@@ -463,9 +497,63 @@ class ChatNotifier extends StateNotifier<ChatState> {
             for (final tc in aiMsg.toolCalls!) {
               String toolResult;
               try {
-                final args = jsonDecode(tc.arguments);
-                toolResult = await toolManager.executeTool(tc.name, args,
-                    preferredEngine: settings.searchEngine, skills: activeSkills);
+                if (tc.name == 'call_skill') {
+                  final activeSkills = _ref.read(skillProvider).skills;
+                   Map<String, dynamic> args;
+                   if (tc.arguments.startsWith('{')) {
+                      args = jsonDecode(tc.arguments);
+                   } else {
+                      // Handle hallucinated nested json strings or malformed args
+                      try {
+                        args = jsonDecode(tc.arguments);
+                      } catch (e) {
+                         args = {'query': tc.arguments, 'skill_name': 'unknown'};
+                      }
+                   }
+                   
+                   var skillName = args['skill_name'];
+                   // Fallback if skill_name is missing but might be inferred? 
+                   // No, we need skill_name. 
+                   if (skillName == null) {
+                      // Try to fix hallucination where everything is in 'skill_args'
+                      if (args.containsKey('skill_args')) {
+                        final nested = args['skill_args'];
+                        if (nested is Map) {
+                           skillName = nested['skill_name'];
+                        } else if (nested is String) {
+                           try {
+                             final nMap = jsonDecode(nested);
+                             skillName = nMap['skill_name'];
+                           } catch (_) {}
+                        }
+                      }
+                   }
+
+                   var query = args['query'] ?? args['request'] ?? args['task'] ?? args['content'];
+                   if (query == null) {
+                      // If query is missing, dump arguments as query (excluding skill_name)
+                      final copy = Map<String, dynamic>.from(args);
+                      copy.remove('skill_name');
+                      query = jsonEncode(copy);
+                   }
+                   
+                   final skill = activeSkills.firstWhere(
+                      (s) => s.name == skillName, 
+                      orElse: () {
+                        // If skill not found, maybe just pick the most likely one based on description? 
+                        // Too risky. Throw specific error.
+                        throw Exception('Skill "$skillName" not found. Available: ${activeSkills.map((s) => s.name).join(", ")}');
+                      }
+                   );
+                   
+                   final workerService = WorkerService(llmService);
+                   final executionModel = settings.executionModel;
+                   toolResult = await workerService.executeSkillTask(skill, query.toString(), model: executionModel);
+                } else {
+                  final args = jsonDecode(tc.arguments);
+                  toolResult = await toolManager.executeTool(tc.name, args,
+                      preferredEngine: settings.searchEngine, skills: _ref.read(skillProvider).skills);
+                }
               } catch (e) {
                 toolResult = jsonEncode({'error': e.toString()});
               }

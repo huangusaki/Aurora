@@ -112,6 +112,8 @@
   "dataSettings": "Data Settings",
   "usageStats": "Usage Statistics",
   "agentSkills": "Skills",
+  "executionModel": "Execution Model",
+  "defaultModelSameAsChat": "Default (Same as Chat)",
   "agentSkillsDescription": "Skills are loaded from the './skills' folder in the application root. Create a folder with a 'SKILL.md' file to add a new skill.",
   "noSkillsFound": "No skills found in ./skills directory",
   "openSkillsFolder": "Open Skills Folder",

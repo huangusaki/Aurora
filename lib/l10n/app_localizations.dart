@@ -584,6 +584,18 @@ abstract class AppLocalizations {
   /// **'技能'**
   String get agentSkills;
 
+  /// No description provided for @executionModel.
+  ///
+  /// In zh, this message translates to:
+  /// **'执行模型'**
+  String get executionModel;
+
+  /// No description provided for @defaultModelSameAsChat.
+  ///
+  /// In zh, this message translates to:
+  /// **'默认 (跟随主对话)'**
+  String get defaultModelSameAsChat;
+
   /// No description provided for @agentSkillsDescription.
   ///
   /// In zh, this message translates to:
@@ -1061,7 +1073,7 @@ abstract class AppLocalizations {
   /// No description provided for @studio.
   ///
   /// In zh, this message translates to:
-  /// **'工作室'**
+  /// **'工坊'**
   String get studio;
 
   /// No description provided for @novelWriting.

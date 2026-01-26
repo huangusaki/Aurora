@@ -112,6 +112,8 @@
   "dataSettings": "数据设置",
   "usageStats": "数据统计",
   "agentSkills": "技能",
+  "executionModel": "执行模型",
+  "defaultModelSameAsChat": "默认 (跟随主对话)",
   "agentSkillsDescription": "插件从应用根目录下的 './skills' 文件夹加载。创建一个包含 'SKILL.md' 文件的文件夹即可添加新插件。",
   "noSkillsFound": "未在 ./skills 目录下发现插件",
   "openSkillsFolder": "打开插件目录",

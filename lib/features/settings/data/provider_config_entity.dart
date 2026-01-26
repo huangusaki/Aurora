@@ -49,4 +49,5 @@ class AppSettingsEntity {
   String? backgroundColor;
   @Index()
   int closeBehavior = 0; // 0: ask, 1: minimize, 2: exit
+  String? executionModel;
 }

@@ -144,9 +144,10 @@ class OpenAILLMService implements LLMService {
       {List<String>? attachments,
       List<Map<String, dynamic>>? tools,
       String? toolChoice,
+      String? model,
       CancelToken? cancelToken}) async* {
     final provider = _settings.activeProvider;
-    final model = _settings.selectedModel ?? 'gpt-3.5-turbo';
+    final selectedModel = model ?? _settings.selectedModel ?? 'gpt-3.5-turbo';
     final apiKey = provider.apiKey;
     final baseUrl = provider.baseUrl.endsWith('/')
         ? provider.baseUrl
@@ -191,19 +192,19 @@ class OpenAILLMService implements LLMService {
       Map<String, dynamic> activeParams = {};
 
       // 1. Get Global Settings (if enabled and not excluded)
-      final bool isExcluded = provider.globalExcludeModels.contains(model);
+      final bool isExcluded = provider.globalExcludeModels.contains(selectedModel);
       if (!isExcluded) {
         activeParams.addAll(provider.globalSettings);
       }
 
       // 2. Override with Specific Model Settings
-      if (provider.modelSettings.containsKey(model)) {
-        final specific = provider.modelSettings[model]!;
+      if (provider.modelSettings.containsKey(selectedModel)) {
+        final specific = provider.modelSettings[selectedModel]!;
         activeParams.addAll(specific);
       }
 
       final Map<String, dynamic> requestData = {
-        'model': model,
+        'model': selectedModel,
         'messages': apiMessages,
         'stream': true,
         'stream_options': {'include_usage': true},
@@ -306,10 +307,10 @@ Use search for:
         if (thinkingEnabled) {
           if (thinkingMode == 'auto') {
             final isGemini3 = RegExp(r'gemini[_-]?3[_-]', caseSensitive: false)
-                .hasMatch(model);
+                .hasMatch(selectedModel);
             if (isGemini3) {
               thinkingMode = 'reasoning_effort';
-            } else if (model.toLowerCase().contains('gemini')) {
+            } else if (selectedModel.toLowerCase().contains('gemini')) {
               thinkingMode = 'extra_body';
             } else {
               thinkingMode = 'reasoning_effort';
@@ -319,7 +320,7 @@ Use search for:
             if (thinkingMode == 'extra_body') {
               final isGemini3 =
                   RegExp(r'gemini[_-]?3[_-]', caseSensitive: false)
-                      .hasMatch(model);
+                      .hasMatch(selectedModel);
               final int? budgetInt = int.tryParse(thinkingValue);
               if (isGemini3) {
                 String thinkingLevel;
@@ -359,7 +360,7 @@ Use search for:
             } else if (thinkingMode == 'reasoning_effort') {
               final isGemini3ForEffort =
                   RegExp(r'gemini[_-]?3[_-]', caseSensitive: false)
-                      .hasMatch(model);
+                      .hasMatch(selectedModel);
               final int? budgetInt = int.tryParse(thinkingValue);
               if (isGemini3ForEffort && budgetInt != null) {
                 String level;
@@ -829,9 +830,10 @@ Use search for:
       {List<String>? attachments,
       List<Map<String, dynamic>>? tools,
       String? toolChoice,
+      String? model,
       CancelToken? cancelToken}) async {
     final provider = _settings.activeProvider;
-    final model = _settings.selectedModel ?? 'gpt-3.5-turbo';
+    final selectedModel = model ?? _settings.selectedModel ?? 'gpt-3.5-turbo';
     final apiKey = provider.apiKey;
     final baseUrl = provider.baseUrl.endsWith('/')
         ? provider.baseUrl
@@ -864,19 +866,19 @@ Use search for:
       Map<String, dynamic> activeParams = {};
 
       // 1. Get Global Settings (if enabled and not excluded)
-      final bool isExcluded = provider.globalExcludeModels.contains(model);
+      final bool isExcluded = provider.globalExcludeModels.contains(selectedModel);
       if (!isExcluded) {
         activeParams.addAll(provider.globalSettings);
       }
 
       // 2. Override with Specific Model Settings
-      if (provider.modelSettings.containsKey(model)) {
-        final specific = provider.modelSettings[model]!;
+      if (provider.modelSettings.containsKey(selectedModel)) {
+        final specific = provider.modelSettings[selectedModel]!;
         activeParams.addAll(specific);
       }
 
       final Map<String, dynamic> requestData = {
-        'model': model,
+        'model': selectedModel,
         'messages': apiMessages,
         'stream': false,
         'stream_options': {'include_usage': true},
@@ -963,10 +965,10 @@ Use search for:
         if (thinkingEnabled) {
           if (thinkingMode == 'auto') {
             final isGemini3 = RegExp(r'gemini[_-]?3[_-]', caseSensitive: false)
-                .hasMatch(model);
+                .hasMatch(selectedModel);
             if (isGemini3) {
               thinkingMode = 'reasoning_effort';
-            } else if (model.toLowerCase().contains('gemini')) {
+            } else if (selectedModel.toLowerCase().contains('gemini')) {
               thinkingMode = 'extra_body';
             } else {
               thinkingMode = 'reasoning_effort';
@@ -988,7 +990,7 @@ Use search for:
             } else if (thinkingMode == 'reasoning_effort') {
               final isGemini3ForEffort =
                   RegExp(r'gemini[_-]?3[_-]', caseSensitive: false)
-                      .hasMatch(model);
+                      .hasMatch(selectedModel);
               final int? budgetInt = int.tryParse(thinkingValue);
               if (isGemini3ForEffort && budgetInt != null) {
                 String level;

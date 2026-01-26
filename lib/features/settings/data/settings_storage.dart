@@ -86,6 +86,7 @@ class SettingsStorage {
     String? themeColor,
     String? backgroundColor,
     int? closeBehavior,
+    String? executionModel,
   }) async {
     final existing = await loadAppSettings();
     final settings = AppSettingsEntity()
@@ -110,7 +111,8 @@ class SettingsStorage {
       ..lastPresetId = existing?.lastPresetId
       ..themeColor = themeColor ?? existing?.themeColor
       ..backgroundColor = backgroundColor ?? existing?.backgroundColor
-      ..closeBehavior = closeBehavior ?? existing?.closeBehavior ?? 0;
+      ..closeBehavior = closeBehavior ?? existing?.closeBehavior ?? 0
+      ..executionModel = executionModel ?? existing?.executionModel;
     await _isar.writeTxn(() async {
       await _isar.appSettingsEntitys.clear();
       await _isar.appSettingsEntitys.put(settings);

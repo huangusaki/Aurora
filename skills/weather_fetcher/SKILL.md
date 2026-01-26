@@ -1,52 +1,47 @@
 ---
-id: weather_fetcher
-name: "全球天气查询 (OpenWeatherMap)"
-description: "跨平台插件：通过 OpenWeatherMap HTTP 接口查询全球实时天气。"
-platforms: [all]
-enabled: false
-tools:
-  - name: get_weather
-    description: "通过经纬度获取指定位置的当前天气信息。"
-    type: http
-    command: "https://api.openweathermap.org/data/2.5/weather?lat={{lat}}&lon={{lon}}&appid={{appid}}&units={{units}}&lang={{lang}}"
-    method: GET
-    input_schema:
-      type: object
-      properties:
-        lat:
-          type: number
-          description: "纬度 (Latitude)"
-        lon:
-          type: number
-          description: "经度 (Longitude)"
-        appid:
-          type: string
-          description: "OpenWeatherMap API Key. 如果用户没提供，建议提醒用户前往官网获取。"
-        units:
-          type: string
-          description: "度量单位，可选：standard, metric (摄氏度), imperial (华氏度)。默认为 metric。"
-          default: "metric"
-        lang:
-          type: string
-          description: "返回语言，如 zh_cn (中文), en (英文)。默认为 zh_cn。"
-          default: "zh_cn"
-      required: [lat, lon, appid]
-    input_examples:
-      - lat: 31.23
-        lon: 121.47
-        appid: "YOUR_API_KEY"
-        units: "metric"
-        lang: "zh_cn"
+name: weather-fetcher
+description: 获取全球任何位置的实时天气信息。当用户询问“我想知道xx的天气”或“现在的温度是多少”时使用。
+enabled: true
 ---
 
-# OpenWeatherMap 使用指南
+# Weather Fetcher
 
-1. **获取 API Key**: 用户需要从 [OpenWeatherMap 官网](https://openweathermap.org/api) 获取免费的 AppID。
-2. **多端支持**: 由于采用了 `type: http`，此插件在 Android、iOS 及 PC 端均可完美运行。
-3. **坐标查询**: AI 在调用前应先尝试获取或确认用户的经纬度坐标（可以结合其他位置插件或要求用户提供）。
+## Instructions
+请运行 Python 脚本来获取数据，以避免 Windows 下 `curl` 命令兼容性问题。
 
-## 返回示例参考
-当调用成功时，你会收到如下格式的 JSON：
-- `main.temp`: 当前温度
-- `weather[0].description`: 天气状况描述
-- `name`: 城市名称
+### Script Path
+`skills/weather_fetcher/scripts/weather.py`
+
+### Parameters
+1. `city`: 城市名称 (e.g. Beijing)
+2. `api_key`: API Key (用户需提供或使用默认 key)
+3. `--units`: (可选) 单位, 默认为 metric
+4. `--lang`: (可选) 语言, 默认为 zh_cn
+
+### Execution
+```bash
+python skills/weather_fetcher/scripts/weather.py <city> <api_key> [--units metric] [--lang zh_cn]
+```
+
+## Examples
+
+**User**: "北京天气怎么样？" (Key: 12345)
+
+**Assistant**:
+```bash
+python skills/weather_fetcher/scripts/weather.py Beijing 12345
+```
+
+**Output**:
+```json
+{
+  "cod": "200",
+  "list": [
+    {
+      "dt": 1661871600,
+      "main": { "temp": 25.5 },
+      "weather": [ { "description": "多云" } ]
+    }
+  ]
+}
+```

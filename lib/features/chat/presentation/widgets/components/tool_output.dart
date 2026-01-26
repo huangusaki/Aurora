@@ -80,10 +80,118 @@ class _BuildToolOutputState extends State<BuildToolOutput> {
 
     if (count == 0) {
       if (data?.containsKey('message') == true) {
-        return Text('Tool Message: ${data!['message']}',
-            style: TextStyle(color: theme.typography.caption?.color, fontSize: 13));
+        final message = data!['message'] as String;
+        // Don't show "Tool Message:" prefix, just show the content
+        // Also ensure it's selectable and wrapped nicely
+        return Container(
+          margin: const EdgeInsets.symmetric(vertical: 4),
+          decoration: BoxDecoration(
+             color: theme.accentColor.withOpacity(0.05),
+             borderRadius: BorderRadius.circular(8),
+             border: Border.all(color: theme.accentColor.withOpacity(0.2)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+               GestureDetector(
+                 onTap: () => setState(() => _isExpanded = !_isExpanded),
+                 behavior: HitTestBehavior.opaque,
+                 child: Container(
+                   padding: const EdgeInsets.all(12),
+                   child: Row(
+                     children: [
+                       Icon(fluent.FluentIcons.robot, size: 14, color: theme.accentColor),
+                       const SizedBox(width: 8),
+                       Text(
+                         'Agent Response',
+                         style: TextStyle(
+                           fontSize: 11,
+                           fontWeight: FontWeight.bold,
+                           color: theme.accentColor,
+                         ),
+                       ),
+                       const Spacer(),
+                       Icon(
+                         _isExpanded
+                             ? fluent.FluentIcons.chevron_up
+                             : fluent.FluentIcons.chevron_down,
+                         size: 10,
+                         color: theme.accentColor.withOpacity(0.5),
+                       ),
+                     ],
+                   ),
+                 ),
+               ),
+               if (_isExpanded)
+                 Padding(
+                   padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                   child: SelectableText(
+                     message,
+                     style: TextStyle(color: theme.typography.body?.color, fontSize: 13),
+                   ),
+                 ),
+            ],
+          ),
+        );
       }
-      return const SizedBox.shrink();
+      // Provide a fallback for plain string content passed as JSON if applicable
+      // Or if the content is NOT json (which build method tries to catch)
+      // Actually widget.content is passed. If jsonDecode fails, data is null.
+      // If data is null, we should just show the content.
+    }
+    
+    // Fallback for non-JSON content (raw text from Worker)
+    if (data == null) {
+       return Container(
+          margin: const EdgeInsets.symmetric(vertical: 4),
+          decoration: BoxDecoration(
+             color: theme.accentColor.withOpacity(0.05),
+             borderRadius: BorderRadius.circular(8),
+             border: Border.all(color: theme.accentColor.withOpacity(0.2)),
+          ),
+          child: Column(
+             crossAxisAlignment: CrossAxisAlignment.start,
+             children: [
+               GestureDetector(
+                 onTap: () => setState(() => _isExpanded = !_isExpanded),
+                 behavior: HitTestBehavior.opaque,
+                 child: Container(
+                   padding: const EdgeInsets.all(12),
+                   child: Row(
+                     children: [
+                       Icon(fluent.FluentIcons.robot, size: 14, color: theme.accentColor),
+                       const SizedBox(width: 8),
+                       Text(
+                         'Agent Output',
+                         style: TextStyle(
+                           fontSize: 11,
+                           fontWeight: FontWeight.bold,
+                           color: theme.accentColor,
+                         ),
+                       ),
+                       const Spacer(),
+                       Icon(
+                         _isExpanded
+                             ? fluent.FluentIcons.chevron_up
+                             : fluent.FluentIcons.chevron_down,
+                         size: 10,
+                         color: theme.accentColor.withOpacity(0.5),
+                       ),
+                     ],
+                   ),
+                 ),
+               ),
+               if (_isExpanded)
+                 Padding(
+                   padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                   child: SelectableText(
+                     widget.content,
+                     style: TextStyle(color: theme.typography.body?.color, fontSize: 13),
+                   ),
+                 ),
+             ],
+          ),
+       );
     }
     if (results != null && results.isNotEmpty) {
       return Container(
@@ -357,73 +465,87 @@ class _BuildToolOutputState extends State<BuildToolOutput> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Terminal Header
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: isError ? Colors.red.withOpacity(0.15) : Colors.white.withOpacity(0.05),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  isError ? Icons.error_outline : Icons.terminal,
-                  size: 14,
-                  color: isError ? Colors.red.shade300 : Colors.green.shade300,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  isError ? 'Terminal Error (Code $exitCode)' : 'Terminal Output',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontFamily: 'Consolas',
-                    color: isError ? Colors.red.shade100 : Colors.grey.shade300,
-                    fontWeight: FontWeight.bold,
+          GestureDetector(
+            onTap: () => setState(() => _isExpanded = !_isExpanded),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: isError ? Colors.red.withOpacity(0.15) : Colors.white.withOpacity(0.05),
+                borderRadius: _isExpanded 
+                    ? const BorderRadius.vertical(top: Radius.circular(8))
+                    : BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    isError ? Icons.error_outline : Icons.terminal,
+                    size: 14,
+                    color: isError ? Colors.red.shade300 : Colors.green.shade300,
                   ),
-                ),
-              ],
+                  const SizedBox(width: 8),
+                  Text(
+                    isError ? 'Terminal Error (Code $exitCode)' : 'Terminal Output',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontFamily: 'Consolas',
+                      color: isError ? Colors.red.shade100 : Colors.grey.shade300,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const Spacer(),
+                  Icon(
+                    _isExpanded
+                        ? fluent.FluentIcons.chevron_up
+                        : fluent.FluentIcons.chevron_down,
+                    size: 10,
+                    color: Colors.grey.shade400,
+                  ),
+                ],
+              ),
             ),
           ),
           // Terminal Content
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (stdout != null && stdout.isNotEmpty)
-                  SelectableText(
-                    stdout.trim(),
-                    style: const TextStyle(
-                      fontFamily: 'Consolas',
-                      fontSize: 12,
-                      color: Color(0xFFD4D4D4),
-                      height: 1.4,
+          if (_isExpanded)
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (stdout != null && stdout.isNotEmpty)
+                    SelectableText(
+                      stdout.trim(),
+                      style: const TextStyle(
+                        fontFamily: 'Consolas',
+                        fontSize: 12,
+                        color: Color(0xFFD4D4D4),
+                        height: 1.4,
+                      ),
                     ),
-                  ),
-                if (stderr != null && stderr.isNotEmpty) ...[
-                  if (stdout != null && stdout.isNotEmpty) const SizedBox(height: 8),
-                  SelectableText(
-                    stderr.trim(),
-                    style: TextStyle(
-                      fontFamily: 'Consolas',
-                      fontSize: 12,
-                      color: Colors.red.shade300,
-                      height: 1.4,
+                  if (stderr != null && stderr.isNotEmpty) ...[
+                    if (stdout != null && stdout.isNotEmpty) const SizedBox(height: 8),
+                    SelectableText(
+                      stderr.trim(),
+                      style: TextStyle(
+                        fontFamily: 'Consolas',
+                        fontSize: 12,
+                        color: Colors.red.shade300,
+                        height: 1.4,
+                      ),
                     ),
-                  ),
+                  ],
+                  if ((stdout == null || stdout.isEmpty) && (stderr == null || stderr.isEmpty))
+                    const Text(
+                      '[No output]',
+                      style: TextStyle(
+                        fontFamily: 'Consolas',
+                        fontSize: 12,
+                        color: Colors.grey,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
                 ],
-                if ((stdout == null || stdout.isEmpty) && (stderr == null || stderr.isEmpty))
-                  const Text(
-                    '[No output]',
-                    style: TextStyle(
-                      fontFamily: 'Consolas',
-                      fontSize: 12,
-                      color: Colors.grey,
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-              ],
+              ),
             ),
-          ),
         ],
       ),
     );

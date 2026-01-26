@@ -263,6 +263,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentSkills => 'Skills';
 
   @override
+  String get executionModel => 'Execution Model';
+
+  @override
+  String get defaultModelSameAsChat => 'Default (Same as Chat)';
+
+  @override
   String get agentSkillsDescription =>
       'Skills are loaded from the \'./skills\' folder in the application root. Create a folder with a \'SKILL.md\' file to add a new skill.';
 

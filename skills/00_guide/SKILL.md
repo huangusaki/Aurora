@@ -1,71 +1,134 @@
 ---
-id: skill_guide
-name: "插件开发指南"
-description: "详细解释如何构建、配置及优化你的自定义 AI 插件。"
+name: skill-guide
+description: 官方 Skill 开发指南，包含目录结构、元数据规范及构建流程。仅用于指导开发者创建新 Skill。
 locked: true
 for_ai: false
 ---
 
-# 欢迎使用 Aurora 插件系统
-本指南旨在帮助你快速掌握如何通过 `SKILL.md` 扩展 AI 的能力。
+# 官方 Skill 开发格式指南
 
-## 1. 核心参数说明
+本项目遵循官方 Skill 格式标准。每个 Skill 都是一个独立的目录，包含定义文件和相关资源。
 
-| 参数 | 类型 | 用途 | 示例 |
+## 1. 目录结构
+
+标准的 Skill 目录结构如下：
+
+```text
+skill-name/
+├── SKILL.md (必需)
+│   ├── YAML 前置元数据 (必需)
+│   │   ├── name: (必需)
+│   │   └── description: (必需)
+│   └── Markdown 指令 (必需)
+└── 打包资源 (可选)
+    ├── scripts/     - 可执行代码
+    ├── references/  - 上下文文档
+    └── assets/      - 输出文件（模板等）
+```
+
+## 2. SKILL.md 格式规范
+
+### YAML 前置元数据 (Frontmatter)
+
+`SKILL.md` 文件的顶部必须包含 YAML 格式的元数据：
+
+```yaml
+---
+name: your-skill-name
+description: 这个技能做什么以及何时使用。包括触发上下文、文件类型、任务类型和用户可能提及的关键词。
+---
+```
+
+**字段要求：**
+
+| 字段 | 必需 | 格式 | 说明 |
 | :--- | :--- | :--- | :--- |
-| `id` | String | 插件唯一标识符，用于工具命名前缀。 | `translate_helper` |
-| `name` | String | 在 UI 界面显示的标题。 | `翻译助手` |
-| `description` | String | 简短的功能描述。 | `帮用户翻译各种语言。` |
-| `is_locked` | Boolean | 若为 `true`，则该插件置顶且不可删除/停用。 | `true` |
-| `enabled` | Boolean | 控制插件当前是否对 AI 可见。 | `true` |
-| `for_ai` | Boolean | 若为 `false`，则该插件仅供人类阅读，不占用 AI 提示词空间。 | `false` |
-| `platforms`| List    | 限定插件运行平台。可选：`windows`, `android`, `ios`, `desktop`, `mobile` 等。默认为 `all`。 | `[windows, android]` |
+| `name` | 是 | 小写，允许连字符，最多 64 字符 | 技能的唯一标识名。 |
+| `description` | 是 | 最多 1024 字符 | **核心要点**：必须包含 **WHAT** (做什么) 和 **WHEN** (何时使用)。这是触发技能的关键。 |
 
-## 2. 规范与最佳实践 (Best Practices)
+### 主体内容
 
-### 命名规范
-为了获得最佳的 AI 理解效果，请遵循以下约定：
-- **ID/Name**: 使用小写字母、数字和连字符（如 `my-tool-v1`）。
-- **动词开头**: 工具名建议以动词开头（如 `get_weather`, `run_code`）。
+元数据下方是 Markdown 格式的指令内容：
 
-### 工具示例 (Input Examples)
-Anthropic 强烈建议为复杂工具提供示例。可以通过 `input_examples` 字段添加：
-```yaml
-tools:
-  - name: calculate_sum
-    input_examples:
-      - numbers: [1, 2, 3]
-      - numbers: [10.5, 20]
-```
-这些示例能显著提升 AI 在面对模糊输入时的调用准确率。
+```markdown
+# Your Skill Name
 
-## 3. 工具定义 (Tools)
-在 `tools` 列表中定义 AI 可以调用的功能。
+[指令部分]
+Claude 的清晰、分步指导。始终使用祈使/不定式形式。
 
-### Shell 类型 (仅限 PC 端)
-```yaml
-- name: execute_cmd
-  type: shell
-  command: "ls -la {{path}}" # 使用 {{arg}} 作为占位符
-  input_schema:
-    type: object
-    properties:
-      path: { type: string, description: "路径" }
+[示例部分]
+具体的输入/输出示例。
 ```
 
-### HTTP 类型 (跨平台支持)
-```yaml
-- name: get_api
-  type: http
-  command: "https://api.example.com/data"
-  method: "POST" # 可选 GET/POST
+> **注意**：「何时使用」的信息应放在 `description` 中，**不要** 放在主体内容里，因为主体内容只有在其 description 触发技能后才会被加载。
+
+## 3. 运行机制 (Mechanism)
+
+理解 Skill 的两阶段加载机制至关重要：
+
+### 阶段 1：路由 (Routing)
+- 系统仅读取 YAML Frontmatter 中的 `name` 和 `description`。
+- LLM 根据 `description` (包含了 What & When) 来决定是否需要调用该技能。
+- **关键点**：如果 `description` 写得不好，Skill 永远不会被触发。
+
+### 阶段 2：执行 (Execution)
+- 一旦 Skill 被选中，系统会将 Markdown 主体部分 (`Instructions` 和 `Examples`) 注入到当前的 Context (System Prompt) 中。
+- **关键点**：主体内容只需包含 **How** (如何操作)。不要在主体中重复冗长的“何时使用”条件，以节省 Token 开销。
+
+## 4. 构建流程 (Build Process)
+
+### 步骤 1：通过具体示例理解
+在创建 Skill 之前，先收集具体使用场景：
+- 「这个技能应该支持什么功能？」
+- 「用户会说什么来触发这个技能？」（例如："从这张图像中去除红眼", "构建一个待办应用"）
+
+### 步骤 2：规划可复用内容
+分析示例，识别需要的脚本和资源：
+- **Scripts**: 每次执行都需要运行的代码 (如 `scripts/rotate_pdf.py`)。
+- **Assets**: 样板代码或模板 (如 `assets/hello-world/`)。
+- **References**: 需要查阅的静态文档 (如 `references/schema.md`)。
+
+### 步骤 3：初始化 Skill
+创建目录并初始化 `SKILL.md`。
+
+```bash
+mkdir -p my-skill/{scripts,references,assets}
+touch my-skill/SKILL.md
 ```
 
-## 3. 指令说明 (Instructions)
-在 `---` 分隔符下方编写 Markdown 内容。这些内容会被直接加入到 AI 的 `System Prompt` 中。
-- **Tips**: 这里可以写具体的处理规则、输出格式或是约束条件。
+### 步骤 4：编辑 Skill
+编写 `SKILL.md` 的内容。
 
-## 4. 开发技巧
-- **调试**: 使用 Shell 模式时，建议先在终端手动跑通命令。
-- **变量**: 确保 `input_schema` 里的属性名与 `command` 里的 `{{name}}` 完全对应。
-- **跨平台**: 如果你的插件要在移动端使用，请务必提供 `http` 类型的工具。
+**Frontmatter 示例：**
+```yaml
+---
+name: docx-processor
+description: 综合文档创建、编辑和分析，支持跟踪更改、评论、格式保留和文本提取。当 Claude 需要处理专业文档（.docx 文件）时使用：(1) 创建新文档，(2) 修改或编辑内容，(3) 处理跟踪更改，(4) 添加评论，或任何其他文档任务。
+---
+```
+
+**主体结构建议：**
+```markdown
+# Skill Name
+
+## Getting Started
+[基本的第一步]
+
+## Core Workflows
+[分步程序]
+
+## Extended Capabilities
+- **Feature A**: See [FEATURE_A.md](references/feature_a.md)
+
+## Examples
+[具体的输入/输出对]
+```
+
+### 步骤 5：打包 Skill (可选)
+如果需要分发，可以将技能文件夹打包成 `.skill` 文件（zip 格式），并验证元数据和结构。
+
+### 步骤 6：基于使用迭代
+- 在真实任务上使用技能。
+- 识别瓶颈与低效环节。
+- 只有在实际使用中才能发现 SKILL.md 或资源需要的改进。
+- 即时反馈，即刻迭代。

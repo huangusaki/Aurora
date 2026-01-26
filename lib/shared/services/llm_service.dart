@@ -25,9 +25,13 @@ abstract class LLMService {
   Stream<LLMResponseChunk> streamResponse(List<Message> messages,
       {List<String>? attachments,
       List<Map<String, dynamic>>? tools,
+      String? toolChoice,
+      String? model,
       CancelToken? cancelToken});
   Future<LLMResponseChunk> getResponse(List<Message> messages,
       {List<String>? attachments,
       List<Map<String, dynamic>>? tools,
+      String? toolChoice,
+      String? model,
       CancelToken? cancelToken});
 }

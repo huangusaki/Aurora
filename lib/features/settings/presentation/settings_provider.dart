@@ -124,6 +124,7 @@ class SettingsState {
   final String themeColor;
   final String backgroundColor;
   final int closeBehavior;
+  final String? executionModel;
   SettingsState({
     required this.providers,
     required this.activeProviderId,
@@ -146,6 +147,7 @@ class SettingsState {
     this.themeColor = 'teal',
     this.backgroundColor = 'default',
     this.closeBehavior = 0,
+    this.executionModel,
   });
   ProviderConfig get activeProvider =>
       providers.firstWhere((p) => p.id == activeProviderId);
@@ -176,6 +178,7 @@ class SettingsState {
     String? themeColor,
     String? backgroundColor,
     int? closeBehavior,
+    String? executionModel,
   }) {
     return SettingsState(
       providers: providers ?? this.providers,
@@ -201,6 +204,7 @@ class SettingsState {
       themeColor: themeColor ?? this.themeColor,
       backgroundColor: backgroundColor ?? this.backgroundColor,
       closeBehavior: closeBehavior ?? this.closeBehavior,
+      executionModel: executionModel ?? this.executionModel,
     );
   }
 }
@@ -228,6 +232,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     String themeColor = 'teal',
     String backgroundColor = 'default',
     int closeBehavior = 0,
+    String? executionModel,
   })  : _storage = storage,
         super(SettingsState(
           providers: initialProviders,
@@ -248,6 +253,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
           themeColor: themeColor,
           backgroundColor: backgroundColor,
           closeBehavior: closeBehavior,
+          executionModel: executionModel,
         )) {
     loadPresets();
   }
@@ -686,6 +692,14 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     await _storage.saveAppSettings(
       activeProviderId: state.activeProviderId,
       closeBehavior: behavior,
+    );
+  }
+
+  Future<void> setExecutionModel(String? model) async {
+    state = state.copyWith(executionModel: model);
+    await _storage.saveAppSettings(
+      activeProviderId: state.activeProviderId,
+      executionModel: model,
     );
   }
 }

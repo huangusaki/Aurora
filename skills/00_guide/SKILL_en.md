@@ -1,71 +1,134 @@
 ---
-id: skill_guide
-name: "Plugin Development Guide"
-description: "Detailed explanation of how to build, configure, and optimize your custom AI plugins."
+name: skill-guide
+description: Official Skill development guide, including directory structure, metadata specifications, and build process. Only used to guide developers in creating new Skills.
 locked: true
 for_ai: false
 ---
 
-# Welcome to Aurora Plugin System
-This guide aims to help you quickly master how to extend AI capabilities via `SKILL.md`.
+# Official Skill Format Guide
 
-## 1. Core Parameters Explanation
+This project follows the official Skill format standard. Each Skill is a standalone directory containing definition files and related resources.
 
-| Parameter | Type | Purpose | Example |
+## 1. Directory Structure
+
+The standard Skill directory structure is as follows:
+
+```text
+skill-name/
+├── SKILL.md (Required)
+│   ├── YAML Frontmatter (Required)
+│   │   ├── name: (Required)
+│   │   └── description: (Required)
+│   └── Markdown Instructions (Required)
+└── Resources (Optional)
+    ├── scripts/     - Executable code
+    ├── references/  - Context documentation
+    └── assets/      - Output files (templates, etc.)
+```
+
+## 2. SKILL.md Format Specifications
+
+### YAML Frontmatter
+
+The top of the `SKILL.md` file must contain YAML formatted metadata:
+
+```yaml
+---
+name: your-skill-name
+description: What this skill does and when to use it. Includes trigger context, file types, task types, and keywords users might mention.
+---
+```
+
+**Field Requirements:**
+
+| Field | Required | Format | Description |
 | :--- | :--- | :--- | :--- |
-| `id` | String | Unique identifier for the plugin, used as tool name prefix. | `translate_helper` |
-| `name` | String | Title displayed in the UI. | `Translation Assistant` |
-| `description` | String | Brief description of functionality. | `Helpers users translate various languages.` |
-| `is_locked` | Boolean | If `true`, the plugin is pinned and cannot be deleted/disabled. | `true` |
-| `enabled` | Boolean | Controls whether the plugin is currently visible to the AI. | `true` |
-| `for_ai` | Boolean | If `false`, the plugin is for human reading only and does not consume AI prompt space. | `false` |
-| `platforms`| List    | Limits the platform where the plugin runs. Options: `windows`, `android`, `ios`, `desktop`, `mobile`, etc. Default is `all`. | `[windows, android]` |
+| `name` | Yes | Lowercase, hyphens allowed, max 64 chars | Unique identifier for the skill. |
+| `description` | Yes | Max 1024 chars | **Core Point**: Must include **WHAT** and **WHEN**. This is the key to triggering the skill. |
 
-## 2. Standards & Best Practices
+### Body Content
 
-### Naming Conventions
-For optimal AI understanding, please follow these conventions:
-- **ID/Name**: Use lowercase letters, numbers, and hyphens (e.g., `my-tool-v1`).
-- **Verb Start**: Tool names should start with a verb (e.g., `get_weather`, `run_code`).
+Below the metadata is the content in Markdown format:
 
-### Tool Examples (Input Examples)
-Anthropic strongly recommends providing examples for complex tools. You can add them via the `input_examples` field:
-```yaml
-tools:
-  - name: calculate_sum
-    input_examples:
-      - numbers: [1, 2, 3]
-      - numbers: [10.5, 20]
-```
-These examples significantly improve AI invocation accuracy when facing ambiguous inputs.
+```markdown
+# Your Skill Name
 
-## 3. Tool Definitions (Tools)
-Define functions that AI can call in the `tools` list.
+[Instructions Section]
+Clear, step-by-step instructions for Claude. Always use imperative/infinitive forms.
 
-### Shell Type (PC Only)
-```yaml
-- name: execute_cmd
-  type: shell
-  command: "ls -la {{path}}" # Use {{arg}} as placeholder
-  input_schema:
-    type: object
-    properties:
-      path: { type: string, description: "Path" }
+[Examples Section]
+Concrete input/output examples.
 ```
 
-### HTTP Type (Cross-Platform Support)
-```yaml
-- name: get_api
-  type: http
-  command: "https://api.example.com/data"
-  method: "POST" # Optional GET/POST
+> **Note**: Information about "When to use" should be in the `description`, **NOT** in the body content, because the body is only loaded *after* the skill is triggered by its description.
+
+## 3. Operation Mechanism
+
+Understanding the two-stage loading mechanism of a Skill is crucial:
+
+### Phase 1: Routing
+- The system reads only the `name` and `description` from the YAML Frontmatter.
+- The LLM decides whether to utilize the skill based on the `description` (which includes What & When).
+- **Key Point**: If the `description` is poorly written, the Skill will never be triggered.
+
+### Phase 2: Execution
+- Once a Skill is selected, the system injects the Markdown body (`Instructions` and `Examples`) into the current Context (System Prompt).
+- **Key Point**: The body only needs to include **How** (Execution Instructions). Do not repeat verbose "When to use" conditions in the body to save Tokens.
+
+## 4. Build Process
+
+### Step 1: Understand Through Examples
+Before creating a Skill, collect specific usage scenarios:
+- "What functionality should this skill support?"
+- "What will the user say to trigger this skill?" (e.g., "Remove red eye from this image", "Build a todo app")
+
+### Step 2: Plan Reusable Content
+Analyze examples to identify needed scripts and resources:
+- **Scripts**: Code that needs to run every time (e.g., `scripts/rotate_pdf.py`).
+- **Assets**: Boilerplate code or templates (e.g., `assets/hello-world/`).
+- **References**: Static documentation to consult (e.g., `references/schema.md`).
+
+### Step 3: Initialize Skill
+Create the directory and initialize `SKILL.md`.
+
+```bash
+mkdir -p my-skill/{scripts,references,assets}
+touch my-skill/SKILL.md
 ```
 
-## 3. Instructions
-Write Markdown content below the `---` separator. This content will be directly added to the AI's `System Prompt`.
-- **Tips**: You can write specific processing rules, output formats, or constraints here.
+### Step 4: Edit Skill
+Write the content of `SKILL.md`.
 
-## 4. Development Tips
-- **Debugging**: When using Shell mode, it is recommended to test the command manually in the terminal first.
-- **Variables**: Ensure property names in `input_schema` match `{{name}}` in `command` exactly.
-- **Cross-Platform**: If your plugin is intended for mobile use, make sure to provide `http` type tools.
+**Frontmatter Example:**
+```yaml
+---
+name: docx-processor
+description: Comprehensive document creation, editing, and analysis, supporting change tracking, comments, formatting preservation, and text extraction. Use when Claude needs to handle professional documents (.docx files): (1) create new docs, (2) modify or edit content, (3) handle tracked changes, (4) add comments, or any other document task.
+---
+```
+
+**Body Structure Suggestions:**
+```markdown
+# Skill Name
+
+## Getting Started
+[Basic first steps]
+
+## Core Workflows
+[Step-by-step procedures]
+
+## Extended Capabilities
+- **Feature A**: See [FEATURE_A.md](references/feature_a.md)
+
+## Examples
+[Concrete input/output pairs]
+```
+
+### Step 5: Package Skill (Optional)
+If explanation is needed, the skill folder can be packaged into a `.skill` file (zip format), verifying metadata and structure.
+
+### Step 6: Iterate Based on Usage
+- Use the skill on real tasks.
+- Identify bottlenecks and inefficiencies.
+- Only actual usage reveals needed improvements in SKILL.md or resources.
+- Immediate feedback, immediate iteration.

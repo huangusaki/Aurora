@@ -69,6 +69,61 @@ class SkillSettingsPage extends ConsumerWidget {
               ],
             ),
           ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
+            child: Row(
+              children: [
+                Text(
+                  l10n.executionModel, 
+                  style: theme.typography.bodyStrong,
+                ),
+                const SizedBox(width: 12),
+                Flexible(
+                  child: Container(
+                    constraints: const BoxConstraints(maxWidth: 300),
+                    child: fluent.ComboBox<String>(
+                      isExpanded: true,
+                      placeholder: Text(
+                        ref.watch(settingsProvider).activeProvider?.selectedModel ?? 'Default',
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      value: ref.watch(settingsProvider).executionModel,
+                      items: [
+                        fluent.ComboBoxItem<String>(
+                          value: null,
+                          child: Text(
+                            l10n.defaultModelSameAsChat, 
+                            style: TextStyle(color: theme.typography.caption?.color),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        ...ref.watch(settingsProvider).availableModels.map((m) {
+                          return fluent.ComboBoxItem<String>(
+                            value: m,
+                            child: fluent.Tooltip(
+                              message: m,
+                              child: Text(
+                                m, 
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ],
+                      onChanged: (value) async {
+                        await ref.read(settingsProvider.notifier).setExecutionModel(value);
+                      },
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                fluent.Tooltip(
+                  message: 'The model used by Worker Agents to execute skills.',
+                  child: Icon(fluent.FluentIcons.info, size: 14, color: theme.typography.caption?.color),
+                ),
+              ],
+            ),
+          ),
           if (skillState.isLoading)
             const Center(child: fluent.ProgressRing())
           else if (skillState.error != null)
