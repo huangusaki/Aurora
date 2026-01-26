@@ -117,6 +117,10 @@ class MarkdownGenerator {
   /// Preprocess markdown to enforce hard line breaks for single newlines,
   /// except inside code blocks.
   String _preprocessMarkdown(String text) {
+    // Normalize newlines to ensure consistent processing regardless of platform (CRLF -> LF)
+    // This prevents issues where 'blank' lines containing only \r are treated as content,
+    // breaking block termination (e.g., HTML blocks).
+    text = text.replaceAll(RegExp(r'\r\n?'), '\n');
     final StringBuffer buffer = StringBuffer();
     final List<String> segments = text.split('```');
 
@@ -137,12 +141,28 @@ class MarkdownGenerator {
         // No, let's try a safer approach:
         // Identify lines. If line ends with non-space, add "  ".
         final lines = segment.split('\n');
-        for (int j = 0; j < lines.length; j++) {
+        // If segment ends with newline, split produces an empty string at the end.
+        // We handle that separately to avoid double newlines or missing content connections.
+        int limit = lines.length;
+        if (segment.endsWith('\n')) {
+          limit--;
+        }
+
+        for (int j = 0; j < limit; j++) {
           String line = lines[j];
-          if (line.trim().isNotEmpty && !line.trimRight().endsWith('  ')) {
-            buffer.write('$line  \n');
+          final isLastLineAndNoNewline = (j == limit - 1 && !segment.endsWith('\n'));
+          
+          if (isLastLineAndNoNewline) {
+            // This line connects directly to the following code block (e.g. valid indentation or inline code)
+            // Do not add forced newline or extra spaces.
+            buffer.write(line);
           } else {
-            buffer.write('$line\n');
+            // Regular line or last line that ended with \n
+            if (line.trim().isNotEmpty && !line.trimRight().endsWith('  ')) {
+              buffer.write('$line  \n');
+            } else {
+              buffer.write('$line\n');
+            }
           }
         }
       } else {
@@ -358,10 +378,16 @@ class MarkdownGenerator {
         final isCitationNumber = RegExp(r'^\d+$').hasMatch(linkText);
         
         final tapRecognizer = TapGestureRecognizer()
-          ..onTap = () {
-            final uri = Uri.tryParse(href);
+          ..onTap = () async {
+            if (href.isEmpty) return;
+            var urlStr = href;
+            // Basic URL normalization for common cases
+            if (!urlStr.contains('://') && !urlStr.startsWith('mailto:')) {
+              urlStr = 'https://$urlStr';
+            }
+            final uri = Uri.tryParse(urlStr);
             if (uri != null) {
-              launchUrl(uri, mode: LaunchMode.externalApplication);
+              await launchUrl(uri, mode: LaunchMode.externalApplication);
             }
           };
         
@@ -380,14 +406,18 @@ class MarkdownGenerator {
                 height: 1.0, 
               ),
               recognizer: tapRecognizer,
+              mouseCursor: SystemMouseCursors.click,
             ),
           ];
         } else {
+          // Use text property instead of children for normal links
+          // This ensures the recognizer correctly captures hits within SelectionArea
           return [
             TextSpan(
-              children: childrenSpans,
+              text: node.textContent,
               style: style,
               recognizer: tapRecognizer,
+              mouseCursor: SystemMouseCursors.click,
             )
           ];
         }

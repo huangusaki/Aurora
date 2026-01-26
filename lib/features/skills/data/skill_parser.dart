@@ -3,8 +3,20 @@ import 'package:yaml/yaml.dart';
 import '../domain/skill_entity.dart';
 
 class SkillParser {
-  static Future<Skill?> parse(Directory directory) async {
-    final skillMdFile = File('${directory.path}/SKILL.md');
+  static Future<Skill?> parse(Directory directory, {String? language}) async {
+    File skillMdFile;
+    
+    if (language != null && language.isNotEmpty) {
+      final langFile = File('${directory.path}/SKILL_$language.md');
+      if (await langFile.exists()) {
+        skillMdFile = langFile;
+      } else {
+        skillMdFile = File('${directory.path}/SKILL.md');
+      }
+    } else {
+      skillMdFile = File('${directory.path}/SKILL.md');
+    }
+
     if (!await skillMdFile.exists()) return null;
 
     final content = await skillMdFile.readAsString();

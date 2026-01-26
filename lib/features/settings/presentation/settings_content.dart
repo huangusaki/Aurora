@@ -11,7 +11,7 @@ import 'package:aurora/l10n/app_localizations.dart';
 import 'settings_provider.dart';
 import 'usage_stats_view.dart';
 import 'preset_settings_page.dart';
-import '../../skills/presentation/skills_page.dart';
+
 import '../../../shared/utils/avatar_cropper.dart';
 import 'model_config_dialog.dart';
 import 'global_config_dialog.dart';
@@ -102,7 +102,7 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
       final settingsPages = [
         (icon: fluent.FluentIcons.cloud_download, label: l10n.modelProvider),
         (icon: fluent.FluentIcons.chat, label: l10n.chatSettings),
-        (icon: fluent.FluentIcons.script, label: l10n.agentSkills),
+
         (icon: fluent.FluentIcons.edit, label: l10n.promptPresets),
         (icon: fluent.FluentIcons.color, label: l10n.displaySettings),
         (icon: fluent.FluentIcons.database, label: l10n.dataSettings),
@@ -191,7 +191,7 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
                     children: [
                       _buildProviderSettings(settingsState, viewingProvider),
                       _buildChatSettings(settingsState),
-                      const SkillSettingsPage(),
+
                       const PresetSettingsPage(),
                       _buildDisplaySettings(),
                       _buildDataSettings(),

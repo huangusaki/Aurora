@@ -257,7 +257,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get usageStats => '数据统计';
 
   @override
-  String get agentSkills => '智能插件';
+  String get agentSkills => '技能';
 
   @override
   String get agentSkillsDescription =>

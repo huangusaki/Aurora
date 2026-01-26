@@ -581,7 +581,7 @@ abstract class AppLocalizations {
   /// No description provided for @agentSkills.
   ///
   /// In zh, this message translates to:
-  /// **'智能插件'**
+  /// **'技能'**
   String get agentSkills;
 
   /// No description provided for @agentSkillsDescription.

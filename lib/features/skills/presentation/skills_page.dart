@@ -6,12 +6,20 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 import '../domain/skill_entity.dart';
 import '../presentation/skill_provider.dart';
+import '../../settings/presentation/settings_provider.dart';
+import '../../chat/presentation/widgets/selectable_markdown/selectable_markdown.dart';
 
 class SkillSettingsPage extends ConsumerWidget {
   const SkillSettingsPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.listen(settingsProvider.select((s) => s.language), (previous, next) {
+       if (previous != next) {
+         ref.read(skillProvider.notifier).refresh(language: next);
+       }
+    });
+
     final skillState = ref.watch(skillProvider);
     final theme = fluent.FluentTheme.of(context);
 
@@ -46,7 +54,7 @@ class SkillSettingsPage extends ConsumerWidget {
                     ),
                     const SizedBox(width: 12),
                     fluent.Button(
-                      onPressed: () => ref.read(skillProvider.notifier).refresh(),
+                      onPressed: () => ref.read(skillProvider.notifier).refresh(language: ref.read(settingsProvider).language),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -204,8 +212,12 @@ class SkillSettingsPage extends ConsumerWidget {
                               color: theme.resources.subtleFillColorSecondary,
                               borderRadius: BorderRadius.circular(4),
                             ),
-                            child: Text(skill.instructions,
-                                style: theme.typography.caption),
+                            child: SelectableMarkdown(
+                                data: skill.instructions,
+                                isDark: theme.brightness == Brightness.dark,
+                                textColor: theme.typography.caption?.color ?? (theme.brightness == Brightness.dark ? Colors.white70 : Colors.black87),
+                                baseFontSize: 12.5,
+                              ),
                           ),
                           if (skill.tools.isNotEmpty) ...[
                             const SizedBox(height: 16),

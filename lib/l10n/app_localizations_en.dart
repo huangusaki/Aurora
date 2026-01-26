@@ -260,7 +260,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get usageStats => 'Usage Statistics';
 
   @override
-  String get agentSkills => 'Agent Skills';
+  String get agentSkills => 'Skills';
 
   @override
   String get agentSkillsDescription =>

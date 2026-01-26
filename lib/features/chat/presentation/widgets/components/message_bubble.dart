@@ -705,7 +705,7 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
                                       if (message.tokenCount != null && message.tokenCount! > 0) ...[
                                         if (message.promptTokens != null && message.completionTokens != null) ...[
                                             Text(
-                                              '${formatTokenCount(message.completionTokens!)} Compl | ${formatTokenCount(message.promptTokens!)} Prompt',
+                                              '${formatFullTokenCount(message.completionTokens!)} Compl | ${formatFullTokenCount(message.promptTokens!)} Prompt',
                                               style: TextStyle(
                                                 fontSize: 10,
                                                 color: theme.typography.body?.color?.withOpacity(0.5),
@@ -713,7 +713,7 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
                                             ),
                                         ] else ...[
                                           Text(
-                                            '${formatTokenCount(message.tokenCount!)} Tokens',
+                                            '${formatFullTokenCount(message.tokenCount!)} Tokens',
                                             style: TextStyle(
                                               fontSize: 10,
                                               color: theme.typography.body?.color?.withOpacity(0.5),

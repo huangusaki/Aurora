@@ -3,7 +3,7 @@ id: weather_fetcher
 name: "全球天气查询 (OpenWeatherMap)"
 description: "跨平台插件：通过 OpenWeatherMap HTTP 接口查询全球实时天气。"
 platforms: [all]
-enabled: true
+enabled: false
 tools:
   - name: get_weather
     description: "通过经纬度获取指定位置的当前天气信息。"

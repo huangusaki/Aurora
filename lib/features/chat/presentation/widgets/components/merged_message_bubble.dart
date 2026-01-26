@@ -505,7 +505,7 @@ class _MergedMessageBubbleState extends ConsumerState<MergedMessageBubble>
               children: [
                 if (message.tokenCount != null && message.tokenCount! > 0) ...[
                   Text(
-                    '${formatTokenCount(message.tokenCount!)} Tokens',
+                    '${formatFullTokenCount(message.tokenCount!)} Tokens',
                     style: TextStyle(
                       fontSize: 10,
                       color: theme.typography.body!.color!.withOpacity(0.5),

@@ -15,6 +15,7 @@ import '../widgets/model_selector.dart';
 import '../widgets/preset_selector.dart';
 import '../widgets/fade_indexed_stack.dart';
 import '../../../studio/presentation/studio_content.dart';
+import '../../../skills/presentation/skills_page.dart';
 import '../chat_provider.dart';
 
 class DesktopChatScreen extends ConsumerStatefulWidget {
@@ -224,6 +225,11 @@ class _DesktopChatScreenState extends ConsumerState<DesktopChatScreen> with Wind
         icon: fluent.FluentIcons.translate,
         label: l10n.textTranslation,
         body: const TranslationContent()
+      ),
+      (
+        icon: fluent.FluentIcons.script,
+        label: l10n.agentSkills,
+        body: const SkillSettingsPage()
       ),
       (
         icon: fluent.FluentIcons.toolbox,

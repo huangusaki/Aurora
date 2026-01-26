@@ -115,7 +115,11 @@ void main() async {
         Future.microtask(() {
           final skillsDir =
               '${Directory.current.path}${Platform.pathSeparator}skills';
-          ref.read(skillProvider.notifier).loadSkills(skillsDir);
+          final language = appSettings?.language ??
+              (Platform.localeName.startsWith('zh') ? 'zh' : 'en');
+          ref
+              .read(skillProvider.notifier)
+              .loadSkills(skillsDir, language: language);
         });
 
         return SettingsNotifier(

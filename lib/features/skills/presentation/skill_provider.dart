@@ -35,7 +35,7 @@ class SkillState {
 class SkillNotifier extends StateNotifier<SkillState> {
   SkillNotifier() : super(const SkillState());
 
-  Future<void> loadSkills(String directoryPath) async {
+  Future<void> loadSkills(String directoryPath, {String? language}) async {
     if (directoryPath.isEmpty) return;
     
     state = state.copyWith(isLoading: true, skillsDirectory: directoryPath);
@@ -52,7 +52,7 @@ class SkillNotifier extends StateNotifier<SkillState> {
       
       for (final entity in entities) {
         if (entity is Directory) {
-          final skill = await SkillParser.parse(entity);
+          final skill = await SkillParser.parse(entity, language: language);
           if (skill != null) {
             skills.add(skill);
           }
@@ -72,9 +72,9 @@ class SkillNotifier extends StateNotifier<SkillState> {
     }
   }
 
-  void refresh() {
+  void refresh({String? language}) {
     if (state.skillsDirectory != null) {
-      loadSkills(state.skillsDirectory!);
+      loadSkills(state.skillsDirectory!, language: language);
     }
   }
 

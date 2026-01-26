@@ -2,7 +2,7 @@
 id: code_executor
 name: "Python 解释器"
 description: "允许 AI 执行 Python 代码并获取结果。"
-enabled: true
+enabled: false
 platforms: [desktop]
 tools:
   - name: execute_python
