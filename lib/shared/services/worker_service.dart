@@ -11,7 +11,7 @@ class WorkerService {
 
   WorkerService(this._llmService);
 
-  Future<String> executeSkillTask(Skill skill, String userRequest, {String? model}) async {
+  Future<String> executeSkillTask(Skill skill, String userRequest, {String? model, String? providerId}) async {
     final systemPrompt = '''
 You are an expert executor for the skill: ${skill.name}.
 Your goal is to fulfill the User Request by writing and executing scripts using the provided tools.
@@ -68,6 +68,7 @@ ${skill.instructions}
         messages,
         tools: workerTools,
         model: model,
+        providerId: providerId,
       );
 
       if (response.toolCalls != null && response.toolCalls!.isNotEmpty) {

@@ -546,9 +546,10 @@ To invoke a skill, usage of the `call_skill` tool is mandatory. Provide the `ski
                       }
                    );
                    
-                   final workerService = WorkerService(llmService);
-                   final executionModel = settings.executionModel;
-                   toolResult = await workerService.executeSkillTask(skill, query.toString(), model: executionModel);
+                    final workerService = WorkerService(llmService);
+                    final executionModel = settings.executionModel;
+                    final executionProviderId = settings.executionProviderId;
+                    toolResult = await workerService.executeSkillTask(skill, query.toString(), model: executionModel, providerId: executionProviderId);
                 } else {
                   final args = jsonDecode(tc.arguments);
                   toolResult = await toolManager.executeTool(tc.name, args,

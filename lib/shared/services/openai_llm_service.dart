@@ -145,9 +145,13 @@ class OpenAILLMService implements LLMService {
       List<Map<String, dynamic>>? tools,
       String? toolChoice,
       String? model,
+      String? providerId,
       CancelToken? cancelToken}) async* {
-    final provider = _settings.activeProvider;
-    final selectedModel = model ?? _settings.selectedModel ?? 'gpt-3.5-turbo';
+    final provider = providerId != null
+        ? _settings.providers.firstWhere((p) => p.id == providerId,
+            orElse: () => _settings.activeProvider)
+        : _settings.activeProvider;
+    final selectedModel = model ?? provider.selectedModel ?? 'gpt-3.5-turbo';
     final apiKey = provider.apiKey;
     final baseUrl = provider.baseUrl.endsWith('/')
         ? provider.baseUrl
@@ -831,9 +835,13 @@ Use search for:
       List<Map<String, dynamic>>? tools,
       String? toolChoice,
       String? model,
+      String? providerId,
       CancelToken? cancelToken}) async {
-    final provider = _settings.activeProvider;
-    final selectedModel = model ?? _settings.selectedModel ?? 'gpt-3.5-turbo';
+    final provider = providerId != null
+        ? _settings.providers.firstWhere((p) => p.id == providerId,
+            orElse: () => _settings.activeProvider)
+        : _settings.activeProvider;
+    final selectedModel = model ?? provider.selectedModel ?? 'gpt-3.5-turbo';
     final apiKey = provider.apiKey;
     final baseUrl = provider.baseUrl.endsWith('/')
         ? provider.baseUrl
@@ -881,7 +889,6 @@ Use search for:
         'model': selectedModel,
         'messages': apiMessages,
         'stream': false,
-        'stream_options': {'include_usage': true},
       };
 
       if (tools != null) {

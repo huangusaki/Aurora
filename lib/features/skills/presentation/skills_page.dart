@@ -8,12 +8,129 @@ import '../domain/skill_entity.dart';
 import '../presentation/skill_provider.dart';
 import '../../settings/presentation/settings_provider.dart';
 import '../../chat/presentation/widgets/selectable_markdown/selectable_markdown.dart';
+import '../../chat/presentation/widgets/custom_dropdown_overlay.dart';
 
-class SkillSettingsPage extends ConsumerWidget {
+class SkillSettingsPage extends ConsumerStatefulWidget {
   const SkillSettingsPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SkillSettingsPage> createState() => _SkillSettingsPageState();
+}
+
+class _SkillSettingsPageState extends ConsumerState<SkillSettingsPage> {
+  final LayerLink _layerLink = LayerLink();
+  OverlayEntry? _overlayEntry;
+  bool _isOpen = false;
+
+  @override
+  void dispose() {
+    _removeOverlay();
+    super.dispose();
+  }
+
+  void _removeOverlay() {
+    _overlayEntry?.remove();
+    _overlayEntry = null;
+    if (mounted) {
+      setState(() => _isOpen = false);
+    }
+  }
+
+  void _toggleDropdown() {
+    if (_isOpen) {
+      _removeOverlay();
+    } else {
+      _showOverlay();
+    }
+  }
+
+  void _showOverlay() {
+    final overlay = Overlay.of(context);
+    final theme = fluent.FluentTheme.of(context);
+    _overlayEntry = OverlayEntry(
+      builder: (context) => CustomDropdownOverlay(
+        onDismiss: _removeOverlay,
+        layerLink: _layerLink,
+        offset: const Offset(0, 36),
+        child: AnimatedDropdownList(
+          backgroundColor: theme.menuColor,
+          borderColor: theme.resources.surfaceStrokeColorDefault,
+          width: 320,
+          coloredItems: _buildExecutionModelItems(theme),
+        ),
+      ),
+    );
+    overlay.insert(_overlayEntry!);
+    setState(() => _isOpen = true);
+  }
+
+  List<ColoredDropdownItem> _buildExecutionModelItems(fluent.FluentThemeData theme) {
+    final settings = ref.watch(settingsProvider);
+    final executionModel = settings.executionModel;
+    final l10n = AppLocalizations.of(context)!;
+    final List<ColoredDropdownItem> items = [];
+
+    // Default option
+    items.add(ColoredDropdownItem(
+      label: l10n.defaultModelSameAsChat,
+      onPressed: () {
+        _removeOverlay();
+        ref.read(settingsProvider.notifier).setExecutionModel(null);
+      },
+      isSelected: executionModel == null,
+      textColor: executionModel == null ? theme.accentColor : theme.typography.caption?.color,
+      icon: executionModel == null
+          ? fluent.Icon(fluent.FluentIcons.check_mark, size: 12, color: theme.accentColor)
+          : null,
+    ));
+
+    items.add(const DropdownSeparator());
+
+    for (final provider in settings.providers) {
+      if (!provider.isEnabled || provider.models.isEmpty) continue;
+
+      // Get provider color
+      Color providerColor;
+      if (provider.color != null && provider.color!.isNotEmpty) {
+        providerColor = Color(
+            int.tryParse(provider.color!.replaceFirst('#', '0xFF')) ?? 0xFF000000);
+      } else {
+        providerColor = generateColorFromString(provider.id);
+      }
+
+      // Add provider header
+      items.add(ColoredDropdownItem(
+        label: provider.name,
+        backgroundColor: providerColor,
+        isBold: true,
+        textColor: theme.typography.caption?.color ?? fluent.Colors.grey,
+      ));
+
+      // Add enabled models
+      for (final model in provider.models) {
+        if (!provider.isModelEnabled(model)) continue;
+        final isSelected = executionModel == model;
+        items.add(ColoredDropdownItem(
+          label: model,
+          onPressed: () {
+            _removeOverlay();
+            ref.read(settingsProvider.notifier).setExecutionModel(model);
+          },
+          backgroundColor: providerColor,
+          isSelected: isSelected,
+          textColor: isSelected ? theme.accentColor : null,
+          icon: isSelected
+              ? fluent.Icon(fluent.FluentIcons.check_mark, size: 12, color: theme.accentColor)
+              : null,
+        ));
+      }
+    }
+
+    return items;
+  }
+
+  @override
+  Widget build(BuildContext context) {
     ref.listen(settingsProvider.select((s) => s.language), (previous, next) {
        if (previous != next) {
          ref.read(skillProvider.notifier).refresh(language: next);
@@ -22,7 +139,7 @@ class SkillSettingsPage extends ConsumerWidget {
 
     final skillState = ref.watch(skillProvider);
     final theme = fluent.FluentTheme.of(context);
-
+    final settings = ref.watch(settingsProvider);
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
@@ -78,42 +195,51 @@ class SkillSettingsPage extends ConsumerWidget {
                   style: theme.typography.bodyStrong,
                 ),
                 const SizedBox(width: 12),
-                Flexible(
-                  child: Container(
-                    constraints: const BoxConstraints(maxWidth: 300),
-                    child: fluent.ComboBox<String>(
-                      isExpanded: true,
-                      placeholder: Text(
-                        ref.watch(settingsProvider).activeProvider?.selectedModel ?? 'Default',
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      value: ref.watch(settingsProvider).executionModel,
-                      items: [
-                        fluent.ComboBoxItem<String>(
-                          value: null,
-                          child: Text(
-                            l10n.defaultModelSameAsChat, 
-                            style: TextStyle(color: theme.typography.caption?.color),
-                            overflow: TextOverflow.ellipsis,
+                CompositedTransformTarget(
+                  link: _layerLink,
+                  child: fluent.HoverButton(
+                    onPressed: _toggleDropdown,
+                    builder: (context, states) {
+                      return Container(
+                        constraints: const BoxConstraints(minWidth: 200, maxWidth: 350),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: _isOpen || states.isHovering
+                              ? theme.resources.subtleFillColorSecondary
+                              : theme.resources.controlFillColorDefault,
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(
+                            color: _isOpen 
+                                ? theme.accentColor 
+                                : theme.resources.controlStrokeColorDefault,
+                            width: 1,
                           ),
                         ),
-                        ...ref.watch(settingsProvider).availableModels.map((m) {
-                          return fluent.ComboBoxItem<String>(
-                            value: m,
-                            child: fluent.Tooltip(
-                              message: m,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Expanded(
                               child: Text(
-                                m, 
+                                settings.executionModel ?? l10n.defaultModelSameAsChat,
                                 overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: settings.executionModel != null 
+                                      ? theme.typography.body?.color 
+                                      : theme.typography.caption?.color,
+                                ),
                               ),
                             ),
-                          );
-                        }).toList(),
-                      ],
-                      onChanged: (value) async {
-                        await ref.read(settingsProvider.notifier).setExecutionModel(value);
-                      },
-                    ),
+                            const SizedBox(width: 8),
+                            fluent.Icon(
+                                _isOpen
+                                    ? fluent.FluentIcons.chevron_up
+                                    : fluent.FluentIcons.chevron_down,
+                                size: 10,
+                                color: theme.typography.caption?.color),
+                          ],
+                        ),
+                      );
+                    },
                   ),
                 ),
                 const SizedBox(width: 8),

@@ -87,6 +87,7 @@ class SettingsStorage {
     String? backgroundColor,
     int? closeBehavior,
     String? executionModel,
+    String? executionProviderId,
   }) async {
     final existing = await loadAppSettings();
     final settings = AppSettingsEntity()
@@ -112,7 +113,8 @@ class SettingsStorage {
       ..themeColor = themeColor ?? existing?.themeColor
       ..backgroundColor = backgroundColor ?? existing?.backgroundColor
       ..closeBehavior = closeBehavior ?? existing?.closeBehavior ?? 0
-      ..executionModel = executionModel ?? existing?.executionModel;
+      ..executionModel = executionModel ?? existing?.executionModel
+      ..executionProviderId = executionProviderId ?? existing?.executionProviderId;
     await _isar.writeTxn(() async {
       await _isar.appSettingsEntitys.clear();
       await _isar.appSettingsEntitys.put(settings);
@@ -142,7 +144,9 @@ class SettingsStorage {
       ..lastPresetId = existing.lastPresetId
       ..themeColor = existing.themeColor
       ..backgroundColor = existing.backgroundColor
-      ..closeBehavior = existing.closeBehavior;
+      ..closeBehavior = existing.closeBehavior
+      ..executionModel = existing.executionModel
+      ..executionProviderId = existing.executionProviderId;
     await _isar.writeTxn(() async {
       await _isar.appSettingsEntitys.clear();
       await _isar.appSettingsEntitys.put(settings);
@@ -180,7 +184,9 @@ class SettingsStorage {
       ..lastPresetId = existing.lastPresetId
       ..themeColor = existing.themeColor
       ..backgroundColor = existing.backgroundColor
-      ..closeBehavior = existing.closeBehavior;
+      ..closeBehavior = existing.closeBehavior
+      ..executionModel = existing.executionModel
+      ..executionProviderId = existing.executionProviderId;
     await _isar.writeTxn(() async {
       await _isar.appSettingsEntitys.clear();
       await _isar.appSettingsEntitys.put(settings);
@@ -420,7 +426,9 @@ class SettingsStorage {
       ..lastPresetId = existing.lastPresetId
       ..themeColor = existing.themeColor
       ..backgroundColor = existing.backgroundColor
-      ..closeBehavior = existing.closeBehavior;
+      ..closeBehavior = existing.closeBehavior
+      ..executionModel = existing.executionModel
+      ..executionProviderId = existing.executionProviderId;
     await _isar.writeTxn(() async {
       await _isar.appSettingsEntitys.clear();
       await _isar.appSettingsEntitys.put(settings);
@@ -469,7 +477,9 @@ class SettingsStorage {
       ..lastPresetId = presetId
       ..themeColor = existing.themeColor
       ..backgroundColor = existing.backgroundColor
-      ..closeBehavior = existing.closeBehavior;
+      ..closeBehavior = existing.closeBehavior
+      ..executionModel = existing.executionModel
+      ..executionProviderId = existing.executionProviderId;
     await _isar.writeTxn(() async {
       await _isar.appSettingsEntitys.clear();
       await _isar.appSettingsEntitys.put(settings);
