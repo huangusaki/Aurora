@@ -693,48 +693,69 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
                         style: fluent.FluentTheme.of(context)
                             .typography
                             .subtitle),
-                    fluent.Button(
-                      style: fluent.ButtonStyle(
-                        padding: WidgetStateProperty.all(
-                            const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 6)),
-                        backgroundColor: WidgetStateProperty.all(
-                            fluent.FluentTheme.of(context)
-                                .accentColor
-                                .withOpacity(0.1)),
-                        shape: WidgetStateProperty.all(
-                            RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                side: BorderSide.none)),
-                      ),
-                      onPressed: settingsState.isLoadingModels
-                          ? null
-                          : () => ref
-                              .read(settingsProvider.notifier)
-                              .fetchModels(),
-                      child: settingsState.isLoadingModels
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: fluent.ProgressRing())
-                          : Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(fluent.FluentIcons.refresh,
-                                    size: 14,
-                                    color: fluent.FluentTheme.of(context)
-                                        .accentColor),
-                                const SizedBox(width: 8),
-                                fluent.Text(
-                                  l10n.refreshList,
-                                  style: TextStyle(
-                                    color: fluent.FluentTheme.of(context)
-                                        .accentColor,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (viewingProvider.models.isNotEmpty) ...[
+                          fluent.Button(
+                            onPressed: () => ref
+                                .read(settingsProvider.notifier)
+                                .setAllModelsEnabled(viewingProvider.id, true),
+                            child: fluent.Text(l10n.enableAll),
+                          ),
+                          const SizedBox(width: 8),
+                          fluent.Button(
+                            onPressed: () => ref
+                                .read(settingsProvider.notifier)
+                                .setAllModelsEnabled(viewingProvider.id, false),
+                            child: fluent.Text(l10n.disableAll),
+                          ),
+                          const SizedBox(width: 8),
+                        ],
+                        fluent.Button(
+                          style: fluent.ButtonStyle(
+                            padding: WidgetStateProperty.all(
+                                const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 6)),
+                            backgroundColor: WidgetStateProperty.all(
+                                fluent.FluentTheme.of(context)
+                                    .accentColor
+                                    .withOpacity(0.1)),
+                            shape: WidgetStateProperty.all(
+                                RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    side: BorderSide.none)),
+                          ),
+                          onPressed: settingsState.isLoadingModels
+                              ? null
+                              : () => ref
+                                  .read(settingsProvider.notifier)
+                                  .fetchModels(),
+                          child: settingsState.isLoadingModels
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: fluent.ProgressRing())
+                              : Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(fluent.FluentIcons.refresh,
+                                        size: 14,
+                                        color: fluent.FluentTheme.of(context)
+                                            .accentColor),
+                                    const SizedBox(width: 8),
+                                    fluent.Text(
+                                      l10n.refreshList,
+                                      style: TextStyle(
+                                        color: fluent.FluentTheme.of(context)
+                                            .accentColor,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
+                        ),
+                      ],
                     ),
                   ],
                 ),

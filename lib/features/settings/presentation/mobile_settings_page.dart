@@ -156,26 +156,47 @@ class _MobileSettingsPageState extends ConsumerState<MobileSettingsPage> {
                 _SectionHeader(
                   title: l10n.availableModels,
                   icon: Icons.format_list_bulleted,
-                  trailing: SizedBox(
-                    height: 32,
-                    child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        visualDensity: VisualDensity.compact,
-                        textStyle: const TextStyle(fontSize: 12),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (activeProvider != null && activeProvider.models.isNotEmpty) ...[
+                        TextButton(
+                          onPressed: () => ref
+                              .read(settingsProvider.notifier)
+                              .setAllModelsEnabled(activeProvider.id, true),
+                          child: Text(l10n.enableAll, 
+                            style: const TextStyle(fontSize: 12)),
+                        ),
+                        TextButton(
+                          onPressed: () => ref
+                              .read(settingsProvider.notifier)
+                              .setAllModelsEnabled(activeProvider.id, false),
+                          child: Text(l10n.disableAll, 
+                            style: const TextStyle(fontSize: 12)),
+                        ),
+                      ],
+                      SizedBox(
+                        height: 32,
+                        child: OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            visualDensity: VisualDensity.compact,
+                            textStyle: const TextStyle(fontSize: 12),
+                          ),
+                          onPressed: settingsState.isLoadingModels
+                              ? null
+                              : () {
+                                  ref.read(settingsProvider.notifier).fetchModels();
+                                },
+                          child: settingsState.isLoadingModels
+                              ? const SizedBox(
+                                  width: 14,
+                                  height: 14,
+                                  child: CircularProgressIndicator(strokeWidth: 2))
+                              : Text(l10n.fetchModelList),
+                        ),
                       ),
-                      onPressed: settingsState.isLoadingModels
-                          ? null
-                          : () {
-                              ref.read(settingsProvider.notifier).fetchModels();
-                            },
-                      child: settingsState.isLoadingModels
-                          ? const SizedBox(
-                              width: 14,
-                              height: 14,
-                              child: CircularProgressIndicator(strokeWidth: 2))
-                          : Text(l10n.fetchModelList),
-                    ),
+                    ],
                   ),
                 ),
               ],

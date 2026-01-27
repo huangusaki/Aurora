@@ -363,6 +363,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noModelsFetch => 'No models. Please click to fetch.';
 
   @override
+  String get enableAll => 'Enable All';
+
+  @override
+  String get disableAll => 'Disable All';
+
+  @override
   String get modelConfig => 'Model Config';
 
   @override

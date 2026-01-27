@@ -148,6 +148,8 @@
   "fetchModelList": "获取模型列表",
   "noModelsData": "暂无模型数据，请配置后点击获取",
   "noModelsFetch": "暂无模型，请点击右上角获取",
+  "enableAll": "一键启用",
+  "disableAll": "一键禁用",
   
   "modelConfig": "配置",
   "configureModelParams": "为该模型配置专属参数",

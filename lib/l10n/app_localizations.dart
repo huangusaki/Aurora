@@ -776,6 +776,18 @@ abstract class AppLocalizations {
   /// **'暂无模型，请点击右上角获取'**
   String get noModelsFetch;
 
+  /// No description provided for @enableAll.
+  ///
+  /// In zh, this message translates to:
+  /// **'一键启用'**
+  String get enableAll;
+
+  /// No description provided for @disableAll.
+  ///
+  /// In zh, this message translates to:
+  /// **'一键禁用'**
+  String get disableAll;
+
   /// No description provided for @modelConfig.
   ///
   /// In zh, this message translates to:

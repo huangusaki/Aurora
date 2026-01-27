@@ -357,6 +357,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get noModelsFetch => '暂无模型，请点击右上角获取';
 
   @override
+  String get enableAll => '一键启用';
+
+  @override
+  String get disableAll => '一键禁用';
+
+  @override
   String get modelConfig => '模型配置';
 
   @override

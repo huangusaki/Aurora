@@ -446,6 +446,20 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     await updateProvider(id: providerId, modelSettings: newModelSettings);
   }
 
+  Future<void> setAllModelsEnabled(String providerId, bool enabled) async {
+    final provider = state.providers.firstWhere((p) => p.id == providerId);
+    final newModelSettings = Map<String, Map<String, dynamic>>.from(provider.modelSettings);
+    
+    for (final modelId in provider.models) {
+      final currentSettings = newModelSettings[modelId] ?? {};
+      final newSettings = Map<String, dynamic>.from(currentSettings);
+      newSettings['_aurora_model_disabled'] = !enabled;
+      newModelSettings[modelId] = newSettings;
+    }
+    
+    await updateProvider(id: providerId, modelSettings: newModelSettings);
+  }
+
   // ==================== API Key Management Methods ====================
   
   /// Add a new API key to a provider

@@ -148,6 +148,8 @@
   "fetchModelList": "Fetch Model List",
   "noModelsData": "No models available. Please configure and click to fetch.",
   "noModelsFetch": "No models. Please click to fetch.",
+  "enableAll": "Enable All",
+  "disableAll": "Disable All",
   
   "modelConfig": "Configuration",
   "configureModelParams": "Configure parameters for this model",

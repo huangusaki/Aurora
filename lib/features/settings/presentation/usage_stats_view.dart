@@ -755,7 +755,7 @@ class _ModelStatsList extends StatelessWidget {
                           children: [
                             TextSpan(text: '${formatTokenCount(stats.totalTokenCount)} '),
                             TextSpan(
-                              text: '(${formatTokenCount(stats.promptTokenCount)}/${formatTokenCount(stats.completionTokenCount)})',
+                              text: '(↑ ${formatTokenCount(stats.promptTokenCount)} / ↓ ${formatTokenCount(stats.completionTokenCount)})',
                               style: TextStyle(
                                 fontSize: isMobile ? 10 : 12,
                                 color: isMobile 
