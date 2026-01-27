@@ -1309,4 +1309,44 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get exitApplicationOption => '直接退出程序';
+
+  @override
+  String get novelPreset => '预设';
+
+  @override
+  String get selectPreset => '选择预设';
+
+  @override
+  String get noCustomPresets => '暂无自定义预设';
+
+  @override
+  String get systemDefault => '系统默认';
+
+  @override
+  String get systemDefaultRestored => '已恢复系统默认预设';
+
+  @override
+  String presetLoaded(String name) {
+    return '已加载预设: $name';
+  }
+
+  @override
+  String get newNovelPreset => '新建预设';
+
+  @override
+  String get savePresetHint => '将保存当前所有角色的提示词配置。';
+
+  @override
+  String presetSaved(String name) {
+    return '预设 \"$name\" 已保存';
+  }
+
+  @override
+  String get outline => '大纲';
+
+  @override
+  String get outlineModel => '大纲模型';
+
+  @override
+  String get savePresetOverrideHint => '保存当前配置覆盖选中的预设（暂未实现，请使用新建）';
 }

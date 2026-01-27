@@ -75,6 +75,82 @@ class _MobileModelConfigSheetState extends ConsumerState<MobileModelConfigSheet>
             backgroundColor: Colors.transparent,
             elevation: 0,
             actions: [
+              // 全局预设管理
+            IconButton(
+              tooltip: l10n.newNovelPreset,
+              icon: const Icon(Icons.add),
+              onPressed: () => _showSavePresetDialog(context, ref),
+            ),
+            PopupMenuButton<NovelPromptPreset?>(
+              tooltip: l10n.selectPreset,
+              icon: const Icon(Icons.bookmark_outline),
+              itemBuilder: (context) {
+                final presets = ref.read(novelProvider).promptPresets;
+                return [
+                  PopupMenuItem<NovelPromptPreset?>(
+                    value: null,
+                    child: Text(l10n.systemDefault, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  ),
+                    if (presets.isNotEmpty) const PopupMenuDivider(),
+                    ...presets.map((preset) => PopupMenuItem<NovelPromptPreset?>(
+                      value: preset,
+                      child: Row(
+                        children: [
+                          Expanded(child: Text(preset.name, style: const TextStyle(fontSize: 12))),
+                          IconButton(
+                            icon: const Icon(Icons.delete_outline, size: 16),
+                            constraints: const BoxConstraints(),
+                            padding: EdgeInsets.zero,
+                            onPressed: () {
+                              ref.read(novelProvider.notifier).deletePromptPreset(preset.id);
+                              Navigator.pop(context); // Close menu to refresh
+                            },
+                          ),
+                        ],
+                      ),
+                    )),
+                  ];
+                },
+                onSelected: (preset) {
+                  if (preset == null) {
+                    // 应用系统默认
+                    _controllers['outline']!.text = NovelPromptPresets.outline;
+                    novelNotifier.setOutlinePrompt(NovelPromptPresets.outline);
+                    _controllers['decompose']!.text = NovelPromptPresets.decompose;
+                    novelNotifier.setDecomposePrompt(NovelPromptPresets.decompose);
+                    _controllers['writer']!.text = NovelPromptPresets.writer;
+                    novelNotifier.setWriterPrompt(NovelPromptPresets.writer);
+                    _controllers['reviewer']!.text = NovelPromptPresets.reviewer;
+                    novelNotifier.setReviewerPrompt(NovelPromptPresets.reviewer);
+                    
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(l10n.systemDefaultRestored)),
+                    );
+                    return;
+                  }
+                  
+                  // 应用整套预设
+                  if (preset.outlinePrompt.isNotEmpty) {
+                    _controllers['outline']!.text = preset.outlinePrompt;
+                    novelNotifier.setOutlinePrompt(preset.outlinePrompt);
+                  }
+                  if (preset.decomposePrompt.isNotEmpty) {
+                    _controllers['decompose']!.text = preset.decomposePrompt;
+                    novelNotifier.setDecomposePrompt(preset.decomposePrompt);
+                  }
+                  if (preset.writerPrompt.isNotEmpty) {
+                    _controllers['writer']!.text = preset.writerPrompt;
+                    novelNotifier.setWriterPrompt(preset.writerPrompt);
+                  }
+                  if (preset.reviewerPrompt.isNotEmpty) {
+                    _controllers['reviewer']!.text = preset.reviewerPrompt;
+                    novelNotifier.setReviewerPrompt(preset.reviewerPrompt);
+                  }
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(l10n.presetLoaded(preset.name))),
+                  );
+                },
+              ),
               IconButton(
                 icon: const Icon(Icons.close),
                 onPressed: () => Navigator.pop(context),
@@ -90,7 +166,7 @@ class _MobileModelConfigSheetState extends ConsumerState<MobileModelConfigSheet>
                 _buildModelSection(
                   context,
                   'outline',
-                  '大纲模型 (Outline Model)',
+                  l10n.outlineModel,
                   NovelPromptPresets.outline,
                   novelState.outlineModel,
                   allModels,
@@ -101,7 +177,7 @@ class _MobileModelConfigSheetState extends ConsumerState<MobileModelConfigSheet>
                 _buildModelSection(
                   context,
                   'decompose',
-                  '拆解模型 (Decomposition Model)',
+                  l10n.decomposeModel,
                   NovelPromptPresets.decompose,
                   novelState.decomposeModel,
                   allModels,
@@ -112,7 +188,7 @@ class _MobileModelConfigSheetState extends ConsumerState<MobileModelConfigSheet>
                 _buildModelSection(
                   context,
                   'writer',
-                  '写作模型 (Writer Model)',
+                  l10n.writerModel,
                   NovelPromptPresets.writer,
                   novelState.writerModel,
                   allModels,
@@ -123,7 +199,7 @@ class _MobileModelConfigSheetState extends ConsumerState<MobileModelConfigSheet>
                 _buildModelSection(
                   context,
                   'reviewer',
-                  '审查模型 (Reviewer Model)',
+                  l10n.reviewModel,
                   NovelPromptPresets.reviewer,
                   novelState.reviewerModel,
                   allModels,
@@ -195,13 +271,14 @@ class _MobileModelConfigSheetState extends ConsumerState<MobileModelConfigSheet>
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text('System Prompt', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+            Text(l10n.systemPrompt, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+            // 恢复默认
             TextButton(
               onPressed: () {
                 _controllers[key]!.text = presetPrompt;
                 onPromptChanged(presetPrompt);
               },
-              child: const Text('使用预设', style: TextStyle(fontSize: 12)),
+              child: Text(l10n.defaultPreset, style: const TextStyle(fontSize: 12)),
             ),
           ],
         ),
@@ -210,14 +287,67 @@ class _MobileModelConfigSheetState extends ConsumerState<MobileModelConfigSheet>
           maxLines: null,
           minLines: 3,
           style: const TextStyle(fontSize: 13),
-          decoration: const InputDecoration(
-            border: OutlineInputBorder(),
-            hintText: '输入该模型的系统提示词...',
+          decoration: InputDecoration(
+            border: const OutlineInputBorder(),
+            hintText: l10n.systemPromptPlaceholder,
           ),
           onChanged: onPromptChanged,
         ),
         const SizedBox(height: 24),
       ],
+    );
+  }
+
+  void _showSavePresetDialog(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final nameController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.newNovelPreset),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextField(
+              controller: nameController,
+              autofocus: true,
+              decoration: InputDecoration(
+                labelText: l10n.presetName,
+                hintText: '${l10n.pleaseEnter}${l10n.presetName}...',
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(l10n.savePresetHint, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: () {
+              final name = nameController.text.trim();
+              if (name.isNotEmpty) {
+                final preset = NovelPromptPreset.create(
+                  name: name,
+                  outlinePrompt: _controllers['outline']?.text ?? '',
+                  decomposePrompt: _controllers['decompose']?.text ?? '',
+                  writerPrompt: _controllers['writer']?.text ?? '',
+                  reviewerPrompt: _controllers['reviewer']?.text ?? '',
+                );
+                ref.read(novelProvider.notifier).addPromptPreset(preset);
+                Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(l10n.presetSaved(name))),
+                );
+              }
+            },
+            child: Text(l10n.save),
+          ),
+        ],
+      ),
     );
   }
 }

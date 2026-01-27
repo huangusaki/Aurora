@@ -1335,4 +1335,45 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get exitApplicationOption => 'Exit application';
+
+  @override
+  String get novelPreset => 'Preset';
+
+  @override
+  String get selectPreset => 'Select Preset';
+
+  @override
+  String get noCustomPresets => 'No custom presets';
+
+  @override
+  String get systemDefault => 'System Default';
+
+  @override
+  String get systemDefaultRestored => 'System default presets restored';
+
+  @override
+  String presetLoaded(String name) {
+    return 'Preset loaded: $name';
+  }
+
+  @override
+  String get newNovelPreset => 'New Preset';
+
+  @override
+  String get savePresetHint => 'Will save prompt configurations for all roles.';
+
+  @override
+  String presetSaved(String name) {
+    return 'Preset \"$name\" saved';
+  }
+
+  @override
+  String get outline => 'Outline';
+
+  @override
+  String get outlineModel => 'Outline Model';
+
+  @override
+  String get savePresetOverrideHint =>
+      'Save current config to selected preset (Not implemented, use New instead)';
 }

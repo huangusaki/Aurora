@@ -61,6 +61,60 @@ class NovelModelConfig {
   );
 }
 
+/// Novel-specific prompt preset (contains prompts for all 4 roles)
+class NovelPromptPreset {
+  final String id;
+  final String name;
+  final String outlinePrompt;
+  final String decomposePrompt;
+  final String writerPrompt;
+  final String reviewerPrompt;
+
+  const NovelPromptPreset({
+    required this.id,
+    required this.name,
+    this.outlinePrompt = '',
+    this.decomposePrompt = '',
+    this.writerPrompt = '',
+    this.reviewerPrompt = '',
+  });
+
+  factory NovelPromptPreset.create({
+    required String name,
+    required String outlinePrompt,
+    required String decomposePrompt,
+    required String writerPrompt,
+    required String reviewerPrompt,
+  }) {
+    return NovelPromptPreset(
+      id: const Uuid().v4(),
+      name: name,
+      outlinePrompt: outlinePrompt,
+      decomposePrompt: decomposePrompt,
+      writerPrompt: writerPrompt,
+      reviewerPrompt: reviewerPrompt,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'outlinePrompt': outlinePrompt,
+    'decomposePrompt': decomposePrompt,
+    'writerPrompt': writerPrompt,
+    'reviewerPrompt': reviewerPrompt,
+  };
+
+  factory NovelPromptPreset.fromJson(Map<String, dynamic> json) => NovelPromptPreset(
+    id: json['id'] as String,
+    name: json['name'] as String,
+    outlinePrompt: json['outlinePrompt'] as String? ?? '',
+    decomposePrompt: json['decomposePrompt'] as String? ?? '',
+    writerPrompt: json['writerPrompt'] as String? ?? '',
+    reviewerPrompt: json['reviewerPrompt'] as String? ?? '',
+  );
+}
+
 class NovelTask {
   final String id;
   final String chapterId;
@@ -350,6 +404,9 @@ class NovelWritingState {
   final NovelModelConfig? writerModel;
   final NovelModelConfig? reviewerModel;
 
+  // Novel-specific prompt presets (separate from chat presets)
+  final List<NovelPromptPreset> promptPresets;
+
   const NovelWritingState({
     this.projects = const [],
     this.selectedProjectId,
@@ -365,6 +422,7 @@ class NovelWritingState {
     this.decomposeModel,
     this.writerModel,
     this.reviewerModel,
+    this.promptPresets = const [],
   });
 
   NovelProject? get selectedProject => 
@@ -394,6 +452,7 @@ class NovelWritingState {
     NovelModelConfig? decomposeModel,
     NovelModelConfig? writerModel,
     NovelModelConfig? reviewerModel,
+    List<NovelPromptPreset>? promptPresets,
   }) {
     return NovelWritingState(
       projects: projects ?? this.projects,
@@ -410,6 +469,7 @@ class NovelWritingState {
       decomposeModel: decomposeModel ?? this.decomposeModel,
       writerModel: writerModel ?? this.writerModel,
       reviewerModel: reviewerModel ?? this.reviewerModel,
+      promptPresets: promptPresets ?? this.promptPresets,
     );
   }
   
@@ -424,6 +484,7 @@ class NovelWritingState {
     'decomposeModel': decomposeModel?.toJson(),
     'writerModel': writerModel?.toJson(),
     'reviewerModel': reviewerModel?.toJson(),
+    'promptPresets': promptPresets.map((p) => p.toJson()).toList(),
   };
   
   factory NovelWritingState.fromJson(Map<String, dynamic> json) => NovelWritingState(
@@ -437,5 +498,6 @@ class NovelWritingState {
     decomposeModel: json['decomposeModel'] != null ? NovelModelConfig.fromJson(json['decomposeModel'] as Map<String, dynamic>) : null,
     writerModel: json['writerModel'] != null ? NovelModelConfig.fromJson(json['writerModel'] as Map<String, dynamic>) : null,
     reviewerModel: json['reviewerModel'] != null ? NovelModelConfig.fromJson(json['reviewerModel'] as Map<String, dynamic>) : null,
+    promptPresets: (json['promptPresets'] as List<dynamic>?)?.map((p) => NovelPromptPreset.fromJson(p as Map<String, dynamic>)).toList() ?? [],
   );
 }

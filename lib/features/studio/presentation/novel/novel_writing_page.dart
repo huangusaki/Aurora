@@ -889,9 +889,19 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
               ),
             ),
             if (isSelected)
-              IconButton(
-                icon: Icon(FluentIcons.delete, size: 12, color: Colors.red.light),
-                onPressed: () => notifier.deleteTask(task.id),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (task.status == TaskStatus.success)
+                    IconButton(
+                      icon: const Icon(FluentIcons.refresh, size: 12),
+                      onPressed: () => notifier.runSingleTask(task.id),
+                    ),
+                  IconButton(
+                    icon: Icon(FluentIcons.delete, size: 12, color: Colors.red.light),
+                    onPressed: () => notifier.deleteTask(task.id),
+                  ),
+                ],
               ),
           ],
         ),
@@ -945,6 +955,11 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
                 FilledButton(
                   onPressed: () => notifier.runSingleTask(task.id),
                   child: Text(l10n.executeTask),
+                )
+              else if (task.status == TaskStatus.success)
+                Button(
+                  onPressed: () => notifier.runSingleTask(task.id),
+                  child: Text(l10n.regenerate),
                 ),
             ],
           ),

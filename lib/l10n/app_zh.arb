@@ -545,5 +545,31 @@
   "closeBehavior": "关闭行为",
   "askEveryTime": "每次询问",
   "minimizeToTrayOption": "最小化到托盘",
-  "exitApplicationOption": "直接退出程序"
+  "exitApplicationOption": "直接退出程序",
+  "novelPreset": "预设",
+  "selectPreset": "选择预设",
+  "noCustomPresets": "暂无自定义预设",
+  "systemDefault": "系统默认",
+  "systemDefaultRestored": "已恢复系统默认预设",
+  "presetLoaded": "已加载预设: {name}",
+  "@presetLoaded": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "newNovelPreset": "新建预设",
+  "savePresetHint": "将保存当前所有角色的提示词配置。",
+  "presetSaved": "预设 \"{name}\" 已保存",
+  "@presetSaved": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "outline": "大纲",
+  "outlineModel": "大纲模型",
+  "savePresetOverrideHint": "保存当前配置覆盖选中的预设（暂未实现，请使用新建）"
 }

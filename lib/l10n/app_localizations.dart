@@ -2647,6 +2647,78 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'直接退出程序'**
   String get exitApplicationOption;
+
+  /// No description provided for @novelPreset.
+  ///
+  /// In zh, this message translates to:
+  /// **'预设'**
+  String get novelPreset;
+
+  /// No description provided for @selectPreset.
+  ///
+  /// In zh, this message translates to:
+  /// **'选择预设'**
+  String get selectPreset;
+
+  /// No description provided for @noCustomPresets.
+  ///
+  /// In zh, this message translates to:
+  /// **'暂无自定义预设'**
+  String get noCustomPresets;
+
+  /// No description provided for @systemDefault.
+  ///
+  /// In zh, this message translates to:
+  /// **'系统默认'**
+  String get systemDefault;
+
+  /// No description provided for @systemDefaultRestored.
+  ///
+  /// In zh, this message translates to:
+  /// **'已恢复系统默认预设'**
+  String get systemDefaultRestored;
+
+  /// No description provided for @presetLoaded.
+  ///
+  /// In zh, this message translates to:
+  /// **'已加载预设: {name}'**
+  String presetLoaded(String name);
+
+  /// No description provided for @newNovelPreset.
+  ///
+  /// In zh, this message translates to:
+  /// **'新建预设'**
+  String get newNovelPreset;
+
+  /// No description provided for @savePresetHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'将保存当前所有角色的提示词配置。'**
+  String get savePresetHint;
+
+  /// No description provided for @presetSaved.
+  ///
+  /// In zh, this message translates to:
+  /// **'预设 \"{name}\" 已保存'**
+  String presetSaved(String name);
+
+  /// No description provided for @outline.
+  ///
+  /// In zh, this message translates to:
+  /// **'大纲'**
+  String get outline;
+
+  /// No description provided for @outlineModel.
+  ///
+  /// In zh, this message translates to:
+  /// **'大纲模型'**
+  String get outlineModel;
+
+  /// No description provided for @savePresetOverrideHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'保存当前配置覆盖选中的预设（暂未实现，请使用新建）'**
+  String get savePresetOverrideHint;
 }
 
 class _AppLocalizationsDelegate

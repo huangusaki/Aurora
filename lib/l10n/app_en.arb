@@ -545,5 +545,31 @@
   "closeBehavior": "Close Behavior",
   "askEveryTime": "Ask every time",
   "minimizeToTrayOption": "Minimize to tray",
-  "exitApplicationOption": "Exit application"
+  "exitApplicationOption": "Exit application",
+  "novelPreset": "Preset",
+  "selectPreset": "Select Preset",
+  "noCustomPresets": "No custom presets",
+  "systemDefault": "System Default",
+  "systemDefaultRestored": "System default presets restored",
+  "presetLoaded": "Preset loaded: {name}",
+  "@presetLoaded": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "newNovelPreset": "New Preset",
+  "savePresetHint": "Will save prompt configurations for all roles.",
+  "presetSaved": "Preset \"{name}\" saved",
+  "@presetSaved": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "outline": "Outline",
+  "outlineModel": "Outline Model",
+  "savePresetOverrideHint": "Save current config to selected preset (Not implemented, use New instead)"
 }

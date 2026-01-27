@@ -14,6 +14,7 @@ class ModelConfigDialog extends ConsumerStatefulWidget {
 
 class _ModelConfigDialogState extends ConsumerState<ModelConfigDialog> {
   late Map<String, TextEditingController> _controllers;
+  int _currentIndex = 0;
 
   @override
   void initState() {
@@ -61,105 +62,78 @@ class _ModelConfigDialogState extends ConsumerState<ModelConfigDialog> {
       _isInitialized = true;
     }
 
-    Widget buildModelSelector(
+    Widget buildConfigInterface(
       String key,
-      String label, 
       String presetPrompt,
-      NovelModelConfig? currentConfig, 
+      NovelModelConfig? currentConfig,
       void Function(NovelModelConfig?) onModelChanged,
       void Function(String) onPromptChanged,
     ) {
-      final selectedBase = currentConfig != null 
+      final selectedBase = currentConfig != null
           ? allModels.firstWhere(
-              (m) => m.providerId == currentConfig.providerId && m.modelId == currentConfig.modelId, 
+              (m) => m.providerId == currentConfig.providerId && m.modelId == currentConfig.modelId,
               orElse: () => NovelModelConfig(providerId: currentConfig.providerId, modelId: currentConfig.modelId))
           : null;
 
-      return Container(
-        margin: const EdgeInsets.only(bottom: 20),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: theme.cardColor,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: theme.resources.dividerStrokeColorDefault),
-        ),
+      return Padding(
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label, style: theme.typography.subtitle),
-            const SizedBox(height: 12),
-            
-            // Model Selector
+            InfoLabel(
+              label: '选择模型',
+              child: ComboBox<NovelModelConfig>(
+                placeholder: Text(l10n.selectModel),
+                items: allModels.map((item) {
+                  final providerName = settingsState.providers
+                      .firstWhere((p) => p.id == item.providerId, orElse: () => ProviderConfig(id: item.providerId, name: 'Unknown'))
+                      .name;
+                  return ComboBoxItem<NovelModelConfig>(
+                    value: item,
+                    child: Text('$providerName - ${item.modelId}', overflow: TextOverflow.ellipsis),
+                  );
+                }).toList(),
+                value: allModels.contains(selectedBase) ? selectedBase : null,
+                onChanged: (val) {
+                  if (val != null) {
+                    final currentText = _controllers[key]!.text;
+                    final newConfig = val.copyWith(systemPrompt: currentText);
+                    onModelChanged(newConfig);
+                  } else {
+                    onModelChanged(null);
+                  }
+                },
+                isExpanded: true,
+              ),
+            ),
+            const SizedBox(height: 20),
             Row(
               children: [
-                Expanded(
-                  child: ComboBox<NovelModelConfig>(
-                    placeholder: Text(l10n.selectModel),
-                    items: allModels.map((item) {
-                      final providerName = settingsState.providers
-                          .firstWhere((p) => p.id == item.providerId, orElse: () => ProviderConfig(id: item.providerId, name: 'Unknown'))
-                          .name;
-                      return ComboBoxItem<NovelModelConfig>(
-                        value: item,
-                        child: Text('$providerName - ${item.modelId}', overflow: TextOverflow.ellipsis),
-                      );
-                    }).toList(),
-                    value: allModels.contains(selectedBase) ? selectedBase : null,
-                    onChanged: (val) {
-                      if (val != null) {
-                        final currentText = _controllers[key]!.text;
-                        final newConfig = val.copyWith(systemPrompt: currentText);
-                        onModelChanged(newConfig);
-                      } else {
-                        onModelChanged(null);
-                      }
+                Text('系统提示词 (System Prompt)', style: theme.typography.bodyStrong),
+                const Spacer(),
+                Tooltip(
+                  message: '将提示词恢复为系统默认预设',
+                  child: IconButton(
+                    icon: const Icon(FluentIcons.reset, size: 14),
+                    onPressed: () {
+                      _controllers[key]!.text = presetPrompt;
+                      onPromptChanged(presetPrompt);
                     },
-                    isExpanded: true,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-            
-            // System Prompt Label with Reset Button
-            Row(
-              children: [
-                Text('System Prompt', style: theme.typography.bodyStrong),
-                const Spacer(),
-                HyperlinkButton(
-                  onPressed: () {
-                    _controllers[key]!.text = presetPrompt;
-                    onPromptChanged(presetPrompt);
-                  },
-                  child: const Text('使用预设'),
-                ),
-              ],
-            ),
             const SizedBox(height: 8),
-            
-            // Prompt TextBox
-            TextBox(
-              controller: _controllers[key],
-              maxLines: null,
-              minLines: 4,
-              placeholder: '输入该模型的系统提示词...',
-              onChanged: onPromptChanged,
-            ),
-            
-            // Show preset hint
-            const SizedBox(height: 8),
-            Expander(
-              header: Text('查看预设提示词', style: theme.typography.caption),
-              content: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: theme.menuColor,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: SelectableText(
-                  presetPrompt,
-                  style: theme.typography.caption?.copyWith(fontFamily: 'monospace'),
-                ),
+            Expanded(
+              child: TextBox(
+                controller: _controllers[key],
+                maxLines: null,
+                keyboardType: TextInputType.multiline,
+                expands: true,
+                textAlignVertical: TextAlignVertical.top,
+                placeholder: '在此输入自定义 Prompt...',
+                onChanged: onPromptChanged,
+                style: const TextStyle(fontFamily: 'monospace', fontSize: 13, height: 1.4),
               ),
             ),
           ],
@@ -168,47 +142,180 @@ class _ModelConfigDialogState extends ConsumerState<ModelConfigDialog> {
     }
 
     return ContentDialog(
-      title: Text(l10n.modelConfig, style: theme.typography.title),
+      constraints: const BoxConstraints(maxWidth: 900, maxHeight: 700),
+      title: Row(
+        children: [
+          Text(l10n.modelConfig, style: theme.typography.title),
+          const Spacer(),
+          // 全局预设管理工具栏
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: theme.scaffoldBackgroundColor,
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(color: theme.resources.dividerStrokeColorDefault),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(FluentIcons.bookmarks, size: 14),
+                const SizedBox(width: 8),
+                Text('${l10n.novelPreset}:', style: theme.typography.caption),
+                const SizedBox(width: 8),
+                DropDownButton(
+                  title: Text(l10n.selectPreset),
+                  items: [
+                    MenuFlyoutItem(
+                      text: Text(l10n.systemDefault, style: const TextStyle(fontWeight: FontWeight.bold)),
+                      onPressed: () {
+                        _controllers['outline']!.text = NovelPromptPresets.outline;
+                        novelNotifier.setOutlinePrompt(NovelPromptPresets.outline);
+                        _controllers['decompose']!.text = NovelPromptPresets.decompose;
+                        novelNotifier.setDecomposePrompt(NovelPromptPresets.decompose);
+                        _controllers['writer']!.text = NovelPromptPresets.writer;
+                        novelNotifier.setWriterPrompt(NovelPromptPresets.writer);
+                        _controllers['reviewer']!.text = NovelPromptPresets.reviewer;
+                        novelNotifier.setReviewerPrompt(NovelPromptPresets.reviewer);
+                        
+                        displayInfoBar(context, builder: (context, close) {
+                          return InfoBar(
+                            title: Text(l10n.systemDefaultRestored),
+                            severity: InfoBarSeverity.info,
+                            onClose: close,
+                          );
+                        });
+                      },
+                    ),
+                    const MenuFlyoutSeparator(),
+                    if (novelState.promptPresets.isEmpty)
+                      MenuFlyoutItem(
+                        text: Text(l10n.noCustomPresets, style: const TextStyle(fontStyle: FontStyle.italic)),
+                        onPressed: () {},
+                      )
+                    else
+                      ...novelState.promptPresets.map((preset) => MenuFlyoutItem(
+                        text: Text(preset.name),
+                        onPressed: () {
+                          // 应用整套预设
+                          if (preset.outlinePrompt.isNotEmpty) {
+                            _controllers['outline']!.text = preset.outlinePrompt;
+                            novelNotifier.setOutlinePrompt(preset.outlinePrompt);
+                          }
+                          if (preset.decomposePrompt.isNotEmpty) {
+                            _controllers['decompose']!.text = preset.decomposePrompt;
+                            novelNotifier.setDecomposePrompt(preset.decomposePrompt);
+                          }
+                          if (preset.writerPrompt.isNotEmpty) {
+                            _controllers['writer']!.text = preset.writerPrompt;
+                            novelNotifier.setWriterPrompt(preset.writerPrompt);
+                          }
+                          if (preset.reviewerPrompt.isNotEmpty) {
+                            _controllers['reviewer']!.text = preset.reviewerPrompt;
+                            novelNotifier.setReviewerPrompt(preset.reviewerPrompt);
+                          }
+                          displayInfoBar(context, builder: (context, close) {
+                            return InfoBar(
+                              title: Text(l10n.presetLoaded(preset.name)),
+                              severity: InfoBarSeverity.success,
+                              onClose: close,
+                            );
+                          });
+                        },
+                        trailing: IconButton(
+                          icon: const Icon(FluentIcons.delete, size: 10),
+                          onPressed: () {
+                             novelNotifier.deletePromptPreset(preset.id);
+                          },
+                        ),
+                      )),
+                  ],
+                ),
+                const SizedBox(width: 8),
+                Container(width: 1, height: 16, color: theme.resources.dividerStrokeColorDefault),
+                const SizedBox(width: 8),
+                Button(
+                  onPressed: () => _showSavePresetDialog(context, ref),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(FluentIcons.add, size: 12),
+                      const SizedBox(width: 4),
+                      Text(l10n.newNovelPreset),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Tooltip(
+                  message: l10n.savePresetOverrideHint,
+                  child: IconButton(
+                    icon: const Icon(FluentIcons.save, size: 14),
+                    onPressed: () => _showSavePresetDialog(context, ref), // 暂时都只提供新建入口
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
       content: Container(
-        constraints: const BoxConstraints(maxHeight: 600, maxWidth: 700),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              buildModelSelector(
+        width: 900,
+        height: 600,
+        decoration: BoxDecoration(
+          border: Border.all(color: theme.resources.dividerStrokeColorDefault),
+          borderRadius: BorderRadius.circular(8),
+          color: theme.scaffoldBackgroundColor,
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: TabView(
+          currentIndex: _currentIndex,
+          onChanged: (index) => setState(() => _currentIndex = index),
+          closeButtonVisibility: CloseButtonVisibilityMode.never,
+          tabs: [
+            Tab(
+              text: Text(l10n.outline),
+              icon: const Icon(FluentIcons.text_document),
+              body: buildConfigInterface(
                 'outline',
-                '大纲模型 (Outline Model)',
                 NovelPromptPresets.outline,
-                novelState.outlineModel, 
+                novelState.outlineModel,
                 novelNotifier.setOutlineModel,
                 novelNotifier.setOutlinePrompt,
               ),
-              buildModelSelector(
+            ),
+            Tab(
+              text: Text(l10n.decompose),
+              icon: const Icon(FluentIcons.org),
+              body: buildConfigInterface(
                 'decompose',
-                '拆解模型 (Decomposition Model)', 
                 NovelPromptPresets.decompose,
-                novelState.decomposeModel, 
+                novelState.decomposeModel,
                 novelNotifier.setDecomposeModel,
                 novelNotifier.setDecomposePrompt,
               ),
-              buildModelSelector(
+            ),
+            Tab(
+              text: Text(l10n.writing),
+              icon: const Icon(FluentIcons.edit),
+              body: buildConfigInterface(
                 'writer',
-                '写作模型 (Writer Model)', 
                 NovelPromptPresets.writer,
-                novelState.writerModel, 
+                novelState.writerModel,
                 novelNotifier.setWriterModel,
                 novelNotifier.setWriterPrompt,
               ),
-              buildModelSelector(
+            ),
+            Tab(
+              text: Text(l10n.reviewModel),
+              icon: const Icon(FluentIcons.preview_link),
+              body: buildConfigInterface(
                 'reviewer',
-                '审查模型 (Reviewer Model)', 
                 NovelPromptPresets.reviewer,
-                novelState.reviewerModel, 
+                novelState.reviewerModel,
                 novelNotifier.setReviewerModel,
                 novelNotifier.setReviewerPrompt,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
       actions: [
@@ -221,4 +328,62 @@ class _ModelConfigDialogState extends ConsumerState<ModelConfigDialog> {
   }
 
   bool _isInitialized = false;
+
+  void _showSavePresetDialog(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final nameController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => ContentDialog(
+        constraints: const BoxConstraints(maxWidth: 400),
+        title: Text(l10n.newNovelPreset),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            InfoLabel(
+              label: l10n.presetName,
+              child: TextBox(
+                controller: nameController,
+                autofocus: true,
+                placeholder: '${l10n.pleaseEnter}${l10n.presetName}...',
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(l10n.savePresetHint, style: FluentTheme.of(context).typography.caption),
+          ],
+        ),
+        actions: [
+          Button(
+            child: Text(l10n.cancel),
+            onPressed: () => Navigator.pop(ctx),
+          ),
+          FilledButton(
+            child: Text(l10n.save),
+            onPressed: () {
+              final name = nameController.text.trim();
+              if (name.isNotEmpty) {
+                final preset = NovelPromptPreset.create(
+                  name: name,
+                  outlinePrompt: _controllers['outline']?.text ?? '',
+                  decomposePrompt: _controllers['decompose']?.text ?? '',
+                  writerPrompt: _controllers['writer']?.text ?? '',
+                  reviewerPrompt: _controllers['reviewer']?.text ?? '',
+                );
+                ref.read(novelProvider.notifier).addPromptPreset(preset);
+                Navigator.pop(ctx);
+                displayInfoBar(context, builder: (context, close) {
+                  return InfoBar(
+                    title: Text(l10n.presetSaved(name)),
+                    severity: InfoBarSeverity.success,
+                    onClose: close,
+                  );
+                });
+              }
+            },
+          ),
+        ],
+      ),
+    );
+  }
 }

@@ -49,6 +49,12 @@ class NovelPromptPresets {
   }
 ]
 
+【严禁科学化/公式化】⚠️极重要
+- 绝对禁止出现数学公式、物理公式或任何形式的定量分析（如：E = B × M）。
+- 绝对禁止使用现代科学逻辑、术语来“合理解释”魔法（如：浓度、正比、反比、因子、效率、能量守恒、属性加成）。
+- 严禁引用虚构的学术著作（如：《正统魔导学概论》）或理论（如：“血源因子”浓度）。
+- 反面示例❌： "根据《魔导学概论》，效率与浓度成正比，公式为 E=BxM..." -> 这种写法是绝对禁止的！
+
 ⚠️【强制执行】只返回JSON，禁止包含任何闲聊、解释、开场白、推理内容（Reasoning）或结尾。
 ⚠️【格式要求】不要使用Markdown代码块包裹，直接输出内容。
 只返回JSON，禁止输出任何其他内容。''';
@@ -119,6 +125,10 @@ class NovelPromptPresets {
 - 禁止心理学术语：应激反应、心理防御机制
 - 禁止文学术语：意象、隐喻、象征意义
 - 禁止像写科普一样解释魔法/能力的原理
+- 【严禁科学化/公式化】⚠️极重要
+  - 绝对禁止出现数学公式、物理公式或任何形式的定量分析（如：E = B × M）。
+  - 绝对禁止使用现代科学逻辑、术语来“合理解释”魔法（如：浓度、正比、反比、因子、效率、能量守恒、属性加成）。
+  - 不要把魔法写得像理工科实验，要写得像艺术、感悟、血脉本能或某种不可理喻的神秘现象。
 
 【AI痕迹规避】
 - 禁用总结句式："这让他明白了..."、"他意识到..."
@@ -128,6 +138,7 @@ class NovelPromptPresets {
 
 【虚构术语规避】⚠️重要
 - 禁止编造具体的书名，如《社交礼仪守则》《君臣纲纪》《草药学入门》《魔力学基础》
+- 严禁借用不存在的“XX概论”、“XX理论”、“XX学说”来输出设定逻辑。
 - 除非是剧情关键道具，否则只用泛称："一本讲礼仪的书"、"关于草药的典籍"
 - 学科/课程也不要编名字：直说"草药课"、"魔法理论课"即可
 
@@ -145,8 +156,10 @@ class NovelPromptPresets {
 
 
 【反面示例】❌
-❌ "阳光像是被打翻的蜂蜜罐头，黏稠而甜蜜地流淌在精心修剪的灌木迷宫上。空气中弥漫着大吉岭红茶的香气，混合着不知名贵妇人身上过于浓郁的熏衣草香水味，编织成了一张令人窒息的大网。"
+❌ "阳光像是被打翻的蜂蜜罐头，黏稠而甜蜜地流淌在精心修剪的灌木迷宫上..."（过度修辞）
+❌ "根据《魔导学概论》，魔力输出效率与血源因子浓度成正比。公式为：E = B × M..."（严禁公式化/科学化）
 ✅ "茶会的空气甜腻得让人头疼。"
+✅ "随着他深吸一口气，体内的血液仿佛沸腾一般，魔力如决堤的洪水般涌出。"
 
 【字数要求】
 - 本章字数：3000-5000字
@@ -168,6 +181,7 @@ class NovelPromptPresets {
 4. 人物OOC：角色言行是否符合人设
 5. 节奏连贯：与前文衔接是否自然，章末是否有悬念
 6. AI痕迹：是否有明显的AI写作痕迹（总结词、列举结构等）——摘要部分不算AI痕迹
+7. 伪科学/自造词：检查是否出现“公式(E=mc^2)”、“XX概论/原理”、“浓度/因子/效率”等理工科术语解释魔法。如果有，必须打回！
 
 请返回JSON格式的审查结果：
 {
@@ -285,6 +299,9 @@ class NovelPromptPresets {
 - 禁止使用文学批评术语
 - 禁止使用心理学专业术语
 - 禁止过度解释魔法/能力的原理
+- 绝对禁止出现数学公式、定量分析或类似 E=MC^2 的理工科逻辑
+- 严禁在设定中使用“效率”、“浓度”、“因子”、“参数”等现代科研词汇
+- 严禁引用虚构的学术著作（如《正统魔导学概论》）或理论（如“血源因子”浓度）
 - 角色对话要自然，不要书面化
 
 请输出不少于3000字的详细大纲。禁止输出任何与任务无关的内容。''';
@@ -296,6 +313,8 @@ class NovelPromptPresets {
 {
   "newCharacters": {"角色名": "描述"},
   "characterUpdates": {"已有角色名": "状态变化描述，如境界提升、获得物品等"},
+  "newRules": {"规则名": "描述"},
+  "ruleUpdates": {"已有规则名": "规则变化或补充描述"},
   "updatedRelationships": {"关系key": "关系描述"},
   "newLocations": {"地点名": "描述"},
   "newForeshadowing": ["伏笔1", "伏笔2"],
@@ -1346,6 +1365,7 @@ $suggestions
       
       // Merge updates into existing context
       final newCharacters = Map<String, String>.from(ctx.characters);
+      final newRules = Map<String, String>.from(ctx.rules);
       final newRelationships = Map<String, String>.from(ctx.relationships);
       final newLocations = Map<String, String>.from(ctx.locations);
       final newForeshadowing = List<String>.from(ctx.foreshadowing);
@@ -1372,6 +1392,26 @@ $suggestions
           }
         }
       }
+
+      // 处理新规则
+      if (updates['newRules'] != null) {
+        newRules.addAll(Map<String, String>.from(updates['newRules'] as Map));
+      }
+
+      // 处理规则状态更新
+      if (updates['ruleUpdates'] != null) {
+        final ruleUpdates = Map<String, String>.from(updates['ruleUpdates'] as Map);
+        for (final entry in ruleUpdates.entries) {
+          final ruleName = entry.key;
+          final updateDesc = entry.value;
+          if (newRules.containsKey(ruleName)) {
+            final existing = newRules[ruleName]!;
+            newRules[ruleName] = '$existing【最新】$updateDesc';
+          } else {
+            newRules[ruleName] = updateDesc;
+          }
+        }
+      }
       
       if (updates['updatedRelationships'] != null) {
         newRelationships.addAll(Map<String, String>.from(updates['updatedRelationships'] as Map));
@@ -1394,6 +1434,7 @@ $suggestions
       
       updateWorldContext(ctx.copyWith(
         characters: newCharacters,
+        rules: newRules,
         relationships: newRelationships,
         locations: newLocations,
         foreshadowing: newForeshadowing,
@@ -1842,5 +1883,20 @@ $suggestions
       state = state.copyWith(reviewerModel: state.reviewerModel!.copyWith(systemPrompt: prompt));
       _saveState();
     }
+  }
+
+  // ========== Novel Prompt Presets ==========
+  void addPromptPreset(NovelPromptPreset preset) {
+    state = state.copyWith(
+      promptPresets: [...state.promptPresets, preset],
+    );
+    _saveState();
+  }
+
+  void deletePromptPreset(String presetId) {
+    state = state.copyWith(
+      promptPresets: state.promptPresets.where((p) => p.id != presetId).toList(),
+    );
+    _saveState();
   }
 }
