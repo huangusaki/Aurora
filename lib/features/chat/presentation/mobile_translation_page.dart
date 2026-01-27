@@ -112,31 +112,33 @@ class _MobileTranslationPageState extends ConsumerState<MobileTranslationPage> {
               ConstrainedBox(
                 constraints: BoxConstraints(
                     maxHeight: MediaQuery.of(context).size.height * 0.5),
-                child: ListView.builder(
+                child: ListView(
                   shrinkWrap: true,
-                  itemCount: provider.models.length,
-                  itemBuilder: (context, index) {
-                    final model = provider.models[index];
-                    final isSelected = model == settingsState.selectedModel;
-                    return ListTile(
-                      leading: Icon(
-                        isSelected ? Icons.check_circle : Icons.circle_outlined,
-                        color:
-                            isSelected ? Theme.of(context).primaryColor : null,
-                      ),
-                      title: Text(model),
-                      onTap: () {
-                        ref.read(settingsProvider.notifier).updateProvider(
-                              id: provider.id,
-                              selectedModel: model,
-                            );
-                        ref
-                            .read(settingsProvider.notifier)
-                            .selectProvider(provider.id);
-                        Navigator.pop(ctx);
-                      },
-                    );
-                  },
+                  children: [
+                    for (final model in provider.models)
+                      if (provider.isModelEnabled(model))
+                        ListTile(
+                          leading: Icon(
+                            model == settingsState.selectedModel
+                                ? Icons.check_circle
+                                : Icons.circle_outlined,
+                            color: model == settingsState.selectedModel
+                                ? Theme.of(context).primaryColor
+                                : null,
+                          ),
+                          title: Text(model),
+                          onTap: () {
+                            ref.read(settingsProvider.notifier).updateProvider(
+                                  id: provider.id,
+                                  selectedModel: model,
+                                );
+                            ref
+                                .read(settingsProvider.notifier)
+                                .selectProvider(provider.id);
+                            Navigator.pop(ctx);
+                          },
+                        ),
+                  ],
                 ),
               ),
             ],

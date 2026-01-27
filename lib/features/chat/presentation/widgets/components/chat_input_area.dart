@@ -65,6 +65,7 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
   // Model selector state
   OverlayEntry? _overlayEntry;
   int _selectedIndex = 0;
+  List<ModelOption> _allAvailableModels = [];
   List<ModelOption> _filteredModels = [];
   final ScrollController _scrollController = ScrollController();
   static const double _itemHeight = 40.0;
@@ -116,15 +117,45 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
 
   void _onTextChanged() {
     // Handle model overlay (@)
-    if (_overlayEntry != null && _triggerIndex != null) {
-      // If the trigger character is gone or changed, close the overlay
-      // Also close if cursor moves before or onto the trigger (e.g. deletion)
-      // OR if cursor moves past the trigger (typing any char after @)
-      if (widget.controller.text.length <= _triggerIndex! ||
-          widget.controller.text[_triggerIndex!] != '@' ||
-          widget.controller.selection.baseOffset <= _triggerIndex! ||
-          widget.controller.selection.baseOffset > _triggerIndex! + 1) {
+    if (_triggerIndex != null) {
+      final text = widget.controller.text;
+      final cursor = widget.controller.selection.baseOffset;
+
+      // Close if cursor moves before trigger
+      if (cursor <= _triggerIndex! || text.length <= _triggerIndex! || text[_triggerIndex!] != '@') {
         _animateClose();
+        return;
+      }
+
+      // Calculate search query
+      final query = text.substring(_triggerIndex! + 1, cursor).toLowerCase();
+
+      // Close if query contains space
+      if (query.contains(' ')) {
+        _animateClose();
+        return;
+      }
+
+      // Filter models
+      final newFiltered = _allAvailableModels
+          .where((m) =>
+              m.modelId.toLowerCase().contains(query) ||
+              m.providerName.toLowerCase().contains(query))
+          .toList();
+
+      if (newFiltered.isEmpty) {
+        if (_overlayEntry != null) {
+          _removeOverlayOnly(); // Hide but keep state
+        }
+      } else {
+        _filteredModels = newFiltered;
+        _selectedIndex = _selectedIndex.clamp(0, _filteredModels.length - 1);
+        if (_overlayEntry == null) {
+          // Re-show if matches found and we have a valid trigger
+          _showOverlayOnly();
+        } else {
+          _updateOverlay();
+        }
       }
     }
     // Handle preset overlay (/)
@@ -139,11 +170,23 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
   }
 
   void _removeOverlay() {
-    _overlayEntry?.remove();
-    _overlayEntry = null;
+    _removeOverlayOnly();
+    _allAvailableModels = [];
     _filteredModels = [];
     _selectedIndex = 0;
     _triggerIndex = null;
+  }
+
+  void _removeOverlayOnly() {
+    _overlayEntry?.remove();
+    _overlayEntry = null;
+  }
+
+  void _showOverlayOnly() {
+    if (_overlayEntry != null || _triggerIndex == null) return;
+    _overlayEntry = _createModelOverlay();
+    Overlay.of(context).insert(_overlayEntry!);
+    _animationController.forward(from: 0.0);
   }
 
   Future<void> _animateClose() async {
@@ -379,6 +422,7 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
       _triggerIndex = widget.controller.text.length;
     }
 
+    _allAvailableModels = List.from(models);
     _filteredModels = List.from(models);
     _selectedIndex =
         _filteredModels.indexWhere((m) => m.modelId == currentModelId);
@@ -390,7 +434,12 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
       _animationController.forward(from: 0.0);
     });
 
-    _overlayEntry = OverlayEntry(
+    _overlayEntry = _createModelOverlay();
+    Overlay.of(context).insert(_overlayEntry!);
+  }
+
+  OverlayEntry _createModelOverlay() {
+    return OverlayEntry(
       builder: (context) {
         return Stack(
           children: [
@@ -403,7 +452,9 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
               child: CompositedTransformFollower(
                 link: _layerLink,
                 showWhenUnlinked: false,
-                offset: const Offset(0, -200), // Show above the input
+                targetAnchor: Alignment.topLeft,
+                followerAnchor: Alignment.bottomLeft,
+                offset: const Offset(0, -8), // Grow upwards from the input
                 child: ScaleTransition(
                   scale: _scaleAnimation,
                   child: FadeTransition(
@@ -477,8 +528,6 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
         );
       },
     );
-
-    Overlay.of(context).insert(_overlayEntry!);
   }
 
   void _updateOverlay() {
@@ -497,21 +546,18 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
 
     ref.read(settingsProvider.notifier).setSelectedModel(option.modelId);
 
-    // Remove the '@' character using the captured trigger index
+    // Remove the '@query' string
     if (_triggerIndex != null &&
         _triggerIndex! < widget.controller.text.length &&
         widget.controller.text[_triggerIndex!] == '@') {
       final text = widget.controller.text;
-      final newText = text.replaceRange(_triggerIndex!, _triggerIndex! + 1, '');
-
-      int newSelectionIndex = widget.controller.selection.baseOffset;
-      if (newSelectionIndex > _triggerIndex!) {
-        newSelectionIndex -= 1;
-      }
+      final cursor = widget.controller.selection.baseOffset;
+      // Range is from '@' to the current cursor (where the query ends)
+      final newText = text.replaceRange(_triggerIndex!, cursor, '');
 
       widget.controller.value = TextEditingValue(
         text: newText,
-        selection: TextSelection.collapsed(offset: newSelectionIndex),
+        selection: TextSelection.collapsed(offset: _triggerIndex!),
       );
     }
 
@@ -539,6 +585,7 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
               '#${generatedColor.value.toRadixString(16).substring(2).toUpperCase()}';
         }
         for (final model in provider.models) {
+          if (!provider.isModelEnabled(model)) continue;
           allModels.add(ModelOption(
             providerId: provider.id,
             providerName: provider.name,

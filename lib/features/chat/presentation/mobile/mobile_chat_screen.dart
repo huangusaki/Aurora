@@ -385,30 +385,31 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
                           ),
                         ),
                         for (final model in provider.models)
-                          ListTile(
-                            contentPadding:
-                                const EdgeInsets.only(left: 32, right: 16),
-                            leading: Icon(
-                              activeProvider?.id == provider.id &&
-                                      selectedModel == model
-                                  ? Icons.check_circle
-                                  : Icons.circle_outlined,
-                              color: activeProvider?.id == provider.id &&
-                                      selectedModel == model
-                                  ? Theme.of(context).primaryColor
-                                  : null,
+                          if (provider.isModelEnabled(model))
+                            ListTile(
+                              contentPadding:
+                                  const EdgeInsets.only(left: 32, right: 16),
+                              leading: Icon(
+                                activeProvider?.id == provider.id &&
+                                        selectedModel == model
+                                    ? Icons.check_circle
+                                    : Icons.circle_outlined,
+                                color: activeProvider?.id == provider.id &&
+                                        selectedModel == model
+                                    ? Theme.of(context).primaryColor
+                                    : null,
+                              ),
+                              title: Text(model),
+                              onTap: () async {
+                                await ref
+                                    .read(settingsProvider.notifier)
+                                    .selectProvider(provider.id);
+                                await ref
+                                    .read(settingsProvider.notifier)
+                                    .setSelectedModel(model);
+                                Navigator.pop(ctx);
+                              },
                             ),
-                            title: Text(model),
-                            onTap: () async {
-                              await ref
-                                  .read(settingsProvider.notifier)
-                                  .selectProvider(provider.id);
-                              await ref
-                                  .read(settingsProvider.notifier)
-                                  .setSelectedModel(model);
-                              Navigator.pop(ctx);
-                            },
-                          ),
                         if (provider !=
                             providers
                                 .where(
