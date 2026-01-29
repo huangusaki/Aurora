@@ -24,15 +24,7 @@ class AuroraBottomSheet {
             mainAxisSize: MainAxisSize.min,
             children: [
               // Handle Bar
-              Container(
-                margin: const EdgeInsets.only(top: 12, bottom: 8),
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: theme.dividerColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
+
               Flexible(child: builder(context)),
             ],
           ),
