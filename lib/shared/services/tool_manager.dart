@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:ddgs/ddgs.dart';
 import '../../features/skills/domain/skill_entity.dart';
+import 'package:aurora/shared/utils/platform_utils.dart';
 
 class ToolManager {
   final DDGS _ddgs = DDGS(timeout: const Duration(seconds: 15));
@@ -74,7 +75,7 @@ class ToolManager {
 
   Future<String> _executeSkillTool(SkillTool tool, Map<String, dynamic> args) async {
     if (tool.type == 'shell') {
-      if (Platform.isAndroid || Platform.isIOS) {
+      if (PlatformUtils.isMobile) {
         return jsonEncode({
           'error': 'Shell tools are not supported on mobile platforms. Please use http tools for cross-platform support.',
         });
@@ -84,7 +85,7 @@ class ToolManager {
         // Replace parameters in the entire command string
         args.forEach((key, value) {
           var valStr = value.toString();
-          if (Platform.isWindows) {
+          if (PlatformUtils.isWindows) {
             // Fix over-escaped backslashes from LLM (D:\\dev -> D:\dev)
             if (valStr.contains(r'\\') && !valStr.startsWith(r'\\')) {
               valStr = valStr.replaceAll(r'\\', r'\');
@@ -117,7 +118,7 @@ class ToolManager {
         }
 
         ProcessResult result;
-        if (Platform.isWindows) {
+        if (PlatformUtils.isWindows) {
           // Use powershell.exe for all shell tools on Windows.
           // It's much more robust than cmd.exe for complex commands, pipes, and quoting.
           result = await Process.run('powershell.exe', ['-NoProfile', '-Command', command]);

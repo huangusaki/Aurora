@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:aurora/shared/utils/platform_utils.dart';
 import 'package:fluent_ui/fluent_ui.dart' as fluent;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -49,7 +50,7 @@ class _DesktopChatScreenState extends ConsumerState<DesktopChatScreen> with Wind
   Future<void> _initTray() async {
     try {
       String? iconPath;
-      if (Platform.isWindows) {
+      if (PlatformUtils.isWindows) {
         final String exePath = Platform.resolvedExecutable;
         final String exeDir = File(exePath).parent.path;
         final List<String> possiblePaths = [

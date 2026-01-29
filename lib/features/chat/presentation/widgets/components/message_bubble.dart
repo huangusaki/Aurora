@@ -19,6 +19,7 @@ import 'package:aurora/l10n/app_localizations.dart';
 import 'chat_utils.dart';
 import 'tool_output.dart';
 import 'package:aurora/shared/utils/number_format_utils.dart';
+import 'package:aurora/shared/utils/platform_utils.dart';
 
 
 class MessageBubble extends ConsumerStatefulWidget {
@@ -279,9 +280,9 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
     final theme = fluent.FluentTheme.of(context);
     return MouseRegion(
       onEnter: (_) =>
-          Platform.isWindows ? setState(() => _isHovering = true) : null,
+          PlatformUtils.isDesktop ? setState(() => _isHovering = true) : null,
       onExit: (_) =>
-          Platform.isWindows ? setState(() => _isHovering = false) : null,
+          PlatformUtils.isDesktop ? setState(() => _isHovering = false) : null,
       child: Container(
         margin: EdgeInsets.only(
           top: widget.mergeTop ? 2 : 8,
@@ -374,7 +375,7 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
                                       SizedBox(
                                         width: 16,
                                         height: 16,
-                                        child: Platform.isWindows
+                                        child: PlatformUtils.isDesktop
                                             ? const fluent.ProgressRing(
                                                 strokeWidth: 2)
                                             : const CircularProgressIndicator(
@@ -401,7 +402,7 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
                                       : const EdgeInsets.only(bottom: 8.0),
                                   child: ReasoningDisplay(
                                     content: message.reasoningContent!,
-                                    isWindows: Platform.isWindows,
+                                    isWindows: PlatformUtils.isDesktop,
                                     isRunning: widget.isGenerating,
                                     duration: message.reasoningDurationSeconds,
                                     startTime: message.timestamp,
@@ -790,7 +791,7 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
                 ],
               ],
             ),
-            Platform.isWindows
+            PlatformUtils.isDesktop
                 ? Visibility(
                     visible: !_isEditing,
                     maintainSize: true,

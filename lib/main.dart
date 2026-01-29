@@ -18,9 +18,11 @@ import 'package:flutter_displaymode/flutter_displaymode.dart';
 import 'features/chat/presentation/widgets/chat_image_bubble.dart'
     show clearImageCache;
 
+import 'shared/utils/platform_utils.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  if (Platform.isWindows) {
+  if (PlatformUtils.isDesktop) {
     await windowManager.ensureInitialized();
     WindowOptions windowOptions = const WindowOptions(
       size: Size(1080, 640),
@@ -34,8 +36,10 @@ void main() async {
       await windowManager.focus();
       await windowManager.setMinimumSize(const Size(1080, 640));
     });
-    WindowsInjector.instance.injectKeyData();
-  } else if (Platform.isAndroid) {
+    if (PlatformUtils.isWindows) {
+      WindowsInjector.instance.injectKeyData();
+    }
+  } else if (PlatformUtils.isAndroid) {
     try {
       await FlutterDisplayMode.setHighRefreshRate();
     } catch (_) {}
@@ -112,7 +116,7 @@ void main() async {
       settingsStorageProvider.overrideWithValue(storage),
       settingsProvider.overrideWith((ref) {
           // Load skills from a default directory (Desktop only)
-          if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+          if (PlatformUtils.isDesktop) {
             Future.microtask(() {
               final skillsDir =
                   '${Directory.current.path}${Platform.pathSeparator}skills';
@@ -288,7 +292,7 @@ class MyApp extends ConsumerWidget {
       fluentMode = fluent.ThemeMode.system;
     }
     final locale = language == 'en' ? const Locale('en') : const Locale('zh');
-    final String? fontFamily = Platform.isWindows ? 'Microsoft YaHei' : null;
+    final String? fontFamily = PlatformUtils.isWindows ? 'Microsoft YaHei' : null;
     return fluent.FluentApp(
       title: 'Aurora',
       debugShowCheckedModeBanner: false,

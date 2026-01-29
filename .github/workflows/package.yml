@@ -88,23 +88,99 @@ jobs:
           name: windows-app
           path: release_output/*.zip
 
+  build-linux:
+    name: Build Linux App
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev liblzma-dev pkg-config
+      - name: Get Dependencies
+        run: flutter pub get
+      - name: Build Linux Release
+        run: flutter build linux --release
+      - name: Package Linux
+        run: |
+          VERSION=$(grep 'version:' pubspec.yaml | sed 's/version: //g' | sed 's/+.*//g' | xargs)
+          mkdir release_output
+          tar -czf release_output/Aurora_Linux_${VERSION}.tar.gz -C build/linux/x64/release/bundle .
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-app
+          path: release_output/*.tar.gz
+
+  build-macos:
+    name: Build macOS App
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+      - name: Get Dependencies
+        run: flutter pub get
+      - name: Build macOS Release
+        run: flutter build macos --release
+      - name: Package macOS
+        run: |
+          VERSION=$(grep 'version:' pubspec.yaml | sed 's/version: //g' | sed 's/+.*//g' | xargs)
+          mkdir release_output
+          cd build/macos/Build/Products/Release
+          zip -r ../../../../../release_output/Aurora_macOS_${VERSION}.zip Aurora.app
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-app
+          path: release_output/*.zip
+
+  build-ios:
+    name: Build iOS App
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+      - name: Get Dependencies
+        run: flutter pub get
+      - name: Build iOS Release
+        run: flutter build ios --release --no-codesign
+      - name: Package iOS
+        run: |
+          VERSION=$(grep 'version:' pubspec.yaml | sed 's/version: //g' | sed 's/+.*//g' | xargs)
+          mkdir release_output
+          mkdir -p Payload
+          cp -r build/ios/iphoneos/Runner.app Payload/
+          zip -r release_output/Aurora_iOS_${VERSION}_no-codesign.ipa Payload/
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-app
+          path: release_output/*.ipa
+
   create-release:
     name: Create Release
     runs-on: ubuntu-latest
-    needs: [build-android, build-windows]
+    needs: [build-android, build-windows, build-linux, build-macos, build-ios]
     if: startsWith(github.ref, 'refs/tags/v')
     steps:
-      - name: Download Android Artifacts
+      - name: Download All Artifacts
         uses: actions/download-artifact@v4
         with:
-          name: android-apks
           path: artifacts
-
-      - name: Download Windows Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: windows-app
-          path: artifacts
+          merge-multiple: true
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1

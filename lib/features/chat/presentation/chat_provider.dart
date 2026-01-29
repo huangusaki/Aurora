@@ -21,6 +21,7 @@ import '../../skills/presentation/skill_provider.dart';
 import '../../skills/domain/skill_entity.dart';
 import '../../../core/error/app_error_type.dart';
 import '../../../core/error/app_exception.dart';
+import 'package:aurora/shared/utils/platform_utils.dart';
 
 enum SearchEngine { duckduckgo, google, bing }
 
@@ -268,7 +269,7 @@ class ChatNotifier extends StateNotifier<ChatState> {
           Message.ai('', model: currentModel, provider: currentProvider);
       state = state.copyWith(messages: [...state.messages, aiMsg]);
       final currentPlatform = Platform.operatingSystem;
-      final isMobile = Platform.isAndroid || Platform.isIOS;
+      final isMobile = PlatformUtils.isMobile;
       final activeSkills = isMobile 
           ? <Skill>[] 
           : _ref.read(skillProvider).skills.where((s) => s.isEnabled && s.forAI && s.isCompatible(currentPlatform)).toList();

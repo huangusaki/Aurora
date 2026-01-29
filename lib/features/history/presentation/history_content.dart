@@ -11,6 +11,7 @@ import '../../chat/presentation/widgets/topic_dropdown.dart';
 import '../../settings/presentation/settings_provider.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 import 'package:aurora/shared/utils/number_format_utils.dart';
+import 'package:aurora/shared/utils/platform_utils.dart';
 
 class HistoryContent extends ConsumerStatefulWidget {
   const HistoryContent({super.key});
@@ -29,7 +30,7 @@ class _HistoryContentState extends ConsumerState<HistoryContent> {
 
   @override
   Widget build(BuildContext context) {
-    if (Platform.isWindows) {
+    if (PlatformUtils.isDesktop) {
       return _buildDesktopLayout(context, ref);
     }
     return LayoutBuilder(

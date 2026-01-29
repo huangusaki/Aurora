@@ -5,6 +5,7 @@ import 'package:aurora/shared/services/llm_service.dart';
 import 'package:aurora/features/skills/domain/skill_entity.dart';
 import 'package:aurora/features/settings/presentation/settings_provider.dart';
 import 'package:uuid/uuid.dart';
+import 'package:aurora/shared/utils/platform_utils.dart';
 
 class WorkerService {
   final LLMService _llmService;
@@ -124,7 +125,8 @@ ${skill.instructions}
   Future<String> _executeShellCommand(String command) async {
     try {
         ProcessResult result;
-        if (Platform.isWindows) {
+
+        if (PlatformUtils.isWindows) {
           result = await Process.run('powershell.exe', ['-NoProfile', '-Command', command]);
         } else {
           result = await Process.run('sh', ['-c', command], runInShell: true);

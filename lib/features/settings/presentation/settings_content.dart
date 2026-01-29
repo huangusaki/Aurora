@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:aurora/l10n/app_localizations.dart';
+import 'package:aurora/shared/utils/platform_utils.dart';
 import 'settings_provider.dart';
 import 'usage_stats_view.dart';
 import 'preset_settings_page.dart';
@@ -98,7 +99,7 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
     final viewingProvider = settingsState.viewingProvider;
     _updateControllers(viewingProvider);
     final settingsPageIndex = ref.watch(settingsPageIndexProvider);
-    if (Platform.isWindows) {
+    if (PlatformUtils.isDesktop) {
       final theme = fluent.FluentTheme.of(context);
       final l10n = AppLocalizations.of(context)!;
       final settingsPages = [

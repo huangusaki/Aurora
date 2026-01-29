@@ -20,6 +20,7 @@ import '../../../settings/presentation/settings_provider.dart';
 import '../../../history/presentation/widgets/hover_image_preview.dart';
 
 import 'components/chat_utils.dart';
+import 'package:aurora/shared/utils/platform_utils.dart';
 
 import 'components/message_bubble.dart';
 import 'components/merged_message_bubble.dart';
@@ -445,11 +446,11 @@ class ChatViewState extends ConsumerState<ChatView> {
                 ),
                 Container(
                   padding: EdgeInsets.fromLTRB(
-                      Platform.isWindows ? 12 : 0,
-                      Platform.isWindows ? 0 : 0,
-                      Platform.isWindows ? 12 : 0,
-                      Platform.isWindows ? 12 : 0),
-                  child: Platform.isWindows
+                      PlatformUtils.isDesktop ? 12 : 0,
+                      PlatformUtils.isDesktop ? 0 : 0,
+                      PlatformUtils.isDesktop ? 12 : 0,
+                      PlatformUtils.isDesktop ? 12 : 0),
+                  child: PlatformUtils.isDesktop
                       ? DesktopChatInputArea(
                           controller: _controller,
                           isLoading: isLoading,
@@ -519,7 +520,7 @@ class ChatViewState extends ConsumerState<ChatView> {
                     }
                     return false;
                   },
-                  child: Platform.isWindows
+                  child: PlatformUtils.isDesktop
                       ? Padding(
                           padding: const EdgeInsets.only(
                               right: 4.0, top: 2.0, bottom: 2.0),
@@ -781,11 +782,11 @@ class ChatViewState extends ConsumerState<ChatView> {
               ),
               Container(
                 padding: EdgeInsets.fromLTRB(
-                    Platform.isWindows ? 12 : 0,
-                    Platform.isWindows ? 0 : 0,
-                    Platform.isWindows ? 12 : 0,
-                    Platform.isWindows ? 12 : 0),
-                child: Platform.isWindows
+                    PlatformUtils.isDesktop ? 12 : 0,
+                    PlatformUtils.isDesktop ? 0 : 0,
+                    PlatformUtils.isDesktop ? 12 : 0,
+                    PlatformUtils.isDesktop ? 12 : 0),
+                child: PlatformUtils.isDesktop
                     ? DesktopChatInputArea(
                         key: const ValueKey('desktop_chat_input'), // Preserve State across rebuilds
                         controller: _controller,

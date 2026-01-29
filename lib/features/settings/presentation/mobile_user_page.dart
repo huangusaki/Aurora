@@ -9,6 +9,7 @@ import '../../../shared/utils/avatar_cropper.dart';
 import 'settings_provider.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 import 'package:aurora/shared/widgets/aurora_bottom_sheet.dart';
+import 'package:aurora/shared/utils/platform_utils.dart';
 import '../../sync/presentation/mobile_sync_settings_page.dart';
 
 class MobileUserPage extends ConsumerStatefulWidget {
@@ -187,7 +188,7 @@ class _MobileUserPageState extends ConsumerState<MobileUserPage> {
       }
       if (!status.isGranted) return;
     } else {
-      if (Platform.isAndroid) {}
+      if (PlatformUtils.isAndroid) {}
     }
     try {
       final XFile? image = await _picker.pickImage(source: source);

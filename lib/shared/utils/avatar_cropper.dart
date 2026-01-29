@@ -6,10 +6,11 @@ import 'package:crop_image/crop_image.dart';
 import 'package:fluent_ui/fluent_ui.dart' as fluent;
 import 'package:path_provider/path_provider.dart';
 import 'package:aurora/l10n/app_localizations.dart';
+import 'platform_utils.dart';
 
 class AvatarCropper {
   static Future<String?> cropImage(BuildContext context, String path) async {
-    if (Platform.isAndroid || Platform.isIOS) {
+    if (PlatformUtils.isMobile) {
       final cropped = await ImageCropper().cropImage(
         sourcePath: path,
         uiSettings: [

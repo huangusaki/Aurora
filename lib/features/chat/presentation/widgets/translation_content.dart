@@ -7,6 +7,7 @@ import 'package:super_clipboard/super_clipboard.dart';
 import '../chat_provider.dart';
 import '../../domain/message.dart';
 import 'package:aurora/l10n/app_localizations.dart';
+import 'package:aurora/shared/utils/platform_utils.dart';
 
 class TranslationContent extends ConsumerStatefulWidget {
   const TranslationContent({super.key});
@@ -105,7 +106,7 @@ class _TranslationContentState extends ConsumerState<TranslationContent> {
     final theme = fluent.FluentTheme.of(context);
     final l10n = AppLocalizations.of(context)!;
     final chatState = ref.watch(translationProvider);
-    final isWindows = !kIsWeb && Platform.isWindows;
+    final isWindows = PlatformUtils.isWindows;
     final fontFamily = isWindows ? 'Microsoft YaHei' : null;
     final aiMessage =
         chatState.messages.isNotEmpty && !chatState.messages.last.isUser
