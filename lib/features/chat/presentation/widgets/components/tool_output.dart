@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:fluent_ui/fluent_ui.dart' as fluent;
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:aurora/l10n/app_localizations.dart';
 
 class BuildToolOutput extends StatefulWidget {
   final String content;
@@ -19,6 +20,7 @@ class _BuildToolOutputState extends State<BuildToolOutput> {
     try {
       data = jsonDecode(widget.content);
     } catch (_) {}
+    final l10n = AppLocalizations.of(context);
     final theme = fluent.FluentTheme.of(context);
     final results = data != null ? data['results'] as List? : null;
     final count = results?.length ?? 0;
@@ -31,7 +33,7 @@ class _BuildToolOutputState extends State<BuildToolOutput> {
 
     // Handle Shell Tool Output (Terminal Style)
     if (stdout != null || stderr != null || exitCode != null) {
-      return _buildTerminalOutput(theme, stdout, stderr, exitCode);
+      return _buildTerminalOutput(l10n, theme, stdout, stderr, exitCode);
     }
 
     // Handle Generic Errors from Skill execution
@@ -102,9 +104,9 @@ class _BuildToolOutputState extends State<BuildToolOutput> {
                      children: [
                        Icon(fluent.FluentIcons.robot, size: 14, color: theme.accentColor),
                        const SizedBox(width: 8),
-                       Text(
-                         'Agent Response',
-                         style: TextStyle(
+                        Text(
+                          l10n?.agentResponse ?? 'Agent Response',
+                          style: TextStyle(
                            fontSize: 11,
                            fontWeight: FontWeight.bold,
                            color: theme.accentColor,
@@ -161,9 +163,9 @@ class _BuildToolOutputState extends State<BuildToolOutput> {
                      children: [
                        Icon(fluent.FluentIcons.robot, size: 14, color: theme.accentColor),
                        const SizedBox(width: 8),
-                       Text(
-                         'Agent Output',
-                         style: TextStyle(
+                        Text(
+                          l10n?.agentOutput ?? 'Agent Output',
+                          style: TextStyle(
                            fontSize: 11,
                            fontWeight: FontWeight.bold,
                            color: theme.accentColor,
@@ -267,7 +269,7 @@ class _BuildToolOutputState extends State<BuildToolOutput> {
                       ),
                       const SizedBox(width: 12),
                       Text(
-                        '$count 个引用内容',
+                        l10n?.citationsCount(count) ?? '$count Citations',
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
@@ -397,7 +399,7 @@ class _BuildToolOutputState extends State<BuildToolOutput> {
                     size: 14, color: theme.accentColor),
                 const SizedBox(width: 8),
                 Text(
-                  '$count Search Results ($engine)',
+                  l10n?.searchResultsWithEngine(count, engine) ?? '$count Search Results ($engine)',
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
@@ -451,7 +453,7 @@ class _BuildToolOutputState extends State<BuildToolOutput> {
     );
   }
 
-  Widget _buildTerminalOutput(fluent.FluentThemeData theme, String? stdout, String? stderr, int? exitCode) {
+  Widget _buildTerminalOutput(AppLocalizations? l10n, fluent.FluentThemeData theme, String? stdout, String? stderr, int? exitCode) {
     final isError = (exitCode != null && exitCode != 0) || (stderr != null && stderr.isNotEmpty && (stdout == null || stdout.isEmpty));
     
     return Container(
@@ -484,7 +486,9 @@ class _BuildToolOutputState extends State<BuildToolOutput> {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    isError ? 'Terminal Error (Code $exitCode)' : 'Terminal Output',
+                    isError 
+                        ? (l10n?.terminalError(exitCode ?? 0) ?? 'Terminal Error (Code $exitCode)')
+                        : (l10n?.terminalOutput ?? 'Terminal Output'),
                     style: TextStyle(
                       fontSize: 11,
                       fontFamily: 'Consolas',
@@ -534,9 +538,9 @@ class _BuildToolOutputState extends State<BuildToolOutput> {
                     ),
                   ],
                   if ((stdout == null || stdout.isEmpty) && (stderr == null || stderr.isEmpty))
-                    const Text(
-                      '[No output]',
-                      style: TextStyle(
+                    Text(
+                      l10n?.noOutput ?? '[No output]',
+                      style: const TextStyle(
                         fontFamily: 'Consolas',
                         fontSize: 12,
                         color: Colors.grey,

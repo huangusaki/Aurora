@@ -812,6 +812,33 @@ class AppLocalizationsEn extends AppLocalizations {
   String get searchResults => 'Search Results';
 
   @override
+  String searchResultsWithEngine(int count, String engine) {
+    return '$count Search Results ($engine)';
+  }
+
+  @override
+  String citationsCount(int count) {
+    return '$count Citations';
+  }
+
+  @override
+  String get agentResponse => 'Agent Response';
+
+  @override
+  String get agentOutput => 'Agent Output';
+
+  @override
+  String terminalError(int code) {
+    return 'Terminal Error (Code $code)';
+  }
+
+  @override
+  String get terminalOutput => 'Terminal Output';
+
+  @override
+  String get noOutput => '[No output]';
+
+  @override
   String get imageGenerated => 'Image generated';
 
   @override

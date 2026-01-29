@@ -347,6 +347,29 @@
   
   "searchWeb": "搜索网页",
   "searchResults": "搜索结果",
+  "searchResultsWithEngine": "{count} 个搜索结果 ({engine})",
+  "@searchResultsWithEngine": {
+    "placeholders": {
+      "count": {"type": "int"},
+      "engine": {"type": "String"}
+    }
+  },
+  "citationsCount": "{count} 个引用内容",
+  "@citationsCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "agentResponse": "智能助手响应",
+  "agentOutput": "智能助手输出",
+  "terminalError": "终端错误 (错误码 {code})",
+  "@terminalError": {
+    "placeholders": {
+      "code": {"type": "int"}
+    }
+  },
+  "terminalOutput": "终端输出",
+  "noOutput": "[无输出]",
   
   "imageGenerated": "图片已生成",
   "saveImage": "保存图片",

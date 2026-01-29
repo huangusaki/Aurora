@@ -347,6 +347,29 @@
   
   "searchWeb": "Search Web",
   "searchResults": "Search Results",
+  "searchResultsWithEngine": "{count} Search Results ({engine})",
+  "@searchResultsWithEngine": {
+    "placeholders": {
+      "count": {"type": "int"},
+      "engine": {"type": "String"}
+    }
+  },
+  "citationsCount": "{count} Citations",
+  "@citationsCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "agentResponse": "Agent Response",
+  "agentOutput": "Agent Output",
+  "terminalError": "Terminal Error (Code {code})",
+  "@terminalError": {
+    "placeholders": {
+      "code": {"type": "int"}
+    }
+  },
+  "terminalOutput": "Terminal Output",
+  "noOutput": "[No output]",
   
   "imageGenerated": "Image generated",
   "saveImage": "Save Image",

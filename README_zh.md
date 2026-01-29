@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/icon/app_icon.png" width="128" />
+</p>
+
 # Aurora
 
 [English](README.md)
@@ -7,35 +11,39 @@
 ## 预览
 
 <p align="center">
-  <img src="docs/images/5962a813-5b3c-4f6d-b642-6adb0cbe8d0c.png" width="48%" />
-  <img src="docs/images/1126ec32-b7c1-40b1-aff4-34f456bdc619.png" width="48%" />
+  <img src="docs/images/1.jpeg" width="24%" />
+  <img src="docs/images/3.png" width="48%" />
 </p>
 <p align="center">
-  <img src="docs/images/Screenshot_20260121-222307.jpg" width="24%" />
-  <img src="docs/images/Screenshot_20260121-222035.jpg" width="24%" />
+  <img src="docs/images/2.jpg" width="24%" />
+  <img src="docs/images/4.png" width="48%" />
 </p>
 
 ## 平台支持
 
-*   **Windows**: 适配 Fluent Design 及 Mica 背景效果。
-*   **Android**: 适配移动端触控及布局。
+*   **Windows**: 适配 Fluent Design、Mica 背景效果以及原生交互。
+*   **macOS**: 适配 macOS 布局及系统特性。
+*   **Linux**: 完整桌面端运行支持。
+*   **Android / iOS**: 适配移动端触控交互，支持 Bottom Sheet 弹出式 UI。
 
 ## 功能列表
 
 *   **模型支持**: 支持 OpenAI、DeepSeek 及自定义 OpenAI 格式接口。
-*   **本地存储**: 聊天记录与配置均存储在本地数据库，数据不经由第三方服务器。
-*   **推理展示**: 支持展示模型的深度思考（CoT）过程。
-*   **联网搜索**: 内置搜索功能。
-*   **附件支持**: 支持图片上传与识别。
-*   **内容渲染**: 支持 Markdown、代码高亮及 LaTeX 公式渲染。
-*   **会话管理**: 自动生成会话标题，支持历史记录管理。
-*   **界面**: 支持深色/浅色模式、自定义背景及强调色，Fluent Design 及 Mica 背景效果，自定义头像，流式输出。
-*   **文本翻译**: 内置基于大模型的文本翻译功能。
-*   **Studio 模式**: 正在开发中的多 LLM 协作工作模式。
-*   **多 Key 轮询**: 支持多个 Key 轮询使用。
-*   **多端同步**: 聊天记录和设置可以依赖WebDAV进行多端记录同步。
-*   **数据统计**: 可查看 Token 用量和统计数据。
-*   **Prompt 预设**: 预设 Prompt 快速切换。
+*   **本地存储**: 聊天记录与配置均存储在本地数据库，保护用户隐私。
+*   **推理展示**: 支持展示模型的深度思考（CoT）及推理过程。
+*   **联网搜索**: 内置联网搜索功能，支持引用内容显示。
+*   **附件支持**: 支持图片上传与多模态识别分析。
+*   **内容渲染**: 完整支持 Markdown、代码高亮及 LaTeX 公式渲染。
+*   **会话管理**: 智能生成会话标题，便捷的历史记录管理。
+*   **界面**: 支持深色/浅色模式、自定义背景及强调色，适配视觉反馈。
+*   **文本翻译**: 内置基于大模型的实时文本翻译功能。
+*   **Studio 模式**: 专为专业创作设计的协作模式（大纲生成、小说写作等）。
+*   **技能插件 (Skills)**: 支持通过外部插件（SKILL.md）扩展 AI 能力。
+*   **多 Key 轮询**: 自动轮询多个 API Key，提升稳定性。
+*   **多端同步**: 支持通过 WebDAV 同步聊天记录和设置。
+*   **自定义备份**: 支持可选备份/恢复聊天记录、预设及配置。
+*   **数据统计**: 可视化查看 Token 用量和响应性能。
+*   **Prompt 预设**: 提供丰富的自定义 Persona 切换支持。
 
 ## License
 

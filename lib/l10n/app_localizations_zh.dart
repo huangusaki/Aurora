@@ -795,6 +795,33 @@ class AppLocalizationsZh extends AppLocalizations {
   String get searchResults => '搜索结果';
 
   @override
+  String searchResultsWithEngine(int count, String engine) {
+    return '$count 个搜索结果 ($engine)';
+  }
+
+  @override
+  String citationsCount(int count) {
+    return '$count 个引用内容';
+  }
+
+  @override
+  String get agentResponse => '智能助手响应';
+
+  @override
+  String get agentOutput => '智能助手输出';
+
+  @override
+  String terminalError(int code) {
+    return '终端错误 (错误码 $code)';
+  }
+
+  @override
+  String get terminalOutput => '终端输出';
+
+  @override
+  String get noOutput => '[无输出]';
+
+  @override
   String get imageGenerated => '图片已生成';
 
   @override

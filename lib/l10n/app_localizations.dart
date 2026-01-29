@@ -1622,6 +1622,48 @@ abstract class AppLocalizations {
   /// **'搜索结果'**
   String get searchResults;
 
+  /// No description provided for @searchResultsWithEngine.
+  ///
+  /// In zh, this message translates to:
+  /// **'{count} 个搜索结果 ({engine})'**
+  String searchResultsWithEngine(int count, String engine);
+
+  /// No description provided for @citationsCount.
+  ///
+  /// In zh, this message translates to:
+  /// **'{count} 个引用内容'**
+  String citationsCount(int count);
+
+  /// No description provided for @agentResponse.
+  ///
+  /// In zh, this message translates to:
+  /// **'智能助手响应'**
+  String get agentResponse;
+
+  /// No description provided for @agentOutput.
+  ///
+  /// In zh, this message translates to:
+  /// **'智能助手输出'**
+  String get agentOutput;
+
+  /// No description provided for @terminalError.
+  ///
+  /// In zh, this message translates to:
+  /// **'终端错误 (错误码 {code})'**
+  String terminalError(int code);
+
+  /// No description provided for @terminalOutput.
+  ///
+  /// In zh, this message translates to:
+  /// **'终端输出'**
+  String get terminalOutput;
+
+  /// No description provided for @noOutput.
+  ///
+  /// In zh, this message translates to:
+  /// **'[无输出]'**
+  String get noOutput;
+
   /// No description provided for @imageGenerated.
   ///
   /// In zh, this message translates to:

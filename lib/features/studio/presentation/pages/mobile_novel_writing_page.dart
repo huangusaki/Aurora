@@ -76,7 +76,7 @@ class _MobileNovelWritingPageState extends ConsumerState<MobileNovelWritingPage>
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('审查', style: TextStyle(fontSize: 12)),
+              Text(l10n.reviewModel, style: const TextStyle(fontSize: 12)),
               Transform.scale(
                 scale: 0.7,
                 child: Switch(
