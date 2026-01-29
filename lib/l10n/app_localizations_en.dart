@@ -754,6 +754,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get decomposing => 'Decomposing';
 
   @override
+  String get noProjectSelected => 'No Project Selected';
+
+  @override
+  String get createYourFirstProject => 'Start Your Creative Journey';
+
+  @override
+  String get createProjectDescription =>
+      'Create a new project to start building your story outline and chapters.';
+
+  @override
   String get aboutAurora => 'About Aurora';
 
   @override

@@ -1508,6 +1508,24 @@ abstract class AppLocalizations {
   /// **'拆解中'**
   String get decomposing;
 
+  /// No description provided for @noProjectSelected.
+  ///
+  /// In zh, this message translates to:
+  /// **'未选择项目'**
+  String get noProjectSelected;
+
+  /// No description provided for @createYourFirstProject.
+  ///
+  /// In zh, this message translates to:
+  /// **'开始你的创作吧'**
+  String get createYourFirstProject;
+
+  /// No description provided for @createProjectDescription.
+  ///
+  /// In zh, this message translates to:
+  /// **'新建一个项目来开始编写你的故事大纲和章节。'**
+  String get createProjectDescription;
+
   /// No description provided for @aboutAurora.
   ///
   /// In zh, this message translates to:

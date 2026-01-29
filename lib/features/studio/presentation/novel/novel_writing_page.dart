@@ -21,6 +21,7 @@ class NovelWritingPage extends ConsumerStatefulWidget {
 class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
   final _taskInputController = TextEditingController();
   final _newChapterController = TextEditingController();
+  final _projectFlyoutController = FlyoutController();
   
   int _selectedNavIndex = 0; // 0: Writing, 1: Context, 2: Preview
 
@@ -28,6 +29,7 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
   void dispose() {
     _taskInputController.dispose();
     _newChapterController.dispose();
+    _projectFlyoutController.dispose();
     super.dispose();
   }
 
@@ -207,29 +209,48 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
       );
     }
 
+    final projectName = state.selectedProject?.name ?? l10n.selectProject;
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        SizedBox(
-          width: 200,
-          child: ComboBox<String>(
-            value: state.selectedProjectId,
-            placeholder: Text(l10n.selectProject, style: const TextStyle(fontSize: 13)),
-            isExpanded: true,
-            items: state.projects.map((p) {
-              return ComboBoxItem<String>(
-                value: p.id,
-                child: Text(
-                  p.name,
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
-                  style: const TextStyle(fontSize: 13),
-                ),
-              );
-            }).toList(),
-            onChanged: (value) {
-              if (value != null) notifier.selectProject(value);
-            },
+        FlyoutTarget(
+          controller: _projectFlyoutController,
+          child: SizedBox(
+            width: 200,
+            child: Button(
+              onPressed: () {
+                _projectFlyoutController.showFlyout(
+                  autoModeConfiguration: FlyoutAutoConfiguration(
+                    preferredMode: FlyoutPlacementMode.bottomCenter,
+                  ),
+                  builder: (context) {
+                    return MenuFlyout(
+                      items: state.projects.map((p) => MenuFlyoutItem(
+                        text: Text(p.name, style: const TextStyle(fontSize: 13)),
+                        selected: state.selectedProjectId == p.id,
+                        onPressed: () {
+                          notifier.selectProject(p.id);
+                        },
+                      )).toList(),
+                    );
+                  },
+                );
+              },
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      projectName,
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                      style: const TextStyle(fontSize: 13),
+                    ),
+                  ),
+                  const Icon(FluentIcons.chevron_down, size: 8),
+                ],
+              ),
+            ),
           ),
         ),
         const SizedBox(width: 8),

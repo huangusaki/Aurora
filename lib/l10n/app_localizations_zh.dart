@@ -738,6 +738,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get decomposing => '拆解中';
 
   @override
+  String get noProjectSelected => '未选择项目';
+
+  @override
+  String get createYourFirstProject => '开始你的创作吧';
+
+  @override
+  String get createProjectDescription => '新建一个项目来开始编写你的故事大纲和章节。';
+
+  @override
   String get aboutAurora => '关于 Aurora';
 
   @override

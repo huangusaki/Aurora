@@ -87,6 +87,11 @@ class _MobileNovelWritingPageState extends ConsumerState<MobileNovelWritingPage>
             ],
           ),
           IconButton(
+            icon: const Icon(Icons.add),
+            tooltip: l10n.createProject,
+            onPressed: () => _showNewProjectDialog(context, l10n, notifier),
+          ),
+          IconButton(
             icon: const Icon(Icons.settings_outlined),
             onPressed: () {
               AuroraBottomSheet.show(
@@ -241,7 +246,7 @@ class _MobileNovelWritingPageState extends ConsumerState<MobileNovelWritingPage>
 
   Widget _buildWritingView(BuildContext context, AppLocalizations l10n, ThemeData theme, NovelWritingState state, NovelNotifier notifier) {
     if (state.selectedProject == null) {
-      return Center(child: Text(l10n.selectProject));
+      return _buildNoProjectState(context, l10n, theme, notifier);
     }
 
     return CustomScrollView(
@@ -564,7 +569,7 @@ class _MobileNovelWritingPageState extends ConsumerState<MobileNovelWritingPage>
   }
 
   Widget _buildContextView(BuildContext context, AppLocalizations l10n, ThemeData theme, NovelWritingState state, NovelNotifier notifier) {
-    if (state.selectedProject == null) return Center(child: Text(l10n.selectProject));
+    if (state.selectedProject == null) return _buildNoProjectState(context, l10n, theme, notifier);
     
     final ctx = state.selectedProject!.worldContext;
     return ListView(
@@ -653,7 +658,7 @@ class _MobileNovelWritingPageState extends ConsumerState<MobileNovelWritingPage>
   }
 
   Widget _buildPreviewView(BuildContext context, AppLocalizations l10n, ThemeData theme, NovelWritingState state, NovelNotifier notifier) {
-    if (state.selectedProject == null) return Center(child: Text(l10n.selectProject));
+    if (state.selectedProject == null) return _buildNoProjectState(context, l10n, theme, notifier);
     final content = notifier.exportFullNovel();
     
     return Column(
@@ -692,6 +697,51 @@ class _MobileNovelWritingPageState extends ConsumerState<MobileNovelWritingPage>
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildNoProjectState(BuildContext context, AppLocalizations l10n, ThemeData theme, NovelNotifier notifier) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.library_books_outlined,
+              size: 80,
+              color: theme.primaryColor.withOpacity(0.2),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              l10n.noProjectSelected,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              l10n.createProjectDescription,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.hintColor,
+              ),
+            ),
+            const SizedBox(height: 32),
+            ElevatedButton.icon(
+              onPressed: () => _showNewProjectDialog(context, l10n, notifier),
+              icon: const Icon(Icons.add),
+              label: Text(l10n.createProject),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
