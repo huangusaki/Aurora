@@ -358,7 +358,7 @@ class NovelNotifier extends StateNotifier<NovelWritingState> {
   bool _shouldStop = false;
   
   NovelNotifier(this._ref) : super(const NovelWritingState()) {
-    _loadState();
+    loadState();
   }
 
   Future<File> get _stateFile async {
@@ -366,7 +366,7 @@ class NovelNotifier extends StateNotifier<NovelWritingState> {
     return File('${dir.path}/novel_writing_state.json');
   }
 
-  Future<void> _loadState() async {
+  Future<void> loadState() async {
     try {
       final file = await _stateFile;
       if (await file.exists()) {

@@ -263,6 +263,99 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
         )) {
     loadPresets();
   }
+
+  Future<void> refreshSettings() async {
+    final providerEntities = await _storage.loadProviders();
+    final appSettings = await _storage.loadAppSettings();
+
+    final List<ProviderConfig> newProviders;
+    if (providerEntities.isEmpty) {
+      newProviders = [
+        ProviderConfig(id: 'openai', name: 'OpenAI', isCustom: false),
+        ProviderConfig(id: 'custom', name: 'Custom', isCustom: true),
+      ];
+    } else {
+      newProviders = providerEntities.map((e) {
+        Map<String, dynamic> customParams = {};
+        Map<String, Map<String, dynamic>> modelSettings = {};
+        Map<String, dynamic> globalSettings = {};
+
+        if (e.customParametersJson != null &&
+            e.customParametersJson!.isNotEmpty) {
+          try {
+            customParams =
+                jsonDecode(e.customParametersJson!) as Map<String, dynamic>;
+          } catch (_) {}
+        }
+        if (e.modelSettingsJson != null && e.modelSettingsJson!.isNotEmpty) {
+          try {
+            final decoded = jsonDecode(e.modelSettingsJson!);
+            if (decoded is Map) {
+              modelSettings = decoded.map((key, value) =>
+                  MapEntry(key.toString(), value as Map<String, dynamic>));
+            }
+          } catch (_) {}
+        }
+        if (e.globalSettingsJson != null && e.globalSettingsJson!.isNotEmpty) {
+          try {
+            globalSettings =
+                jsonDecode(e.globalSettingsJson!) as Map<String, dynamic>;
+          } catch (_) {}
+        }
+        List<String> apiKeys = e.apiKeys;
+        if (apiKeys.isEmpty && e.apiKey.isNotEmpty) {
+          apiKeys = [e.apiKey];
+        }
+        return ProviderConfig(
+          id: e.providerId,
+          name: e.name,
+          color: e.color,
+          apiKeys: apiKeys,
+          currentKeyIndex: e.currentKeyIndex,
+          autoRotateKeys: e.autoRotateKeys,
+          baseUrl: e.baseUrl,
+          isCustom: e.isCustom,
+          customParameters: customParams,
+          modelSettings: modelSettings,
+          globalSettings: globalSettings,
+          globalExcludeModels: e.globalExcludeModels,
+          models: e.savedModels,
+          selectedModel: e.lastSelectedModel,
+          isEnabled: e.isEnabled,
+        );
+      }).toList();
+      if (!newProviders.any((p) => p.id == 'custom')) {
+        newProviders
+            .add(ProviderConfig(id: 'custom', name: 'Custom', isCustom: true));
+      }
+    }
+
+    final activeProviderId = appSettings?.activeProviderId ?? 'custom';
+
+    state = state.copyWith(
+      providers: newProviders,
+      activeProviderId: activeProviderId,
+      viewingProviderId: activeProviderId,
+      userName: appSettings?.userName ?? 'User',
+      userAvatar: appSettings?.userAvatar,
+      llmName: appSettings?.llmName ?? 'Assistant',
+      llmAvatar: appSettings?.llmAvatar,
+      themeMode: appSettings?.themeMode ?? 'system',
+      isStreamEnabled: appSettings?.isStreamEnabled ?? true,
+      isSearchEnabled: appSettings?.isSearchEnabled ?? false,
+      searchEngine: appSettings?.searchEngine ?? 'duckduckgo',
+      enableSmartTopic: appSettings?.enableSmartTopic ?? true,
+      topicGenerationModel: appSettings?.topicGenerationModel,
+      language: appSettings?.language ?? 'zh',
+      themeColor: appSettings?.themeColor ?? 'teal',
+      backgroundColor: appSettings?.backgroundColor ?? 'default',
+      closeBehavior: appSettings?.closeBehavior ?? 0,
+      executionModel: appSettings?.executionModel,
+      executionProviderId: appSettings?.executionProviderId,
+    );
+
+    await loadPresets();
+  }
   void viewProvider(String id) {
     if (state.viewingProviderId != id) {
       state = state.copyWith(viewingProviderId: id, error: null);

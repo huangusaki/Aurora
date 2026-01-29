@@ -5,7 +5,9 @@ import 'package:intl/intl.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 
 import '../domain/webdav_config.dart';
+import '../domain/backup_options.dart';
 import 'sync_provider.dart';
+import 'widgets/backup_options_selector.dart';
 
 class MobileSyncSettingsPage extends ConsumerStatefulWidget {
   const MobileSyncSettingsPage({super.key});
@@ -161,7 +163,49 @@ class _MobileSyncSettingsPageState extends ConsumerState<MobileSyncSettingsPage>
               const SizedBox(width: 16),
               Expanded(
                 child: FilledButton(
-                  onPressed: state.isBusy ? null : () => ref.read(syncProvider.notifier).backup(),
+                  onPressed: state.isBusy ? null : () async {
+                    BackupOptions selectedOptions = const BackupOptions();
+                    final confirmed = await AuroraBottomSheet.show(
+                      context: context,
+                      builder: (ctx) => StatefulBuilder(
+                        builder: (context, setModalState) {
+                          return Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              AuroraBottomSheet.buildTitle(context, l10n.selectiveBackup),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                child: BackupOptionsSelector(
+                                  options: selectedOptions,
+                                  onChanged: (newOptions) {
+                                    setModalState(() {
+                                      selectedOptions = newOptions;
+                                    });
+                                  },
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: SizedBox(
+                                  width: double.infinity,
+                                  child: FilledButton(
+                                    onPressed: selectedOptions.isNoneSelected 
+                                      ? null 
+                                      : () => Navigator.pop(ctx, true),
+                                    child: Text(l10n.confirm),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          );
+                        }
+                      ),
+                    );
+                    
+                    if (confirmed == true) {
+                      ref.read(syncProvider.notifier).backup(options: selectedOptions);
+                    }
+                  },
                   child: Text(l10n.backupNow),
                 ),
               ),

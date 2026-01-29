@@ -1383,4 +1383,22 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get savePresetOverrideHint =>
       'Save current config and overwrite selected preset';
+
+  @override
+  String get selectiveBackup => 'Selective Backup';
+
+  @override
+  String get backupChatHistory => 'Chat History';
+
+  @override
+  String get backupChatPresets => 'Prompt Presets';
+
+  @override
+  String get backupProviderConfigs => 'Model Provider Configs';
+
+  @override
+  String get backupStudioContent => 'Studio Content';
+
+  @override
+  String get noOptionsSelected => 'Please select at least one option to backup';
 }

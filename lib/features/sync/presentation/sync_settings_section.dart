@@ -4,7 +4,9 @@ import 'package:intl/intl.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 
 import '../domain/webdav_config.dart';
+import '../domain/backup_options.dart';
 import 'sync_provider.dart';
+import 'widgets/backup_options_dialog.dart';
 
 class SyncSettingsSection extends ConsumerStatefulWidget {
   const SyncSettingsSection({super.key});
@@ -147,7 +149,15 @@ class _SyncSettingsSectionState extends ConsumerState<SyncSettingsSection> {
             ),
             const SizedBox(width: 12),
             Button(
-              onPressed: state.isBusy ? null : () => ref.read(syncProvider.notifier).backup(),
+              onPressed: state.isBusy ? null : () async {
+                final options = await showDialog<BackupOptions>(
+                  context: context,
+                  builder: (context) => BackupOptionsDialog(title: l10n.selectiveBackup),
+                );
+                if (options != null) {
+                  ref.read(syncProvider.notifier).backup(options: options);
+                }
+              },
               child: Text(l10n.backupNow),
             ),
           ],

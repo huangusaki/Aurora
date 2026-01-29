@@ -570,5 +570,11 @@
   },
   "outline": "Outline",
   "outlineModel": "Outline Model",
-  "savePresetOverrideHint": "Save current config and overwrite selected preset"
+  "savePresetOverrideHint": "Save current config and overwrite selected preset",
+  "selectiveBackup": "Selective Backup",
+  "backupChatHistory": "Chat History",
+  "backupChatPresets": "Prompt Presets",
+  "backupProviderConfigs": "Model Provider Configs",
+  "backupStudioContent": "Studio Content",
+  "noOptionsSelected": "Please select at least one option to backup"
 }

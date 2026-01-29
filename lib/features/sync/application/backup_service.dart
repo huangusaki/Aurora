@@ -8,8 +8,11 @@ import 'package:path_provider/path_provider.dart';
 import '../../chat/data/message_entity.dart';
 import '../../chat/data/session_entity.dart';
 import '../../chat/data/topic_entity.dart';
+import '../../settings/data/chat_preset_entity.dart';
+import '../../settings/data/provider_config_entity.dart';
 import '../../settings/data/settings_storage.dart';
 import '../domain/backup_entity.dart';
+import '../domain/backup_options.dart';
 import '../domain/webdav_config.dart';
 import '../data/webdav_service.dart';
 
@@ -18,13 +21,13 @@ class BackupService {
   
   BackupService(this._storage);
 
-  Future<void> backup(WebDavConfig config) async {
+  Future<void> backup(WebDavConfig config, {BackupOptions options = const BackupOptions()}) async {
     final webdav = WebDavService(config);
     if (!await webdav.checkConnection()) {
       throw Exception('Connection failed');
     }
 
-    final backupEntity = await _exportData();
+    final backupEntity = await _exportData(options: options);
     final file = await _createBackupFile(backupEntity);
     
     final timestamp = DateTime.now().toIso8601String().replaceAll(':', '-').split('.').first;
@@ -48,8 +51,8 @@ class BackupService {
     await file.delete();
   }
 
-  Future<void> exportToLocalFile(String destinationPath) async {
-    final backupEntity = await _exportData();
+  Future<void> exportToLocalFile(String destinationPath, {BackupOptions options = const BackupOptions()}) async {
+    final backupEntity = await _exportData(options: options);
     final tempFile = await _createBackupFile(backupEntity);
     await tempFile.copy(destinationPath);
     await tempFile.delete();
@@ -73,12 +76,29 @@ class BackupService {
     });
   }
 
-  Future<BackupEntity> _exportData() async {
+  Future<BackupEntity> _exportData({BackupOptions options = const BackupOptions()}) async {
     final isar = _storage.isar;
     
-    final sessions = await isar.sessionEntitys.where().findAll();
-    final messages = await isar.messageEntitys.where().findAll();
-    final topics = await isar.topicEntitys.where().findAll();
+    final sessions = options.includeChatHistory ? await isar.sessionEntitys.where().findAll() : <SessionEntity>[];
+    final messages = options.includeChatHistory ? await isar.messageEntitys.where().findAll() : <MessageEntity>[];
+    final topics = options.includeChatHistory ? await isar.topicEntitys.where().findAll() : <TopicEntity>[];
+    final chatPresets = options.includeChatPresets ? await isar.chatPresetEntitys.where().findAll() : <ChatPresetEntity>[];
+    final providerConfigs = options.includeProviderConfigs ? await isar.providerConfigEntitys.where().findAll() : <ProviderConfigEntity>[];
+    
+    // Load studio content
+    Map<String, dynamic>? studioContent;
+    if (options.includeStudioContent) {
+      try {
+        final docsDir = await getApplicationDocumentsDirectory();
+        final studioFile = File('${docsDir.path}/novel_writing_state.json');
+        if (await studioFile.exists()) {
+          final content = await studioFile.readAsString();
+          studioContent = jsonDecode(content) as Map<String, dynamic>;
+        }
+      } catch (e) {
+        print('Error exporting studio content: $e');
+      }
+    }
     
     // Create topic map for ID to Name resolution
     final topicMap = {for (var t in topics) t.id: t.name};
@@ -119,12 +139,41 @@ class BackupService {
         createdAt: t.createdAt,
     )).toList();
 
+    final chatPresetBackups = chatPresets.map((p) => ChatPresetBackup(
+      presetId: p.presetId,
+      name: p.name,
+      description: p.description,
+      systemPrompt: p.systemPrompt,
+    )).toList();
+
+    final providerConfigBackups = providerConfigs.map((c) => ProviderConfigBackup(
+      providerId: c.providerId,
+      name: c.name,
+      color: c.color,
+      apiKeys: c.apiKeys,
+      currentKeyIndex: c.currentKeyIndex,
+      autoRotateKeys: c.autoRotateKeys,
+      baseUrl: c.baseUrl,
+      isCustom: c.isCustom,
+      customParametersJson: c.customParametersJson,
+      modelSettingsJson: c.modelSettingsJson,
+      globalSettingsJson: c.globalSettingsJson,
+      globalExcludeModels: c.globalExcludeModels,
+      savedModels: c.savedModels,
+      lastSelectedModel: c.lastSelectedModel,
+      isActive: c.isActive,
+      isEnabled: c.isEnabled,
+    )).toList();
+
     return BackupEntity(
       version: 1,
       createdAt: DateTime.now(),
       sessions: sessionBackups,
       messages: messageBackups,
       topics: topicBackups,
+      chatPresets: chatPresetBackups,
+      providerConfigs: providerConfigBackups,
+      studioContent: studioContent,
     );
   }
 
@@ -212,9 +261,6 @@ class BackupService {
 
       // 3. Merge Messages
       for (final m in backup.messages) {
-        // Compound uniqueness check: sessionId + timestamp + content
-        // Or just trust UUID if MessageEntity had one? It uses auto-increment ID.
-        // So we must rely on content match.
         final count = await isar.messageEntitys
             .filter()
             .sessionIdEqualTo(m.sessionId)
@@ -242,7 +288,60 @@ class BackupService {
             );
         }
       }
+
+      // 4. Merge Chat Presets
+      for (final p in backup.chatPresets) {
+        final existing = await isar.chatPresetEntitys.filter().presetIdEqualTo(p.presetId).findFirst();
+        if (existing == null) {
+          await isar.chatPresetEntitys.put(ChatPresetEntity()
+            ..presetId = p.presetId
+            ..name = p.name
+            ..description = p.description
+            ..systemPrompt = p.systemPrompt
+          );
+        }
+      }
+
+      // 5. Merge Provider Configs
+      for (final c in backup.providerConfigs) {
+        final existing = await isar.providerConfigEntitys.filter().providerIdEqualTo(c.providerId).findFirst();
+        if (existing == null) {
+          await isar.providerConfigEntitys.put(ProviderConfigEntity()
+            ..providerId = c.providerId
+            ..name = c.name
+            ..color = c.color
+            ..apiKeys = c.apiKeys
+            ..currentKeyIndex = c.currentKeyIndex
+            ..autoRotateKeys = c.autoRotateKeys
+            ..baseUrl = c.baseUrl
+            ..isCustom = c.isCustom
+            ..customParametersJson = c.customParametersJson
+            ..modelSettingsJson = c.modelSettingsJson
+            ..globalSettingsJson = c.globalSettingsJson
+            ..globalExcludeModels = c.globalExcludeModels
+            ..savedModels = c.savedModels
+            ..lastSelectedModel = c.lastSelectedModel
+            ..isActive = c.isActive
+            ..isEnabled = c.isEnabled
+          );
+        } else {
+          // If existing, maybe update some fields? For now, we only add missing ones or keep existing.
+          // In sync, usually we might want to update if backup is newer, but Isaar doesn't have updatedAt on these.
+          // We'll stick to "add if missing" for provider configs to avoid overwriting user's local keys if they differ.
+        }
+      }
     });
+
+    // 6. Restore Studio Content
+    if (backup.studioContent != null) {
+      try {
+        final docsDir = await getApplicationDocumentsDirectory();
+        final studioFile = File('${docsDir.path}/novel_writing_state.json');
+        await studioFile.writeAsString(jsonEncode(backup.studioContent));
+      } catch (e) {
+        print('Error restoring studio content: $e');
+      }
+    }
   }
 }
 

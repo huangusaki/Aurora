@@ -3,10 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../settings/presentation/settings_provider.dart';
+import '../../chat/presentation/topic_provider.dart';
+import '../../chat/presentation/chat_provider.dart';
+import '../../studio/presentation/novel/novel_provider.dart';
 import '../application/backup_service.dart';
 import '../data/webdav_service.dart';
-import '../domain/webdav_config.dart';
+import '../domain/backup_entity.dart';
+import '../domain/backup_options.dart';
 import '../domain/remote_backup_file.dart';
+import '../domain/webdav_config.dart';
 
 final syncProvider = StateNotifierProvider<SyncNotifier, SyncState>((ref) {
   return SyncNotifier(ref);
@@ -115,10 +120,10 @@ class SyncNotifier extends StateNotifier<SyncState> {
       }
   }
 
-  Future<void> backup() async {
+  Future<void> backup({BackupOptions options = const BackupOptions()}) async {
       state = state.copyWith(isBusy: true, error: null, successMessage: null);
       try {
-        await ref.read(backupServiceProvider).backup(state.config);
+        await ref.read(backupServiceProvider).backup(state.config, options: options);
         state = state.copyWith(isBusy: false, successMessage: SyncMessageKeys.backupSuccess);
         refreshBackups();
       } catch(e) {
@@ -130,10 +135,20 @@ class SyncNotifier extends StateNotifier<SyncState> {
       state = state.copyWith(isBusy: true, error: null, successMessage: null);
       try {
           await ref.read(backupServiceProvider).restore(state.config, file.name);
+          await refreshAllStates();
           state = state.copyWith(isBusy: false, successMessage: SyncMessageKeys.restoreSuccess);
       } catch(e) {
           state = state.copyWith(isBusy: false, error: '${SyncMessageKeys.restoreFailed}: $e');
       }
+  }
+
+  Future<void> refreshAllStates() async {
+      // Refresh all states after restore or local import
+      await ref.read(settingsProvider.notifier).refreshSettings();
+      await ref.read(novelProvider.notifier).loadState();
+      ref.read(sessionsProvider.notifier).loadSessions();
+      ref.invalidate(topicsProvider);
+      ref.invalidate(chatSessionManagerProvider);
   }
 
   Future<void> refreshBackups() async {

@@ -1355,4 +1355,22 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get savePresetOverrideHint => '保存当前配置覆盖选中的预设';
+
+  @override
+  String get selectiveBackup => '可选备份';
+
+  @override
+  String get backupChatHistory => '聊天记录';
+
+  @override
+  String get backupChatPresets => 'Prompt 预设';
+
+  @override
+  String get backupProviderConfigs => '模型供应商配置';
+
+  @override
+  String get backupStudioContent => 'Studio 内容';
+
+  @override
+  String get noOptionsSelected => '请至少选择一项进行备份';
 }

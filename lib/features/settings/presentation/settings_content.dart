@@ -17,6 +17,8 @@ import 'model_config_dialog.dart';
 import 'global_config_dialog.dart';
 import '../../sync/presentation/sync_settings_section.dart';
 import '../../sync/presentation/sync_provider.dart';
+import '../../sync/domain/backup_options.dart';
+import '../../sync/presentation/widgets/backup_options_dialog.dart';
 
 
 class SettingsContent extends ConsumerStatefulWidget {
@@ -1433,7 +1435,15 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
       final location = await getSaveLocation(suggestedName: fileName);
       if (location == null) return;
       
-      await ref.read(backupServiceProvider).exportToLocalFile(location.path);
+      if (mounted) {
+        final options = await showDialog<BackupOptions>(
+          context: context,
+          builder: (context) => BackupOptionsDialog(title: l10n.selectiveBackup),
+        );
+        if (options == null) return;
+        
+        await ref.read(backupServiceProvider).exportToLocalFile(location.path, options: options);
+      }
       
       if (mounted) {
          _showDialog(l10n.exportSuccess, isError: false);
@@ -1453,6 +1463,7 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
       if (file == null) return;
 
       await ref.read(backupServiceProvider).importFromLocalFile(file.path);
+      await ref.read(syncProvider.notifier).refreshAllStates();
       
       if (mounted) {
         _showDialog(l10n.importSuccess, isError: false);
@@ -1479,6 +1490,7 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
                     Navigator.pop(context);
                     try {
                         await ref.read(backupServiceProvider).clearAllData();
+                        await ref.read(syncProvider.notifier).refreshAllStates();
                         if (mounted) _showDialog(l10n.clearDataSuccess, isError: false);
                     } catch(e) {
                         if (mounted) _showDialog('${l10n.clearDataFailed}: $e', isError: true);

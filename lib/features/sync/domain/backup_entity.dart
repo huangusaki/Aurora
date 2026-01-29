@@ -4,6 +4,9 @@ class BackupEntity {
   final List<SessionBackup> sessions;
   final List<MessageBackup> messages;
   final List<TopicBackup> topics;
+  final List<ChatPresetBackup> chatPresets;
+  final List<ProviderConfigBackup> providerConfigs;
+  final Map<String, dynamic>? studioContent;
   final Map<String, dynamic> preferences;
 
   BackupEntity({
@@ -12,6 +15,9 @@ class BackupEntity {
     this.sessions = const [],
     this.messages = const [],
     this.topics = const [],
+    this.chatPresets = const [],
+    this.providerConfigs = const [],
+    this.studioContent,
     this.preferences = const {},
   });
 
@@ -21,6 +27,9 @@ class BackupEntity {
     'sessions': sessions.map((s) => s.toJson()).toList(),
     'messages': messages.map((m) => m.toJson()).toList(),
     'topics': topics.map((t) => t.toJson()).toList(),
+    'chatPresets': chatPresets.map((p) => p.toJson()).toList(),
+    'providerConfigs': providerConfigs.map((c) => c.toJson()).toList(),
+    'studioContent': studioContent,
     'preferences': preferences,
   };
 
@@ -36,6 +45,13 @@ class BackupEntity {
     topics: (json['topics'] as List<dynamic>?)
         ?.map((e) => TopicBackup.fromJson(e as Map<String, dynamic>))
         .toList() ?? [],
+    chatPresets: (json['chatPresets'] as List<dynamic>?)
+        ?.map((e) => ChatPresetBackup.fromJson(e as Map<String, dynamic>))
+        .toList() ?? [],
+    providerConfigs: (json['providerConfigs'] as List<dynamic>?)
+        ?.map((e) => ProviderConfigBackup.fromJson(e as Map<String, dynamic>))
+        .toList() ?? [],
+    studioContent: json['studioContent'] as Map<String, dynamic>?,
     preferences: json['preferences'] as Map<String, dynamic>? ?? {},
   );
 }
@@ -177,5 +193,109 @@ class TopicBackup {
   factory TopicBackup.fromJson(Map<String, dynamic> json) => TopicBackup(
     name: json['name'] as String,
     createdAt: DateTime.parse(json['createdAt'] as String),
+  );
+}
+
+class ChatPresetBackup {
+  final String presetId;
+  final String name;
+  final String? description;
+  final String systemPrompt;
+
+  ChatPresetBackup({
+    required this.presetId,
+    required this.name,
+    this.description,
+    required this.systemPrompt,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'presetId': presetId,
+    'name': name,
+    'description': description,
+    'systemPrompt': systemPrompt,
+  };
+
+  factory ChatPresetBackup.fromJson(Map<String, dynamic> json) => ChatPresetBackup(
+    presetId: json['presetId'] as String,
+    name: json['name'] as String,
+    description: json['description'] as String?,
+    systemPrompt: json['systemPrompt'] as String,
+  );
+}
+
+class ProviderConfigBackup {
+  final String providerId;
+  final String name;
+  final String? color;
+  final List<String> apiKeys;
+  final int currentKeyIndex;
+  final bool autoRotateKeys;
+  final String baseUrl;
+  final bool isCustom;
+  final String? customParametersJson;
+  final String? modelSettingsJson;
+  final String? globalSettingsJson;
+  final List<String> globalExcludeModels;
+  final List<String> savedModels;
+  final String? lastSelectedModel;
+  final bool isActive;
+  final bool isEnabled;
+
+  ProviderConfigBackup({
+    required this.providerId,
+    required this.name,
+    this.color,
+    required this.apiKeys,
+    this.currentKeyIndex = 0,
+    this.autoRotateKeys = false,
+    required this.baseUrl,
+    this.isCustom = false,
+    this.customParametersJson,
+    this.modelSettingsJson,
+    this.globalSettingsJson,
+    this.globalExcludeModels = const [],
+    this.savedModels = const [],
+    this.lastSelectedModel,
+    this.isActive = false,
+    this.isEnabled = true,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'providerId': providerId,
+    'name': name,
+    'color': color,
+    'apiKeys': apiKeys,
+    'currentKeyIndex': currentKeyIndex,
+    'autoRotateKeys': autoRotateKeys,
+    'baseUrl': baseUrl,
+    'isCustom': isCustom,
+    'customParametersJson': customParametersJson,
+    'modelSettingsJson': modelSettingsJson,
+    'globalSettingsJson': globalSettingsJson,
+    'globalExcludeModels': globalExcludeModels,
+    'savedModels': savedModels,
+    'lastSelectedModel': lastSelectedModel,
+    'isActive': isActive,
+    'isEnabled': isEnabled,
+  };
+
+  factory ProviderConfigBackup.fromJson(Map<String, dynamic> json) => ProviderConfigBackup(
+    providerId: json['providerId'] as String,
+    name: json['name'] as String,
+    color: json['color'] as String?,
+    apiKeys: (json['apiKeys'] as List<dynamic>?)?.cast<String>() ?? [],
+    currentKeyIndex: json['currentKeyIndex'] as int? ?? 0,
+    autoRotateKeys: json['autoRotateKeys'] as bool? ?? false,
+    baseUrl: json['baseUrl'] as String,
+    isCustom: json['isCustom'] as bool? ?? false,
+    customParametersJson: json['customParametersJson'] as String?,
+    modelSettingsJson: json['modelSettingsJson'] as String?,
+    globalSettingsJson: json['globalSettingsJson'] as String?,
+    globalExcludeModels: (json['globalExcludeModels'] as List<dynamic>?)?.cast<String>() ?? [],
+    savedModels: (json['savedModels'] as List<dynamic>?)?.cast<String>() ?? [],
+    lastSelectedModel: json['lastSelectedModel'] as String?,
+    isActive: json['isActive'] as bool? ?? false,
+    isEnabled: json['isEnabled'] as bool? ?? true,
   );
 }
