@@ -172,10 +172,6 @@ class ChatViewState extends ConsumerState<ChatView> {
     super.initState();
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _notifier = ref.read(chatSessionManagerProvider).getOrCreate(_sessionId);
-      _notifier!.addLocalListener(_onNotifierStateChanged);
-    });
   }
 
   void _onNotifierStateChanged() {
@@ -185,8 +181,7 @@ class ChatViewState extends ConsumerState<ChatView> {
   }
 
   void _restoreScrollPosition() {
-    final notifier =
-        ref.read(chatSessionManagerProvider).getOrCreate(_sessionId);
+    final notifier = _notifier!;
     final state = notifier.currentState;
     if (_hasRestoredPosition || state.messages.isEmpty) return;
     _hasRestoredPosition = true;
@@ -212,9 +207,7 @@ class ChatViewState extends ConsumerState<ChatView> {
     if (!_scrollController.hasClients) return;
     final currentScroll = _scrollController.position.pixels;
     final autoScroll = currentScroll < 100;
-    ref
-        .read(chatSessionManagerProvider)
-        .getOrCreate(_sessionId)
+    _notifier!
         .setAutoScrollEnabled(autoScroll);
   }
 
@@ -432,13 +425,12 @@ class ChatViewState extends ConsumerState<ChatView> {
     if (text.trim().isEmpty && _attachments.isEmpty) {
       return;
     }
-    final currentSessionId = ref.read(selectedHistorySessionIdProvider);
     final attachmentsCopy = List<String>.from(_attachments);
     setState(() {
       _controller.clear();
       _attachments.clear();
     });
-    ref.read(historyChatProvider).setAutoScrollEnabled(true);
+    ref.read(chatSessionManagerProvider).getOrCreate(_sessionId).setAutoScrollEnabled(true);
     if (_scrollController.hasClients) {
       _scrollController.animateTo(
         0,
@@ -446,11 +438,16 @@ class ChatViewState extends ConsumerState<ChatView> {
         curve: Curves.easeOut,
       );
     }
-    final finalSessionId = await ref
-        .read(historyChatProvider)
-        .sendMessage(text, attachments: attachmentsCopy);
+    final effectiveSessionId = widget.sessionId;
+    
+    // Always get the freshest notifier for sending to avoid using disposed instances
+    final activeNotifier = ref.read(chatSessionNotifierProvider(effectiveSessionId));
+    if (!activeNotifier.mounted) return;
+
+    final finalSessionId = await activeNotifier.sendMessage(text, attachments: attachmentsCopy);
+    
     if (!mounted) return;
-    if (currentSessionId == 'new_chat' && finalSessionId != 'new_chat') {
+    if (effectiveSessionId == 'new_chat' && finalSessionId != 'new_chat') {
       ref.read(selectedHistorySessionIdProvider.notifier).state =
           finalSessionId;
     }
@@ -458,8 +455,12 @@ class ChatViewState extends ConsumerState<ChatView> {
 
   @override
   Widget build(BuildContext context) {
-    final notifier =
-        ref.read(chatSessionManagerProvider).getOrCreate(_sessionId);
+    final notifier = ref.watch(chatSessionNotifierProvider(widget.sessionId));
+    if (_notifier != notifier) {
+      _notifier?.removeLocalListener(_onNotifierStateChanged);
+      _notifier = notifier;
+      _notifier!.addLocalListener(_onNotifierStateChanged);
+    }
     final chatState = notifier.currentState;
     final messages = chatState.messages;
     final isLoading = chatState.isLoading;

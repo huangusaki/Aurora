@@ -132,11 +132,23 @@ class ChatNotifier extends StateNotifier<ChatState> {
     }
   }
 
+  bool _isDisposed = false;
+  bool get mounted => !_isDisposed;
+
   @override
   set state(ChatState value) {
+    if (_isDisposed) return;
     super.state = value;
     onStateChanged?.call();
     _notifyLocalListeners();
+  }
+
+  @override
+  void dispose() {
+    _isDisposed = true;
+    _currentCancelToken?.cancel();
+    _currentCancelToken = null;
+    super.dispose();
   }
 
   ChatState get currentState => state;
@@ -205,6 +217,8 @@ class ChatNotifier extends StateNotifier<ChatState> {
 
   Future<String> sendMessage(String? text,
       {List<String> attachments = const [], String? apiContent}) async {
+    if (!mounted) return _sessionId;
+    
     if (state.isLoading && text != null) {
       return _sessionId;
     }
@@ -214,17 +228,21 @@ class ChatNotifier extends StateNotifier<ChatState> {
     _currentGenerationId = myGenerationId;
     _currentCancelToken?.cancel();
     _currentCancelToken = CancelToken();
+    final oldId = _sessionId;
+    String? newRealId;
     if (text != null && (_sessionId == 'chat' || _sessionId == 'new_chat')) {
       final title = text.length > 15 ? '${text.substring(0, 15)}...' : text;
       final topicId = _ref.read(selectedTopicIdProvider);
-      final currentPresetId = _ref.read(settingsProvider).lastPresetId;
+      
       // Don't use currentPresetId for new chats to avoid "leaking" presets
       final realId = await _storage.createSession(
           title: title, topicId: topicId, presetId: '');
-      if (_sessionId == 'new_chat' && onSessionCreated != null) {
-        onSessionCreated!(realId);
-      }
-      _sessionId = realId;
+      
+      if (!mounted) return realId;
+
+      _sessionId = realId; // Update internal ID first to ensure consistency
+      newRealId = realId;
+
       _generateTopic(text).then((smartTitle) async {
         if (smartTitle != title && smartTitle.isNotEmpty) {
           await _storage.updateSessionTitle(realId, smartTitle);
@@ -232,26 +250,41 @@ class ChatNotifier extends StateNotifier<ChatState> {
         }
       });
     } else if (text != null && state.messages.isEmpty) {
+      if (!mounted) return _sessionId;
       final title = text.length > 15 ? '${text.substring(0, 15)}...' : text;
       await _storage.updateSessionTitle(_sessionId, title);
+      
+      if (!mounted) return _sessionId;
       _ref.read(sessionsProvider.notifier).loadSessions();
       final currentSessionId = _sessionId;
       _generateTopic(text).then((smartTitle) async {
+        if (!mounted) return;
         if (smartTitle != title && smartTitle.isNotEmpty) {
           await _storage.updateSessionTitle(currentSessionId, smartTitle);
+          if (!mounted) return;
           _ref.read(sessionsProvider.notifier).loadSessions();
         }
       });
     }
+    
     if (text != null) {
+      if (!mounted) return _sessionId;
       final content = apiContent ?? text;
       final userMessage = Message.user(content, attachments: attachments);
       final dbId = await _storage.saveMessage(userMessage, _sessionId);
+      
+      if (!mounted) return _sessionId;
       final userMessageWithDbId = userMessage.copyWith(id: dbId);
       state = state.copyWith(
         messages: [...state.messages, userMessageWithDbId],
       );
     }
+
+    // Now it's safe to redirect, as state already contains the user message
+    if (newRealId != null && oldId == 'new_chat' && onSessionCreated != null) {
+      onSessionCreated!(newRealId);
+    }
+    onStateChanged?.call();
     state =
         state.copyWith(isLoading: true, error: null, hasUnreadResponse: false);
     final startSaveIndex = state.messages.length;
@@ -276,7 +309,7 @@ class ChatNotifier extends StateNotifier<ChatState> {
       List<Map<String, dynamic>>? tools;
       if (settings.isSearchEnabled || activeSkills.isNotEmpty) {
         tools = toolManager.getTools(skills: activeSkills);
-      } else {}
+      }
 
       // Inject ONLY Descriptions for Routing
       if (activeSkills.isNotEmpty) {
@@ -395,12 +428,13 @@ To invoke a skill, usage of the `call_skill` tool is mandatory. Provide the `ski
                 completionTokens: completionTokens > 0 ? completionTokens : aiMsg.completionTokens,
                 toolCalls: _mergeToolCalls(aiMsg.toolCalls, chunk.toolCalls),
               );
+              if (!mounted) break;
               final newMessages = List<Message>.from(state.messages);
               if (newMessages.isNotEmpty && newMessages.last.id == aiMsg.id) {
                 newMessages.removeLast();
               }
               newMessages.add(aiMsg);
-              if (mounted) state = state.copyWith(messages: newMessages);
+              state = state.copyWith(messages: newMessages);
               continueGeneration = false;
               break; 
             }
@@ -450,6 +484,7 @@ To invoke a skill, usage of the `call_skill` tool is mandatory. Provide the `ski
             if (searchQuery.isNotEmpty) {
               continueGeneration = true;
               // Remove the <search> tag from displayed content
+              if (!mounted) break;
               final cleanedContent = aiMsg.content.replaceAll(searchPattern, '').trim();
               aiMsg = aiMsg.copyWith(content: cleanedContent);
               final newMessages = List<Message>.from(state.messages);
@@ -457,7 +492,7 @@ To invoke a skill, usage of the `call_skill` tool is mandatory. Provide the `ski
                 newMessages.removeLast();
               }
               newMessages.add(aiMsg);
-              if (mounted) state = state.copyWith(messages: newMessages);
+              state = state.copyWith(messages: newMessages);
               
               // Execute search
               String searchResult;
@@ -471,6 +506,7 @@ To invoke a skill, usage of the `call_skill` tool is mandatory. Provide the `ski
               // Create a tool call ID for display purposes
               final toolCallId = 'search_${const Uuid().v4().substring(0, 8)}';
               
+              if (!mounted) break;
               // Display search results to user as tool message
               final toolMsg = Message.tool(searchResult, toolCallId: toolCallId);
               state = state.copyWith(messages: [...state.messages, toolMsg]);
@@ -485,6 +521,7 @@ To invoke a skill, usage of the `call_skill` tool is mandatory. Provide the `ski
                 isUser: false,
               ));
               
+              if (!mounted) break;
               // Create new AI message for final response
               aiMsg = Message.ai('', model: currentModel, provider: currentProvider);
               state = state.copyWith(messages: [...state.messages, aiMsg]);
@@ -558,6 +595,7 @@ To invoke a skill, usage of the `call_skill` tool is mandatory. Provide the `ski
               } catch (e) {
                 toolResult = jsonEncode({'error': e.toString()});
               }
+              if (!mounted) break;
               final toolMsg = Message.tool(toolResult, toolCallId: tc.id);
               messagesForApi.add(toolMsg);
               state = state.copyWith(messages: [...state.messages, toolMsg]);
@@ -744,6 +782,7 @@ To invoke a skill, usage of the `call_skill` tool is mandatory. Provide the `ski
               );
             }
             final dbId = await _storage.saveMessage(m, _sessionId);
+            if (!mounted) break;
             final stateIndex = startSaveIndex + i;
             if (stateIndex < updatedMessages.length) {
               updatedMessages[stateIndex] = m.copyWith(id: dbId);
@@ -783,6 +822,7 @@ To invoke a skill, usage of the `call_skill` tool is mandatory. Provide the `ski
         if (errorMessage.startsWith('Exception: ')) {
           errorMessage = errorMessage.substring(11);
         }
+        if (!mounted) return _sessionId;
         final messages = List<Message>.from(state.messages);
         if (messages.isNotEmpty && !messages.last.isUser) {
           final lastMsg = messages.last;
@@ -795,8 +835,10 @@ To invoke a skill, usage of the `call_skill` tool is mandatory. Provide the `ski
             provider: lastMsg.provider,
           );
         }
-        state = state.copyWith(
-            messages: messages, isLoading: false, error: errorMessage);
+        if (mounted) {
+          state = state.copyWith(
+              messages: messages, isLoading: false, error: errorMessage);
+        }
         final currentModel =
             _ref.read(settingsProvider).activeProvider?.selectedModel;
         if (currentModel != null && currentModel.isNotEmpty) {
@@ -1104,7 +1146,8 @@ class SessionsNotifier extends StateNotifier<SessionsState> {
     if (lastId != null && state.sessions.any((s) => s.sessionId == lastId)) {
       _ref.read(selectedHistorySessionIdProvider.notifier).state = lastId;
     } else {
-      await startNewSession();
+      // Start with virtual new chat if no last session or it was deleted
+      _ref.read(selectedHistorySessionIdProvider.notifier).state = 'new_chat';
     }
   }
 
@@ -1145,18 +1188,9 @@ class SessionsNotifier extends StateNotifier<SessionsState> {
   }
 
   Future<void> startNewSession() async {
-    final currentId = _ref.read(selectedHistorySessionIdProvider);
-    if (currentId != null && currentId != 'new_chat') {
-      final deleted = await _storage.deleteSessionIfEmpty(currentId);
-      if (deleted) {
-        await loadSessions();
-      }
-    }
-    final topicId = _ref.read(selectedTopicIdProvider);
-    final id =
-        await _storage.createSession(title: 'New Chat', topicId: topicId);
-    await loadSessions();
-    _ref.read(selectedHistorySessionIdProvider.notifier).state = id;
+    // Deep reset: clear draft and reset virtual ID
+    _ref.read(chatSessionManagerProvider).resetSession('new_chat');
+    _ref.read(selectedHistorySessionIdProvider.notifier).state = 'new_chat';
   }
 
   Future<void> cleanupSessionIfEmpty(String? sessionId) async {
@@ -1173,11 +1207,22 @@ class SessionsNotifier extends StateNotifier<SessionsState> {
   }
 
   Future<void> deleteSession(String id) async {
+    final selectedId = _ref.read(selectedHistorySessionIdProvider);
     await _storage.deleteSession(id);
+    // Explicitly reset the session in manager to clear memory and cache
+    _ref.read(chatSessionManagerProvider).resetSession(id);
+    
     await loadSessions();
-    final selected = _ref.read(selectedHistorySessionIdProvider);
-    if (selected == id) {
-      _ref.read(selectedHistorySessionIdProvider.notifier).state = null;
+    
+    // If we deleted the currently active session, move to the next best one
+    if (selectedId == id || selectedId == null) {
+      if (state.sessions.isNotEmpty) {
+        _ref.read(selectedHistorySessionIdProvider.notifier).state =
+            state.sessions.first.sessionId;
+      } else {
+        _ref.read(chatSessionManagerProvider).resetSession('new_chat');
+        _ref.read(selectedHistorySessionIdProvider.notifier).state = 'new_chat';
+      }
     }
   }
 
@@ -1244,6 +1289,7 @@ class ChatSessionManager {
           if (_cache.containsKey(sessionId)) {
             _cache[newId] = _cache.remove(sessionId)!;
           }
+          // Restore missing navigation and session list refresh
           _ref.read(sessionsProvider.notifier).loadSessions();
           _ref.read(selectedHistorySessionIdProvider.notifier).state = newId;
         },
@@ -1255,8 +1301,13 @@ class ChatSessionManager {
     return _cache[sessionId]!;
   }
 
-  void disposeSession(String sessionId) {
+  void resetSession(String sessionId) {
     _cache.remove(sessionId)?.dispose();
+    _updateTrigger.state++;
+  }
+
+  void disposeSession(String sessionId) {
+    resetSession(sessionId);
   }
 
   void disposeAll() {
@@ -1295,6 +1346,12 @@ final historyChatStateProvider = Provider<ChatState>((ref) {
   ref.watch(chatStateUpdateTriggerProvider);
   return notifier.currentState;
 });
+final chatSessionNotifierProvider = Provider.family<ChatNotifier, String>((ref, sessionId) {
+  final manager = ref.watch(chatSessionManagerProvider);
+  ref.watch(chatStateUpdateTriggerProvider);
+  return manager.getOrCreate(sessionId);
+});
+
 final chatProvider = StateNotifierProvider<ChatNotifier, ChatState>((ref) {
   final storage = ref.watch(chatStorageProvider);
   return ChatNotifier(ref: ref, storage: storage, sessionId: 'chat');

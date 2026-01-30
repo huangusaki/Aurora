@@ -602,5 +602,8 @@
   "backupChatPresets": "Prompt Presets",
   "backupProviderConfigs": "Model Provider Configs",
   "backupStudioContent": "Studio Content",
-  "noOptionsSelected": "Please select at least one option to backup"
+  "noOptionsSelected": "Please select at least one option to backup",
+  "pressAgainToExit": "Press again to exit",
+  "pleaseConfigureModel": "Please configure a model in settings first",
+  "version": "Version"
 }

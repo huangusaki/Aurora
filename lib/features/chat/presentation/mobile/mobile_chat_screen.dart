@@ -90,19 +90,28 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
         });
       } else if (next != null && _isSpecialKey(_currentViewKey)) {
         _lastSessionId = next;
+      } else if (next == null && !_isSpecialKey(_currentViewKey)) {
+        setState(() {
+          _currentViewKey = 'new_chat';
+          _lastSessionId = 'new_chat';
+        });
       }
     });
     final settingsState = ref.watch(settingsProvider);
     final selectedSessionId = ref.watch(selectedHistorySessionIdProvider);
     final sessionsState = ref.watch(sessionsProvider);
     String sessionTitle = AppLocalizations.of(context)!.startNewChat;
+
     if (selectedSessionId != null &&
         selectedSessionId != 'new_chat' &&
-        sessionsState.sessions.isNotEmpty) {
+        !sessionsState.isLoading) {
       final sessionMatch =
           sessionsState.sessions.where((s) => s.sessionId == selectedSessionId);
       if (sessionMatch.isNotEmpty) {
         sessionTitle = sessionMatch.first.title;
+      } else if (sessionsState.sessions.isEmpty) {
+        // Fallback for unexpected empty store during state sync
+        sessionTitle = AppLocalizations.of(context)!.startNewChat;
       }
     }
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -190,9 +199,9 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
         now.difference(_lastPopTime!) > const Duration(seconds: 2)) {
       _lastPopTime = now;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('再按一次退出应用'),
-          duration: Duration(seconds: 2),
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.pressAgainToExit),
+          duration: const Duration(seconds: 2),
         ),
       );
       return false;
@@ -317,7 +326,7 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
             MobilePresetSelector(sessionId: sessionId),
           IconButton(
             icon: const Icon(Icons.add_circle_outline, size: 26),
-            tooltip: '新对话',
+            tooltip: AppLocalizations.of(context)!.newChat,
             onPressed: () {
               ref.read(sessionsProvider.notifier).startNewSession();
             },
@@ -342,7 +351,7 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
         providers.any((p) => p.isEnabled && p.models.isNotEmpty);
     if (!hasAnyModels) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('请先在设置中配置模型')),
+        SnackBar(content: Text(AppLocalizations.of(context)!.pleaseConfigureModel)),
       );
       return;
     }
@@ -463,7 +472,7 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
               width: double.infinity,
               child: FilledButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text('确定'),
+                child: Text(AppLocalizations.of(context)!.confirm),
               ),
             ),
           ),

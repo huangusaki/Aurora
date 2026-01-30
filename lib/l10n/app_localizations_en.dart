@@ -1437,4 +1437,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noOptionsSelected => 'Please select at least one option to backup';
+
+  @override
+  String get pressAgainToExit => 'Press again to exit';
+
+  @override
+  String get pleaseConfigureModel =>
+      'Please configure a model in settings first';
+
+  @override
+  String get version => 'Version';
 }

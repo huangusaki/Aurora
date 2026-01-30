@@ -1409,4 +1409,13 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get noOptionsSelected => '请至少选择一项进行备份';
+
+  @override
+  String get pressAgainToExit => '再按一次退出应用';
+
+  @override
+  String get pleaseConfigureModel => '请先在设置中配置模型';
+
+  @override
+  String get version => '版本';
 }

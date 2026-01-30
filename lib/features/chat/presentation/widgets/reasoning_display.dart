@@ -125,7 +125,7 @@ class _ReasoningDisplayState extends State<ReasoningDisplay>
               child: Row(
                 children: [
                     Icon(
-                      AuroraIcons.zap,
+                      AuroraIcons.lightbulb,
                       size: 18,
                       color: iconColor,
                     ),

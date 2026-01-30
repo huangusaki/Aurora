@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'settings_provider.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 import 'package:aurora/shared/widgets/aurora_bottom_sheet.dart';
+import 'package:aurora/shared/theme/aurora_icons.dart';
 
 class MobileAppSettingsPage extends ConsumerWidget {
   final VoidCallback? onBack;
@@ -102,22 +103,16 @@ class MobileAppSettingsPage extends ConsumerWidget {
 
           const Divider(),
           _SectionHeader(title: l10n.about, icon: Icons.info_outline),
+          const SizedBox(height: 16),
           ListTile(
-            leading: const Icon(Icons.stars),
-            title: const Text('Aurora'),
-            subtitle: const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('v1.0.0'),
-                Text('一款优雅的跨平台 AI 对话助手', style: TextStyle(fontSize: 12)),
-              ],
-            ),
-            onTap: () {},
+            leading: const Icon(Icons.info_outline),
+            title: Text(l10n.version),
+            subtitle: const Text('v1.2.5'),
           ),
-           ListTile(
-            leading: const Icon(Icons.code),
+          ListTile(
+            leading: const Icon(AuroraIcons.github),
             title: Text(l10n.githubProject),
-             trailing: const Icon(Icons.open_in_new, size: 20),
+            trailing: const Icon(Icons.open_in_new, size: 18),
             onTap: () async {
               const url = 'https://github.com/huangusaki/Aurora';
               final uri = Uri.parse(url);
@@ -127,6 +122,7 @@ class MobileAppSettingsPage extends ConsumerWidget {
               }
             },
           ),
+          const SizedBox(height: 32),
         ],
       ),
     );

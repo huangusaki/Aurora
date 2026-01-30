@@ -150,10 +150,11 @@ class _MobileModelConfigSheetState extends ConsumerState<MobileModelConfigSheet>
       mainAxisSize: MainAxisSize.min,
       children: [
         AppBar(
-          title: Text(l10n.modelConfig),
+          title: Text(l10n.modelConfig, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           automaticallyImplyLeading: false,
           backgroundColor: Colors.transparent,
           elevation: 0,
+          centerTitle: true,
           actions: [
             // 全局预设管理
             if (novelState.activePromptPresetId != null)
@@ -190,7 +191,7 @@ class _MobileModelConfigSheetState extends ConsumerState<MobileModelConfigSheet>
                   _showPresetPicker(context, novelState, novelNotifier, l10n),
             ),
             IconButton(
-              icon: const Icon(Icons.close),
+              icon: const Icon(AuroraIcons.close, size: 20),
               onPressed: () => Navigator.pop(context),
             ),
           ],
@@ -585,80 +586,6 @@ class _MobileModelConfigSheetState extends ConsumerState<MobileModelConfigSheet>
           const SizedBox(height: 16),
         ],
       ),
-    );
-  }
-
-  Widget _buildSelectionSheet({
-    required BuildContext context,
-    required String title,
-    required List<Widget> children,
-  }) {
-    final theme = Theme.of(context);
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.scaffoldBackgroundColor,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.7,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            margin: const EdgeInsets.only(top: 12, bottom: 8),
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: Colors.grey[400],
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Text(title, style: theme.textTheme.titleMedium),
-          ),
-          const Divider(height: 1),
-          Flexible(
-            child: ListView(
-              shrinkWrap: true,
-              children: children,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSelectionItem({
-    required BuildContext context,
-    required String title,
-    required bool isSelected,
-    required VoidCallback onTap,
-    VoidCallback? onDelete,
-    bool isBold = false,
-    EdgeInsetsGeometry? padding,
-  }) {
-    final theme = Theme.of(context);
-    return ListTile(
-      contentPadding: padding ?? const EdgeInsets.symmetric(horizontal: 16),
-      leading: Icon(
-        isSelected ? Icons.check_circle : Icons.circle_outlined,
-        color: isSelected ? theme.primaryColor : theme.disabledColor.withOpacity(0.3),
-        size: 20,
-      ),
-      title: Text(
-        title,
-        style: TextStyle(
-          fontSize: 14,
-          fontWeight: isBold || isSelected ? FontWeight.bold : FontWeight.normal,
-        ),
-      ),
-      trailing: onDelete != null ? IconButton(
-        icon: const Icon(Icons.delete_outline, size: 20),
-        onPressed: onDelete,
-      ) : null,
-      onTap: onTap,
     );
   }
 }

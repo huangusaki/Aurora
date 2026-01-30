@@ -153,11 +153,6 @@ class MobileNavigationDrawer extends ConsumerWidget {
                     ref
                         .read(sessionsProvider.notifier)
                         .deleteSession(sessionId);
-                    if (sessionId == selectedSessionId) {
-                      ref
-                          .read(selectedHistorySessionIdProvider.notifier)
-                          .state = null;
-                    }
                   },
                 ),
               ),

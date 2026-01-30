@@ -174,20 +174,15 @@ class _MobileNovelWritingPageState extends ConsumerState<MobileNovelWritingPage>
       builder: (ctx) => Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                AuroraBottomSheet.buildTitle(context, l10n.selectProject),
-                IconButton(
-                  icon: const Icon(AuroraIcons.add),
-                  onPressed: () {
-                    Navigator.pop(ctx);
-                    _showNewProjectDialog(context, l10n, notifier);
-                  },
-                ),
-              ],
+          AuroraBottomSheet.buildTitle(
+            context, 
+            l10n.selectProject,
+            trailing: IconButton(
+              icon: const Icon(AuroraIcons.add, size: 20),
+              onPressed: () {
+                Navigator.pop(ctx);
+                _showNewProjectDialog(context, l10n, notifier);
+              },
             ),
           ),
           const Divider(height: 1),
@@ -199,7 +194,7 @@ class _MobileNovelWritingPageState extends ConsumerState<MobileNovelWritingPage>
                 final p = state.projects[index];
                 return AuroraBottomSheet.buildListItem(
                   context: context,
-                  title: Text(p.name),
+                  title: Text(p.name, style: const TextStyle(fontSize: 15)),
                   selected: state.selectedProjectId == p.id,
                   onTap: () {
                     notifier.selectProject(p.id);
@@ -207,7 +202,7 @@ class _MobileNovelWritingPageState extends ConsumerState<MobileNovelWritingPage>
                   },
                   trailing: state.selectedProjectId == p.id 
                       ? IconButton(
-                          icon: const Icon(AuroraIcons.delete, color: Colors.red),
+                          icon: const Icon(AuroraIcons.delete, color: Colors.red, size: 20),
                           onPressed: () => _showDeleteProjectConfirm(context, p, l10n, notifier, ctx),
                         )
                       : null,

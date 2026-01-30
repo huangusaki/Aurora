@@ -1021,13 +1021,13 @@ class MobileChatInputArea extends ConsumerWidget {
                   ref.read(settingsProvider.notifier).toggleStreamEnabled();
                   onShowToast(
                       newState ? l10n.streamEnabled : l10n.streamDisabled,
-                      AuroraIcons.skills);
+                      AuroraIcons.zap);
                 },
                 borderRadius: BorderRadius.circular(20),
                 child: Padding(
                   padding: const EdgeInsets.all(6.0),
                   child: Icon(
-                    AuroraIcons.skills,
+                    AuroraIcons.zap,
                     color: settings.isStreamEnabled
                         ? Theme.of(context).colorScheme.primary
                         : Colors.grey,

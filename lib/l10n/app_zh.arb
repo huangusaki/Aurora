@@ -602,5 +602,8 @@
   "backupChatPresets": "Prompt 预设",
   "backupProviderConfigs": "模型供应商配置",
   "backupStudioContent": "Studio 内容",
-  "noOptionsSelected": "请至少选择一项进行备份"
+  "noOptionsSelected": "请至少选择一项进行备份",
+  "pressAgainToExit": "再按一次退出应用",
+  "pleaseConfigureModel": "请先在设置中配置模型",
+  "version": "版本"
 }

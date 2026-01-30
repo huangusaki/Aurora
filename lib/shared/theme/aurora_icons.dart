@@ -99,4 +99,5 @@ class AuroraIcons {
   static const IconData pending = LucideIcons.circle;
   static const IconData pausedCircle = LucideIcons.pauseCircle;
   static const IconData reviewing = LucideIcons.clipboardCheck;
+  static const IconData github = LucideIcons.github;
 }
