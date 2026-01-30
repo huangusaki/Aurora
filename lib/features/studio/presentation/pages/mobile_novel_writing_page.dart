@@ -1,3 +1,4 @@
+import 'package:aurora/shared/theme/aurora_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:aurora/l10n/app_localizations.dart';
@@ -51,14 +52,14 @@ class _MobileNovelWritingPageState extends ConsumerState<MobileNovelWritingPage>
         backgroundColor: theme.scaffoldBackgroundColor,
         leading: widget.onBack != null
             ? IconButton(
-                icon: const Icon(Icons.arrow_back),
+                icon: const Icon(AuroraIcons.back),
                 onPressed: widget.onBack,
               )
             : null,
         actions: [
           if (state.allTasks.any((t) => t.status == TaskStatus.success || t.status == TaskStatus.failed))
             IconButton(
-              icon: const Icon(Icons.refresh, size: 20),
+              icon: const Icon(AuroraIcons.refresh, size: 20),
               tooltip: '重新执行所有任务',
               onPressed: () async {
                 final confirmed = await AuroraBottomSheet.showConfirm(
@@ -87,12 +88,12 @@ class _MobileNovelWritingPageState extends ConsumerState<MobileNovelWritingPage>
             ],
           ),
           IconButton(
-            icon: const Icon(Icons.add),
+            icon: const Icon(AuroraIcons.add),
             tooltip: l10n.createProject,
             onPressed: () => _showNewProjectDialog(context, l10n, notifier),
           ),
           IconButton(
-            icon: const Icon(Icons.settings_outlined),
+            icon: const Icon(AuroraIcons.settings),
             onPressed: () {
               AuroraBottomSheet.show(
                 context: context,
@@ -121,9 +122,9 @@ class _MobileNovelWritingPageState extends ConsumerState<MobileNovelWritingPage>
           unselectedLabelColor: theme.hintColor,
           indicatorColor: theme.primaryColor,
           tabs: [
-            Tab(icon: const Icon(Icons.edit_outlined), text: l10n.writing),
-            Tab(icon: const Icon(Icons.storage_outlined), text: l10n.context),
-            Tab(icon: const Icon(Icons.description_outlined), text: l10n.preview),
+            Tab(icon: const Icon(AuroraIcons.edit), text: l10n.writing),
+            Tab(icon: const Icon(AuroraIcons.database), text: l10n.context),
+            Tab(icon: const Icon(AuroraIcons.file), text: l10n.preview),
           ],
         ),
       ),
@@ -136,12 +137,12 @@ class _MobileNovelWritingPageState extends ConsumerState<MobileNovelWritingPage>
       return FloatingActionButton(
         onPressed: () => notifier.stopQueue(),
         backgroundColor: Colors.red,
-        child: const Icon(Icons.stop),
+        child: const Icon(AuroraIcons.stop),
       );
     } else if (state.allTasks.any((t) => t.status == TaskStatus.pending)) {
       return FloatingActionButton(
         onPressed: () => notifier.startQueue(),
-        child: const Icon(Icons.play_arrow),
+        child: const Icon(AuroraIcons.play),
       );
     }
     return null;
@@ -161,7 +162,7 @@ class _MobileNovelWritingPageState extends ConsumerState<MobileNovelWritingPage>
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          const Icon(Icons.arrow_drop_down),
+          const Icon(AuroraIcons.chevronDown),
         ],
       ),
     );
@@ -180,7 +181,7 @@ class _MobileNovelWritingPageState extends ConsumerState<MobileNovelWritingPage>
               children: [
                 AuroraBottomSheet.buildTitle(context, l10n.selectProject),
                 IconButton(
-                  icon: const Icon(Icons.add),
+                  icon: const Icon(AuroraIcons.add),
                   onPressed: () {
                     Navigator.pop(ctx);
                     _showNewProjectDialog(context, l10n, notifier);
@@ -206,7 +207,7 @@ class _MobileNovelWritingPageState extends ConsumerState<MobileNovelWritingPage>
                   },
                   trailing: state.selectedProjectId == p.id 
                       ? IconButton(
-                          icon: const Icon(Icons.delete_outline, color: Colors.red),
+                          icon: const Icon(AuroraIcons.delete, color: Colors.red),
                           onPressed: () => _showDeleteProjectConfirm(context, p, l10n, notifier, ctx),
                         )
                       : null,
@@ -266,7 +267,7 @@ class _MobileNovelWritingPageState extends ConsumerState<MobileNovelWritingPage>
               children: [
                 Text(l10n.chapters, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 IconButton(
-                  icon: const Icon(Icons.add),
+                   icon: const Icon(AuroraIcons.add),
                   onPressed: () => _showNewChapterDialog(context, l10n, notifier),
                 ),
               ],
@@ -321,14 +322,14 @@ class _MobileNovelWritingPageState extends ConsumerState<MobileNovelWritingPage>
               Expanded(child: Text(l10n.outlineSettings, style: const TextStyle(fontWeight: FontWeight.bold))),
               if (hasOutline)
                 IconButton(
-                  icon: const Icon(Icons.delete_outline, size: 20, color: Colors.grey),
+                  icon: const Icon(AuroraIcons.delete, size: 20, color: Colors.grey),
                   onPressed: () => notifier.updateProjectOutline(''),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
                 ),
             ],
           ),
-          leading: Icon(Icons.auto_stories, color: theme.primaryColor),
+          leading: Icon(AuroraIcons.book, color: theme.primaryColor),
           childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           children: [
             hasOutline 
@@ -357,7 +358,7 @@ class _MobileNovelWritingPageState extends ConsumerState<MobileNovelWritingPage>
                           onPressed: state.isDecomposing ? null : () => _handleDecompose(context, l10n, state, notifier),
                           icon: state.isDecomposing 
                               ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) 
-                              : const Icon(Icons.auto_awesome, size: 18),
+                              : const Icon(AuroraIcons.autoAwesome, size: 18),
                           label: Text(state.isDecomposing ? l10n.generating : l10n.generateChapters),
                           style: FilledButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 12),
@@ -451,7 +452,7 @@ class _MobileNovelWritingPageState extends ConsumerState<MobileNovelWritingPage>
           title: Text(chapter.title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
           leading: _getStatusIcon(status),
           trailing: IconButton(
-            icon: const Icon(Icons.delete_outline, size: 18, color: Colors.grey),
+            icon: const Icon(AuroraIcons.delete, size: 18, color: Colors.grey),
             onPressed: () => _showDeleteChapterConfirm(context, chapter, l10n, notifier),
           ),
           childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -499,25 +500,25 @@ class _MobileNovelWritingPageState extends ConsumerState<MobileNovelWritingPage>
                       if (tasks.first.status == TaskStatus.reviewing) ...[
                         TextButton.icon(
                           onPressed: () => notifier.runSingleTask(tasks.first.id),
-                          icon: const Icon(Icons.close, size: 16, color: Colors.red),
+                          icon: const Icon(AuroraIcons.close, size: 16, color: Colors.red),
                           label: Text(l10n.reject, style: const TextStyle(color: Colors.red, fontSize: 13)),
                         ),
                         const SizedBox(width: 8),
                         ElevatedButton.icon(
                           onPressed: () => notifier.updateTaskStatus(tasks.first.id, TaskStatus.success),
-                          icon: const Icon(Icons.check, size: 16),
+                          icon: const Icon(AuroraIcons.check, size: 16),
                           label: Text(l10n.approve, style: const TextStyle(fontSize: 13)),
                         ),
                       ] else if (tasks.first.status == TaskStatus.pending || tasks.first.status == TaskStatus.failed) ...[
                         ElevatedButton.icon(
                           onPressed: () => notifier.runSingleTask(tasks.first.id),
-                          icon: const Icon(Icons.play_arrow, size: 16),
+                          icon: const Icon(AuroraIcons.play, size: 16),
                           label: Text(l10n.executeTask, style: const TextStyle(fontSize: 13)),
                         ),
                       ] else if (tasks.first.status == TaskStatus.success) ...[
                         TextButton.icon(
                           onPressed: () => notifier.runSingleTask(tasks.first.id),
-                          icon: const Icon(Icons.replay, size: 16),
+                          icon: const Icon(AuroraIcons.retry, size: 16),
                           label: Text(l10n.regenerate, style: const TextStyle(fontSize: 13)),
                         ),
                       ],
@@ -557,13 +558,13 @@ class _MobileNovelWritingPageState extends ConsumerState<MobileNovelWritingPage>
 
   Widget _getStatusIcon(TaskStatus status) {
     switch (status) {
-      case TaskStatus.pending: return const Icon(Icons.circle_outlined, color: Colors.grey, size: 20);
+      case TaskStatus.pending: return const Icon(AuroraIcons.pending, color: Colors.grey, size: 20);
       case TaskStatus.running: return const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2));
-      case TaskStatus.success: return const Icon(Icons.check_circle, color: Colors.green, size: 20);
-      case TaskStatus.failed: return const Icon(Icons.error_outline, color: Colors.red, size: 20);
-      case TaskStatus.paused: return const Icon(Icons.pause_circle_outline, color: Colors.orange, size: 20);
-      case TaskStatus.reviewing: return const Icon(Icons.rate_review_outlined, color: Colors.blue, size: 20);
-      case TaskStatus.needsRevision: return const Icon(Icons.warning_amber, color: Colors.orange, size: 20);
+      case TaskStatus.success: return const Icon(AuroraIcons.success, color: Colors.green, size: 20);
+      case TaskStatus.failed: return const Icon(AuroraIcons.error, color: Colors.red, size: 20);
+      case TaskStatus.paused: return const Icon(AuroraIcons.pausedCircle, color: Colors.orange, size: 20);
+      case TaskStatus.reviewing: return const Icon(AuroraIcons.reviewing, color: Colors.blue, size: 20);
+      case TaskStatus.needsRevision: return const Icon(AuroraIcons.warning, color: Colors.orange, size: 20);
       case TaskStatus.decomposing: return const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.purple));
     }
   }
@@ -650,7 +651,7 @@ class _MobileNovelWritingPageState extends ConsumerState<MobileNovelWritingPage>
           ...data.map((f) => ListTile(
             title: Text(f),
             dense: true,
-            leading: const Icon(Icons.flag_outlined, size: 16),
+            leading: const Icon(AuroraIcons.flag, size: 16),
           )),
         const Divider(),
       ],
@@ -675,7 +676,7 @@ class _MobileNovelWritingPageState extends ConsumerState<MobileNovelWritingPage>
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.copy),
+                icon: const Icon(AuroraIcons.copy),
                 onPressed: () {
                   if (content.isNotEmpty) {
                     Clipboard.setData(ClipboardData(text: content));
@@ -708,7 +709,7 @@ class _MobileNovelWritingPageState extends ConsumerState<MobileNovelWritingPage>
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              Icons.library_books_outlined,
+              AuroraIcons.bookOpen,
               size: 80,
               color: theme.primaryColor.withOpacity(0.2),
             ),
@@ -730,7 +731,7 @@ class _MobileNovelWritingPageState extends ConsumerState<MobileNovelWritingPage>
             const SizedBox(height: 32),
             ElevatedButton.icon(
               onPressed: () => _showNewProjectDialog(context, l10n, notifier),
-              icon: const Icon(Icons.add),
+              icon: const Icon(AuroraIcons.add),
               label: Text(l10n.createProject),
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),

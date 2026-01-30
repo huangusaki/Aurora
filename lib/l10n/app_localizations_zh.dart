@@ -251,7 +251,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get displaySettings => '外观设置';
 
   @override
-  String get dataSettings => '数据设置';
+  String get dataSettings => '数据备份';
 
   @override
   String get usageStats => '数据统计';

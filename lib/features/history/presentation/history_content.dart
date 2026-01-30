@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:aurora/shared/theme/aurora_icons.dart';
 import 'package:fluent_ui/fluent_ui.dart' as fluent;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -225,7 +226,7 @@ class _SessionList extends ConsumerWidget {
                     ),
                     child: Row(
                       children: [
-                        Icon(fluent.FluentIcons.add,
+                        Icon(AuroraIcons.add,
                             size: 14, color: theme.accentColor),
                         const SizedBox(width: 12),
                         Text(l10n.startNewChat,
@@ -235,7 +236,7 @@ class _SessionList extends ConsumerWidget {
                                 fontWeight: FontWeight.w500)),
                         const Spacer(),
                         if (isHovering)
-                          Icon(fluent.FluentIcons.chevron_right,
+                          Icon(AuroraIcons.chevronRight,
                               size: 10,
                               color: theme.resources.textFillColorSecondary),
                       ],
@@ -488,12 +489,12 @@ class _SessionItemState extends State<_SessionItem> {
                 if ((widget.isSelected || _isHovering || widget.isMobile) &&
                     !_isRenaming) ...[
                   fluent.IconButton(
-                    icon: const fluent.Icon(fluent.FluentIcons.edit, size: 14),
+                    icon: const fluent.Icon(AuroraIcons.edit, size: 14),
                     onPressed: _startRenaming,
                   ),
                   fluent.IconButton(
                     icon:
-                        const fluent.Icon(fluent.FluentIcons.delete, size: 14),
+                        const fluent.Icon(AuroraIcons.delete, size: 14),
                     onPressed: widget.onDelete,
                   ),
                 ],

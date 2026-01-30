@@ -1,3 +1,4 @@
+import 'package:aurora/shared/theme/aurora_icons.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:aurora/l10n/app_localizations.dart';
@@ -70,7 +71,7 @@ class _CreateProjectDialogState extends ConsumerState<CreateProjectDialog> {
               children: [
                 Row(
                   children: [
-                    const Icon(FluentIcons.database, size: 16),
+                    const Icon(AuroraIcons.database, size: 16),
                     const SizedBox(width: 8),
                     Text(l10n.worldSettings, style: const TextStyle(fontWeight: FontWeight.w600)),
                   ],

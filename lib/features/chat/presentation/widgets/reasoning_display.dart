@@ -1,3 +1,4 @@
+import 'package:aurora/shared/theme/aurora_icons.dart';
 import 'package:fluent_ui/fluent_ui.dart' as fluent;
 import 'package:flutter/material.dart';
 import 'dart:async';
@@ -123,13 +124,11 @@ class _ReasoningDisplayState extends State<ReasoningDisplay>
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               child: Row(
                 children: [
-                  Icon(
-                    widget.isWindows
-                        ? fluent.FluentIcons.lightbulb
-                        : Icons.lightbulb_outline,
-                    size: 18,
-                    color: iconColor,
-                  ),
+                    Icon(
+                      AuroraIcons.zap,
+                      size: 18,
+                      color: iconColor,
+                    ),
                   const SizedBox(width: 8),
                   Text(
                     widget.isRunning
@@ -148,9 +147,7 @@ class _ReasoningDisplayState extends State<ReasoningDisplay>
                   RotationTransition(
                     turns: Tween(begin: 0.0, end: 0.5).animate(_controller),
                     child: Icon(
-                      widget.isWindows
-                          ? fluent.FluentIcons.chevron_down
-                          : Icons.keyboard_arrow_down,
+                      AuroraIcons.chevronDown,
                       size: 16,
                       color: iconColor,
                     ),

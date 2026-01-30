@@ -1,3 +1,4 @@
+import 'package:aurora/shared/theme/aurora_icons.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:super_clipboard/super_clipboard.dart';
@@ -69,17 +70,17 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
             Padding(
               padding: const EdgeInsets.only(right: 8),
               child: IconButton(
-                icon: const Icon(FluentIcons.back, size: 14),
+                icon: const Icon(AuroraIcons.back, size: 14),
                 onPressed: widget.onBack,
               ),
             ),
           
           // Navigation Tabs (Left Aligned)
-          _buildNavTab(context, theme, 0, l10n.writing, FluentIcons.edit),
+          _buildNavTab(context, theme, 0, l10n.writing, AuroraIcons.edit),
           const SizedBox(width: 4),
-          _buildNavTab(context, theme, 1, l10n.context, FluentIcons.database),
+          _buildNavTab(context, theme, 1, l10n.context, AuroraIcons.database),
           const SizedBox(width: 4),
-          _buildNavTab(context, theme, 2, l10n.preview, FluentIcons.print),
+          _buildNavTab(context, theme, 2, l10n.preview, AuroraIcons.print),
           const SizedBox(width: 8),
           // Preset Dropdown
           _buildPresetDropdown(context, theme, state, ref.read(novelProvider.notifier), l10n),
@@ -103,7 +104,7 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(FluentIcons.stop, size: 12, color: Colors.white),
+                  const Icon(AuroraIcons.stop, size: 12, color: Colors.white),
                   const SizedBox(width: 4),
                   Text(l10n.stopTask, style: const TextStyle(color: Colors.white)),
                 ],
@@ -112,7 +113,7 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
             const SizedBox(width: 8),
             Button(
               onPressed: () => notifier.togglePause(),
-              child: Icon(state.isPaused ? FluentIcons.play : FluentIcons.pause, size: 12),
+              child: Icon(state.isPaused ? AuroraIcons.play : AuroraIcons.pause, size: 12),
             ),
           ] else ...[
             Tooltip(
@@ -126,7 +127,7 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(FluentIcons.play, size: 12),
+                    Icon(AuroraIcons.play, size: 12),
                     SizedBox(width: 4),
                     Text(l10n.startWriting),
                   ],
@@ -165,7 +166,7 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
                   child: const Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(FluentIcons.refresh, size: 12),
+                      Icon(AuroraIcons.refresh, size: 12),
                       SizedBox(width: 4),
                       Text('重新执行'),
                     ],
@@ -179,7 +180,7 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
           
           // Settings
           IconButton(
-            icon: const Icon(FluentIcons.settings, size: 16),
+            icon: const Icon(AuroraIcons.settings, size: 16),
             onPressed: () {
               showDialog(
                 context: context,
@@ -242,7 +243,7 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   child: Row(
                     children: [
-                       const Icon(FluentIcons.text_document, size: 14),
+                       const Icon(AuroraIcons.file, size: 14),
                        const SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -253,7 +254,7 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      const Icon(FluentIcons.chevron_down, size: 10),
+                      const Icon(AuroraIcons.chevronDown, size: 10),
                     ],
                   ),
                 ),
@@ -264,14 +265,14 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
           Tooltip(
             message: l10n.createProject,
             child: IconButton(
-              icon: const Icon(FluentIcons.add, size: 14),
+              icon: const Icon(AuroraIcons.add, size: 14),
               onPressed: () => _showNewProjectDialog(context, l10n, notifier),
             ),
           ),
           Tooltip(
             message: l10n.deleteProject,
             child: IconButton(
-              icon: Icon(FluentIcons.delete, size: 14, color: Colors.red.light),
+              icon: Icon(AuroraIcons.delete, size: 14, color: Colors.red.light),
               onPressed: () {
                 if (state.selectedProjectId == null) return;
                 showDialog(
@@ -353,7 +354,7 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
       title: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(FluentIcons.edit_note, size: 14),
+          const Icon(AuroraIcons.edit, size: 14),
           const SizedBox(width: 6),
           Text(selectedLabel, style: const TextStyle(fontSize: 13)),
         ],
@@ -471,7 +472,7 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
             children: [
               Row(
                 children: [
-                  const Icon(FluentIcons.text_document, size: 16),
+                  const Icon(AuroraIcons.file, size: 16),
                   const SizedBox(width: 8),
                   Text(l10n.outlineSettings, style: theme.typography.subtitle),
                   const Spacer(),
@@ -479,7 +480,7 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
                      Tooltip(
                       message: l10n.clearOutline,
                       child: IconButton(
-                        icon: const Icon(FluentIcons.delete, size: 14),
+                        icon: const Icon(AuroraIcons.delete, size: 14),
                         onPressed: () => notifier.updateProjectOutline(''),
                       ),
                     ),
@@ -527,7 +528,7 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
                                     child: ProgressRing(strokeWidth: 2),
                                   )
                                 else
-                                  Icon(state.selectedProject!.chapters.isEmpty ? FluentIcons.add : FluentIcons.refresh, size: 16),
+                                  Icon(state.selectedProject!.chapters.isEmpty ? AuroraIcons.add : AuroraIcons.refresh, size: 16),
                                 const SizedBox(width: 8),
                                 Text(state.isDecomposing 
                                     ? l10n.generating 
@@ -548,7 +549,7 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
           return Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(FluentIcons.edit_create, size: 48, color: theme.accentColor),
+              Icon(AuroraIcons.edit, size: 48, color: theme.accentColor),
               const SizedBox(height: 16),
               Text(l10n.startConceiving, style: theme.typography.bodyStrong),
               const SizedBox(height: 8),
@@ -651,7 +652,7 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
               padding: const EdgeInsets.all(12),
               child: Row(
                 children: [
-                  const Icon(FluentIcons.database, size: 16),
+                  const Icon(AuroraIcons.database, size: 16),
                   const SizedBox(width: 8),
                   Text(l10n.worldSettings, style: theme.typography.subtitle),
                   const Spacer(),
@@ -660,7 +661,7 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
                   Tooltip(
                     message: '清空所有设定',
                     child: IconButton(
-                      icon: const Icon(FluentIcons.delete, size: 14),
+                      icon: const Icon(AuroraIcons.delete, size: 14),
                       onPressed: () {
                         showDialog(
                           context: context,
@@ -823,7 +824,7 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(FluentIcons.copy, size: 14),
+                        const Icon(AuroraIcons.copy, size: 14),
                         const SizedBox(width: 8),
                         Text(l10n.copyFullText),
                       ],
@@ -866,14 +867,14 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
           padding: const EdgeInsets.all(12),
           child: Row(
             children: [
-              const Icon(FluentIcons.list, size: 16),
+              const Icon(AuroraIcons.list, size: 16),
               const SizedBox(width: 8),
               Text(l10n.chaptersAndTasks, style: theme.typography.subtitle),
               const Spacer(),
               Tooltip(
                 message: l10n.addChapter,
                 child: IconButton(
-                  icon: const Icon(FluentIcons.add, size: 14),
+                  icon: const Icon(AuroraIcons.add, size: 14),
                   onPressed: () => _showNewChapterDialog(context, l10n, notifier),
                 ),
               ),
@@ -912,11 +913,11 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
                             ),
                           ),
                           IconButton(
-                            icon: const Icon(FluentIcons.add, size: 12),
+                            icon: const Icon(AuroraIcons.add, size: 12),
                             onPressed: () => _showNewTaskDialog(context, l10n, notifier, chapter.id),
                           ),
                           IconButton(
-                            icon: const Icon(FluentIcons.delete, size: 12),
+                            icon: const Icon(AuroraIcons.delete, size: 12),
                             onPressed: () {
                                showDialog(
                                 context: context,
@@ -996,11 +997,11 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
                 children: [
                   if (task.status == TaskStatus.success)
                     IconButton(
-                      icon: const Icon(FluentIcons.refresh, size: 12),
+                      icon: const Icon(AuroraIcons.refresh, size: 12),
                       onPressed: () => notifier.runSingleTask(task.id),
                     ),
                   IconButton(
-                    icon: Icon(FluentIcons.delete, size: 12, color: Colors.red.light),
+                    icon: Icon(AuroraIcons.delete, size: 12, color: Colors.red.light),
                     onPressed: () => notifier.deleteTask(task.id),
                   ),
                 ],
@@ -1019,7 +1020,7 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(FluentIcons.task_list, size: 48, color: theme.accentColor),
+            Icon(AuroraIcons.list, size: 48, color: theme.accentColor),
               const SizedBox(height: 16),
               Text(l10n.selectTaskToView, style: theme.typography.bodyStrong),
             ],
@@ -1034,7 +1035,7 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
             padding: const EdgeInsets.all(12),
             child: Row(
               children: [
-                const Icon(FluentIcons.entry_view, size: 16),
+                const Icon(AuroraIcons.view, size: 16),
                 const SizedBox(width: 8),
                 Text(l10n.taskDetails, style: theme.typography.subtitle),
                 const Spacer(),
@@ -1093,7 +1094,7 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
                       Tooltip(
                         message: l10n.copy,
                         child: IconButton(
-                          icon: const Icon(FluentIcons.copy, size: 14),
+                          icon: const Icon(AuroraIcons.copy, size: 14),
                           onPressed: () {
                             Clipboard.setData(ClipboardData(text: task.content ?? ''));
                           },
@@ -1166,14 +1167,14 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
 
   Widget _buildStatusIcon(TaskStatus status, FluentThemeData theme) {
     switch (status) {
-      case TaskStatus.pending: return const Icon(FluentIcons.circle_ring, size: 16);
+      case TaskStatus.pending: return const Icon(AuroraIcons.pending, size: 16);
       case TaskStatus.decomposing:
       case TaskStatus.running:
       case TaskStatus.reviewing: return const SizedBox(width: 16, height: 16, child: ProgressRing(strokeWidth: 2));
-      case TaskStatus.needsRevision: return Icon(FluentIcons.warning, size: 16, color: Colors.orange);
-      case TaskStatus.success: return Icon(FluentIcons.completed, size: 16, color: Colors.green);
-      case TaskStatus.failed: return Icon(FluentIcons.error_badge, size: 16, color: Colors.red);
-      case TaskStatus.paused: return const Icon(FluentIcons.pause, size: 16);
+      case TaskStatus.needsRevision: return Icon(AuroraIcons.warning, size: 16, color: Colors.orange);
+      case TaskStatus.success: return Icon(AuroraIcons.success, size: 16, color: Colors.green);
+      case TaskStatus.failed: return Icon(AuroraIcons.error, size: 16, color: Colors.red);
+      case TaskStatus.paused: return const Icon(AuroraIcons.pause, size: 16);
     }
   }
   

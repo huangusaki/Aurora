@@ -20,6 +20,7 @@ import 'chat_utils.dart';
 import 'tool_output.dart';
 import 'package:aurora/shared/utils/number_format_utils.dart';
 import 'package:aurora/shared/utils/platform_utils.dart';
+import 'package:aurora/shared/theme/aurora_icons.dart';
 
 
 class MessageBubble extends ConsumerStatefulWidget {
@@ -301,7 +302,7 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
                   if (widget.showAvatar) ...[
                     _buildAvatar(
                       avatarPath: settingsState.llmAvatar,
-                      fallbackIcon: Icons.smart_toy,
+                      fallbackIcon: AuroraIcons.robot,
                       backgroundColor: Colors.teal,
                     ),
                     const SizedBox(width: 8),
@@ -532,14 +533,14 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
                                       children: [
                                         fluent.IconButton(
                                           icon: const Icon(
-                                              fluent.FluentIcons.attach,
+                                              AuroraIcons.attach,
                                               size: 14),
                                           onPressed: _pickFiles,
                                           style: fluent.ButtonStyle(
                                             foregroundColor:
                                                 fluent.ButtonState.resolveWith(
                                                     (states) {
-                                              if (states.isHovering)
+                                              if (states.isHovered)
                                                 return fluent.Colors.blue;
                                               return fluent.Colors.grey;
                                             }),
@@ -547,19 +548,19 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
                                         ),
                                         const SizedBox(width: 8),
                                         ActionButton(
-                                            icon: fluent.FluentIcons.cancel,
+                                            icon: AuroraIcons.cancel,
                                             tooltip: AppLocalizations.of(context)?.cancel ?? 'Cancel',
                                             onPressed: () => setState(
                                                 () => _isEditing = false)),
                                         const SizedBox(width: 4),
                                         ActionButton(
-                                            icon: fluent.FluentIcons.save,
+                                            icon: AuroraIcons.save,
                                             tooltip: AppLocalizations.of(context)?.save ?? 'Save',
                                             onPressed: _saveEdit),
                                         if (message.isUser) ...[
                                           const SizedBox(width: 4),
                                           ActionButton(
-                                              icon: fluent.FluentIcons.send,
+                                              icon: AuroraIcons.send,
                                               tooltip: 'Send & Regenerate',
                                               onPressed: () async {
                                                 await _saveEdit();
@@ -719,7 +720,7 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
                   const SizedBox(width: 8),
                   _buildAvatar(
                     avatarPath: settingsState.userAvatar,
-                    fallbackIcon: Icons.person,
+                    fallbackIcon: AuroraIcons.person,
                     backgroundColor: Colors.blue,
                   ),
                 ],
@@ -742,29 +743,29 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
                             : MainAxisAlignment.start,
                         children: [
                           ActionButton(
-                              icon: fluent.FluentIcons.refresh,
+                              icon: AuroraIcons.retry,
                               tooltip: 'Retry',
                               onPressed: () => _handleAction('retry')),
                           const SizedBox(width: 4),
                           ActionButton(
-                              icon: fluent.FluentIcons.edit,
+                              icon: AuroraIcons.edit,
                               tooltip: 'Edit',
                               onPressed: () => _handleAction('edit')),
                           const SizedBox(width: 4),
                           ActionButton(
-                              icon: fluent.FluentIcons.copy,
+                              icon: AuroraIcons.copy,
                               tooltip: 'Copy',
                               onPressed: () => _handleAction('copy')),
                           if (!isUser) ...[
                             const SizedBox(width: 4),
                             ActionButton(
-                                icon: fluent.FluentIcons.branch_fork2,
+                                icon: AuroraIcons.branch,
                                 tooltip: AppLocalizations.of(context)?.branch ?? 'Branch',
                                 onPressed: () => _handleAction('branch')),
                           ],
                           const SizedBox(width: 4),
                           ActionButton(
-                              icon: fluent.FluentIcons.delete,
+                              icon: AuroraIcons.delete,
                               tooltip: 'Delete',
                               onPressed: () => _handleAction('delete')),
                         ],
@@ -785,24 +786,24 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
                               : MainAxisAlignment.start,
                           children: [
                             MobileActionButton(
-                              icon: Icons.refresh,
+                              icon: AuroraIcons.retry,
                               onPressed: () => _handleAction('retry'),
                             ),
                             MobileActionButton(
-                              icon: Icons.edit_outlined,
+                              icon: AuroraIcons.edit,
                               onPressed: () => _handleAction('edit'),
                             ),
                             MobileActionButton(
-                              icon: Icons.copy_outlined,
+                              icon: AuroraIcons.copy,
                               onPressed: () => _handleAction('copy'),
                             ),
                             if (!isUser)
                               MobileActionButton(
-                                icon: Icons.call_split,
+                                icon: AuroraIcons.branch,
                                 onPressed: () => _handleAction('branch'),
                               ),
                             MobileActionButton(
-                              icon: Icons.delete_outline,
+                              icon: AuroraIcons.delete,
                               onPressed: () => _handleAction('delete'),
                             ),
                           ],
@@ -817,22 +818,22 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
   Widget _buildFileAttachmentPill(String path, fluent.FluentThemeData theme,
       {VoidCallback? onDelete}) {
     final pathLower = path.toLowerCase();
-    IconData iconData = Icons.insert_drive_file;
+    IconData iconData = AuroraIcons.file;
     if (pathLower.endsWith('.mp3') ||
         pathLower.endsWith('.wav') ||
         pathLower.endsWith('.m4a') ||
         pathLower.endsWith('.flac') ||
         pathLower.endsWith('.ogg') ||
         pathLower.endsWith('.opus')) {
-      iconData = Icons.audiotrack;
+      iconData = AuroraIcons.audio;
     } else if (pathLower.endsWith('.mp4') ||
         pathLower.endsWith('.mov') ||
         pathLower.endsWith('.avi') ||
         pathLower.endsWith('.webm') ||
         pathLower.endsWith('.mkv')) {
-      iconData = Icons.videocam;
+      iconData = AuroraIcons.video;
     } else if (pathLower.endsWith('.pdf')) {
-      iconData = Icons.picture_as_pdf;
+      iconData = AuroraIcons.pdf;
     }
 
     return HoverAttachmentPreview(
@@ -863,7 +864,7 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
                 ),
                 if (onDelete != null) ...[
                   const SizedBox(width: 4),
-                  Icon(fluent.FluentIcons.chrome_close,
+                  Icon(AuroraIcons.close,
                       size: 8, color: theme.accentColor),
                 ],
               ],

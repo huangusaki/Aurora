@@ -18,6 +18,7 @@ import '../widgets/fade_indexed_stack.dart';
 import '../../../studio/presentation/studio_content.dart';
 import '../../../skills/presentation/skills_page.dart';
 import '../chat_provider.dart';
+import 'package:aurora/shared/theme/aurora_icons.dart';
 
 class DesktopChatScreen extends ConsumerStatefulWidget {
   const DesktopChatScreen({super.key});
@@ -218,27 +219,27 @@ class _DesktopChatScreenState extends ConsumerState<DesktopChatScreen> with Wind
     final l10n = AppLocalizations.of(context)!;
     final navItems = [
       (
-        icon: fluent.FluentIcons.history,
+        icon: AuroraIcons.history,
         label: l10n.history,
         body: const HistoryContent()
       ),
       (
-        icon: fluent.FluentIcons.translate,
+        icon: AuroraIcons.translation,
         label: l10n.textTranslation,
         body: const TranslationContent()
       ),
       (
-        icon: fluent.FluentIcons.script,
+        icon: AuroraIcons.skills,
         label: l10n.agentSkills,
         body: const SkillSettingsPage()
       ),
       (
-        icon: fluent.FluentIcons.toolbox,
+        icon: AuroraIcons.studio,
         label: l10n.studio,
         body: const StudioContent()
       ),
       (
-        icon: fluent.FluentIcons.settings,
+        icon: AuroraIcons.settings,
         label: l10n.settings,
         body: const SettingsContent()
       ),
@@ -388,7 +389,7 @@ class _DesktopChatScreenState extends ConsumerState<DesktopChatScreen> with Wind
                     child: Center(
                       child: fluent.IconButton(
                         icon: const fluent.Icon(
-                            fluent.FluentIcons.global_nav_button,
+                            AuroraIcons.globalNav,
                             size: 16),
                         onPressed: () {
                           ref
@@ -607,8 +608,8 @@ class _DesktopChatScreenState extends ConsumerState<DesktopChatScreen> with Wind
                                                           context) ==
                                                       Brightness.dark);
                                       final IconData icon = isActuallyDark
-                                          ? fluent.FluentIcons.clear_night
-                                          : fluent.FluentIcons.sunny;
+                                          ? AuroraIcons.themeDark
+                                          : AuroraIcons.themeLight;
                                       return fluent.HoverButton(
                                         onPressed: () => ref
                                             .read(settingsProvider.notifier)

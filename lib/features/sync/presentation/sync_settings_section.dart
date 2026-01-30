@@ -1,7 +1,9 @@
+import 'package:aurora/shared/theme/aurora_icons.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:aurora/l10n/app_localizations.dart';
+import 'package:file_selector/file_selector.dart';
 
 import '../domain/webdav_config.dart';
 import '../domain/backup_options.dart';
@@ -45,6 +47,96 @@ class _SyncSettingsSectionState extends ConsumerState<SyncSettingsSection> {
       password: _passwordController.text.trim(),
       remotePath: '/aurora_backup', // Fixed for now
     ));
+  }
+
+  Future<void> _handleExport() async {
+    final l10n = AppLocalizations.of(context)!;
+    try {
+      final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
+      final fileName = 'aurora_backup_$timestamp.zip';
+      
+      final location = await getSaveLocation(suggestedName: fileName);
+      if (location == null) return;
+      
+      if (mounted) {
+        final options = await showDialog<BackupOptions>(
+          context: context,
+          builder: (context) => BackupOptionsDialog(title: l10n.selectiveBackup),
+        );
+        if (options == null) return;
+        
+        await ref.read(backupServiceProvider).exportToLocalFile(location.path, options: options);
+      }
+      
+      if (mounted) {
+         _showDialog(l10n.exportSuccess, isError: false);
+      }
+    } catch (e) {
+      if (mounted) {
+         _showDialog('${l10n.exportFailed}: $e', isError: true);
+      }
+    }
+  }
+
+  Future<void> _handleImport() async {
+    final l10n = AppLocalizations.of(context)!;
+    try {
+      final typeGroup = const XTypeGroup(label: 'Zip', extensions: ['zip']);
+      final file = await openFile(acceptedTypeGroups: [typeGroup]);
+      if (file == null) return;
+
+      await ref.read(backupServiceProvider).importFromLocalFile(file.path);
+      await ref.read(syncProvider.notifier).refreshAllStates();
+      
+      if (mounted) {
+        _showDialog(l10n.importSuccess, isError: false);
+      }
+    } catch (e) {
+      if (mounted) {
+        _showDialog('${l10n.importFailed}: $e', isError: true);
+      }
+    }
+  }
+
+  Future<void> _handleClearAll() async {
+     final l10n = AppLocalizations.of(context)!;
+     showDialog(context: context, builder: (context) {
+        return ContentDialog(
+          title: Text(l10n.clearDataConfirmTitle),
+          content: Text(l10n.clearDataConfirmContent),
+          actions: [
+            Button(child: Text(l10n.cancel), onPressed: () => Navigator.pop(context)),
+            FilledButton(
+                style: ButtonStyle(backgroundColor: WidgetStateProperty.all(Colors.red)),
+                child: Text(l10n.clearAllData), 
+                onPressed: () async {
+                    Navigator.pop(context);
+                    try {
+                        await ref.read(backupServiceProvider).clearAllData();
+                        await ref.read(syncProvider.notifier).refreshAllStates();
+                        if (mounted) _showDialog(l10n.clearDataSuccess, isError: false);
+                    } catch(e) {
+                        if (mounted) _showDialog('${l10n.clearDataFailed}: $e', isError: true);
+                    }
+                }
+            ),
+          ],
+        );
+     });
+  }
+
+  void _showDialog(String message, {bool isError = false}) {
+     showDialog(context: context, builder: (context) {
+        return ContentDialog(
+           title: isError 
+               ? Text('Error', style: TextStyle(color: Colors.red))
+               : Icon(AuroraIcons.check, color: Colors.green),
+           content: Text(message),
+           actions: [
+              Button(child: const Text('OK'), onPressed: () => Navigator.pop(context)),
+           ],
+        );
+     });
   }
 
   @override
@@ -131,7 +223,7 @@ class _SyncSettingsSectionState extends ConsumerState<SyncSettingsSection> {
                   placeholder: 'Password',
                   obscureText: !_showPassword,
                   suffix: IconButton(
-                    icon: Icon(_showPassword ? FluentIcons.hide : FluentIcons.red_eye),
+                    icon: Icon(_showPassword ? AuroraIcons.visibilityOff : AuroraIcons.visibility),
                     onPressed: () => setState(() => _showPassword = !_showPassword),
                   ),
                   onChanged: (_) => _save(),
@@ -141,13 +233,14 @@ class _SyncSettingsSectionState extends ConsumerState<SyncSettingsSection> {
           ],
         ),
         const SizedBox(height: 16),
-        Row(
+        Wrap(
+          spacing: 12,
+          runSpacing: 12,
           children: [
             FilledButton(
               onPressed: state.isBusy ? null : () => ref.read(syncProvider.notifier).testConnection(),
               child: Text(l10n.testConnection),
             ),
-            const SizedBox(width: 12),
             Button(
               onPressed: state.isBusy ? null : () async {
                 final options = await showDialog<BackupOptions>(
@@ -159,6 +252,18 @@ class _SyncSettingsSectionState extends ConsumerState<SyncSettingsSection> {
                 }
               },
               child: Text(l10n.backupNow),
+            ),
+            Button(
+              onPressed: state.isBusy ? null : _handleExport,
+              child: Text(l10n.exportData),
+            ),
+            Button(
+              onPressed: state.isBusy ? null : _handleImport,
+              child: Text(l10n.importData),
+            ),
+            Button(
+              onPressed: state.isBusy ? null : _handleClearAll,
+              child: Text(l10n.clearAllData, style: TextStyle(color: Colors.red)),
             ),
           ],
         ),
@@ -199,7 +304,7 @@ class _SyncSettingsSectionState extends ConsumerState<SyncSettingsSection> {
                 final sizeMb = (item.size / 1024 / 1024).toStringAsFixed(2);
                 
                 return ListTile(
-                  leading: const Icon(FluentIcons.folder_open),
+                  leading: const Icon(AuroraIcons.folderOpen),
                   title: Text(item.name),
                   subtitle: Text('$dateStr  •  $sizeMb MB'),
                   trailing: Button(

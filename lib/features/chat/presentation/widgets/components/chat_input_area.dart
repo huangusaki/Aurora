@@ -1,4 +1,5 @@
 
+import 'package:aurora/shared/theme/aurora_icons.dart';
 import 'package:fluent_ui/fluent_ui.dart' as fluent;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -769,7 +770,7 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
           Row(
             children: [
               fluent.IconButton(
-                icon: const Icon(fluent.FluentIcons.attach, size: 16),
+                icon: const Icon(AuroraIcons.attach, size: 16),
                 style: fluent.ButtonStyle(
                   foregroundColor: fluent.WidgetStatePropertyAll(
                       theme.resources.textFillColorSecondary),
@@ -778,7 +779,7 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
               ),
               const SizedBox(width: 4),
               fluent.IconButton(
-                icon: const Icon(fluent.FluentIcons.add, size: 16),
+                icon: const Icon(AuroraIcons.add, size: 16),
                 style: fluent.ButtonStyle(
                   foregroundColor: fluent.WidgetStatePropertyAll(
                       theme.resources.textFillColorSecondary),
@@ -790,7 +791,7 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
               ),
               const SizedBox(width: 4),
               fluent.IconButton(
-                icon: const Icon(fluent.FluentIcons.paste, size: 16),
+                icon: const Icon(AuroraIcons.copy, size: 16),
                 style: fluent.ButtonStyle(
                   foregroundColor: fluent.WidgetStatePropertyAll(
                       theme.resources.textFillColorSecondary),
@@ -803,7 +804,7 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
               ),
               const SizedBox(width: 4),
               fluent.IconButton(
-                icon: const Icon(fluent.FluentIcons.broom, size: 16),
+                icon: const Icon(AuroraIcons.broom, size: 16),
                 style: fluent.ButtonStyle(
                   foregroundColor: fluent.WidgetStatePropertyAll(
                       theme.resources.textFillColorSecondary),
@@ -834,7 +835,7 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
               const SizedBox(width: 4),
               fluent.IconButton(
                 icon: Icon(
-                  fluent.FluentIcons.lightning_bolt,
+                  AuroraIcons.zap,
                   size: 16,
                   color: settings.isStreamEnabled
                       ? theme.accentColor
@@ -845,7 +846,7 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
                   ref.read(settingsProvider.notifier).toggleStreamEnabled();
                   widget.onShowToast(
                       newState ? l10n.streamEnabled : l10n.streamDisabled,
-                      fluent.FluentIcons.lightning_bolt);
+                      AuroraIcons.zap);
                 },
                 style: fluent.ButtonStyle(
                   backgroundColor:
@@ -859,7 +860,7 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
               const SizedBox(width: 4),
               fluent.IconButton(
                 icon: Icon(
-                  fluent.FluentIcons.globe,
+                  AuroraIcons.globe,
                   size: 16,
                   color: settings.isSearchEnabled
                       ? theme.accentColor
@@ -870,7 +871,7 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
                   ref.read(historyChatProvider).toggleSearch();
                   widget.onShowToast(
                       newState ? l10n.searchEnabled : l10n.searchDisabled,
-                      fluent.FluentIcons.globe);
+                      AuroraIcons.globe);
                 },
                 style: fluent.ButtonStyle(
                   backgroundColor:
@@ -884,14 +885,14 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
               const Spacer(),
               if (widget.isLoading)
                 fluent.IconButton(
-                  icon: const Icon(fluent.FluentIcons.stop_solid,
+                  icon: const Icon(AuroraIcons.stop,
                       size: 16, color: Colors.red),
                   onPressed: () =>
                       ref.read(historyChatProvider).abortGeneration(),
                 )
               else
                 fluent.IconButton(
-                  icon: Icon(fluent.FluentIcons.send,
+                   icon: Icon(AuroraIcons.send,
                       size: 16, color: theme.accentColor),
                   onPressed: widget.onSend,
                   style: fluent.ButtonStyle(
@@ -973,7 +974,7 @@ class MobileChatInputArea extends ConsumerWidget {
                 child: Padding(
                   padding: const EdgeInsets.all(6.0),
                   child: Icon(
-                    fluent.FluentIcons.attach,
+                    AuroraIcons.attach,
                     color: Theme.of(context).colorScheme.outline,
                     size: 18,
                   ),
@@ -1007,7 +1008,7 @@ class MobileChatInputArea extends ConsumerWidget {
                 child: Padding(
                   padding: const EdgeInsets.all(6.0),
                   child: Icon(
-                    fluent.FluentIcons.broom,
+                    AuroraIcons.broom,
                     color: Theme.of(context).colorScheme.outline,
                     size: 18,
                   ),
@@ -1020,13 +1021,13 @@ class MobileChatInputArea extends ConsumerWidget {
                   ref.read(settingsProvider.notifier).toggleStreamEnabled();
                   onShowToast(
                       newState ? l10n.streamEnabled : l10n.streamDisabled,
-                      fluent.FluentIcons.lightning_bolt);
+                      AuroraIcons.skills);
                 },
                 borderRadius: BorderRadius.circular(20),
                 child: Padding(
                   padding: const EdgeInsets.all(6.0),
                   child: Icon(
-                    fluent.FluentIcons.lightning_bolt,
+                    AuroraIcons.skills,
                     color: settings.isStreamEnabled
                         ? Theme.of(context).colorScheme.primary
                         : Colors.grey,
@@ -1041,14 +1042,14 @@ class MobileChatInputArea extends ConsumerWidget {
                   ref.read(historyChatProvider).toggleSearch();
                   onShowToast(
                       newState ? l10n.searchEnabled : l10n.searchDisabled,
-                      fluent.FluentIcons.globe);
+                      AuroraIcons.globe);
                 },
                 onLongPress: () {},
                 borderRadius: BorderRadius.circular(20),
                 child: Padding(
                   padding: const EdgeInsets.all(6.0),
                   child: Icon(
-                    fluent.FluentIcons.globe,
+                    AuroraIcons.globe,
                     color: settings.isSearchEnabled
                         ? Theme.of(context).colorScheme.primary
                         : Colors.grey,
@@ -1059,14 +1060,14 @@ class MobileChatInputArea extends ConsumerWidget {
               const Spacer(),
               if (isLoading)
                 IconButton(
-                  icon: const Icon(fluent.FluentIcons.stop,
+                  icon: const Icon(AuroraIcons.stop,
                       color: Colors.red, size: 18),
                   onPressed: () =>
                       ref.read(historyChatProvider).abortGeneration(),
                 )
               else
                 IconButton(
-                  icon: Icon(fluent.FluentIcons.send,
+                  icon: Icon(AuroraIcons.send,
                       color: Theme.of(context).colorScheme.primary, size: 18),
                   onPressed: onSend,
                 ),

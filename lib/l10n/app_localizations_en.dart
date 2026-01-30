@@ -254,7 +254,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get displaySettings => 'Display Settings';
 
   @override
-  String get dataSettings => 'Data Settings';
+  String get dataSettings => 'Data Backup';
 
   @override
   String get usageStats => 'Usage Statistics';

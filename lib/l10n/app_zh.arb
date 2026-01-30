@@ -109,7 +109,7 @@
   "modelProvider": "模型提供",
   "chatSettings": "对话设置",
   "displaySettings": "外观设置",
-  "dataSettings": "数据设置",
+  "dataSettings": "数据备份",
   "usageStats": "数据统计",
   "agentSkills": "技能",
   "executionModel": "执行模型",

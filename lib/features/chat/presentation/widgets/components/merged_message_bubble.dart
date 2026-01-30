@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:fluent_ui/fluent_ui.dart' as fluent;
+import 'package:aurora/shared/theme/aurora_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -153,7 +154,7 @@ class _MergedMessageBubbleState extends ConsumerState<MergedMessageBubble>
                           color: theme.accentColor,
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(fluent.FluentIcons.robot,
+                        child: const Icon(AuroraIcons.robot,
                             color: Colors.white, size: 16),
                       ),
                     ),
@@ -168,7 +169,7 @@ class _MergedMessageBubbleState extends ConsumerState<MergedMessageBubble>
                   color: theme.accentColor,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(fluent.FluentIcons.robot,
+                child: const Icon(AuroraIcons.robot,
                     color: Colors.white, size: 16),
               );
             }),
@@ -284,13 +285,13 @@ class _MergedMessageBubbleState extends ConsumerState<MergedMessageBubble>
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     ActionButton(
-                                        icon: fluent.FluentIcons.cancel,
+                                        icon: AuroraIcons.cancel,
                                         tooltip: l10n?.cancel ?? 'Cancel',
                                         onPressed: () =>
                                             setState(() => _isEditing = false)),
                                     const SizedBox(width: 4),
                                     ActionButton(
-                                        icon: fluent.FluentIcons.save,
+                                        icon: AuroraIcons.save,
                                         tooltip: l10n?.save ?? 'Save',
                                         onPressed: _saveEdit),
                                   ],
@@ -309,27 +310,27 @@ class _MergedMessageBubbleState extends ConsumerState<MergedMessageBubble>
                             child: Row(
                               children: [
                                 ActionButton(
-                                    icon: fluent.FluentIcons.refresh,
+                                    icon: AuroraIcons.refresh,
                                     tooltip: l10n?.retry ?? 'Retry',
                                     onPressed: () => _handleAction('retry')),
                                 const SizedBox(width: 4),
                                 ActionButton(
-                                    icon: fluent.FluentIcons.edit,
+                                    icon: AuroraIcons.edit,
                                     tooltip: l10n?.edit ?? 'Edit',
                                     onPressed: () => _handleAction('edit')),
                                 const SizedBox(width: 4),
                                 ActionButton(
-                                    icon: fluent.FluentIcons.copy,
+                                    icon: AuroraIcons.copy,
                                     tooltip: l10n?.copy ?? 'Copy',
                                     onPressed: () => _handleAction('copy')),
                                 const SizedBox(width: 4),
                                 ActionButton(
-                                    icon: fluent.FluentIcons.branch_fork2,
+                                    icon: AuroraIcons.branch,
                                     tooltip: l10n?.branch ?? 'Branch',
                                     onPressed: () => _handleAction('branch')),
                                 const SizedBox(width: 4),
                                 ActionButton(
-                                    icon: fluent.FluentIcons.delete,
+                                    icon: AuroraIcons.delete,
                                     tooltip: l10n?.delete ?? 'Delete',
                                     onPressed: () => _handleAction('delete')),
                               ],
@@ -343,23 +344,23 @@ class _MergedMessageBubbleState extends ConsumerState<MergedMessageBubble>
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   MobileActionButton(
-                                    icon: Icons.refresh,
+                                    icon: AuroraIcons.refresh,
                                     onPressed: () => _handleAction('retry'),
                                   ),
                                   MobileActionButton(
-                                    icon: Icons.edit_outlined,
+                                    icon: AuroraIcons.edit,
                                     onPressed: () => _handleAction('edit'),
                                   ),
                                   MobileActionButton(
-                                    icon: Icons.copy_outlined,
+                                    icon: AuroraIcons.copy,
                                     onPressed: () => _handleAction('copy'),
                                   ),
                                   MobileActionButton(
-                                    icon: Icons.call_split,
+                                    icon: AuroraIcons.branch,
                                     onPressed: () => _handleAction('branch'),
                                   ),
                                   MobileActionButton(
-                                    icon: Icons.delete_outline,
+                                    icon: AuroraIcons.delete,
                                     onPressed: () => _handleAction('delete'),
                                   ),
                                 ],

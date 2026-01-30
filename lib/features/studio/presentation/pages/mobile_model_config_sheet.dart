@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:aurora/shared/theme/aurora_icons.dart';
 import 'package:flutter/material.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -159,7 +160,7 @@ class _MobileModelConfigSheetState extends ConsumerState<MobileModelConfigSheet>
               IconButton(
                 tooltip:
                     '${l10n.save} "${novelState.promptPresets.firstWhere((p) => p.id == novelState.activePromptPresetId).name}"',
-                icon: const Icon(Icons.save),
+                icon: const Icon(AuroraIcons.save),
                 onPressed: () {
                   final activeId = novelState.activePromptPresetId!;
                   final currentPreset = novelState.promptPresets
@@ -179,12 +180,12 @@ class _MobileModelConfigSheetState extends ConsumerState<MobileModelConfigSheet>
               ),
             IconButton(
               tooltip: l10n.newNovelPreset,
-              icon: const Icon(Icons.add),
+              icon: const Icon(AuroraIcons.add),
               onPressed: () => _showSavePresetDialog(context, ref),
             ),
             IconButton(
               tooltip: l10n.selectPreset,
-              icon: const Icon(Icons.tune),
+              icon: const Icon(AuroraIcons.parameter),
               onPressed: () =>
                   _showPresetPicker(context, novelState, novelNotifier, l10n),
             ),

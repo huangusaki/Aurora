@@ -1,6 +1,7 @@
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 import 'novel/novel_writing_page.dart';
+import 'package:aurora/shared/theme/aurora_icons.dart';
 
 class StudioContent extends StatefulWidget {
   const StudioContent({super.key});
@@ -37,7 +38,7 @@ class _StudioContentState extends State<StudioContent> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
-                FluentIcons.toolbox,
+                AuroraIcons.studio,
                 size: 64,
                 color: theme.accentColor,
               ),
@@ -59,7 +60,7 @@ class _StudioContentState extends State<StudioContent> {
                 children: [
                   _buildFeatureCard(
                     context,
-                    icon: FluentIcons.edit_mail,
+                    icon: AuroraIcons.edit,
                     title: l10n.novelWriting,
                     description: l10n.novelWritingDescription,
                     onTap: () {
@@ -70,7 +71,7 @@ class _StudioContentState extends State<StudioContent> {
                   ),
                   _buildFeatureCard(
                     context,
-                    icon: FluentIcons.calendar,
+                    icon: AuroraIcons.calendar,
                     title: l10n.schedulePlanning,
                     description: l10n.schedulePlanningDescription,
                     comingSoon: true,
@@ -78,7 +79,7 @@ class _StudioContentState extends State<StudioContent> {
                   ),
                   _buildFeatureCard(
                     context,
-                    icon: FluentIcons.photo2,
+                    icon: AuroraIcons.image,
                     title: l10n.imageManagement,
                     description: l10n.imageManagementDescription,
                     comingSoon: true,
@@ -117,7 +118,7 @@ class _StudioContentState extends State<StudioContent> {
             height: 180,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
-              color: states.isHovering && !comingSoon 
+              color: states.isHovered && !comingSoon 
                   ? theme.accentColor.withAlpha(15) 
                   : Colors.transparent,
             ),

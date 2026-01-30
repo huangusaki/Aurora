@@ -569,7 +569,7 @@ abstract class AppLocalizations {
   /// No description provided for @dataSettings.
   ///
   /// In zh, this message translates to:
-  /// **'数据设置'**
+  /// **'数据备份'**
   String get dataSettings;
 
   /// No description provided for @usageStats.

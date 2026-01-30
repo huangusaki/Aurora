@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:fluent_ui/fluent_ui.dart' as fluent;
+import 'package:aurora/shared/theme/aurora_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -131,7 +132,7 @@ class _TranslationContentState extends ConsumerState<TranslationContent> {
                     onChanged: (v) => setState(() => _sourceLang = v!)),
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 10),
-                  child: Icon(fluent.FluentIcons.forward,
+                  child: Icon(AuroraIcons.forward,
                       size: 12, color: Colors.grey),
                 ),
                 _buildLangSelector(
@@ -179,7 +180,7 @@ class _TranslationContentState extends ConsumerState<TranslationContent> {
                         if (_sourceController.text.isNotEmpty)
                           fluent.IconButton(
                             icon:
-                                const Icon(fluent.FluentIcons.clear, size: 14),
+                                const Icon(AuroraIcons.close, size: 14),
                             onPressed: () => _sourceController.clear(),
                           ),
                         const SizedBox(width: 8),
@@ -198,7 +199,7 @@ class _TranslationContentState extends ConsumerState<TranslationContent> {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(fluent.FluentIcons.translate,
+                              Icon(AuroraIcons.translate,
                                   size: 14, color: theme.accentColor),
                               const SizedBox(width: 6),
                               Text(
@@ -227,7 +228,7 @@ class _TranslationContentState extends ConsumerState<TranslationContent> {
                               : l10n.enableCompare,
                           child: fluent.IconButton(
                             icon: Icon(
-                              fluent.FluentIcons.compare,
+                              AuroraIcons.compare,
                               size: 16,
                               color: _showComparison ? theme.accentColor : null,
                             ),
@@ -236,7 +237,7 @@ class _TranslationContentState extends ConsumerState<TranslationContent> {
                           ),
                         ),
                         fluent.IconButton(
-                          icon: const Icon(fluent.FluentIcons.copy, size: 16),
+                          icon: const Icon(AuroraIcons.copy, size: 16),
                           onPressed: () {
                             final text = aiMessage?.content;
                             if (text != null && text.isNotEmpty) {

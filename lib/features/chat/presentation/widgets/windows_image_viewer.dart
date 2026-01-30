@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 import 'dart:math' as math;
+import 'package:aurora/shared/theme/aurora_icons.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/gestures.dart';
 import 'package:file_selector/file_selector.dart';
@@ -84,7 +85,7 @@ class _WindowsImageViewerState extends State<WindowsImageViewer> {
             content: const Text('图片已复制到剪贴板'),
             severity: InfoBarSeverity.success,
             action: IconButton(
-                icon: const Icon(FluentIcons.clear), onPressed: close),
+                icon: const Icon(AuroraIcons.close), onPressed: close),
           );
         });
       }
@@ -110,7 +111,7 @@ class _WindowsImageViewerState extends State<WindowsImageViewer> {
             content: Text('图片已保存到 ${result.path}'),
             severity: InfoBarSeverity.success,
             action: IconButton(
-                icon: const Icon(FluentIcons.clear), onPressed: close),
+                icon: const Icon(AuroraIcons.close), onPressed: close),
           );
         });
       }
@@ -177,7 +178,7 @@ class _WindowsImageViewerState extends State<WindowsImageViewer> {
             right: 16,
             child: IconButton(
               icon:
-                  Icon(FluentIcons.chrome_close, size: 20, color: Colors.white),
+                  Icon(AuroraIcons.close, size: 20, color: Colors.white),
               onPressed: widget.onClose ?? () => Navigator.pop(context),
             ),
           ),
@@ -197,37 +198,37 @@ class _WindowsImageViewerState extends State<WindowsImageViewer> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     _ToolButton(
-                      icon: FluentIcons.refresh,
+                      icon: AuroraIcons.refresh,
                       tooltip: '重置',
                       onPressed: _resetView,
                     ),
                     const SizedBox(width: 8),
                     _ToolButton(
-                      icon: FluentIcons.rotate,
+                      icon: AuroraIcons.retry,
                       tooltip: '向左旋转',
                       onPressed: _rotateLeft,
                     ),
                     _ToolButton(
-                      icon: FluentIcons.rotate,
+                      icon: AuroraIcons.retry,
                       tooltip: '向右旋转',
                       onPressed: _rotateRight,
                       flipIcon: true,
                     ),
                     const SizedBox(width: 8),
                     _ToolButton(
-                      icon: FluentIcons.switch_widget,
+                      icon: AuroraIcons.sync,
                       tooltip: '水平翻转',
                       onPressed: _flipH,
                     ),
                     _ToolButton(
-                      icon: FluentIcons.switch_widget,
+                      icon: AuroraIcons.sync,
                       tooltip: '垂直翻转',
                       onPressed: _flipV,
                       rotateIcon: true,
                     ),
                     const SizedBox(width: 8),
                     _ToolButton(
-                      icon: FluentIcons.remove,
+                      icon: AuroraIcons.delete,
                       tooltip: '缩小',
                       onPressed: _zoomOut,
                     ),

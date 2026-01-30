@@ -1,3 +1,4 @@
+import 'package:aurora/shared/theme/aurora_icons.dart';
 import 'dart:async';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -205,7 +206,7 @@ class _ModelConfigDialogState extends ConsumerState<ModelConfigDialog> {
                 Tooltip(
                   message: '将提示词恢复为系统默认预设',
                   child: IconButton(
-                    icon: const Icon(FluentIcons.reset, size: 14),
+                    icon: const Icon(AuroraIcons.reset, size: 14),
                     onPressed: () {
                       _controllers[key]!.text = presetPrompt;
                       onPromptChanged(presetPrompt);
@@ -242,7 +243,7 @@ class _ModelConfigDialogState extends ConsumerState<ModelConfigDialog> {
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Row(
           children: [
-            const Icon(FluentIcons.settings, size: 16),
+            const Icon(AuroraIcons.settings, size: 16),
             const SizedBox(width: 12),
             Text(l10n.modelConfig, style: theme.typography.subtitle),
             const Spacer(),
@@ -280,7 +281,7 @@ class _ModelConfigDialogState extends ConsumerState<ModelConfigDialog> {
                                     _controllers['reviewer']!.text = NovelPromptPresets.reviewer;
                                     novelNotifier.setReviewerPrompt(NovelPromptPresets.reviewer);
                                     novelNotifier.setActivePromptPresetId(null);
-                                    _showToast(l10n.systemDefaultRestored, FluentIcons.reset);
+                                    _showToast(l10n.systemDefaultRestored, AuroraIcons.reset);
                                   },
                                 ),
                                 const MenuFlyoutSeparator(),
@@ -297,12 +298,12 @@ class _ModelConfigDialogState extends ConsumerState<ModelConfigDialog> {
                                       _loadPreset(preset, novelNotifier, l10n);
                                     },
                                     trailing: IconButton(
-                                      icon: const Icon(FluentIcons.delete, size: 10),
+                                      icon: const Icon(AuroraIcons.delete, size: 10),
                                       onPressed: () {
                                         novelNotifier.deletePromptPreset(preset.id);
                                         // Close flyout to refresh state
                                         Navigator.of(context).pop();
-                                        _showToast(l10n.delete, FluentIcons.delete);
+                                        _showToast(l10n.delete, AuroraIcons.delete);
                                       },
                                     ),
                                   )),
@@ -315,7 +316,7 @@ class _ModelConfigDialogState extends ConsumerState<ModelConfigDialog> {
                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                          child: Row(
                            children: [
-                             Icon(FluentIcons.bookmarks, size: 14, color: theme.typography.caption?.color),
+                             Icon(AuroraIcons.bookmark, size: 14, color: theme.typography.caption?.color),
                              const SizedBox(width: 8),
                              Text(
                                novelState.activePromptPresetId != null 
@@ -324,7 +325,7 @@ class _ModelConfigDialogState extends ConsumerState<ModelConfigDialog> {
                                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
                              ),
                              const SizedBox(width: 8),
-                             const Icon(FluentIcons.chevron_down, size: 8),
+                             const Icon(AuroraIcons.chevronDown, size: 8),
                            ],
                          ),
                       ),
@@ -339,7 +340,7 @@ class _ModelConfigDialogState extends ConsumerState<ModelConfigDialog> {
                     child: Tooltip(
                       message: l10n.newNovelPreset,
                       child: IconButton(
-                        icon: const Icon(FluentIcons.add, size: 14),
+                        icon: const Icon(AuroraIcons.add, size: 14),
                         onPressed: () {
                           _addPresetFlyoutController.showFlyout(
                             autoModeConfiguration: FlyoutAutoConfiguration(
@@ -404,7 +405,7 @@ class _ModelConfigDialogState extends ConsumerState<ModelConfigDialog> {
                           reviewerPrompt: _controllers['reviewer']?.text ?? '',
                         );
                         novelNotifier.updatePromptPreset(updatedPreset);
-                        _showToast(l10n.presetSaved(updatedPreset.name), FluentIcons.save);
+                        _showToast(l10n.presetSaved(updatedPreset.name), AuroraIcons.save);
                       },
                     ),
                   ),
@@ -439,7 +440,7 @@ class _ModelConfigDialogState extends ConsumerState<ModelConfigDialog> {
                     ),
                   ),
                   icon: Icon(
-                    FluentIcons.text_document,
+                    AuroraIcons.file,
                     color: _currentIndex == 0 ? theme.accentColor : null,
                   ),
                   body: buildConfigInterface(
@@ -459,7 +460,7 @@ class _ModelConfigDialogState extends ConsumerState<ModelConfigDialog> {
                     ),
                   ),
                   icon: Icon(
-                    FluentIcons.split_object,
+                    AuroraIcons.split,
                     color: _currentIndex == 1 ? theme.accentColor : null,
                   ),
                   body: buildConfigInterface(
@@ -479,7 +480,7 @@ class _ModelConfigDialogState extends ConsumerState<ModelConfigDialog> {
                     ),
                   ),
                   icon: Icon(
-                    FluentIcons.edit,
+                    AuroraIcons.edit,
                     color: _currentIndex == 2 ? theme.accentColor : null,
                   ),
                   body: buildConfigInterface(
@@ -499,7 +500,7 @@ class _ModelConfigDialogState extends ConsumerState<ModelConfigDialog> {
                     ),
                   ),
                   icon: Icon(
-                    FluentIcons.preview_link,
+                    AuroraIcons.view,
                     color: _currentIndex == 3 ? theme.accentColor : null,
                   ),
                   body: buildConfigInterface(
@@ -539,7 +540,7 @@ class _ModelConfigDialogState extends ConsumerState<ModelConfigDialog> {
       ref.read(novelProvider.notifier).addPromptPreset(preset);
       
       final l10n = AppLocalizations.of(context)!;
-      _showToast(l10n.presetSaved(name), FluentIcons.save);
+      _showToast(l10n.presetSaved(name), AuroraIcons.save);
       
       _addPresetFlyoutController.close();
       _newPresetController.clear();
@@ -563,6 +564,6 @@ class _ModelConfigDialogState extends ConsumerState<ModelConfigDialog> {
       notifier.setReviewerPrompt(preset.reviewerPrompt);
     }
     notifier.setActivePromptPresetId(preset.id);
-    _showToast(l10n.presetLoaded(preset.name), FluentIcons.check_mark);
+    _showToast(l10n.presetLoaded(preset.name), AuroraIcons.check);
   }
 }

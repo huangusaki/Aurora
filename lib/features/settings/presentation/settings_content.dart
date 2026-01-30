@@ -20,6 +20,7 @@ import '../../sync/presentation/sync_settings_section.dart';
 import '../../sync/presentation/sync_provider.dart';
 import '../../sync/domain/backup_options.dart';
 import '../../sync/presentation/widgets/backup_options_dialog.dart';
+import 'package:aurora/shared/theme/aurora_icons.dart';
 
 
 class SettingsContent extends ConsumerStatefulWidget {
@@ -103,13 +104,13 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
       final theme = fluent.FluentTheme.of(context);
       final l10n = AppLocalizations.of(context)!;
       final settingsPages = [
-        (icon: fluent.FluentIcons.cloud_download, label: l10n.modelProvider),
-        (icon: fluent.FluentIcons.chat, label: l10n.chatSettings),
+        (icon: AuroraIcons.model, label: l10n.modelProvider),
+        (icon: AuroraIcons.translation, label: l10n.chatSettings),
 
-        (icon: fluent.FluentIcons.edit, label: l10n.promptPresets),
-        (icon: fluent.FluentIcons.color, label: l10n.displaySettings),
-        (icon: fluent.FluentIcons.database, label: l10n.dataSettings),
-        (icon: fluent.FluentIcons.analytics_view, label: l10n.usageStats),
+        (icon: AuroraIcons.edit, label: l10n.promptPresets),
+        (icon: AuroraIcons.image, label: l10n.displaySettings),
+        (icon: AuroraIcons.backup, label: l10n.dataSettings),
+        (icon: AuroraIcons.stats, label: l10n.usageStats),
       ];
       return Container(
         color: Colors.transparent,
@@ -140,7 +141,7 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
                             decoration: BoxDecoration(
                               color: isSelected
                                   ? theme.accentColor.withOpacity(0.1)
-                                  : states.isHovering
+                                  : states.isHovered
                                       ? theme.resources.subtleFillColorSecondary
                                       : Colors.transparent,
                               borderRadius: BorderRadius.circular(4),
@@ -216,7 +217,7 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.settings, size: 48, color: Colors.grey),
+                const Icon(AuroraIcons.settings, size: 48, color: Colors.grey),
                 const SizedBox(height: 16),
                 const Text('移动端设置',
                     style:
@@ -435,7 +436,7 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       fluent.IconButton(
-                                        icon: Icon(fluent.FluentIcons.edit,
+                                        icon: Icon(AuroraIcons.edit,
                                             size: 12,
                                             color: fluent.FluentTheme.of(context)
                                                 .resources
@@ -451,7 +452,7 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
 
 
                                       fluent.IconButton(
-                                        icon: Icon(fluent.FluentIcons.delete,
+                                        icon: Icon(AuroraIcons.delete,
                                             size: 12,
                                             color: fluent.FluentTheme.of(context)
                                                 .resources
@@ -525,7 +526,7 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
                                 .subtitle),
                         const SizedBox(width: 12),
                         fluent.IconButton(
-                          icon: Icon(fluent.FluentIcons.settings,
+                          icon: Icon(AuroraIcons.settings,
                               size: 20,
                               color: fluent.FluentTheme.of(context).accentColor),
                           onPressed: () {
@@ -579,7 +580,7 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
                           ],
                         ),
                         fluent.IconButton(
-                          icon: const fluent.Icon(fluent.FluentIcons.add, size: 14),
+                          icon: const fluent.Icon(AuroraIcons.add, size: 14),
                           onPressed: () {
                             _showKeyDialog(context, viewingProvider.id);
                           },
@@ -597,7 +598,7 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
                         ),
                         child: Row(
                           children: [
-                            fluent.Icon(fluent.FluentIcons.info,
+                            fluent.Icon(AuroraIcons.info,
                                 size: 14, color: fluent.Colors.grey),
                             const SizedBox(width: 8),
                             fluent.Text(l10n.noModelsData,
@@ -655,7 +656,7 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
                                 ),
                                 const SizedBox(width: 4),
                                 fluent.IconButton(
-                                  icon: fluent.Icon(fluent.FluentIcons.delete,
+                                  icon: fluent.Icon(AuroraIcons.delete,
                                       size: 14,
                                       color: fluent.Colors.red.withOpacity(0.7)),
                                   onPressed: () {
@@ -707,7 +708,7 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(Icons.done_all, size: 14),
+                                 const Icon(AuroraIcons.selectAll, size: 14),
                                 const SizedBox(width: 4),
                                 fluent.Text(l10n.enableAll),
                               ],
@@ -721,7 +722,7 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(Icons.remove_done, size: 14),
+                                 const Icon(AuroraIcons.deselectAll, size: 14),
                                 const SizedBox(width: 4),
                                 fluent.Text(l10n.disableAll),
                               ],
@@ -756,7 +757,7 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
                               : Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Icon(fluent.FluentIcons.refresh,
+                                     Icon(AuroraIcons.refresh,
                                         size: 14,
                                         color: fluent.FluentTheme.of(context)
                                             .accentColor),
@@ -798,7 +799,7 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
                                 horizontal: 12, vertical: 12),
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(4),
-                              color: states.isHovering
+                              color: states.isHovered
                                   ? theme.typography.body?.color
                                           ?.withOpacity(0.05) ??
                                       Colors.transparent
@@ -808,7 +809,7 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
                             alignment: Alignment.centerLeft,
                             child: Row(
                               children: [
-                                Icon(fluent.FluentIcons.org,
+                                Icon(AuroraIcons.org,
                                     size: 16,
                                     color: theme.typography.body?.color
                                         ?.withOpacity(0.7)),
@@ -819,8 +820,8 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
                                 fluent.IconButton(
                                   icon: Icon(
                                       viewingProvider.isModelEnabled(model)
-                                          ? fluent.FluentIcons.accept
-                                          : fluent.FluentIcons.blocked,
+                                          ? AuroraIcons.success
+                                          : AuroraIcons.blocked,
                                       size: 14,
                                       color: viewingProvider
                                               .isModelEnabled(model)
@@ -834,7 +835,7 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
                                 const SizedBox(width: 8),
                                 fluent.IconButton(
                                   icon: const fluent.Icon(
-                                      fluent.FluentIcons.settings,
+                                      AuroraIcons.settings,
                                       size: 14),
                                   onPressed: () => _openModelSettings(
                                       viewingProvider, model),
@@ -941,7 +942,7 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
                               settingsState.topicGenerationModel == value;
                           items.add(fluent.MenuFlyoutItem(
                             leading: isSelected
-                                ? const Icon(fluent.FluentIcons.check_mark,
+                                ? const Icon(AuroraIcons.check,
                                     size: 12)
                                 : null,
                             text: Text('${provider.name} - $model'),
@@ -1068,7 +1069,7 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
                 if (settingsState.userAvatar != null) ...[
                   const SizedBox(width: 8),
                   fluent.IconButton(
-                    icon: const Icon(fluent.FluentIcons.delete),
+                    icon: const Icon(AuroraIcons.delete),
                     onPressed: () {
                       ref
                           .read(settingsProvider.notifier)
@@ -1151,7 +1152,7 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
                 if (settingsState.llmAvatar != null) ...[
                   const SizedBox(width: 8),
                   fluent.IconButton(
-                    icon: const Icon(fluent.FluentIcons.delete),
+                    icon: const Icon(AuroraIcons.delete),
                     onPressed: () {
                       ref
                           .read(settingsProvider.notifier)
@@ -1305,7 +1306,7 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
                         ],
                       ),
                       child: isSelected
-                          ? Icon(fluent.FluentIcons.check_mark,
+                          ? Icon(AuroraIcons.check,
                               size: 16,
                               color: c.$2 == 'yellow'
                                   ? Colors.black
@@ -1379,7 +1380,7 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
                               ),
                       ),
                       child: isSelected
-                          ? Icon(fluent.FluentIcons.check_mark,
+                          ? Icon(AuroraIcons.check,
                               size: 16,
                               color: isDark ? Colors.white : Colors.black)
                           : null,
@@ -1423,126 +1424,10 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
   }
 
   Widget _buildDataSettings() {
-    final l10n = AppLocalizations.of(context)!;
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SyncSettingsSection(),
-          const SizedBox(height: 32),
-          const fluent.Divider(),
-          const SizedBox(height: 32),
-          fluent.Text(l10n.dataSettings,
-              style: fluent.FluentTheme.of(context).typography.subtitle),
-          const SizedBox(height: 24),
-          fluent.Button(
-            onPressed: _handleExport,
-            child: Text(l10n.exportData),
-          ),
-          const SizedBox(height: 8),
-          fluent.Button(
-            onPressed: _handleImport,
-            child: Text(l10n.importData),
-          ),
-          const SizedBox(height: 8),
-          fluent.Button(
-            onPressed: _handleClearAll,
-            child: Text(l10n.clearAllData),
-          ),
-        ],
-      ),
+    return const SingleChildScrollView(
+      padding: EdgeInsets.all(24),
+      child: SyncSettingsSection(),
     );
-  }
-
-  Future<void> _handleExport() async {
-    final l10n = AppLocalizations.of(context)!;
-    try {
-      final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
-      final fileName = 'aurora_backup_$timestamp.zip';
-      
-      final location = await getSaveLocation(suggestedName: fileName);
-      if (location == null) return;
-      
-      if (mounted) {
-        final options = await showDialog<BackupOptions>(
-          context: context,
-          builder: (context) => BackupOptionsDialog(title: l10n.selectiveBackup),
-        );
-        if (options == null) return;
-        
-        await ref.read(backupServiceProvider).exportToLocalFile(location.path, options: options);
-      }
-      
-      if (mounted) {
-         _showDialog(l10n.exportSuccess, isError: false);
-      }
-    } catch (e) {
-      if (mounted) {
-         _showDialog('${l10n.exportFailed}: $e', isError: true);
-      }
-    }
-  }
-
-  Future<void> _handleImport() async {
-    final l10n = AppLocalizations.of(context)!;
-    try {
-      final typeGroup = XTypeGroup(label: 'Zip', extensions: ['zip']);
-      final file = await openFile(acceptedTypeGroups: [typeGroup]);
-      if (file == null) return;
-
-      await ref.read(backupServiceProvider).importFromLocalFile(file.path);
-      await ref.read(syncProvider.notifier).refreshAllStates();
-      
-      if (mounted) {
-        _showDialog(l10n.importSuccess, isError: false);
-      }
-    } catch (e) {
-      if (mounted) {
-        _showDialog('${l10n.importFailed}: $e', isError: true);
-      }
-    }
-  }
-
-  Future<void> _handleClearAll() async {
-     final l10n = AppLocalizations.of(context)!;
-     showDialog(context: context, builder: (context) {
-        return fluent.ContentDialog(
-          title: Text(l10n.clearDataConfirmTitle),
-          content: Text(l10n.clearDataConfirmContent),
-          actions: [
-            fluent.Button(child: Text(l10n.cancel), onPressed: () => Navigator.pop(context)),
-            fluent.FilledButton(
-                style: fluent.ButtonStyle(backgroundColor: WidgetStateProperty.all(Colors.red)),
-                child: Text(l10n.clearAllData), 
-                onPressed: () async {
-                    Navigator.pop(context);
-                    try {
-                        await ref.read(backupServiceProvider).clearAllData();
-                        await ref.read(syncProvider.notifier).refreshAllStates();
-                        if (mounted) _showDialog(l10n.clearDataSuccess, isError: false);
-                    } catch(e) {
-                        if (mounted) _showDialog('${l10n.clearDataFailed}: $e', isError: true);
-                    }
-                }
-            ),
-          ],
-        );
-     });
-  }
-
-  void _showDialog(String message, {bool isError = false}) {
-     showDialog(context: context, builder: (context) {
-        return fluent.ContentDialog(
-           title: isError 
-               ? const Text('Error', style: TextStyle(color: Colors.red))
-               : const Icon(fluent.FluentIcons.check_mark, color: Colors.green),
-           content: Text(message),
-           actions: [
-              fluent.Button(child: const Text('OK'), onPressed: () => Navigator.pop(context)),
-           ],
-        );
-     });
   }
 
   void _openModelSettings(ProviderConfig provider, String modelName) async {
@@ -1613,7 +1498,7 @@ class _ApiKeyItemState extends State<_ApiKeyItem> {
       placeholder: 'sk-................',
       suffix: fluent.IconButton(
         icon: fluent.Icon(
-          _isVisible ? fluent.FluentIcons.hide : fluent.FluentIcons.red_eye,
+          _isVisible ? AuroraIcons.visibilityOff : AuroraIcons.visibility,
           size: 14,
         ),
         onPressed: () {

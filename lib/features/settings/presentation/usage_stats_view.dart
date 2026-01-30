@@ -1,3 +1,4 @@
+import 'package:aurora/shared/theme/aurora_icons.dart';
 import 'package:aurora/shared/widgets/aurora_bottom_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:fluent_ui/fluent_ui.dart' as fluent;
@@ -24,7 +25,7 @@ class UsageStatsView extends ConsumerWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(fluent.FluentIcons.analytics_view,
+            Icon(AuroraIcons.stats,
                 size: 64,
                 color: theme.resources.textFillColorSecondary),
             const SizedBox(height: 16),
@@ -104,7 +105,7 @@ class UsageStatsView extends ConsumerWidget {
                                           mainAxisAlignment: MainAxisAlignment.center,
                                           mainAxisSize: MainAxisSize.max,
                                           children: [
-                                            Icon(fluent.FluentIcons.delete, size: 14, color: theme.resources.textFillColorSecondary),
+                                            Icon(AuroraIcons.delete, size: 14, color: theme.resources.textFillColorSecondary),
                                             const SizedBox(width: 6),
                                             Text(_getLoc(context, 'clearData'), style: TextStyle(
                                               fontSize: 12,
@@ -426,7 +427,7 @@ class UsageStatsMobileSheet extends ConsumerWidget {
           context,
           l10n.usageStats,
           trailing: IconButton(
-            icon: const Icon(Icons.delete_outline),
+            icon: const Icon(AuroraIcons.delete),
             onPressed: () async {
               ref.read(usageStatsProvider.notifier).clearStats();
             },

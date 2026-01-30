@@ -1,3 +1,4 @@
+import 'package:aurora/shared/theme/aurora_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 import 'mobile_novel_writing_page.dart';
@@ -23,7 +24,7 @@ class _MobileStudioPageState extends State<MobileStudioPage> {
         backgroundColor: theme.scaffoldBackgroundColor,
         leading: widget.onBack != null
             ? IconButton(
-                icon: const Icon(Icons.arrow_back),
+                icon: const Icon(AuroraIcons.back),
                 onPressed: widget.onBack,
               )
             : null,
@@ -35,7 +36,7 @@ class _MobileStudioPageState extends State<MobileStudioPage> {
           children: [
             const SizedBox(height: 20),
             Icon(
-              Icons.home_repair_service_outlined,
+              AuroraIcons.repair,
               size: 64,
               color: theme.primaryColor,
             ),
@@ -65,7 +66,7 @@ class _MobileStudioPageState extends State<MobileStudioPage> {
               children: [
                 _buildFeatureCard(
                   context,
-                  icon: Icons.edit_note_outlined,
+                  icon: AuroraIcons.edit,
                   title: l10n.novelWriting,
                   onTap: () {
                     Navigator.push(
@@ -80,13 +81,13 @@ class _MobileStudioPageState extends State<MobileStudioPage> {
                 ),
                 _buildFeatureCard(
                   context,
-                  icon: Icons.calendar_today_outlined,
+                  icon: AuroraIcons.calendar,
                   title: l10n.schedulePlanning,
                   comingSoon: true,
                 ),
                 _buildFeatureCard(
                   context,
-                  icon: Icons.image_outlined,
+                  icon: AuroraIcons.image,
                   title: l10n.imageManagement,
                   comingSoon: true,
                 ),

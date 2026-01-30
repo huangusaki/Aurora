@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:aurora/shared/theme/aurora_icons.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -160,7 +161,7 @@ class _ModelConfigDialogState extends ConsumerState<ModelConfigDialog> {
       constraints: const BoxConstraints(maxWidth: 600, maxHeight: 800),
       title: Row(
         children: [
-          const Icon(FluentIcons.robot, size: 20),
+          const Icon(AuroraIcons.robot, size: 20),
           const SizedBox(width: 12),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -183,7 +184,7 @@ class _ModelConfigDialogState extends ConsumerState<ModelConfigDialog> {
             // Thinking Configuration Card
             _buildSectionCard(
               title: l10n.thinkingConfig,
-              icon: FluentIcons.lightbulb,
+              icon: AuroraIcons.lightbulb,
 
               headerAction: ToggleSwitch(
                 checked: _thinkingEnabled,
@@ -228,7 +229,7 @@ class _ModelConfigDialogState extends ConsumerState<ModelConfigDialog> {
             // Generation Configuration Card
             _buildSectionCard(
               title: l10n.generationConfig,
-              icon: FluentIcons.settings,
+              icon: AuroraIcons.settings,
               headerAction: null,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -270,7 +271,7 @@ class _ModelConfigDialogState extends ConsumerState<ModelConfigDialog> {
             _buildSectionCard(
               title: l10n.customParams,
               subtitle: l10n.paramsHigherPriority,
-              icon: FluentIcons.edit,
+              icon: AuroraIcons.edit,
               headerAction: null,
               child: Column(
                 children: [
@@ -286,7 +287,7 @@ class _ModelConfigDialogState extends ConsumerState<ModelConfigDialog> {
                       ),
                       child: Column(
                         children: [
-                          Icon(FluentIcons.parameter, size: 32, color: theme.resources.textFillColorTertiary),
+                          Icon(AuroraIcons.parameter, size: 32, color: theme.resources.textFillColorTertiary),
                           const SizedBox(height: 8),
                           Text(
                             l10n.noCustomParams,
@@ -402,7 +403,7 @@ class _ModelConfigDialogState extends ConsumerState<ModelConfigDialog> {
             ),
           ),
           const SizedBox(width: 12),
-          const Icon(FluentIcons.chevron_right_small, size: 10, color: Colors.grey),
+          const Icon(AuroraIcons.chevronRight, size: 10, color: Colors.grey),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
@@ -413,11 +414,11 @@ class _ModelConfigDialogState extends ConsumerState<ModelConfigDialog> {
             ),
           ),
           IconButton(
-            icon: const Icon(FluentIcons.edit, size: 14),
+            icon: const Icon(AuroraIcons.edit, size: 14),
             onPressed: () => _editParam(key, value, currentParams),
           ),
           IconButton(
-            icon: Icon(FluentIcons.delete, size: 14, color: Colors.red.withOpacity(0.8)),
+            icon: Icon(AuroraIcons.delete, size: 14, color: Colors.red.withOpacity(0.8)),
             onPressed: () => _removeParam(key, currentParams),
           ),
         ],

@@ -1,3 +1,4 @@
+import 'package:aurora/shared/theme/aurora_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:aurora/shared/widgets/aurora_bottom_sheet.dart';
@@ -145,7 +146,7 @@ class _MobileSyncSettingsPageState extends ConsumerState<MobileSyncSettingsPage>
               border: const OutlineInputBorder(),
               isDense: true,
               suffixIcon: IconButton(
-                icon: Icon(_showPassword ? Icons.visibility_off : Icons.visibility),
+                icon: Icon(_showPassword ? AuroraIcons.visibilityOff : AuroraIcons.visibility),
                 onPressed: () => setState(() => _showPassword = !_showPassword),
               ),
             ),
@@ -219,7 +220,7 @@ class _MobileSyncSettingsPageState extends ConsumerState<MobileSyncSettingsPage>
              children: [
                  Text(l10n.cloudBackupList, style: theme.textTheme.titleMedium),
                  IconButton(
-                     icon: const Icon(Icons.refresh),
+                     icon: const Icon(AuroraIcons.refresh),
                      onPressed: state.isBusy ? null : () => ref.read(syncProvider.notifier).refreshBackups(),
                  )
              ]
@@ -237,7 +238,7 @@ class _MobileSyncSettingsPageState extends ConsumerState<MobileSyncSettingsPage>
               return Card(
                 margin: const EdgeInsets.symmetric(vertical: 4),
                 child: ListTile(
-                  leading: const Icon(Icons.backup),
+                  leading: const Icon(AuroraIcons.backup),
                   title: Text(item.name),
                   subtitle: Text('$dateStr  •  $sizeMb MB'),
                   trailing: TextButton(

@@ -1,6 +1,7 @@
 import 'package:aurora/shared/widgets/aurora_bottom_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:aurora/shared/theme/aurora_icons.dart';
 import 'package:fluent_ui/fluent_ui.dart' as fluent;
 import 'package:aurora/l10n/app_localizations.dart';
 import '../../data/topic_entity.dart';
@@ -101,7 +102,7 @@ class _TopicDropdownState extends ConsumerState<TopicDropdown> {
                               fluent.Navigator.of(context).pop();
                             },
                             trailing: selectedTopicId == null
-                                ? fluent.Icon(fluent.FluentIcons.check_mark,
+                                ? Icon(AuroraIcons.check,
                                     size: 12)
                                 : null,
                           ),
@@ -125,7 +126,7 @@ class _TopicDropdownState extends ConsumerState<TopicDropdown> {
                                   fluent.Navigator.of(context).pop();
                                 },
                                 trailing: selectedTopicId == topic.id
-                                    ? fluent.Icon(fluent.FluentIcons.check_mark,
+                                    ? Icon(AuroraIcons.check,
                                         size: 12)
                                     : null,
                               );
@@ -145,7 +146,7 @@ class _TopicDropdownState extends ConsumerState<TopicDropdown> {
                           fluent.MenuFlyoutItem(
                             text: Text(l10n.createTopic),
                             leading:
-                                fluent.Icon(fluent.FluentIcons.add, size: 14),
+                                Icon(AuroraIcons.add, size: 14),
                             onPressed: () {
                               fluent.Navigator.of(context).pop();
                               _showCreateDialog(context, ref);
@@ -153,7 +154,7 @@ class _TopicDropdownState extends ConsumerState<TopicDropdown> {
                           ),
                           fluent.MenuFlyoutItem(
                             text: Text(l10n.topics),
-                            leading: fluent.Icon(fluent.FluentIcons.settings,
+                            leading: Icon(AuroraIcons.settings,
                                 size: 14),
                             onPressed: () {
                               fluent.Navigator.of(context).pop();
@@ -185,7 +186,7 @@ class _TopicDropdownState extends ConsumerState<TopicDropdown> {
                 ),
                 child: Row(
                   children: [
-                    fluent.Icon(fluent.FluentIcons.tag,
+                    Icon(AuroraIcons.tag,
                         size: 14, color: theme.accentColor),
                     const SizedBox(width: 12),
                     Expanded(
@@ -199,7 +200,7 @@ class _TopicDropdownState extends ConsumerState<TopicDropdown> {
                         textAlign: TextAlign.left,
                       ),
                     ),
-                    fluent.Icon(fluent.FluentIcons.chevron_down,
+                    Icon(AuroraIcons.chevronDown,
                         size: 10,
                         color: theme.resources.textFillColorSecondary),
                   ],
@@ -597,12 +598,12 @@ class _TopicItemState extends State<_TopicItem> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       _ActionButton(
-                        icon: fluent.FluentIcons.edit,
+                        icon: AuroraIcons.edit,
                         onTap: widget.onEdit!,
                       ),
                       const SizedBox(width: 4),
                       _ActionButton(
-                        icon: fluent.FluentIcons.delete,
+                        icon: AuroraIcons.delete,
                         onTap: widget.onDelete!,
                         isDestructive: true,
                       ),

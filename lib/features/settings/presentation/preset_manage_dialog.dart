@@ -1,3 +1,4 @@
+import 'package:aurora/shared/theme/aurora_icons.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
@@ -109,7 +110,7 @@ class _PresetManageDialogState extends ConsumerState<PresetManageDialog> {
                             Text(preset.name, overflow: TextOverflow.ellipsis),
                         onPressed: () => _startEdit(preset),
                         trailing: IconButton(
-                          icon: const Icon(FluentIcons.delete),
+                          icon: const Icon(AuroraIcons.delete),
                           onPressed: () => _delete(preset.id),
                         ),
                         tileColor: isSelected

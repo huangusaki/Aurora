@@ -1,5 +1,6 @@
 
 import 'dart:convert';
+import 'package:aurora/shared/theme/aurora_icons.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:aurora/l10n/app_localizations.dart';
@@ -203,7 +204,7 @@ class _GlobalConfigDialogState extends ConsumerState<GlobalConfigDialog> {
             ),
           ),
           const SizedBox(width: 12),
-          const Icon(FluentIcons.chevron_right_small, size: 10, color: Colors.grey),
+          const Icon(AuroraIcons.chevronRight, size: 10, color: Colors.grey),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
@@ -214,11 +215,11 @@ class _GlobalConfigDialogState extends ConsumerState<GlobalConfigDialog> {
             ),
           ),
           IconButton(
-            icon: const Icon(FluentIcons.edit, size: 14),
+            icon: const Icon(AuroraIcons.edit, size: 14),
             onPressed: () => _editParam(key, value, currentParams),
           ),
           IconButton(
-            icon: Icon(FluentIcons.delete, size: 14, color: Colors.red.withOpacity(0.8)),
+            icon: Icon(AuroraIcons.delete, size: 14, color: Colors.red.withOpacity(0.8)),
             onPressed: () => _removeParam(key, currentParams),
           ),
         ],
@@ -281,7 +282,7 @@ class _GlobalConfigDialogState extends ConsumerState<GlobalConfigDialog> {
             _buildSectionCard(
               title: l10n.excludedModels,
               subtitle: l10n.excludedModelsHint,
-              icon: FluentIcons.blocked,
+              icon: AuroraIcons.blocked,
               headerAction: null,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -318,7 +319,7 @@ class _GlobalConfigDialogState extends ConsumerState<GlobalConfigDialog> {
                               Text(model),
                               const SizedBox(width: 4),
                               IconButton(
-                                icon: Icon(FluentIcons.clear, size: 10, color: Colors.red),
+                                icon: Icon(AuroraIcons.close, size: 10, color: Colors.red),
                                 onPressed: () {
                                   _updateExcludeModels(
                                       _globalExcludeModels.where((e) => e != model).toList());
@@ -337,7 +338,7 @@ class _GlobalConfigDialogState extends ConsumerState<GlobalConfigDialog> {
             // Thinking Configuration Card
             _buildSectionCard(
               title: l10n.thinkingConfig,
-              icon: FluentIcons.lightbulb,
+              icon: AuroraIcons.lightbulb,
               headerAction: ToggleSwitch(
                 checked: _thinkingEnabled,
                 onChanged: (v) => _saveSettings(thinkingEnabled: v),
@@ -392,7 +393,7 @@ class _GlobalConfigDialogState extends ConsumerState<GlobalConfigDialog> {
             // Generation Configuration Card
             _buildSectionCard(
               title: l10n.generationConfig,
-              icon: FluentIcons.settings,
+              icon: AuroraIcons.settings,
               headerAction: null,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -439,9 +440,9 @@ class _GlobalConfigDialogState extends ConsumerState<GlobalConfigDialog> {
             // Custom Parameters Card
             _buildSectionCard(
               title: l10n.customParams,
-              icon: FluentIcons.edit,
+              icon: AuroraIcons.edit,
               headerAction: IconButton(
-                icon: const Icon(FluentIcons.add),
+                icon: const Icon(AuroraIcons.add),
                 onPressed: () => _addParam(customParams),
               ),
               child: Column(

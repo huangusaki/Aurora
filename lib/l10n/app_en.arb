@@ -109,7 +109,7 @@
   "modelProvider": "Model Provider",
   "chatSettings": "Chat Settings",
   "displaySettings": "Display Settings",
-  "dataSettings": "Data Settings",
+  "dataSettings": "Data Backup",
   "usageStats": "Usage Statistics",
   "agentSkills": "Skills",
   "executionModel": "Execution Model",

@@ -9,6 +9,7 @@ import '../../../history/presentation/history_content.dart';
 import '../widgets/topic_dropdown.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 import '../../../sync/presentation/mobile_sync_settings_page.dart';
+import 'package:aurora/shared/theme/aurora_icons.dart';
 
 class MobileNavigationDrawer extends ConsumerWidget {
   final SessionsState sessionsState;
@@ -58,7 +59,7 @@ class MobileNavigationDrawer extends ConsumerWidget {
                               AppLocalizations.of(context)!.searchChatHistory,
                           hintStyle:
                               TextStyle(color: Colors.grey[600], fontSize: 14),
-                          prefixIcon: Icon(Icons.search,
+                          prefixIcon: Icon(AuroraIcons.search,
                               size: 20, color: Colors.grey[600]),
                           border: InputBorder.none,
                           isDense: true,
@@ -70,7 +71,7 @@ class MobileNavigationDrawer extends ConsumerWidget {
                   ),
                   const SizedBox(width: 8),
                   IconButton(
-                    icon: const Icon(Icons.close, size: 22),
+                    icon: const Icon(AuroraIcons.close, size: 22),
                     onPressed: () {
                       ref.read(sessionSearchQueryProvider.notifier).state = '';
                     },
@@ -111,7 +112,7 @@ class MobileNavigationDrawer extends ConsumerWidget {
                     ),
                     child: Row(
                       children: [
-                        Icon(fluent.FluentIcons.add,
+                        Icon(AuroraIcons.add,
                             size: 14, color: theme.accentColor),
                         const SizedBox(width: 12),
                         Text(AppLocalizations.of(context)!.startNewChat,
@@ -121,7 +122,7 @@ class MobileNavigationDrawer extends ConsumerWidget {
                                 fontWeight: FontWeight.w500)),
                         const Spacer(),
                         if (isHovering)
-                          Icon(fluent.FluentIcons.chevron_right,
+                          Icon(AuroraIcons.chevronRight,
                               size: 10,
                               color: theme.resources.textFillColorSecondary),
                       ],
@@ -180,13 +181,13 @@ class MobileNavigationDrawer extends ConsumerWidget {
                       children: [
                         Expanded(
                           child: _MobileDrawerNavItem(
-                              icon: Icons.person_outline,
+                              icon: AuroraIcons.user,
                               label: AppLocalizations.of(context)!.user,
                               onTap: () => onNavigate('__user__')),
                         ),
                         Expanded(
                           child: _MobileDrawerNavItem(
-                              icon: Icons.translate,
+                              icon: AuroraIcons.translation,
                               label: AppLocalizations.of(context)!.translation,
                               onTap: () => onNavigate('__translation__')),
                         ),
@@ -199,7 +200,7 @@ class MobileNavigationDrawer extends ConsumerWidget {
                         ),
                         Expanded(
                           child: _MobileDrawerNavItem(
-                              icon: Icons.cloud_sync_outlined,
+                              icon: AuroraIcons.backup,
                               label: AppLocalizations.of(context)!.backup,
                               onTap: () {
                                 Navigator.pop(context);
@@ -218,13 +219,13 @@ class MobileNavigationDrawer extends ConsumerWidget {
                       children: [
                         Expanded(
                           child: _MobileDrawerNavItem(
-                              icon: Icons.cloud_outlined,
+                              icon: AuroraIcons.model,
                               label: AppLocalizations.of(context)!.model,
                               onTap: () => onNavigate('__settings__')),
                         ),
                         Expanded(
                           child: _MobileDrawerNavItem(
-                              icon: Icons.analytics_outlined,
+                              icon: AuroraIcons.stats,
                               label: AppLocalizations.of(context)!.stats,
                               onTap: () {
                                 Navigator.pop(context);
@@ -237,13 +238,13 @@ class MobileNavigationDrawer extends ConsumerWidget {
                         ),
                         Expanded(
                           child: _MobileDrawerNavItem(
-                              icon: Icons.work_outline,
+                              icon: AuroraIcons.studio,
                               label: AppLocalizations.of(context)!.studio,
                               onTap: () => onNavigate('__studio__')),
                         ),
                         Expanded(
                           child: _MobileDrawerNavItem(
-                              icon: Icons.settings_outlined,
+                              icon: AuroraIcons.settings,
                               label: AppLocalizations.of(context)!.settings,
                               onTap: () => onNavigate('__app_settings__')),
                         ),
@@ -262,11 +263,11 @@ class MobileNavigationDrawer extends ConsumerWidget {
   IconData _getThemeIcon(String themeMode) {
     switch (themeMode) {
       case 'dark':
-        return Icons.dark_mode;
+        return AuroraIcons.themeDark;
       case 'light':
-        return Icons.light_mode;
+        return AuroraIcons.themeLight;
       default:
-        return Icons.brightness_auto;
+        return AuroraIcons.themeAuto;
     }
   }
 }

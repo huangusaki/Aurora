@@ -1,3 +1,4 @@
+import 'package:aurora/shared/theme/aurora_icons.dart';
 import 'dart:io';
 import 'package:fluent_ui/fluent_ui.dart' as fluent;
 import 'package:flutter/material.dart';
@@ -81,7 +82,7 @@ class _SkillSettingsPageState extends ConsumerState<SkillSettingsPage> {
       isSelected: executionModel == null,
       textColor: executionModel == null ? theme.accentColor : theme.typography.caption?.color,
       icon: executionModel == null
-          ? fluent.Icon(fluent.FluentIcons.check_mark, size: 12, color: theme.accentColor)
+          ? fluent.Icon(AuroraIcons.check, size: 12, color: theme.accentColor)
           : null,
     ));
 
@@ -121,7 +122,7 @@ class _SkillSettingsPageState extends ConsumerState<SkillSettingsPage> {
           isSelected: isSelected,
           textColor: isSelected ? theme.accentColor : null,
           icon: isSelected
-              ? fluent.Icon(fluent.FluentIcons.check_mark, size: 12, color: theme.accentColor)
+              ? fluent.Icon(AuroraIcons.check, size: 12, color: theme.accentColor)
               : null,
         ));
       }
@@ -164,7 +165,7 @@ class _SkillSettingsPageState extends ConsumerState<SkillSettingsPage> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(fluent.FluentIcons.add, size: 14),
+                          const Icon(AuroraIcons.add, size: 14),
                           const SizedBox(width: 8),
                           Text(l10n.newSkill),
                         ],
@@ -176,7 +177,7 @@ class _SkillSettingsPageState extends ConsumerState<SkillSettingsPage> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(fluent.FluentIcons.refresh, size: 14),
+                          const Icon(AuroraIcons.refresh, size: 14),
                           const SizedBox(width: 8),
                           Text(l10n.refreshList),
                         ],
@@ -233,8 +234,8 @@ class _SkillSettingsPageState extends ConsumerState<SkillSettingsPage> {
                             const SizedBox(width: 8),
                             fluent.Icon(
                                 _isOpen
-                                    ? fluent.FluentIcons.chevron_up
-                                    : fluent.FluentIcons.chevron_down,
+                                    ? AuroraIcons.chevronUp
+                                    : AuroraIcons.chevronDown,
                                 size: 10,
                                 color: theme.typography.caption?.color),
                           ],
@@ -246,7 +247,7 @@ class _SkillSettingsPageState extends ConsumerState<SkillSettingsPage> {
                 const SizedBox(width: 8),
                 fluent.Tooltip(
                   message: 'The model used by Worker Agents to execute skills.',
-                  child: Icon(fluent.FluentIcons.info, size: 14, color: theme.typography.caption?.color),
+                  child: Icon(AuroraIcons.info, size: 14, color: theme.typography.caption?.color),
                 ),
               ],
             ),
@@ -267,7 +268,7 @@ class _SkillSettingsPageState extends ConsumerState<SkillSettingsPage> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(fluent.FluentIcons.script,
+                    const Icon(AuroraIcons.script,
                         size: 48, color: Colors.grey),
                     const SizedBox(height: 16),
                     Text(l10n.noSkillsFound),
@@ -293,7 +294,7 @@ class _SkillSettingsPageState extends ConsumerState<SkillSettingsPage> {
                       header: Row(
                         children: [
                           Icon(
-                            fluent.FluentIcons.script,
+                            AuroraIcons.script,
                             size: 16,
                             color: skill.isEnabled ? theme.accentColor : theme.typography.caption?.color,
                           ),
@@ -359,21 +360,21 @@ class _SkillSettingsPageState extends ConsumerState<SkillSettingsPage> {
                             ),
                           const SizedBox(width: 12),
                           fluent.IconButton(
-                            icon: const Icon(fluent.FluentIcons.edit,
+                            icon: const Icon(AuroraIcons.edit,
                                 size: 14),
                             onPressed: () => _showEditSkillDialog(context, ref, skill),
                           ),
                           if (!skill.isLocked) ...[
                             const SizedBox(width: 4),
                             fluent.IconButton(
-                              icon: const Icon(fluent.FluentIcons.delete,
+                              icon: const Icon(AuroraIcons.delete,
                                   size: 14),
                               onPressed: () => _showDeleteConfirmDialog(context, ref, skill),
                             ),
                           ],
                           const SizedBox(width: 4),
                           fluent.IconButton(
-                            icon: const Icon(fluent.FluentIcons.folder_open,
+                            icon: const Icon(AuroraIcons.folderOpen,
                                 size: 14),
                             onPressed: () => _openSkillsFolder(skill.path),
                           ),
@@ -410,7 +411,7 @@ class _SkillSettingsPageState extends ConsumerState<SkillSettingsPage> {
                                   padding: const EdgeInsets.only(bottom: 4.0),
                                   child: Row(
                                     children: [
-                                      const Icon(fluent.FluentIcons.repair,
+                                      const Icon(AuroraIcons.repair,
                                           size: 12),
                                       const SizedBox(width: 8),
                                       Text('${tool.name} (${tool.type})',
@@ -438,7 +439,7 @@ class _SkillSettingsPageState extends ConsumerState<SkillSettingsPage> {
               ),
               child: Row(
                 children: [
-                  Icon(fluent.FluentIcons.info,
+                  Icon(AuroraIcons.info,
                       size: 16, color: theme.accentColor),
                   const SizedBox(width: 12),
                   Expanded(
@@ -515,7 +516,7 @@ class _SkillSettingsPageState extends ConsumerState<SkillSettingsPage> {
         builder: (context) => fluent.ContentDialog(
           title: Row(
             children: [
-              const Icon(fluent.FluentIcons.edit, size: 16),
+              const Icon(AuroraIcons.edit, size: 16),
               const SizedBox(width: 8),
               Text('${l10n.editSkill}: ${skill.name}'),
             ],

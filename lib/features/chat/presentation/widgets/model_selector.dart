@@ -1,3 +1,4 @@
+import 'package:aurora/shared/theme/aurora_icons.dart';
 import 'package:fluent_ui/fluent_ui.dart' as fluent;
 import 'package:aurora/shared/widgets/aurora_bottom_sheet.dart';
 import 'package:flutter/material.dart';
@@ -106,7 +107,7 @@ class _ModelSelectorState extends ConsumerState<ModelSelector> {
           isSelected: isSelected,
           textColor: isSelected ? theme.accentColor : null,
           icon: isSelected
-              ? fluent.Icon(fluent.FluentIcons.check_mark,
+              ? Icon(AuroraIcons.check,
                   size: 12, color: theme.accentColor)
               : null,
         ));
@@ -182,8 +183,8 @@ class _ModelSelectorState extends ConsumerState<ModelSelector> {
                   const SizedBox(width: 4),
                   fluent.Icon(
                       _isOpen
-                          ? fluent.FluentIcons.chevron_up
-                          : fluent.FluentIcons.chevron_down,
+                          ? AuroraIcons.chevronUp
+                          : AuroraIcons.chevronDown,
                       size: 8,
                       color: theme.typography.caption?.color),
                 ],

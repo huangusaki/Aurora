@@ -1,3 +1,4 @@
+import 'package:aurora/shared/theme/aurora_icons.dart';
 import 'dart:convert';
 import 'dart:math' as math;
 import 'package:fluent_ui/fluent_ui.dart' as fluent;
@@ -51,7 +52,7 @@ class _BuildToolOutputState extends State<BuildToolOutput> {
           children: [
             Row(
               children: [
-                const Icon(Icons.error_outline, size: 16, color: Colors.red),
+                const Icon(AuroraIcons.error, size: 16, color: Colors.red),
                 const SizedBox(width: 8),
                 Text(
                   'Skill Error',
@@ -102,7 +103,7 @@ class _BuildToolOutputState extends State<BuildToolOutput> {
                    padding: const EdgeInsets.all(12),
                    child: Row(
                      children: [
-                       Icon(fluent.FluentIcons.robot, size: 14, color: theme.accentColor),
+                       Icon(AuroraIcons.robot, size: 14, color: theme.accentColor),
                        const SizedBox(width: 8),
                         Text(
                           l10n?.agentResponse ?? 'Agent Response',
@@ -115,8 +116,8 @@ class _BuildToolOutputState extends State<BuildToolOutput> {
                        const Spacer(),
                        Icon(
                          _isExpanded
-                             ? fluent.FluentIcons.chevron_up
-                             : fluent.FluentIcons.chevron_down,
+                             ? AuroraIcons.chevronUp
+                             : AuroraIcons.chevronDown,
                          size: 10,
                          color: theme.accentColor.withOpacity(0.5),
                        ),
@@ -161,7 +162,7 @@ class _BuildToolOutputState extends State<BuildToolOutput> {
                    padding: const EdgeInsets.all(12),
                    child: Row(
                      children: [
-                       Icon(fluent.FluentIcons.robot, size: 14, color: theme.accentColor),
+                       Icon(AuroraIcons.robot, size: 14, color: theme.accentColor),
                        const SizedBox(width: 8),
                         Text(
                           l10n?.agentOutput ?? 'Agent Output',
@@ -174,8 +175,8 @@ class _BuildToolOutputState extends State<BuildToolOutput> {
                        const Spacer(),
                        Icon(
                          _isExpanded
-                             ? fluent.FluentIcons.chevron_up
-                             : fluent.FluentIcons.chevron_down,
+                             ? AuroraIcons.chevronUp
+                             : AuroraIcons.chevronDown,
                          size: 10,
                          color: theme.accentColor.withOpacity(0.5),
                        ),
@@ -255,7 +256,7 @@ class _BuildToolOutputState extends State<BuildToolOutput> {
                                           fit: BoxFit.cover,
                                           errorBuilder: (_, __, ___) =>
                                               const Icon(
-                                                  fluent.FluentIcons.globe,
+                                                  AuroraIcons.globe,
                                                   size: 12,
                                                   color: Colors.grey),
                                         )
@@ -389,13 +390,13 @@ class _BuildToolOutputState extends State<BuildToolOutput> {
               children: [
                 Icon(
                   _isExpanded
-                      ? fluent.FluentIcons.chevron_down
-                      : fluent.FluentIcons.chevron_right,
+                      ? AuroraIcons.chevronDown
+                      : AuroraIcons.chevronRight,
                   size: 10,
                   color: theme.accentColor,
                 ),
                 const SizedBox(width: 8),
-                Icon(fluent.FluentIcons.search,
+                Icon(AuroraIcons.search,
                     size: 14, color: theme.accentColor),
                 const SizedBox(width: 8),
                 Text(
@@ -480,7 +481,7 @@ class _BuildToolOutputState extends State<BuildToolOutput> {
               child: Row(
                 children: [
                   Icon(
-                    isError ? Icons.error_outline : Icons.terminal,
+                    isError ? AuroraIcons.error : AuroraIcons.terminal,
                     size: 14,
                     color: isError ? Colors.red.shade300 : Colors.green.shade300,
                   ),

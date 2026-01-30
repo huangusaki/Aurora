@@ -1,3 +1,4 @@
+import 'package:aurora/shared/theme/aurora_icons.dart';
 import 'package:fluent_ui/fluent_ui.dart' as fluent;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -125,7 +126,7 @@ class _PresetSelectorState extends ConsumerState<PresetSelector> {
         padding: const EdgeInsets.only(left: 8),
         child: Row(
           children: [
-            fluent.Icon(fluent.FluentIcons.settings, size: 12),
+            Icon(AuroraIcons.settings, size: 12),
             const SizedBox(width: 8),
             Text(l10n.managePresets),
           ],
@@ -183,8 +184,8 @@ class _PresetSelectorState extends ConsumerState<PresetSelector> {
                 const SizedBox(width: 4),
                 fluent.Icon(
                     _isOpen
-                        ? fluent.FluentIcons.chevron_up
-                        : fluent.FluentIcons.chevron_down,
+                        ? AuroraIcons.chevronUp
+                        : AuroraIcons.chevronDown,
                     size: 8,
                     color: theme.typography.caption?.color),
               ],
