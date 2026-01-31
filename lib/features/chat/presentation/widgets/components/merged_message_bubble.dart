@@ -131,7 +131,7 @@ class _MergedMessageBubbleState extends ConsumerState<MergedMessageBubble>
       onExit: (_) =>
           Platform.isWindows ? setState(() => _isHovering = false) : null,
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+        margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 10),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.start,

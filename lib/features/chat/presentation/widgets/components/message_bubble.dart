@@ -288,6 +288,8 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
         margin: EdgeInsets.only(
           top: widget.mergeTop ? 2 : 8,
           bottom: widget.mergeBottom ? 2 : 16,
+          left: 10,
+          right: 10,
         ),
         child: Column(
           crossAxisAlignment:
