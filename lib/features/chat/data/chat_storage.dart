@@ -57,6 +57,7 @@ class ChatStorage {
       ..firstTokenMs = message.firstTokenMs
       ..durationMs = message.durationMs
       ..promptTokens = message.promptTokens
+      ..reasoningTokens = message.reasoningTokens
       ..completionTokens = message.completionTokens;
     if (message.toolCalls != null) {
       entity.toolCallsJson =
@@ -69,15 +70,12 @@ class ChatStorage {
         if (session != null) {
           // Calculate total tokens for this message
           int msgTotal = message.tokenCount ?? 0;
-          if (message.promptTokens != null && message.completionTokens != null) {
-             // Prefer explicit sum if available, or just use what's provided
-             // If tokenCount is legacy output-only, we might want to add promptTokens to it for the session total.
-             // But if tokenCount is already total, we use it.
-             // Let's assume we want Session Total = Sum of (Prompt + Completion).
-             // If message has explicit split, usage is P + C.
-             msgTotal = (message.promptTokens ?? 0) + (message.completionTokens ?? 0);
-          } else if (message.tokenCount != null) {
-             msgTotal = message.tokenCount!;
+          if (message.promptTokens != null || message.completionTokens != null) {
+             // Enforce P + C + R logic
+             final p = message.promptTokens ?? 0;
+             final c = message.completionTokens ?? 0;
+             final r = message.reasoningTokens ?? 0;
+             msgTotal = p + c + r;
           }
           
           session.totalTokens += msgTotal;
@@ -116,7 +114,8 @@ class ChatStorage {
           ..firstTokenMs = m.firstTokenMs
           ..durationMs = m.durationMs
           ..promptTokens = m.promptTokens
-          ..completionTokens = m.completionTokens;
+          ..completionTokens = m.completionTokens
+          ..reasoningTokens = m.reasoningTokens;
         if (m.toolCalls != null) {
           e.toolCallsJson =
               jsonEncode(m.toolCalls!.map((tc) => tc.toJson()).toList());
@@ -182,6 +181,7 @@ class ChatStorage {
         durationMs: e.durationMs,
         promptTokens: e.promptTokens,
         completionTokens: e.completionTokens,
+        reasoningTokens: e.reasoningTokens,
       );
     }).toList();
   }

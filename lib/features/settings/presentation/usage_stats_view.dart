@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 import 'usage_stats_provider.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 import 'package:aurora/shared/utils/number_format_utils.dart';
+import '../../../../shared/utils/stats_calculator.dart';
 
 class UsageStatsView extends ConsumerWidget {
   const UsageStatsView({super.key});
@@ -537,27 +538,7 @@ class _ModelStatsList extends StatelessWidget {
 
   Widget _buildItem(
       BuildContext context,
-      MapEntry<
-              String,
-              ({
-                int failure,
-                int success,
-                int totalDurationMs,
-                int validDurationCount,
-                int totalFirstTokenMs,
-                int validFirstTokenCount,
-                int totalTokenCount,
-                int promptTokenCount,
-                int completionTokenCount,
-                int errorTimeoutCount,
-                int errorNetworkCount,
-                int errorBadRequestCount,
-                int errorUnauthorizedCount,
-                int errorServerCount,
-                int errorRateLimitCount,
-                int errorUnknownCount,
-              })>
-          entry,
+      MapEntry<String, UsageStatsRecord> entry,
       int maxTotal,
       int grandTotal) {
     final modelName = entry.key;
@@ -681,14 +662,17 @@ class _ModelStatsList extends StatelessWidget {
           const SizedBox(height: 8),
           LayoutBuilder(builder: (context, constraints) {
              final avgDuration = stats.validDurationCount > 0 
-                ? (stats.totalDurationMs / stats.validDurationCount / 1000).toStringAsFixed(2) 
+                ? ((stats.totalDurationMs - stats.totalFirstTokenMs) / stats.validDurationCount / 1000).toStringAsFixed(2) 
                 : '0.00';
              final avgFirstToken = stats.validFirstTokenCount > 0 
                 ? (stats.totalFirstTokenMs / stats.validFirstTokenCount / 1000).toStringAsFixed(2) 
                 : '0.00';
-             final tps = stats.totalDurationMs > 0 
-                ? (stats.totalTokenCount / (stats.totalDurationMs / 1000)).toStringAsFixed(1) 
-                : '0.0';
+             final tps = StatsCalculator.calculateTPS(
+                completionTokens: stats.completionTokenCount,
+                reasoningTokens: stats.reasoningTokenCount,
+                durationMs: stats.totalDurationMs,
+                firstTokenMs: stats.totalFirstTokenMs,
+             ).toStringAsFixed(1);
 
              // Thresholds for coloring (Green/Yellow/Red)
              // TPS: 30/60/90. Large->Small: Green/Yellow/Red.
@@ -728,7 +712,6 @@ class _ModelStatsList extends StatelessWidget {
                           children: [
                             TextSpan(text: '${formatTokenCount(stats.totalTokenCount)} '),
                             TextSpan(
-                              text: '(↑ ${formatTokenCount(stats.promptTokenCount)} / ↓ ${formatTokenCount(stats.completionTokenCount)})',
                               style: TextStyle(
                                 fontSize: isMobile ? 10 : 12,
                                 color: isMobile 
@@ -736,6 +719,20 @@ class _ModelStatsList extends StatelessWidget {
                                     : themeData!.resources.textFillColorSecondary,
                                 fontWeight: FontWeight.normal,
                               ),
+                              children: [
+                                TextSpan(text: '(↑ ${formatTokenCount(stats.promptTokenCount)} / '),
+                                WidgetSpan(
+                                  alignment: PlaceholderAlignment.middle,
+                                  child: Icon(
+                                    AuroraIcons.lightbulb,
+                                    size: isMobile ? 12 : 14,
+                                    color: isMobile 
+                                        ? mobileTheme!.textTheme.bodySmall?.color 
+                                        : themeData!.resources.textFillColorSecondary,
+                                  ),
+                                ),
+                                TextSpan(text: ' ${formatTokenCount(stats.reasoningTokenCount)} / ↓ ${formatTokenCount(stats.completionTokenCount)})'),
+                              ],
                             ),
                           ],
                         ),

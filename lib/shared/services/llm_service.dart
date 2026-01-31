@@ -9,6 +9,7 @@ class LLMResponseChunk {
   final int? usage;
   final int? promptTokens;
   final int? completionTokens;
+  final int? reasoningTokens;
   final String? finishReason;
   const LLMResponseChunk(
       {this.content,
@@ -18,6 +19,7 @@ class LLMResponseChunk {
       this.usage,
       this.promptTokens,
       this.completionTokens,
+      this.reasoningTokens,
       this.finishReason});
 }
 

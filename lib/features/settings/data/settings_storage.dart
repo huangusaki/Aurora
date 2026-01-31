@@ -252,6 +252,7 @@ class SettingsStorage {
       int tokenCount = 0, // Kept for backward compatibility logic, usually sum of prompt+completion
       int promptTokens = 0,
       int completionTokens = 0,
+      int reasoningTokens = 0,
       AppErrorType? errorType}) async {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -273,7 +274,10 @@ class SettingsStorage {
           ..validFirstTokenCount = firstTokenMs > 0 ? 1 : 0
           ..promptTokenCount = promptTokens > 0 ? promptTokens : (tokenCount ~/ 2)
           ..completionTokenCount = completionTokens > 0 ? completionTokens : (tokenCount - tokenCount ~/ 2)
-          ..totalTokenCount = (promptTokens > 0 ? promptTokens : (tokenCount ~/ 2)) + (completionTokens > 0 ? completionTokens : (tokenCount - tokenCount ~/ 2));
+          ..reasoningTokenCount = reasoningTokens > 0 ? reasoningTokens : 0
+          ..totalTokenCount = (promptTokens > 0 ? promptTokens : (tokenCount ~/ 2)) + 
+              (completionTokens > 0 ? completionTokens : (tokenCount - tokenCount ~/ 2)) +
+              (reasoningTokens > 0 ? reasoningTokens : 0);
         
         if (errorType != null) {
           _updateErrorCount(existing, errorType);
@@ -296,13 +300,16 @@ class SettingsStorage {
           existing.validFirstTokenCount++;
         }
         
-        // Always use prompt + completion for consistency
+        // Always use prompt + completion + reasoning for consistency
         // If only tokenCount is provided (legacy), split evenly as approximation
         final effectivePrompt = promptTokens > 0 ? promptTokens : (tokenCount ~/ 2);
         final effectiveCompletion = completionTokens > 0 ? completionTokens : (tokenCount - tokenCount ~/ 2);
+        final effectiveReasoning = reasoningTokens > 0 ? reasoningTokens : 0;
+        
         existing.promptTokenCount += effectivePrompt;
         existing.completionTokenCount += effectiveCompletion;
-        existing.totalTokenCount = existing.promptTokenCount + existing.completionTokenCount;
+        existing.reasoningTokenCount += effectiveReasoning;
+        existing.totalTokenCount = existing.promptTokenCount + existing.completionTokenCount + existing.reasoningTokenCount;
       }
       await _isar.usageStatsEntitys.put(existing);
 
@@ -312,7 +319,7 @@ class SettingsStorage {
           .dateEqualTo(today)
           .findFirst();
       
-      final effectiveTotalForDaily = tokenCount > 0 ? tokenCount : (promptTokens + completionTokens);
+      final effectiveTotalForDaily = tokenCount > 0 ? tokenCount : (promptTokens + completionTokens + reasoningTokens);
 
       if (daily == null) {
         daily = DailyUsageStatsEntity()

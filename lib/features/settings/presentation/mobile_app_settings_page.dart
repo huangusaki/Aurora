@@ -80,6 +80,7 @@ class MobileAppSettingsPage extends ConsumerWidget {
           _SectionHeader(
               title: l10n.chatExperience, icon: Icons.chat_bubble_outline),
           SwitchListTile(
+            secondary: const Icon(Icons.auto_awesome),
             title: Text(l10n.smartTopicGeneration),
             subtitle: Text(l10n.smartTopicDescription),
             value: settingsState.enableSmartTopic,
@@ -91,6 +92,7 @@ class MobileAppSettingsPage extends ConsumerWidget {
           ),
           if (settingsState.enableSmartTopic)
             ListTile(
+              leading: const Icon(Icons.smart_toy_outlined),
               title: Text(l10n.generationModel),
               subtitle: Text(settingsState.topicGenerationModel == null
                   ? l10n.notSelectedFallback

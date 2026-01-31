@@ -59,6 +59,7 @@ class Message {
   final int? durationMs;
   final int? promptTokens;
   final int? completionTokens;
+  final int? reasoningTokens;
   const Message({
     required this.id,
     required this.content,
@@ -77,6 +78,7 @@ class Message {
     this.durationMs,
     this.promptTokens,
     this.completionTokens,
+    this.reasoningTokens,
     String? role,
   }) : role = role ??
             (isUser ? 'user' : (toolCallId != null ? 'tool' : 'assistant'));
@@ -99,6 +101,7 @@ class Message {
       int? tokenCount,
       int? promptTokens,
       int? completionTokens,
+      int? reasoningTokens,
       List<ToolCall>? toolCalls}) {
     return Message(
       id: const Uuid().v4(),
@@ -113,6 +116,7 @@ class Message {
       tokenCount: tokenCount,
       promptTokens: promptTokens,
       completionTokens: completionTokens,
+      reasoningTokens: reasoningTokens,
       toolCalls: toolCalls,
       role: 'assistant',
     );
@@ -146,6 +150,7 @@ class Message {
     int? durationMs,
     int? promptTokens,
     int? completionTokens,
+    int? reasoningTokens,
   }) {
     return Message(
       id: id ?? this.id,
@@ -167,6 +172,7 @@ class Message {
       durationMs: durationMs ?? this.durationMs,
       promptTokens: promptTokens ?? this.promptTokens,
       completionTokens: completionTokens ?? this.completionTokens,
+      reasoningTokens: reasoningTokens ?? this.reasoningTokens,
     );
   }
 }

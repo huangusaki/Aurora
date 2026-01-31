@@ -77,33 +77,38 @@ const MessageEntitySchema = CollectionSchema(
       name: r'reasoningDurationSeconds',
       type: IsarType.double,
     ),
-    r'role': PropertySchema(
+    r'reasoningTokens': PropertySchema(
       id: 12,
+      name: r'reasoningTokens',
+      type: IsarType.long,
+    ),
+    r'role': PropertySchema(
+      id: 13,
       name: r'role',
       type: IsarType.string,
     ),
     r'sessionId': PropertySchema(
-      id: 13,
+      id: 14,
       name: r'sessionId',
       type: IsarType.string,
     ),
     r'timestamp': PropertySchema(
-      id: 14,
+      id: 15,
       name: r'timestamp',
       type: IsarType.dateTime,
     ),
     r'tokenCount': PropertySchema(
-      id: 15,
+      id: 16,
       name: r'tokenCount',
       type: IsarType.long,
     ),
     r'toolCallId': PropertySchema(
-      id: 16,
+      id: 17,
       name: r'toolCallId',
       type: IsarType.string,
     ),
     r'toolCallsJson': PropertySchema(
-      id: 17,
+      id: 18,
       name: r'toolCallsJson',
       type: IsarType.string,
     )
@@ -233,12 +238,13 @@ void _messageEntitySerialize(
   writer.writeString(offsets[9], object.provider);
   writer.writeString(offsets[10], object.reasoningContent);
   writer.writeDouble(offsets[11], object.reasoningDurationSeconds);
-  writer.writeString(offsets[12], object.role);
-  writer.writeString(offsets[13], object.sessionId);
-  writer.writeDateTime(offsets[14], object.timestamp);
-  writer.writeLong(offsets[15], object.tokenCount);
-  writer.writeString(offsets[16], object.toolCallId);
-  writer.writeString(offsets[17], object.toolCallsJson);
+  writer.writeLong(offsets[12], object.reasoningTokens);
+  writer.writeString(offsets[13], object.role);
+  writer.writeString(offsets[14], object.sessionId);
+  writer.writeDateTime(offsets[15], object.timestamp);
+  writer.writeLong(offsets[16], object.tokenCount);
+  writer.writeString(offsets[17], object.toolCallId);
+  writer.writeString(offsets[18], object.toolCallsJson);
 }
 
 MessageEntity _messageEntityDeserialize(
@@ -261,12 +267,13 @@ MessageEntity _messageEntityDeserialize(
   object.provider = reader.readStringOrNull(offsets[9]);
   object.reasoningContent = reader.readStringOrNull(offsets[10]);
   object.reasoningDurationSeconds = reader.readDoubleOrNull(offsets[11]);
-  object.role = reader.readStringOrNull(offsets[12]);
-  object.sessionId = reader.readStringOrNull(offsets[13]);
-  object.timestamp = reader.readDateTime(offsets[14]);
-  object.tokenCount = reader.readLongOrNull(offsets[15]);
-  object.toolCallId = reader.readStringOrNull(offsets[16]);
-  object.toolCallsJson = reader.readStringOrNull(offsets[17]);
+  object.reasoningTokens = reader.readLongOrNull(offsets[12]);
+  object.role = reader.readStringOrNull(offsets[13]);
+  object.sessionId = reader.readStringOrNull(offsets[14]);
+  object.timestamp = reader.readDateTime(offsets[15]);
+  object.tokenCount = reader.readLongOrNull(offsets[16]);
+  object.toolCallId = reader.readStringOrNull(offsets[17]);
+  object.toolCallsJson = reader.readStringOrNull(offsets[18]);
   return object;
 }
 
@@ -302,16 +309,18 @@ P _messageEntityDeserializeProp<P>(
     case 11:
       return (reader.readDoubleOrNull(offset)) as P;
     case 12:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readLongOrNull(offset)) as P;
     case 13:
       return (reader.readStringOrNull(offset)) as P;
     case 14:
-      return (reader.readDateTime(offset)) as P;
-    case 15:
-      return (reader.readLongOrNull(offset)) as P;
-    case 16:
       return (reader.readStringOrNull(offset)) as P;
+    case 15:
+      return (reader.readDateTime(offset)) as P;
+    case 16:
+      return (reader.readLongOrNull(offset)) as P;
     case 17:
+      return (reader.readStringOrNull(offset)) as P;
+    case 18:
       return (reader.readStringOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -2075,6 +2084,80 @@ extension MessageEntityQueryFilter
   }
 
   QueryBuilder<MessageEntity, MessageEntity, QAfterFilterCondition>
+      reasoningTokensIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'reasoningTokens',
+      ));
+    });
+  }
+
+  QueryBuilder<MessageEntity, MessageEntity, QAfterFilterCondition>
+      reasoningTokensIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'reasoningTokens',
+      ));
+    });
+  }
+
+  QueryBuilder<MessageEntity, MessageEntity, QAfterFilterCondition>
+      reasoningTokensEqualTo(int? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'reasoningTokens',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<MessageEntity, MessageEntity, QAfterFilterCondition>
+      reasoningTokensGreaterThan(
+    int? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'reasoningTokens',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<MessageEntity, MessageEntity, QAfterFilterCondition>
+      reasoningTokensLessThan(
+    int? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'reasoningTokens',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<MessageEntity, MessageEntity, QAfterFilterCondition>
+      reasoningTokensBetween(
+    int? lower,
+    int? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'reasoningTokens',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<MessageEntity, MessageEntity, QAfterFilterCondition>
       roleIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
@@ -2960,6 +3043,20 @@ extension MessageEntityQuerySortBy
     });
   }
 
+  QueryBuilder<MessageEntity, MessageEntity, QAfterSortBy>
+      sortByReasoningTokens() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'reasoningTokens', Sort.asc);
+    });
+  }
+
+  QueryBuilder<MessageEntity, MessageEntity, QAfterSortBy>
+      sortByReasoningTokensDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'reasoningTokens', Sort.desc);
+    });
+  }
+
   QueryBuilder<MessageEntity, MessageEntity, QAfterSortBy> sortByRole() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'role', Sort.asc);
@@ -3185,6 +3282,20 @@ extension MessageEntityQuerySortThenBy
     });
   }
 
+  QueryBuilder<MessageEntity, MessageEntity, QAfterSortBy>
+      thenByReasoningTokens() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'reasoningTokens', Sort.asc);
+    });
+  }
+
+  QueryBuilder<MessageEntity, MessageEntity, QAfterSortBy>
+      thenByReasoningTokensDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'reasoningTokens', Sort.desc);
+    });
+  }
+
   QueryBuilder<MessageEntity, MessageEntity, QAfterSortBy> thenByRole() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'role', Sort.asc);
@@ -3348,6 +3459,13 @@ extension MessageEntityQueryWhereDistinct
     });
   }
 
+  QueryBuilder<MessageEntity, MessageEntity, QDistinct>
+      distinctByReasoningTokens() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'reasoningTokens');
+    });
+  }
+
   QueryBuilder<MessageEntity, MessageEntity, QDistinct> distinctByRole(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -3471,6 +3589,13 @@ extension MessageEntityQueryProperty
       reasoningDurationSecondsProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'reasoningDurationSeconds');
+    });
+  }
+
+  QueryBuilder<MessageEntity, int?, QQueryOperations>
+      reasoningTokensProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'reasoningTokens');
     });
   }
 

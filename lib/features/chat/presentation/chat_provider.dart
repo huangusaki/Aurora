@@ -291,6 +291,7 @@ class ChatNotifier extends StateNotifier<ChatState> {
     final startTime = DateTime.now();
     int promptTokens = 0;
     int completionTokens = 0;
+    int reasoningTokens = 0;
     try {
       final messagesForApi = List<Message>.from(state.messages);
       final settings = _ref.read(settingsProvider);
@@ -379,6 +380,7 @@ To invoke a skill, usage of the `call_skill` tool is mandatory. Provide the `ski
             if (_currentGenerationId != myGenerationId || !mounted) break;
             if (chunk.promptTokens != null) promptTokens = chunk.promptTokens!;
             if (chunk.completionTokens != null) completionTokens = chunk.completionTokens!;
+            if (chunk.reasoningTokens != null) reasoningTokens = chunk.reasoningTokens!;
             if (chunk.reasoning != null && chunk.reasoning!.isNotEmpty) {
               reasoningStartTime ??= DateTime.now();
               firstContentTime ??= DateTime.now();
@@ -426,6 +428,8 @@ To invoke a skill, usage of the `call_skill` tool is mandatory. Provide the `ski
                 tokenCount: chunk.usage ?? aiMsg.tokenCount,
                 promptTokens: promptTokens > 0 ? promptTokens : aiMsg.promptTokens,
                 completionTokens: completionTokens > 0 ? completionTokens : aiMsg.completionTokens,
+                reasoningTokens: reasoningTokens > 0 ? reasoningTokens : aiMsg.reasoningTokens,
+                firstTokenMs: firstContentTime != null ? firstContentTime.difference(startTime).inMilliseconds : null,
                 toolCalls: _mergeToolCalls(aiMsg.toolCalls, chunk.toolCalls),
               );
               if (!mounted) break;
@@ -453,6 +457,8 @@ To invoke a skill, usage of the `call_skill` tool is mandatory. Provide the `ski
               tokenCount: chunk.usage ?? aiMsg.tokenCount,
               promptTokens: promptTokens > 0 ? promptTokens : aiMsg.promptTokens,
               completionTokens: completionTokens > 0 ? completionTokens : aiMsg.completionTokens,
+              reasoningTokens: reasoningTokens > 0 ? reasoningTokens : aiMsg.reasoningTokens,
+              firstTokenMs: firstContentTime != null ? firstContentTime.difference(startTime).inMilliseconds : null,
               toolCalls: _mergeToolCalls(aiMsg.toolCalls, chunk.toolCalls),
             );
             final newMessages = List<Message>.from(state.messages);
@@ -610,8 +616,10 @@ To invoke a skill, usage of the `call_skill` tool is mandatory. Provide the `ski
             tools: tools,
             cancelToken: _currentCancelToken,
           );
+          firstContentTime ??= DateTime.now();
           if (response.promptTokens != null) promptTokens = response.promptTokens!;
           if (response.completionTokens != null) completionTokens = response.completionTokens!;
+          if (response.reasoningTokens != null) reasoningTokens = response.reasoningTokens!;
           if (_currentGenerationId == myGenerationId && mounted) {
             aiMsg = Message(
                 id: aiMsg.id,
@@ -626,6 +634,8 @@ To invoke a skill, usage of the `call_skill` tool is mandatory. Provide the `ski
                 tokenCount: response.usage,
                 promptTokens: response.promptTokens,
                 completionTokens: response.completionTokens,
+                reasoningTokens: response.reasoningTokens,
+                firstTokenMs: firstContentTime != null ? firstContentTime.difference(startTime).inMilliseconds : null,
                 toolCalls: response.toolCalls
                     ?.map((tc) => ToolCall(
                         id: tc.id ?? '',
@@ -737,6 +747,12 @@ To invoke a skill, usage of the `call_skill` tool is mandatory. Provide the `ski
         );
         await for (final chunk in finalStream) {
           if (_currentGenerationId != myGenerationId || !mounted) break;
+          if (chunk.promptTokens != null) promptTokens = chunk.promptTokens!;
+          if (chunk.completionTokens != null) completionTokens = chunk.completionTokens!;
+          if (chunk.reasoningTokens != null) reasoningTokens = chunk.reasoningTokens!;
+          if (firstContentTime == null && (chunk.content != null || chunk.reasoning != null)) {
+            firstContentTime = DateTime.now();
+          }
           aiMsg = Message(
             id: aiMsg.id,
             content: aiMsg.content + (chunk.content ?? ''),
@@ -748,6 +764,8 @@ To invoke a skill, usage of the `call_skill` tool is mandatory. Provide the `ski
             tokenCount: chunk.usage ?? aiMsg.tokenCount,
             promptTokens: promptTokens > 0 ? promptTokens : aiMsg.promptTokens,
             completionTokens: completionTokens > 0 ? completionTokens : aiMsg.completionTokens,
+            reasoningTokens: reasoningTokens > 0 ? reasoningTokens : aiMsg.reasoningTokens,
+            firstTokenMs: firstContentTime != null ? firstContentTime.difference(startTime).inMilliseconds : null,
           );
           final updateMessages = List<Message>.from(state.messages);
           if (updateMessages.isNotEmpty && updateMessages.last.id == aiMsg.id) {
@@ -775,17 +793,26 @@ To invoke a skill, usage of the `call_skill` tool is mandatory. Provide the `ski
             // Add timing metrics to the last non-tool AI message
             if (!m.isUser && m.role != 'tool' && i == unsaved.length - 1) {
               m = m.copyWith(
-                firstTokenMs: firstTokenMs,
-                durationMs: durationMs,
                 promptTokens: promptTokens,
                 completionTokens: completionTokens,
+                reasoningTokens: reasoningTokens,
+                tokenCount: (promptTokens > 0 || completionTokens > 0) 
+                    ? (promptTokens + completionTokens + reasoningTokens) 
+                    : m.tokenCount,
+                durationMs: durationMs,
+                firstTokenMs: firstTokenMs,
               );
             }
             final dbId = await _storage.saveMessage(m, _sessionId);
             if (!mounted) break;
             final stateIndex = startSaveIndex + i;
             if (stateIndex < updatedMessages.length) {
-              updatedMessages[stateIndex] = m.copyWith(id: dbId);
+              final savedMsg = m.copyWith(id: dbId);
+              updatedMessages[stateIndex] = savedMsg;
+              // Ensure we use the final saved message (with all metrics) for usage stats
+              if (!m.isUser && m.role != 'tool' && i == unsaved.length - 1) {
+                aiMsg = savedMsg;
+              }
             }
           }
           if (mounted && _currentGenerationId == myGenerationId) {
@@ -807,7 +834,8 @@ To invoke a skill, usage of the `call_skill` tool is mandatory. Provide the `ski
               firstTokenMs: firstTokenMs ?? 0,
               tokenCount: tokenCount,
               promptTokens: promptTokens,
-              completionTokens: completionTokens);
+              completionTokens: completionTokens,
+              reasoningTokens: reasoningTokens);
         }
         
         // Auto-rotate API key after successful request if enabled

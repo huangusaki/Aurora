@@ -22,6 +22,7 @@ class MessageEntity {
   int? tokenCount;
   int? promptTokens;
   int? completionTokens;
+  int? reasoningTokens;
   int? firstTokenMs;
   int? durationMs;
 }

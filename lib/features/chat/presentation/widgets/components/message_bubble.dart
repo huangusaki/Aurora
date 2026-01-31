@@ -18,6 +18,7 @@ import '../../../../history/presentation/widgets/hover_image_preview.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 import 'chat_utils.dart';
 import 'tool_output.dart';
+import '../../../../../shared/utils/stats_calculator.dart';
 import 'package:aurora/shared/utils/number_format_utils.dart';
 import 'package:aurora/shared/utils/platform_utils.dart';
 import 'package:aurora/shared/theme/aurora_icons.dart';
@@ -620,114 +621,132 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
                                    }).toList(),
                                  ),
                                ],
-                              if (message.images.isNotEmpty &&
-                                  !(isUser && _isEditing)) ...[
-                                const SizedBox(height: 8),
-                                Wrap(
-                                  spacing: 8,
-                                  runSpacing: 8,
-                                  children: message.images
-                                      .map((img) => ChatImageBubble(
-                                            key: ValueKey(img.hashCode),
-                                            imageUrl: img,
-                                          ))
-                                      .toList(),
-                                ),
-                              ],
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 4.0),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    mainAxisAlignment: MainAxisAlignment.end,
-                                    children: [
-                                      if (message.tokenCount != null && message.tokenCount! > 0) ...[
-                                        if (message.promptTokens != null && message.completionTokens != null) ...[
-                                            Text(
-                                              '${formatFullTokenCount(message.completionTokens!)} Compl | ${formatFullTokenCount(message.promptTokens!)} Prompt',
-                                              style: TextStyle(
-                                                fontSize: 10,
-                                                color: theme.typography.body?.color?.withOpacity(0.5),
-                                              ),
-                                            ),
-                                        ] else ...[
-                                          Text(
-                                            '${formatFullTokenCount(message.tokenCount!)} Tokens',
-                                            style: TextStyle(
-                                              fontSize: 10,
-                                              color: theme.typography.body?.color?.withOpacity(0.5),
-                                            ),
-                                          ),
-                                        ],
-                                        if (message.firstTokenMs != null && message.firstTokenMs! > 0) ...[
-                                          Text(
-                                            ' | ',
-                                            style: TextStyle(
-                                              fontSize: 10,
-                                              color: theme.typography.body?.color?.withOpacity(0.5),
-                                            ),
-                                          ),
-                                          Text(
-                                            '${AppLocalizations.of(context)?.averageFirstToken((message.firstTokenMs! / 1000).toStringAsFixed(2)) ?? 'TTFT: ${(message.firstTokenMs! / 1000).toStringAsFixed(2)}s'}',
-                                            style: TextStyle(
-                                              fontSize: 10,
-                                              color: theme.typography.body?.color?.withOpacity(0.5),
-                                            ),
-                                          ),
-                                        ],
-                                        if (message.durationMs != null &&
-                                            message.durationMs! > 0 &&
-                                            message.tokenCount != null &&
-                                            message.tokenCount! > 0) ...[
-                                          Text(
-                                            ' | ',
-                                            style: TextStyle(
-                                              fontSize: 10,
-                                              color: theme.typography.body?.color?.withOpacity(0.5),
-                                            ),
-                                          ),
-                                          Text(
-                                            '${(message.tokenCount! / (message.durationMs! / 1000)).toStringAsFixed(2)} T/s',
-                                            style: TextStyle(
-                                              fontSize: 10,
-                                              color: theme.typography.body?.color?.withOpacity(0.5),
-                                            ),
-                                          ),
-                                        ],
-                                        Text(
-                                          ' | ',
-                                          style: TextStyle(
-                                            fontSize: 10,
-                                            color: theme.typography.body?.color?.withOpacity(0.5),
-                                          ),
-                                        ),
-                                      ],
-                                      Text(
-                                        '${message.timestamp.month}/${message.timestamp.day} ${message.timestamp.hour.toString().padLeft(2, '0')}:${message.timestamp.minute.toString().padLeft(2, '0')}',
-                                        style: TextStyle(
-                                          fontSize: 10,
-                                          color: theme.typography.body?.color?.withOpacity(0.5),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (isUser) ...[
-                  const SizedBox(width: 8),
-                  _buildAvatar(
-                    avatarPath: settingsState.userAvatar,
-                    fallbackIcon: AuroraIcons.person,
-                    backgroundColor: Colors.blue,
-                  ),
-                ],
-              ],
-            ),
+                               if (message.images.isNotEmpty &&
+                                   !(isUser && _isEditing)) ...[
+                                 const SizedBox(height: 8),
+                                 Wrap(
+                                   spacing: 8,
+                                   runSpacing: 8,
+                                   children: message.images
+                                       .map((img) => ChatImageBubble(
+                                             key: ValueKey(img.hashCode),
+                                             imageUrl: img,
+                                           ))
+                                       .toList(),
+                                 ),
+                             ],
+                             if (message.tokenCount != null && message.tokenCount! > 0 || message.durationMs != null)
+                                 Padding(
+                                   padding: const EdgeInsets.only(top: 4.0),
+                                   child: Row(
+                                     mainAxisSize: MainAxisSize.min,
+                                     mainAxisAlignment: MainAxisAlignment.end,
+                                     children: [
+                                       if (message.tokenCount != null && message.tokenCount! > 0) ...[
+                                         Builder(builder: (context) {
+                                           final p = message.promptTokens ?? 0;
+                                           final c = message.completionTokens ?? 0;
+                                           final r = message.reasoningTokens ?? 0;
+                                           final total = message.tokenCount!;
+                                           
+                                           String tokenText = formatFullTokenCount(total);
+
+                                           
+                                           return Text(
+                                             '$tokenText Tokens',
+                                             style: TextStyle(
+                                               fontSize: 10,
+                                               color: theme.typography.body?.color?.withOpacity(0.5),
+                                             ),
+                                           );
+                                         }),
+                                       ],
+                                       if (message.firstTokenMs != null && message.firstTokenMs! > 0) ...[
+                                         Text(
+                                           ' | ',
+                                           style: TextStyle(
+                                             fontSize: 10,
+                                             color: theme.typography.body?.color?.withOpacity(0.5),
+                                           ),
+                                         ),
+                                         Text(
+                                           '${AppLocalizations.of(context)?.averageFirstToken((message.firstTokenMs! / 1000).toStringAsFixed(2)) ?? 'TTFT: ${(message.firstTokenMs! / 1000).toStringAsFixed(2)}s'}',
+                                           style: TextStyle(
+                                             fontSize: 10,
+                                             color: theme.typography.body?.color?.withOpacity(0.5),
+                                           ),
+                                         ),
+                                       ],
+                                       if (message.durationMs != null && message.durationMs! > 0) ...[
+                                         Text(
+                                           ' | ',
+                                           style: TextStyle(
+                                             fontSize: 10,
+                                             color: theme.typography.body?.color?.withOpacity(0.5),
+                                           ),
+                                         ),
+                                         Builder(builder: (context) {
+                                           final c = message.completionTokens ?? 0;
+                                           final r = message.reasoningTokens ?? 0;
+                                           final p = message.promptTokens ?? 0;
+                                           
+                                           int effectiveGenerated = c + r;
+                                           if (effectiveGenerated == 0 && (message.tokenCount ?? 0) > 0) {
+                                             effectiveGenerated = (message.tokenCount! - p);
+                                           }
+
+                                           final tps = StatsCalculator.calculateTPS(
+                                             completionTokens: effectiveGenerated,
+                                             reasoningTokens: 0,
+                                             durationMs: message.durationMs ?? 0,
+                                             firstTokenMs: message.firstTokenMs ?? 0,
+                                           );
+
+                                           if (tps <= 0) return const SizedBox.shrink();
+                                           
+                                           return Text(
+                                             '${tps.toStringAsFixed(2)} T/s',
+                                             style: TextStyle(
+                                               fontSize: 10,
+                                               color: theme.typography.body?.color?.withOpacity(0.5),
+                                             ),
+                                           );
+                                         }),
+                                       ],
+                                       Text(
+                                         ' | ',
+                                         style: TextStyle(
+                                           fontSize: 10,
+                                           color: theme.typography.body?.color?.withOpacity(0.5),
+                                         ),
+                                       ),
+                                       Text(
+                                         '${message.timestamp.month}/${message.timestamp.day} ${message.timestamp.hour.toString().padLeft(2, '0')}:${message.timestamp.minute.toString().padLeft(2, '0')}',
+                                         style: TextStyle(
+                                           fontSize: 10,
+                                           color: theme.typography.body?.color?.withOpacity(0.5),
+                                         ),
+                                       ),
+                                     ],
+                                   ),
+                                 ),
+                             ],
+                           ),
+                         ),
+                       ),
+                     ],
+                   ),
+                 ),
+                 if (isUser) ...[
+                   const SizedBox(width: 8),
+                   _buildAvatar(
+                     avatarPath: settingsState.userAvatar,
+                     fallbackIcon: AuroraIcons.person,
+                     backgroundColor: Colors.blue,
+                   ),
+                 ],
+               ],
+             ),
             PlatformUtils.isDesktop
                 ? Visibility(
                     visible: !_isEditing,

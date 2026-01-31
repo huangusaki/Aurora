@@ -429,14 +429,24 @@ Use search for:
                 final int? completionTokens = usage['completion_tokens'];
                 final int? promptTokens = usage['prompt_tokens'];
                 final int? totalTokens = usage['total_tokens'];
+                int? reasoningTokens;
+                if (usage['completion_tokens_details'] != null) {
+                  reasoningTokens = usage['completion_tokens_details']['reasoning_tokens'] as int?;
+                } else if (usage['reasoning_tokens'] != null) {
+                  reasoningTokens = usage['reasoning_tokens'] as int?;
+                }
                 
-                // If we have completion tokens, we use it for token/s calc (legacy usage field)
-                // But we now also pass explicit prompt and completion tokens
+                // Total generated = completion + reasoning (hidden or visible)
+                final int totalGenerated = (completionTokens ?? 0) + (reasoningTokens ?? 0);
+                // Absolute total consumption for tokenCount display
+                final int totalConsume = (promptTokens ?? 0) + totalGenerated;
+                
                 if (completionTokens != null || totalTokens != null) {
                   yield LLMResponseChunk(
-                    usage: completionTokens ?? totalTokens,
+                    usage: totalConsume > 0 ? totalConsume : (totalTokens ?? completionTokens),
                     promptTokens: promptTokens,
                     completionTokens: completionTokens,
+                    reasoningTokens: reasoningTokens,
                   );
                 }
               }
@@ -1134,12 +1144,17 @@ Use search for:
       int? promptTokens;
       int? completionTokens;
       
+      int? reasoningTokens;
       if (data['usage'] != null) {
         final usageData = data['usage'];
-        // Legacy usage for token/s (completion tokens preferred)
-        usage = usageData['completion_tokens'] ?? usageData['total_tokens'];
-        promptTokens = usageData['prompt_tokens'];
-        completionTokens = usageData['completion_tokens'];
+        promptTokens = usageData['prompt_tokens'] as int?;
+        completionTokens = usageData['completion_tokens'] as int?;
+        
+        if (usageData['completion_tokens_details'] != null) {
+          reasoningTokens = usageData['completion_tokens_details']['reasoning_tokens'] as int?;
+        } else if (usageData['reasoning_tokens'] != null) {
+          reasoningTokens = usageData['reasoning_tokens'] as int?;
+        }
       }
       final choices = data['choices'] as List;
       if (choices.isNotEmpty) {
@@ -1180,6 +1195,12 @@ Use search for:
           }
         }
         final String? finishReason = choices[0]['finish_reason'];
+        
+        // Final token calculation
+        final int totalGenerated = (completionTokens ?? 0) + (reasoningTokens ?? 0);
+        usage = (promptTokens ?? 0) + totalGenerated;
+        if (usage == 0 && data['usage'] != null) usage = data['usage']['total_tokens'] as int?;
+
         return LLMResponseChunk(
             content: content,
             reasoning: reasoning,
@@ -1188,10 +1209,11 @@ Use search for:
             usage: usage,
             promptTokens: promptTokens,
             completionTokens: completionTokens,
+            reasoningTokens: reasoningTokens,
             finishReason: finishReason);
       }
-      return const LLMResponseChunk(content: '');
-    } on DioException catch (e) {
+        return const LLMResponseChunk(content: '');
+      } on DioException catch (e) {
       if (e.type == DioExceptionType.cancel) {
         print('🔵 [LLM REQUEST CANCELLED]');
         return const LLMResponseChunk(content: '');

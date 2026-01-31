@@ -72,33 +72,38 @@ const UsageStatsEntitySchema = CollectionSchema(
       name: r'promptTokenCount',
       type: IsarType.long,
     ),
-    r'successCount': PropertySchema(
+    r'reasoningTokenCount': PropertySchema(
       id: 11,
+      name: r'reasoningTokenCount',
+      type: IsarType.long,
+    ),
+    r'successCount': PropertySchema(
+      id: 12,
       name: r'successCount',
       type: IsarType.long,
     ),
     r'totalDurationMs': PropertySchema(
-      id: 12,
+      id: 13,
       name: r'totalDurationMs',
       type: IsarType.long,
     ),
     r'totalFirstTokenMs': PropertySchema(
-      id: 13,
+      id: 14,
       name: r'totalFirstTokenMs',
       type: IsarType.long,
     ),
     r'totalTokenCount': PropertySchema(
-      id: 14,
+      id: 15,
       name: r'totalTokenCount',
       type: IsarType.long,
     ),
     r'validDurationCount': PropertySchema(
-      id: 15,
+      id: 16,
       name: r'validDurationCount',
       type: IsarType.long,
     ),
     r'validFirstTokenCount': PropertySchema(
-      id: 16,
+      id: 17,
       name: r'validFirstTokenCount',
       type: IsarType.long,
     )
@@ -158,12 +163,13 @@ void _usageStatsEntitySerialize(
   writer.writeLong(offsets[8], object.failureCount);
   writer.writeString(offsets[9], object.modelName);
   writer.writeLong(offsets[10], object.promptTokenCount);
-  writer.writeLong(offsets[11], object.successCount);
-  writer.writeLong(offsets[12], object.totalDurationMs);
-  writer.writeLong(offsets[13], object.totalFirstTokenMs);
-  writer.writeLong(offsets[14], object.totalTokenCount);
-  writer.writeLong(offsets[15], object.validDurationCount);
-  writer.writeLong(offsets[16], object.validFirstTokenCount);
+  writer.writeLong(offsets[11], object.reasoningTokenCount);
+  writer.writeLong(offsets[12], object.successCount);
+  writer.writeLong(offsets[13], object.totalDurationMs);
+  writer.writeLong(offsets[14], object.totalFirstTokenMs);
+  writer.writeLong(offsets[15], object.totalTokenCount);
+  writer.writeLong(offsets[16], object.validDurationCount);
+  writer.writeLong(offsets[17], object.validFirstTokenCount);
 }
 
 UsageStatsEntity _usageStatsEntityDeserialize(
@@ -185,12 +191,13 @@ UsageStatsEntity _usageStatsEntityDeserialize(
   object.id = id;
   object.modelName = reader.readString(offsets[9]);
   object.promptTokenCount = reader.readLong(offsets[10]);
-  object.successCount = reader.readLong(offsets[11]);
-  object.totalDurationMs = reader.readLong(offsets[12]);
-  object.totalFirstTokenMs = reader.readLong(offsets[13]);
-  object.totalTokenCount = reader.readLong(offsets[14]);
-  object.validDurationCount = reader.readLong(offsets[15]);
-  object.validFirstTokenCount = reader.readLong(offsets[16]);
+  object.reasoningTokenCount = reader.readLong(offsets[11]);
+  object.successCount = reader.readLong(offsets[12]);
+  object.totalDurationMs = reader.readLong(offsets[13]);
+  object.totalFirstTokenMs = reader.readLong(offsets[14]);
+  object.totalTokenCount = reader.readLong(offsets[15]);
+  object.validDurationCount = reader.readLong(offsets[16]);
+  object.validFirstTokenCount = reader.readLong(offsets[17]);
   return object;
 }
 
@@ -234,6 +241,8 @@ P _usageStatsEntityDeserializeProp<P>(
     case 15:
       return (reader.readLong(offset)) as P;
     case 16:
+      return (reader.readLong(offset)) as P;
+    case 17:
       return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -1188,6 +1197,62 @@ extension UsageStatsEntityQueryFilter
   }
 
   QueryBuilder<UsageStatsEntity, UsageStatsEntity, QAfterFilterCondition>
+      reasoningTokenCountEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'reasoningTokenCount',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<UsageStatsEntity, UsageStatsEntity, QAfterFilterCondition>
+      reasoningTokenCountGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'reasoningTokenCount',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<UsageStatsEntity, UsageStatsEntity, QAfterFilterCondition>
+      reasoningTokenCountLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'reasoningTokenCount',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<UsageStatsEntity, UsageStatsEntity, QAfterFilterCondition>
+      reasoningTokenCountBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'reasoningTokenCount',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<UsageStatsEntity, UsageStatsEntity, QAfterFilterCondition>
       successCountEqualTo(int value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -1687,6 +1752,20 @@ extension UsageStatsEntityQuerySortBy
   }
 
   QueryBuilder<UsageStatsEntity, UsageStatsEntity, QAfterSortBy>
+      sortByReasoningTokenCount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'reasoningTokenCount', Sort.asc);
+    });
+  }
+
+  QueryBuilder<UsageStatsEntity, UsageStatsEntity, QAfterSortBy>
+      sortByReasoningTokenCountDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'reasoningTokenCount', Sort.desc);
+    });
+  }
+
+  QueryBuilder<UsageStatsEntity, UsageStatsEntity, QAfterSortBy>
       sortBySuccessCount() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'successCount', Sort.asc);
@@ -1941,6 +2020,20 @@ extension UsageStatsEntityQuerySortThenBy
   }
 
   QueryBuilder<UsageStatsEntity, UsageStatsEntity, QAfterSortBy>
+      thenByReasoningTokenCount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'reasoningTokenCount', Sort.asc);
+    });
+  }
+
+  QueryBuilder<UsageStatsEntity, UsageStatsEntity, QAfterSortBy>
+      thenByReasoningTokenCountDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'reasoningTokenCount', Sort.desc);
+    });
+  }
+
+  QueryBuilder<UsageStatsEntity, UsageStatsEntity, QAfterSortBy>
       thenBySuccessCount() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'successCount', Sort.asc);
@@ -2105,6 +2198,13 @@ extension UsageStatsEntityQueryWhereDistinct
   }
 
   QueryBuilder<UsageStatsEntity, UsageStatsEntity, QDistinct>
+      distinctByReasoningTokenCount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'reasoningTokenCount');
+    });
+  }
+
+  QueryBuilder<UsageStatsEntity, UsageStatsEntity, QDistinct>
       distinctBySuccessCount() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'successCount');
@@ -2227,6 +2327,13 @@ extension UsageStatsEntityQueryProperty
       promptTokenCountProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'promptTokenCount');
+    });
+  }
+
+  QueryBuilder<UsageStatsEntity, int, QQueryOperations>
+      reasoningTokenCountProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'reasoningTokenCount');
     });
   }
 

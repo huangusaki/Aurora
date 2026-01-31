@@ -15,6 +15,7 @@ class UsageStatsEntity {
   int totalTokenCount = 0;
   int promptTokenCount = 0;
   int completionTokenCount = 0;
+  int reasoningTokenCount = 0;
 
   // Error Classification Counts
   int errorTimeoutCount = 0;

@@ -17,6 +17,7 @@ import 'tool_output.dart';
 import '../../../../settings/presentation/settings_provider.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 import 'package:aurora/shared/utils/number_format_utils.dart';
+import 'package:aurora/shared/utils/stats_calculator.dart';
 
 
 class MergedMessageBubble extends ConsumerStatefulWidget {
@@ -506,13 +507,23 @@ class _MergedMessageBubbleState extends ConsumerState<MergedMessageBubble>
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (message.tokenCount != null && message.tokenCount! > 0) ...[
-                  Text(
-                    '${formatFullTokenCount(message.tokenCount!)} Tokens',
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: theme.typography.body!.color!.withOpacity(0.5),
-                    ),
-                  ),
+                  Builder(builder: (context) {
+                    final p = message.promptTokens ?? 0;
+                    final c = message.completionTokens ?? 0;
+                    final r = message.reasoningTokens ?? 0;
+                    final total = message.tokenCount!;
+                    
+                    String tokenText = formatFullTokenCount(total);
+
+                    
+                    return Text(
+                      '$tokenText Tokens',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: theme.typography.body!.color!.withOpacity(0.5),
+                      ),
+                    );
+                  }),
                   if (message.firstTokenMs != null && message.firstTokenMs! > 0) ...[
                     Text(
                       ' | ',
@@ -540,13 +551,33 @@ class _MergedMessageBubbleState extends ConsumerState<MergedMessageBubble>
                         color: theme.typography.body!.color!.withOpacity(0.5),
                       ),
                     ),
-                    Text(
-                      'Token/s: ${(message.tokenCount! / (message.durationMs! / 1000)).toStringAsFixed(2)}',
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: theme.typography.body!.color!.withOpacity(0.5),
-                      ),
-                    ),
+                    Builder(builder: (context) {
+                      final c = message.completionTokens ?? 0;
+                      final r = message.reasoningTokens ?? 0;
+                      final p = message.promptTokens ?? 0;
+                      
+                      int effectiveGenerated = c + r;
+                      if (effectiveGenerated == 0 && (message.tokenCount ?? 0) > 0) {
+                        effectiveGenerated = (message.tokenCount! - p);
+                      }
+
+                      final tps = StatsCalculator.calculateTPS(
+                        completionTokens: effectiveGenerated,
+                        reasoningTokens: 0,
+                        durationMs: message.durationMs ?? 0,
+                        firstTokenMs: message.firstTokenMs ?? 0,
+                      );
+
+                      if (tps <= 0) return const SizedBox.shrink();
+                      
+                      return Text(
+                        'Token/s: ${tps.toStringAsFixed(2)}',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: theme.typography.body!.color!.withOpacity(0.5),
+                        ),
+                      );
+                    }),
                   ],
                   Text(
                     ' | ',
