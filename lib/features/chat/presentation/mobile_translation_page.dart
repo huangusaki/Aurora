@@ -166,9 +166,9 @@ class _MobileTranslationPageState extends ConsumerState<MobileTranslationPage> {
             ? chatState.messages.last
             : null;
     return Scaffold(
-      backgroundColor: fluentTheme.scaffoldBackgroundColor,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
-        backgroundColor: fluentTheme.scaffoldBackgroundColor,
+        backgroundColor: Colors.transparent,
         elevation: 0,
         leading: widget.onBack != null
             ? IconButton(

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:aurora/shared/widgets/aurora_bottom_sheet.dart';
 import 'package:intl/intl.dart';
 import 'package:aurora/l10n/app_localizations.dart';
+import '../../settings/presentation/widgets/mobile_settings_widgets.dart';
 
 import '../domain/webdav_config.dart';
 import '../domain/backup_options.dart';
@@ -11,7 +12,8 @@ import 'sync_provider.dart';
 import 'widgets/backup_options_selector.dart';
 
 class MobileSyncSettingsPage extends ConsumerStatefulWidget {
-  const MobileSyncSettingsPage({super.key});
+  final VoidCallback? onBack;
+  const MobileSyncSettingsPage({super.key, this.onBack});
 
   @override
   ConsumerState<MobileSyncSettingsPage> createState() => _MobileSyncSettingsPageState();
@@ -92,8 +94,18 @@ class _MobileSyncSettingsPageState extends ConsumerState<MobileSyncSettingsPage>
     }
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: Text(l10n.cloudSync),
+        centerTitle: true,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: widget.onBack != null
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back_ios_new),
+                onPressed: widget.onBack,
+              )
+            : null,
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -113,151 +125,159 @@ class _MobileSyncSettingsPageState extends ConsumerState<MobileSyncSettingsPage>
                  actions: [TextButton(onPressed: () => ref.refresh(syncProvider), child: const Text('OK', style: TextStyle(color: Colors.white)))],
              ),
 
-          const SizedBox(height: 16),
-          Text(l10n.webdavConfig, style: theme.textTheme.titleMedium),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _urlController,
-            decoration: InputDecoration(
-              labelText: l10n.webdavUrl,
-              hintText: l10n.webdavUrlHint,
-              border: const OutlineInputBorder(),
-              isDense: true,
-            ),
-            onChanged: (_) => _save(),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _usernameController,
-            decoration: InputDecoration(
-              labelText: l10n.username,
-              hintText: l10n.usernameHint,
-              border: const OutlineInputBorder(),
-              isDense: true,
-            ),
-            onChanged: (_) => _save(),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _passwordController,
-            obscureText: !_showPassword,
-            decoration: InputDecoration(
-              labelText: l10n.passwordOrToken,
-              border: const OutlineInputBorder(),
-              isDense: true,
-              suffixIcon: IconButton(
-                icon: Icon(_showPassword ? AuroraIcons.visibilityOff : AuroraIcons.visibility),
-                onPressed: () => setState(() => _showPassword = !_showPassword),
-              ),
-            ),
-            onChanged: (_) => _save(),
-          ),
-          const SizedBox(height: 24),
-          Row(
+          MobileSettingsSection(
+            title: l10n.webdavConfig,
             children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: state.isBusy ? null : () => ref.read(syncProvider.notifier).testConnection(),
-                  child: Text(l10n.testConnection),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: FilledButton(
-                  onPressed: state.isBusy ? null : () async {
-                    BackupOptions selectedOptions = const BackupOptions();
-                    final confirmed = await AuroraBottomSheet.show(
-                      context: context,
-                      builder: (ctx) => StatefulBuilder(
-                        builder: (context, setModalState) {
-                          return Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              AuroraBottomSheet.buildTitle(context, l10n.selectiveBackup),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 16),
-                                child: BackupOptionsSelector(
-                                  options: selectedOptions,
-                                  onChanged: (newOptions) {
-                                    setModalState(() {
-                                      selectedOptions = newOptions;
-                                    });
-                                  },
-                                ),
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.all(16),
-                                child: SizedBox(
-                                  width: double.infinity,
-                                  child: FilledButton(
-                                    onPressed: selectedOptions.isNoneSelected 
-                                      ? null 
-                                      : () => Navigator.pop(ctx, true),
-                                    child: Text(l10n.confirm),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          );
-                        }
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    TextField(
+                      controller: _urlController,
+                      decoration: InputDecoration(
+                        labelText: l10n.webdavUrl,
+                        hintText: l10n.webdavUrlHint,
+                        border: const OutlineInputBorder(),
+                        isDense: true,
+                         prefixIcon: const Icon(Icons.link),
                       ),
-                    );
-                    
-                    if (confirmed == true) {
-                      ref.read(syncProvider.notifier).backup(options: selectedOptions);
-                    }
-                  },
-                  child: Text(l10n.backupNow),
+                      onChanged: (_) => _save(),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _usernameController,
+                      decoration: InputDecoration(
+                        labelText: l10n.username,
+                        hintText: l10n.usernameHint,
+                        border: const OutlineInputBorder(),
+                        isDense: true,
+                        prefixIcon: const Icon(Icons.person_outline),
+                      ),
+                      onChanged: (_) => _save(),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _passwordController,
+                      obscureText: !_showPassword,
+                      decoration: InputDecoration(
+                        labelText: l10n.passwordOrToken,
+                        border: const OutlineInputBorder(),
+                        isDense: true,
+                         prefixIcon: const Icon(Icons.lock_outline),
+                        suffixIcon: IconButton(
+                          icon: Icon(_showPassword ? AuroraIcons.visibilityOff : AuroraIcons.visibility),
+                          onPressed: () => setState(() => _showPassword = !_showPassword),
+                        ),
+                      ),
+                      onChanged: (_) => _save(),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: state.isBusy ? null : () => ref.read(syncProvider.notifier).testConnection(),
+                          child: Text(l10n.testConnection),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: FilledButton(
+                          onPressed: state.isBusy ? null : () async {
+                            BackupOptions selectedOptions = const BackupOptions();
+                            final confirmed = await AuroraBottomSheet.show(
+                              context: context,
+                              builder: (ctx) => StatefulBuilder(
+                                builder: (context, setModalState) {
+                                  return Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      AuroraBottomSheet.buildTitle(context, l10n.selectiveBackup),
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                                        child: BackupOptionsSelector(
+                                          options: selectedOptions,
+                                          onChanged: (newOptions) {
+                                            setModalState(() {
+                                              selectedOptions = newOptions;
+                                            });
+                                          },
+                                        ),
+                                      ),
+                                      Padding(
+                                        padding: const EdgeInsets.all(16),
+                                        child: SizedBox(
+                                          width: double.infinity,
+                                          child: FilledButton(
+                                            onPressed: selectedOptions.isNoneSelected 
+                                              ? null 
+                                              : () => Navigator.pop(ctx, true),
+                                            child: Text(l10n.confirm),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                }
+                              ),
+                            );
+                            
+                            if (confirmed == true) {
+                              ref.read(syncProvider.notifier).backup(options: selectedOptions);
+                            }
+                          },
+                          child: Text(l10n.backupNow),
+                        ),
+                      ),
+                    ],
+                  ),
+                  ],
                 ),
-              ),
+              )
             ],
           ),
-          const SizedBox(height: 24),
-          const Divider(),
-          const SizedBox(height: 16),
-          Row(
-             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-             children: [
-                 Text(l10n.cloudBackupList, style: theme.textTheme.titleMedium),
-                 IconButton(
-                     icon: const Icon(AuroraIcons.refresh),
+
+          const SizedBox(height: 32),
+          MobileSettingsSection(
+            title: l10n.cloudBackupList,
+            trailing: IconButton(
+                     icon: const Icon(AuroraIcons.refresh, size: 20),
                      onPressed: state.isBusy ? null : () => ref.read(syncProvider.notifier).refreshBackups(),
-                 )
-             ]
+            ),
+            children: [
+               if (state.remoteBackups.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 32),
+                  child: Center(child: Text(l10n.noBackupsOrNotConnected, style: const TextStyle(color: Colors.grey))),
+                )
+              else
+                ...state.remoteBackups.map((item) {
+                  final dateStr = DateFormat('yyyy-MM-dd HH:mm').format(item.modified);
+                  final sizeMb = (item.size / 1024 / 1024).toStringAsFixed(2);
+                  
+                  return MobileSettingsTile(
+                    leading: const Icon(AuroraIcons.backup),
+                    title: item.name,
+                    subtitle: '$dateStr  •  $sizeMb MB',
+                    showChevron: false,
+                    trailing: TextButton(
+                      child: Text(l10n.restore, style: const TextStyle(fontWeight: FontWeight.bold)),
+                      onPressed: state.isBusy ? null : () async {
+                          final confirmed = await AuroraBottomSheet.showConfirm(
+                            context: context,
+                            title: l10n.confirmRestore,
+                            content: l10n.restoreWarning,
+                            confirmText: l10n.confirmRestoreButton,
+                          );
+                          if (confirmed == true) {
+                            ref.read(syncProvider.notifier).restore(item);
+                          }
+                      },
+                    ),
+                  );
+                }),
+            ],
           ),
-          if (state.remoteBackups.isEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 32),
-              child: Center(child: Text(l10n.noBackupsOrNotConnected, style: const TextStyle(color: Colors.grey))),
-            )
-          else
-            ...state.remoteBackups.map((item) {
-              final dateStr = DateFormat('yyyy-MM-dd HH:mm').format(item.modified);
-              final sizeMb = (item.size / 1024 / 1024).toStringAsFixed(2);
-              
-              return Card(
-                margin: const EdgeInsets.symmetric(vertical: 4),
-                child: ListTile(
-                  leading: const Icon(AuroraIcons.backup),
-                  title: Text(item.name),
-                  subtitle: Text('$dateStr  •  $sizeMb MB'),
-                  trailing: TextButton(
-                    child: Text(l10n.restore),
-                    onPressed: state.isBusy ? null : () async {
-                        final confirmed = await AuroraBottomSheet.showConfirm(
-                          context: context,
-                          title: l10n.confirmRestore,
-                          content: l10n.restoreWarning,
-                          confirmText: l10n.confirmRestoreButton,
-                        );
-                        if (confirmed == true) {
-                          ref.read(syncProvider.notifier).restore(item);
-                        }
-                    },
-                  ),
-                ),
-              );
-            }),
         ],
       ),
     );

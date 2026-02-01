@@ -11,6 +11,7 @@ import 'package:aurora/l10n/app_localizations.dart';
 import 'package:aurora/shared/widgets/aurora_bottom_sheet.dart';
 import 'package:aurora/shared/utils/platform_utils.dart';
 import '../../sync/presentation/mobile_sync_settings_page.dart';
+import 'widgets/mobile_settings_widgets.dart';
 
 class MobileUserPage extends ConsumerStatefulWidget {
   final VoidCallback? onBack;
@@ -26,87 +27,97 @@ class _MobileUserPageState extends ConsumerState<MobileUserPage> {
     final settingsState = ref.watch(settingsProvider);
     final fluentTheme = fluent.FluentTheme.of(context);
     final l10n = AppLocalizations.of(context)!;
+    final isDark = fluentTheme.brightness == fluent.Brightness.dark;
+
     return Scaffold(
-      backgroundColor: fluentTheme.scaffoldBackgroundColor,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: Text(l10n.userSettings),
-        backgroundColor: fluentTheme.scaffoldBackgroundColor,
+        centerTitle: true,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         leading: widget.onBack != null
             ? IconButton(
-                icon: const Icon(Icons.arrow_back),
+                icon: const Icon(Icons.arrow_back_ios_new),
                 onPressed: widget.onBack,
               )
             : null,
-        elevation: 0,
       ),
       body: ListView(
+        padding: const EdgeInsets.only(bottom: 32),
         children: [
-
-
-          _SectionHeader(title: l10n.userInfo, icon: Icons.person_outline),
-          ListTile(
-            leading: const Icon(Icons.badge_outlined),
-            title: Text(l10n.userName),
-            subtitle: Text(settingsState.userName.isNotEmpty
-                ? settingsState.userName
-                : l10n.user),
-            trailing: const Icon(Icons.edit),
-            onTap: () => _showTextEditor(
-              context,
-              l10n.userName,
-              settingsState.userName,
-              (value) => ref
-                  .read(settingsProvider.notifier)
-                  .setChatDisplaySettings(userName: value),
-            ),
+          MobileSettingsSection(
+            title: l10n.userInfo,
+            children: [
+              MobileSettingsTile(
+                leading: const Icon(Icons.badge_outlined),
+                title: l10n.userName,
+                subtitle: settingsState.userName.isNotEmpty
+                    ? settingsState.userName
+                    : l10n.user,
+                trailing: const Icon(Icons.edit, size: 20, color: Colors.grey),
+                onTap: () => _showTextEditor(
+                  context,
+                  l10n.userName,
+                  settingsState.userName,
+                  (value) => ref
+                      .read(settingsProvider.notifier)
+                      .setChatDisplaySettings(userName: value),
+                ),
+              ),
+              MobileSettingsTile(
+                leading: CircleAvatar(
+                  radius: 16,
+                  backgroundImage: settingsState.userAvatar?.isNotEmpty == true
+                      ? FileImage(File(settingsState.userAvatar!))
+                      : null,
+                  child: settingsState.userAvatar?.isNotEmpty != true
+                      ? const Icon(Icons.person, size: 20)
+                      : null,
+                ),
+                title: l10n.userAvatar,
+                subtitle: l10n.clickToChangeAvatar,
+                trailing: const Icon(Icons.image, size: 20, color: Colors.grey),
+                onTap: () => _showAvatarPicker(isUser: true),
+              ),
+            ],
           ),
-          ListTile(
-            leading: CircleAvatar(
-              radius: 20,
-              backgroundImage: settingsState.userAvatar?.isNotEmpty == true
-                  ? FileImage(File(settingsState.userAvatar!))
-                  : null,
-              child: settingsState.userAvatar?.isNotEmpty != true
-                  ? const Icon(Icons.person, size: 20)
-                  : null,
-            ),
-            title: Text(l10n.userAvatar),
-            subtitle: Text(l10n.clickToChangeAvatar),
-            trailing: const Icon(Icons.image),
-            onTap: () => _showAvatarPicker(isUser: true),
-          ),
-          const Divider(),
-          _SectionHeader(title: l10n.aiInfo, icon: Icons.smart_toy_outlined),
-          ListTile(
-            leading: const Icon(Icons.badge_outlined),
-            title: Text(l10n.aiName),
-            subtitle: Text(settingsState.llmName.isNotEmpty
-                ? settingsState.llmName
-                : 'Assistant'),
-            trailing: const Icon(Icons.edit),
-            onTap: () => _showTextEditor(
-              context,
-              l10n.aiName,
-              settingsState.llmName,
-              (value) => ref
-                  .read(settingsProvider.notifier)
-                  .setChatDisplaySettings(llmName: value),
-            ),
-          ),
-          ListTile(
-            leading: CircleAvatar(
-              radius: 20,
-              backgroundImage: settingsState.llmAvatar?.isNotEmpty == true
-                  ? FileImage(File(settingsState.llmAvatar!))
-                  : null,
-              child: settingsState.llmAvatar?.isNotEmpty != true
-                  ? const Icon(Icons.smart_toy, size: 20)
-                  : null,
-            ),
-            title: Text(l10n.aiAvatar),
-            subtitle: Text(l10n.clickToChangeAvatar),
-            trailing: const Icon(Icons.image),
-            onTap: () => _showAvatarPicker(isUser: false),
+          
+          MobileSettingsSection(
+            title: l10n.aiInfo,
+            children: [
+              MobileSettingsTile(
+                leading: const Icon(Icons.badge_outlined),
+                title: l10n.aiName,
+                subtitle: settingsState.llmName.isNotEmpty
+                    ? settingsState.llmName
+                    : 'Assistant',
+                trailing: const Icon(Icons.edit, size: 20, color: Colors.grey),
+                onTap: () => _showTextEditor(
+                  context,
+                  l10n.aiName,
+                  settingsState.llmName,
+                  (value) => ref
+                      .read(settingsProvider.notifier)
+                      .setChatDisplaySettings(llmName: value),
+                ),
+              ),
+              MobileSettingsTile(
+                leading: CircleAvatar(
+                  radius: 16,
+                  backgroundImage: settingsState.llmAvatar?.isNotEmpty == true
+                      ? FileImage(File(settingsState.llmAvatar!))
+                      : null,
+                  child: settingsState.llmAvatar?.isNotEmpty != true
+                      ? const Icon(Icons.smart_toy, size: 20)
+                      : null,
+                ),
+                title: l10n.aiAvatar,
+                subtitle: l10n.clickToChangeAvatar,
+                trailing: const Icon(Icons.image, size: 20, color: Colors.grey),
+                onTap: () => _showAvatarPicker(isUser: false),
+              ),
+            ],
           ),
         ],
       ),
@@ -242,28 +253,4 @@ class _MobileUserPageState extends ConsumerState<MobileUserPage> {
 
 }
 
-class _SectionHeader extends StatelessWidget {
-  final String title;
-  final IconData icon;
-  const _SectionHeader({required this.title, required this.icon});
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
-      child: Row(
-        children: [
-          Icon(icon, size: 22, color: Theme.of(context).primaryColor),
-          const SizedBox(width: 10),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: Theme.of(context).primaryColor,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
+

@@ -18,10 +18,10 @@ class _MobileStudioPageState extends State<MobileStudioPage> {
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: Text(l10n.studio),
-        backgroundColor: theme.scaffoldBackgroundColor,
+        backgroundColor: Colors.transparent,
         leading: widget.onBack != null
             ? IconButton(
                 icon: const Icon(AuroraIcons.back),

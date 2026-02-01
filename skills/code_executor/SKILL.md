@@ -3,7 +3,7 @@ name: code-executor
 description: 执行 Python 代码以进行数学计算、数据处理、字符串操作或算法验证。当遇到复杂的逻辑问题或需要精确计算时使用。
 
 
-enabled: false---
+enabled: true---
 
 # Code Executor
 

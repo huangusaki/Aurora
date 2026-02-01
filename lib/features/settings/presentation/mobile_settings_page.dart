@@ -8,6 +8,8 @@ import 'settings_provider.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 import 'package:aurora/shared/widgets/aurora_bottom_sheet.dart';
 import '../../sync/presentation/mobile_sync_settings_page.dart';
+import 'widgets/mobile_settings_widgets.dart';
+import 'package:aurora/shared/theme/aurora_icons.dart';
 
 class MobileSettingsPage extends ConsumerStatefulWidget {
   final VoidCallback? onBack;
@@ -31,245 +33,212 @@ class _MobileSettingsPageState extends ConsumerState<MobileSettingsPage> {
   }
 
   @override
+  @override
   Widget build(BuildContext context) {
     final settingsState = ref.watch(settingsProvider);
     final activeProvider = settingsState.activeProvider;
     final fluentTheme = fluent.FluentTheme.of(context);
     final l10n = AppLocalizations.of(context)!;
+    final isDark = fluentTheme.brightness == fluent.Brightness.dark;
+
     return Scaffold(
-      backgroundColor: fluentTheme.scaffoldBackgroundColor,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: Text(l10n.settings),
-        backgroundColor: fluentTheme.scaffoldBackgroundColor,
+        centerTitle: true,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         leading: widget.onBack != null
             ? IconButton(
-                icon: const Icon(Icons.arrow_back),
+                icon: const Icon(Icons.arrow_back_ios_new),
                 onPressed: widget.onBack,
               )
             : null,
-        elevation: 0,
       ),
-      body: CustomScrollView(
-        slivers: [
-          SliverToBoxAdapter(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _SectionHeader(
-                    title: l10n.modelProvider, icon: Icons.cloud_outlined),
-                ListTile(
-                  leading: const Icon(Icons.business),
-                  title: Text(l10n.currentProvider),
-                  subtitle: Text(activeProvider?.name ?? l10n.notConfigured),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => _showProviderPicker(context, settingsState),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.palette),
-                  title: const Text('Color'),
-                  subtitle: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (activeProvider?.color != null &&
-                          activeProvider!.color!.isNotEmpty)
-                        Container(
-                          width: 16,
-                          height: 16,
-                          margin: const EdgeInsets.only(right: 8),
-                          decoration: BoxDecoration(
-                            color: Color(int.tryParse(activeProvider.color!
-                                    .replaceFirst('#', '0xFF')) ??
-                                0xFF000000),
-                            borderRadius: BorderRadius.circular(4),
-                            border: Border.all(color: Colors.grey),
-                          ),
+      body: ListView(
+        padding: const EdgeInsets.only(bottom: 32),
+        children: [
+          MobileSettingsSection(
+            title: l10n.modelProvider,
+            children: [
+              MobileSettingsTile(
+                leading: const Icon(Icons.business),
+                title: l10n.currentProvider,
+                subtitle: activeProvider?.name ?? l10n.notConfigured,
+                onTap: () => _showProviderPicker(context, settingsState),
+              ),
+              MobileSettingsTile(
+                leading: const Icon(Icons.palette),
+                title: 'Color',
+                subtitle: activeProvider?.color ?? l10n.notConfigured,
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                     if (activeProvider?.color != null && activeProvider!.color!.isNotEmpty)
+                      Container(
+                        width: 20,
+                        height: 20,
+                        margin: const EdgeInsets.only(right: 8),
+                        decoration: BoxDecoration(
+                          color: Color(int.tryParse(activeProvider.color!.replaceFirst('#', '0xFF')) ?? 0xFF000000),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.grey.withOpacity(0.5)),
                         ),
-                      Text(activeProvider?.color ?? l10n.notConfigured),
-                    ],
-                  ),
-                  trailing: const Icon(Icons.edit),
-                  onTap: () => _showColorEditor(context, activeProvider),
+                      ),
+                  ],
                 ),
-                ListTile(
-                  leading: const Icon(Icons.key),
-                  title: Text(l10n.apiKeys),
-                  subtitle: Text(activeProvider?.apiKeys.isNotEmpty == true
-                      ? '${activeProvider!.apiKeys.length} ${activeProvider.apiKeys.length > 1 ? "keys" : "key"}'
-                      : l10n.notConfigured),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (activeProvider != null && activeProvider.apiKeys.length > 1)
-                        Switch(
+                onTap: () => _showColorEditor(context, activeProvider),
+              ),
+              MobileSettingsTile(
+                leading: const Icon(Icons.key),
+                title: l10n.apiKeys,
+                subtitle: activeProvider?.apiKeys.isNotEmpty == true
+                    ? '${activeProvider!.apiKeys.length} ${activeProvider.apiKeys.length > 1 ? "keys" : "key"}'
+                    : l10n.notConfigured,
+                trailing: (activeProvider != null && activeProvider.apiKeys.length > 1) 
+                  ? SizedBox(
+                      height: 32,
+                      child: FittedBox(
+                        child: Switch.adaptive(
                           value: activeProvider.autoRotateKeys,
-                          onChanged: (v) => ref
-                              .read(settingsProvider.notifier)
-                              .setAutoRotateKeys(activeProvider.id, v),
+                          onChanged: (v) => ref.read(settingsProvider.notifier).setAutoRotateKeys(activeProvider.id, v),
                         ),
-                      const Icon(Icons.chevron_right),
-                    ],
-                  ),
-                  onTap: () => _showApiKeysManager(context, activeProvider),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.link),
-                  title: const Text('API Base URL'),
-                  subtitle: Text(
-                      activeProvider?.baseUrl ?? 'https://api.openai.com/v1'),
-                  trailing: const Icon(Icons.edit),
-                  onTap: () => _showBaseUrlEditor(context, activeProvider),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.power_settings_new),
-                  title: Text(l10n.enabledStatus),
-                  subtitle: Text(activeProvider?.isEnabled == true
-                      ? l10n.enabled
-                      : l10n.disabled),
-                  trailing: Switch(
-                    value: activeProvider?.isEnabled == true,
-                    onChanged: (v) {
-                      if (activeProvider != null) {
-                        ref
-                            .read(settingsProvider.notifier)
-                            .toggleProviderEnabled(activeProvider.id);
-                      }
-                    },
-                  ),
-                  onTap: () {
+                      ),
+                    )
+                  : null,
+                onTap: () => _showApiKeysManager(context, activeProvider),
+              ),
+              MobileSettingsTile(
+                leading: const Icon(Icons.link),
+                title: 'API Base URL',
+                subtitle: activeProvider?.baseUrl ?? 'https://api.openai.com/v1',
+                onTap: () => _showBaseUrlEditor(context, activeProvider),
+              ),
+              MobileSettingsTile(
+                leading: const Icon(Icons.power_settings_new),
+                title: l10n.enabledStatus,
+                subtitle: activeProvider?.isEnabled == true ? l10n.enabled : l10n.disabled,
+                trailing: Switch.adaptive(
+                  value: activeProvider?.isEnabled == true,
+                  onChanged: (v) {
                     if (activeProvider != null) {
-                      ref
-                          .read(settingsProvider.notifier)
-                          .toggleProviderEnabled(activeProvider.id);
+                      ref.read(settingsProvider.notifier).toggleProviderEnabled(activeProvider.id);
                     }
                   },
                 ),
-                ListTile(
-                  leading: const Icon(Icons.settings_applications),
-                  title: Text(l10n.globalConfig), // Use localized Global Config string
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () {
-                     if (activeProvider != null) {
-                        _showGlobalConfigDialog(context, activeProvider);
-                     }
-                  },
-                ),
-                _SectionHeader(
-                  title: l10n.availableModels,
-                  icon: Icons.format_list_bulleted,
-                  trailing: SizedBox(
-                    height: 32,
-                    child: OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
-                        side: BorderSide(color: Theme.of(context).primaryColor.withOpacity(0.5)),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      ),
-                      onPressed: settingsState.isLoadingModels
-                          ? null
-                          : () {
-                              ref.read(settingsProvider.notifier).fetchModels();
-                            },
-                      icon: settingsState.isLoadingModels
-                          ? const SizedBox(
-                              width: 14,
-                              height: 14,
-                              child: CircularProgressIndicator(strokeWidth: 2))
-                          : const Icon(Icons.refresh, size: 16),
-                      label: Text(l10n.fetchModelList, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
-                    ),
-                  ),
-                ),
-                if (activeProvider != null && activeProvider.models.isNotEmpty)
+              ),
+              MobileSettingsTile(
+                leading: const Icon(Icons.settings_applications),
+                title: l10n.globalConfig,
+                onTap: () {
+                   if (activeProvider != null) {
+                      _showGlobalConfigDialog(context, activeProvider);
+                   }
+                },
+              ),
+            ],
+          ),
+
+          MobileSettingsSection(
+            title: l10n.availableModels,
+            trailing: SizedBox(
+               height: 28,
+               child: OutlinedButton.icon(
+                 style: OutlinedButton.styleFrom(
+                   padding: const EdgeInsets.symmetric(horizontal: 10),
+                   side: BorderSide(color: Theme.of(context).primaryColor.withOpacity(0.5)),
+                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                   backgroundColor: Theme.of(context).cardColor,
+                 ),
+                 onPressed: settingsState.isLoadingModels
+                     ? null
+                     : () {
+                         ref.read(settingsProvider.notifier).fetchModels();
+                       },
+                 icon: settingsState.isLoadingModels
+                     ? const SizedBox(
+                         width: 12,
+                         height: 12,
+                         child: CircularProgressIndicator(strokeWidth: 2))
+                     : const Icon(Icons.refresh, size: 14),
+                 label: Text(l10n.fetchModelList, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.normal)),
+               ),
+             ),
+            children: [
+               if (activeProvider != null && activeProvider.models.isNotEmpty)
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                    padding: const EdgeInsets.all(12),
                     child: Row(
                       children: [
                         Expanded(
                           child: SizedBox(
-                            height: 30,
-                            child: OutlinedButton.icon(
-                              style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(horizontal: 8),
-                                side: BorderSide(color: Theme.of(context).primaryColor.withOpacity(0.5)),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                            height: 32,
+                            child: FilledButton.tonal(
+                              onPressed: () => ref.read(settingsProvider.notifier).setAllModelsEnabled(activeProvider.id, true),
+                              style: FilledButton.styleFrom(
+                                padding: EdgeInsets.zero,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                               ),
-                              onPressed: () => ref
-                                  .read(settingsProvider.notifier)
-                                  .setAllModelsEnabled(activeProvider.id, true),
-                              icon: Icon(Icons.done_all, size: 14, color: Theme.of(context).primaryColor),
-                              label: Text(l10n.enableAll, 
-                                style: TextStyle(fontSize: 11, color: Theme.of(context).primaryColor)),
+                              child: Text(l10n.enableAll, style: const TextStyle(fontSize: 12)),
                             ),
                           ),
                         ),
                         const SizedBox(width: 8),
-                        Expanded(
+                         Expanded(
                           child: SizedBox(
-                            height: 30,
-                            child: OutlinedButton.icon(
-                              style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(horizontal: 8),
-                                side: BorderSide(color: Colors.grey.withOpacity(0.5)),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                            height: 32,
+                            child: OutlinedButton(
+                              onPressed: () => ref.read(settingsProvider.notifier).setAllModelsEnabled(activeProvider.id, false),
+                               style: OutlinedButton.styleFrom(
+                                padding: EdgeInsets.zero,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                side: BorderSide(color: Theme.of(context).dividerColor),
                               ),
-                              onPressed: () => ref
-                                  .read(settingsProvider.notifier)
-                                  .setAllModelsEnabled(activeProvider.id, false),
-                              icon: const Icon(Icons.remove_done, size: 14, color: Colors.grey),
-                              label: Text(l10n.disableAll, 
-                                style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                              child: Text(l10n.disableAll, style: TextStyle(fontSize: 12, color: Theme.of(context).disabledColor)),
                             ),
                           ),
                         ),
                       ],
                     ),
                   ),
-              ],
-            ),
-          ),
-          if (activeProvider != null && activeProvider.models.isNotEmpty)
-            SliverList.builder(
-              itemCount: activeProvider.models.length,
-              itemBuilder: (context, index) {
-                final model = activeProvider.models[index];
-                return ListTile(
-                  leading: const Icon(Icons.account_tree_outlined),
-                  title: Text(model),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: Icon(
-                            activeProvider.isModelEnabled(model)
-                                ? Icons.check_circle
-                                : Icons.cancel,
-                            color: activeProvider.isModelEnabled(model)
-                                ? Colors.green
-                                : Colors.red,
+               
+               if (activeProvider != null && activeProvider.models.isNotEmpty)
+                ...activeProvider.models.map((model) {
+                   return MobileSettingsTile(
+                      leading: const Icon(Icons.account_tree_outlined),
+                      title: model,
+                      showChevron: false,
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                           IconButton(
+                            icon: Icon(
+                              activeProvider.isModelEnabled(model)
+                                  ? Icons.check_circle
+                                  : Icons.circle_outlined,
+                              color: activeProvider.isModelEnabled(model)
+                                  ? Colors.green
+                                  : Colors.grey,
+                            ),
+                            onPressed: () => ref.read(settingsProvider.notifier).toggleModelDisabled(activeProvider.id, model),
                           ),
-                          onPressed: () => ref
-                              .read(settingsProvider.notifier)
-                              .toggleModelDisabled(activeProvider.id, model),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.settings_outlined),
-                          onPressed: () => _showModelConfigDialog(
-                              context, activeProvider, model),
-                        ),
-                      ],
+                          IconButton(
+                            icon: const Icon(Icons.settings_outlined, size: 20),
+                            onPressed: () => _showModelConfigDialog(context, activeProvider, model),
+                          ),
+                        ],
+                      ),
+                   );
+                })
+               else if (activeProvider != null)
+                 const Padding(
+                    padding: EdgeInsets.all(24),
+                    child: Center(
+                       child: Text('No models found'), 
                     ),
-                  );
-                },
-            )
-          else if (activeProvider != null)
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(l10n.noModelsFetch,
-                    style: const TextStyle(color: Colors.grey)),
-              ),
-            ),
-          const SliverToBoxAdapter(child: SizedBox(height: 16)),
+                 ),
+            ],
+          ),
         ],
       ),
     );
@@ -583,40 +552,7 @@ class _MobileSettingsPageState extends ConsumerState<MobileSettingsPage> {
   }
 }
 
-class _SectionHeader extends StatelessWidget {
-  final String title;
-  final IconData icon;
-  final Widget? trailing;
-  const _SectionHeader({
-    required this.title,
-    required this.icon,
-    this.trailing,
-  });
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-      child: Row(
-        children: [
-          Icon(icon, size: 20, color: Theme.of(context).primaryColor),
-          const SizedBox(width: 8),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: Theme.of(context).primaryColor,
-            ),
-          ),
-          if (trailing != null) ...[
-            const Spacer(),
-            trailing!,
-          ],
-        ],
-      ),
-    );
-  }
-}
+
 
 class _ModelConfigDialog extends StatefulWidget {
   final String modelName;

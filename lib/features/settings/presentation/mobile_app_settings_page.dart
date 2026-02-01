@@ -6,6 +6,7 @@ import 'settings_provider.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 import 'package:aurora/shared/widgets/aurora_bottom_sheet.dart';
 import 'package:aurora/shared/theme/aurora_icons.dart';
+import 'widgets/mobile_settings_widgets.dart';
 
 class MobileAppSettingsPage extends ConsumerWidget {
   final VoidCallback? onBack;
@@ -16,115 +17,121 @@ class MobileAppSettingsPage extends ConsumerWidget {
     final settingsState = ref.watch(settingsProvider);
     final fluentTheme = fluent.FluentTheme.of(context);
     final l10n = AppLocalizations.of(context)!;
-    
+    final isDark = fluentTheme.brightness == fluent.Brightness.dark;
+
     return Scaffold(
-      backgroundColor: fluentTheme.scaffoldBackgroundColor,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: Text(l10n.settings),
-        backgroundColor: fluentTheme.scaffoldBackgroundColor,
+        centerTitle: true,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         leading: onBack != null
             ? IconButton(
-                icon: const Icon(Icons.arrow_back),
+                icon: const Icon(Icons.arrow_back_ios_new),
                 onPressed: onBack,
               )
             : null,
-        elevation: 0,
       ),
       body: ListView(
+        padding: const EdgeInsets.only(bottom: 32),
         children: [
-          _SectionHeader(
-              title: l10n.displaySettings, icon: Icons.palette_outlined),
-          ListTile(
-            leading: const Icon(Icons.language),
-            title: Text(l10n.language),
-            subtitle: Text(settingsState.language == 'zh' ? '简体中文' : 'English'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => _showLanguagePicker(context, ref),
-          ),
-          ListTile(
-            leading: const Icon(Icons.brightness_6),
-            title: Text(l10n.themeMode),
-            subtitle: Text(_getThemeModeLabel(settingsState.themeMode, l10n)),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => _showThemeModePicker(context, ref, settingsState, l10n),
-          ),
-          ListTile(
-            leading: const Icon(Icons.color_lens),
-            title: Text(l10n.accentColor),
-            trailing: Container(
-              width: 24,
-              height: 24,
-              decoration: BoxDecoration(
-                color: _getAccentColorPreview(settingsState.themeColor),
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.grey.shade300),
+          MobileSettingsSection(
+            title: l10n.displaySettings,
+            children: [
+              MobileSettingsTile(
+                leading: const Icon(Icons.language),
+                title: l10n.language,
+                subtitle: settingsState.language == 'zh' ? '简体中文' : 'English',
+                onTap: () => _showLanguagePicker(context, ref),
               ),
-            ),
-            onTap: () => _showAccentColorPicker(context, ref, settingsState),
+              MobileSettingsTile(
+                leading: const Icon(Icons.brightness_6),
+                title: l10n.themeMode,
+                subtitle: _getThemeModeLabel(settingsState.themeMode, l10n),
+                onTap: () => _showThemeModePicker(context, ref, settingsState, l10n),
+              ),
+              MobileSettingsTile(
+                leading: const Icon(Icons.color_lens),
+                title: l10n.accentColor,
+                trailing: Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: _getAccentColorPreview(settingsState.themeColor),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.grey.shade300),
+                  ),
+                ),
+                onTap: () => _showAccentColorPicker(context, ref, settingsState),
+              ),
+              MobileSettingsTile(
+                leading: const Icon(Icons.gradient),
+                title: l10n.backgroundStyle,
+                subtitle: _getBackgroundStyleLabel(settingsState.backgroundColor, l10n),
+                onTap: () => _showBackgroundStylePicker(context, ref, settingsState, l10n),
+              ),
+              MobileSettingsTile(
+                leading: const Icon(Icons.format_size),
+                title: l10n.fontSize,
+                subtitle: '${settingsState.fontSize.toStringAsFixed(1)} pt',
+                onTap: () => _showFontSizePicker(context, ref, settingsState, l10n),
+              ),
+            ],
           ),
-          ListTile(
-            leading: const Icon(Icons.gradient),
-            title: Text(l10n.backgroundStyle),
-            subtitle: Text(_getBackgroundStyleLabel(settingsState.backgroundColor, l10n)),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => _showBackgroundStylePicker(context, ref, settingsState, l10n),
+          
+          MobileSettingsSection(
+            title: l10n.chatExperience,
+            children: [
+              MobileSettingsTile(
+                leading: const Icon(Icons.auto_awesome),
+                title: l10n.smartTopicGeneration,
+                subtitle: l10n.smartTopicDescription,
+                trailing: Switch.adaptive(
+                  value: settingsState.enableSmartTopic,
+                  onChanged: (bool value) {
+                    ref.read(settingsProvider.notifier).toggleSmartTopicEnabled(value);
+                  },
+                ),
+                onTap: () {
+                   ref.read(settingsProvider.notifier).toggleSmartTopicEnabled(!settingsState.enableSmartTopic);
+                },
+              ),
+              if (settingsState.enableSmartTopic)
+                MobileSettingsTile(
+                  leading: const Icon(Icons.smart_toy_outlined),
+                  title: l10n.generationModel,
+                  subtitle: settingsState.topicGenerationModel == null
+                      ? l10n.notSelectedFallback
+                      : settingsState.topicGenerationModel!.split('@').last,
+                  onTap: () => _showModelPicker(context, ref, settingsState),
+                ),
+            ],
           ),
-          ListTile(
-            leading: const Icon(Icons.format_size),
-            title: Text(l10n.fontSize),
-            subtitle: Text('${settingsState.fontSize.toStringAsFixed(1)} pt'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => _showFontSizePicker(context, ref, settingsState, l10n),
-          ),
-          const Divider(),
-          _SectionHeader(
-              title: l10n.chatExperience, icon: Icons.chat_bubble_outline),
-          SwitchListTile(
-            secondary: const Icon(Icons.auto_awesome),
-            title: Text(l10n.smartTopicGeneration),
-            subtitle: Text(l10n.smartTopicDescription),
-            value: settingsState.enableSmartTopic,
-            onChanged: (bool value) {
-              ref
-                  .read(settingsProvider.notifier)
-                  .toggleSmartTopicEnabled(value);
-            },
-          ),
-          if (settingsState.enableSmartTopic)
-            ListTile(
-              leading: const Icon(Icons.smart_toy_outlined),
-              title: Text(l10n.generationModel),
-              subtitle: Text(settingsState.topicGenerationModel == null
-                  ? l10n.notSelectedFallback
-                  : settingsState.topicGenerationModel!.split('@').last),
-              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-              onTap: () {
-                _showModelPicker(context, ref, settingsState);
-              },
-            ),
 
-          const Divider(),
-          _SectionHeader(title: l10n.about, icon: Icons.info_outline),
-          const SizedBox(height: 16),
-          ListTile(
-            leading: const Icon(Icons.info_outline),
-            title: Text(l10n.version),
-            subtitle: const Text('v1.2.5'),
+          MobileSettingsSection(
+            title: l10n.about,
+            children: [
+              MobileSettingsTile(
+                leading: const Icon(Icons.info_outline),
+                title: l10n.version,
+                subtitle: 'v1.2.5',
+                showChevron: false,
+              ),
+              MobileSettingsTile(
+                leading: const Icon(AuroraIcons.github),
+                title: l10n.githubProject,
+                trailing: const Icon(Icons.open_in_new, size: 18, color: Colors.grey),
+                onTap: () async {
+                  const url = 'https://github.com/huangusaki/Aurora';
+                  final uri = Uri.parse(url);
+                  if (await canLaunchUrl(uri)) {
+                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                  }
+                },
+              ),
+            ],
           ),
-          ListTile(
-            leading: const Icon(AuroraIcons.github),
-            title: Text(l10n.githubProject),
-            trailing: const Icon(Icons.open_in_new, size: 18),
-            onTap: () async {
-              const url = 'https://github.com/huangusaki/Aurora';
-              final uri = Uri.parse(url);
-              if (await canLaunchUrl(uri)) {
-                await launchUrl(uri,
-                    mode: LaunchMode.externalApplication);
-              }
-            },
-          ),
-          const SizedBox(height: 32),
         ],
       ),
     );
@@ -464,32 +471,6 @@ class MobileAppSettingsPage extends ConsumerWidget {
             ),
           );
         },
-      ),
-    );
-  }
-}
-
-class _SectionHeader extends StatelessWidget {
-  final String title;
-  final IconData icon;
-  const _SectionHeader({required this.title, required this.icon});
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
-      child: Row(
-        children: [
-          Icon(icon, size: 22, color: Theme.of(context).primaryColor),
-          const SizedBox(width: 10),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: Theme.of(context).primaryColor,
-            ),
-          ),
-        ],
       ),
     );
   }

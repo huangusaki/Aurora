@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'package:aurora/shared/theme/aurora_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fluent_ui/fluent_ui.dart' as fluent;
@@ -9,6 +11,7 @@ import '../widgets/mobile_preset_selector.dart';
 import '../../../settings/presentation/mobile_settings_page.dart';
 import '../../../settings/presentation/mobile_user_page.dart';
 import '../../../settings/presentation/mobile_app_settings_page.dart';
+import '../../../sync/presentation/mobile_sync_settings_page.dart';
 import '../mobile_translation_page.dart';
 import '../widgets/cached_page_stack.dart';
 import 'mobile_navigation_drawer.dart';
@@ -29,12 +32,84 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
   static const String keyAppSettings = '__app_settings__';
   static const String keyTranslation = '__translation__';
   static const String keyUser = '__user__';
+  static const String keyBackup = '__backup__';
   static const String keyStudio = '__studio__';
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   String _currentViewKey = 'new_chat';
   String _lastSessionId = 'new_chat';
   DateTime? _lastPopTime;
   double? _dragStartX;
+  
+  bool _toastVisible = false;
+  String _toastMessage = '';
+  IconData? _toastIcon;
+  Timer? _toastTimer;
+
+  void _showPillToast(String message, IconData? icon) {
+    _toastTimer?.cancel();
+    setState(() {
+      _toastMessage = message;
+      _toastIcon = icon;
+      _toastVisible = true;
+    });
+    _toastTimer = Timer(const Duration(seconds: 2), () {
+      if (mounted) setState(() => _toastVisible = false);
+    });
+  }
+
+  Widget _buildPillToastWidget() {
+    final theme = fluent.FluentTheme.of(context);
+    final topPadding = MediaQuery.of(context).padding.top;
+    return Positioned(
+      top: topPadding + 64 + 60,
+      left: 0,
+      right: 0,
+      child: IgnorePointer(
+        ignoring: !_toastVisible,
+        child: Center(
+          child: AnimatedOpacity(
+            opacity: _toastVisible ? 1.0 : 0.0,
+            duration: const Duration(milliseconds: 200),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(
+                color: theme.cardColor,
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.12),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+                border: Border.all(
+                  color: theme.resources.dividerStrokeColorDefault,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_toastIcon != null) ...[
+                    Icon(_toastIcon,
+                        size: 18, color: Theme.of(context).colorScheme.primary),
+                    const SizedBox(width: 10),
+                  ],
+                  Text(
+                    _toastMessage,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: theme.typography.body?.color,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
   @override
   void initState() {
     super.initState();
@@ -75,7 +150,7 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
   }
 
   bool _isSpecialKey(String key) {
-    return key == keySettings || key == keyTranslation || key == keyUser || key == keyStudio || key == keyAppSettings;
+    return key == keySettings || key == keyTranslation || key == keyUser || key == keyStudio || key == keyAppSettings || key == keyBackup;
   }
 
   @override
@@ -167,6 +242,8 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
                     return MobileUserPage(onBack: _navigateBackToSession);
                   } else if (key == keyStudio) {
                     return MobileStudioPage(onBack: _navigateBackToSession);
+                  } else if (key == keyBackup) {
+                    return MobileSyncSettingsPage(onBack: _navigateBackToSession);
                   } else {
                     return _buildSessionPage(
                         context,
@@ -181,6 +258,7 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
               ),
             ),
           ),
+          _buildPillToastWidget(),
         ],
       ),
     );
@@ -198,12 +276,7 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
     if (_lastPopTime == null ||
         now.difference(_lastPopTime!) > const Duration(seconds: 2)) {
       _lastPopTime = now;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(AppLocalizations.of(context)!.pressAgainToExit),
-          duration: const Duration(seconds: 2),
-        ),
-      );
+      _showPillToast(AppLocalizations.of(context)!.pressAgainToExit, AuroraIcons.info);
       return false;
     }
     return true;

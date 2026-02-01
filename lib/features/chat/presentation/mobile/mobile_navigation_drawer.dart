@@ -197,14 +197,7 @@ class MobileNavigationDrawer extends ConsumerWidget {
                           child: _MobileDrawerNavItem(
                               icon: AuroraIcons.backup,
                               label: AppLocalizations.of(context)!.backup,
-                              onTap: () {
-                                Navigator.pop(context);
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (context) => const MobileSyncSettingsPage()),
-                                );
-                              }),
+                              onTap: () => onNavigate('__backup__')),
                         ),
                       ],
                     ),

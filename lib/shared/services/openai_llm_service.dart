@@ -127,11 +127,57 @@ class OpenAILLMService implements LLMService {
     return data;
   }
 
+  void _prettyPrintLog(String title, String emoji, dynamic content) {
+    final now = DateTime.now();
+    final timestamp = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')} ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}';
+    
+    final buffer = StringBuffer();
+    buffer.writeln('$emoji ┌─────────────────────────────────────────────────────────────────────────');
+    buffer.writeln('$emoji │ $title');
+    buffer.writeln('$emoji ├─────────────────────────────────────────────────────────────────────────');
+    buffer.writeln('$emoji │ Time: $timestamp');
+    
+    if (content is Map) {
+      if (content.containsKey('url')) {
+        buffer.writeln('$emoji │ URL: ${content['url']}');
+      }
+      if (content.containsKey('payload')) {
+        buffer.writeln('$emoji │ Payload:');
+        const encoder = JsonEncoder.withIndent('  ');
+        final prettyJson = encoder.convert(content['payload']);
+        // Add indentation to each line of the JSON
+        final lines = prettyJson.split('\n');
+        for (var line in lines) {
+             buffer.writeln('$emoji │   $line');
+        }
+      } else {
+        const encoder = JsonEncoder.withIndent('  ');
+        final prettyJson = encoder.convert(content);
+        final lines = prettyJson.split('\n');
+        for (var line in lines) {
+             buffer.writeln('$emoji │ $line');
+        }
+      }
+    } else if (content is String) {
+        final lines = content.split('\n');
+        for (var line in lines) {
+             buffer.writeln('$emoji │ $line');
+        }
+    } else {
+        buffer.writeln('$emoji │ $content');
+    }
+    
+    buffer.writeln('$emoji └─────────────────────────────────────────────────────────────────────────');
+    print(buffer.toString());
+  }
+
   void _logRequest(String url, Map<String, dynamic> data) {
     try {
       final sanitized = _sanitizeForLog(data);
-      print('🔵 [LLM REQUEST] URL: $url');
-      print('🔵 [LLM REQUEST] PAYLOAD: ${jsonEncode(sanitized)}');
+      _prettyPrintLog('LLM REQUEST', '🔵', {
+        'url': url,
+        'payload': sanitized,
+      });
     } catch (e) {
       print('🔴 [LLM REQUEST LOG ERROR]: $e');
     }
@@ -140,7 +186,7 @@ class OpenAILLMService implements LLMService {
   void _logResponse(dynamic data) {
     try {
       final sanitized = _sanitizeForLog(data);
-      print('🟢 [LLM RESPONSE]: ${jsonEncode(sanitized)}');
+      _prettyPrintLog('LLM RESPONSE', '🟢', sanitized);
     } catch (e) {
       print('🔴 [LLM RESPONSE LOG ERROR]: $e');
     }
@@ -614,7 +660,7 @@ Use search for:
       }
     } on DioException catch (e) {
       if (e.type == DioExceptionType.cancel) {
-        print('🔵 [LLM REQUEST CANCELLED]');
+        _prettyPrintLog('LLM REQUEST CANCELLED', '🔵', 'Request was cancelled by the user.');
         return;
       }
       final statusCode = e.response?.statusCode;
@@ -643,13 +689,13 @@ Use search for:
       try {
         if (e.response?.data != null) {
           final responseData = e.response?.data;
-          print('🔴 [LLM ERROR RESPONSE]: $responseData');
+          _prettyPrintLog('LLM ERROR RESPONSE', '🔴', responseData);
           if (responseData is ResponseBody) {
             final stream = responseData.stream;
             final bytes = await stream
                 .fold<List<int>>([], (prev, chunk) => prev..addAll(chunk));
             final errorBody = utf8.decode(bytes);
-            print('🔴 [LLM ERROR BODY]: $errorBody');
+            _prettyPrintLog('LLM ERROR BODY', '🔴', errorBody);
             try {
               final json = jsonDecode(errorBody);
               if (json is Map) {
