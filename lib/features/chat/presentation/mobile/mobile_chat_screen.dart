@@ -121,6 +121,7 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
   }
 
   Future<void> _navigateTo(String key) async {
+    FocusManager.instance.primaryFocus?.unfocus();
     if (_isSpecialKey(key)) {
       final currentId = ref.read(selectedHistorySessionIdProvider);
       if (currentId != null) {
@@ -142,6 +143,7 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
   }
 
   void _navigateBackToSession() {
+    FocusManager.instance.primaryFocus?.unfocus();
     setState(() {
       _currentViewKey = _lastSessionId;
       ref.read(selectedHistorySessionIdProvider.notifier).state =
@@ -195,7 +197,7 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
       onWillPop: _onWillPop,
       child: Stack(
         children: [
-          if (backgroundGradient != null)
+          if (backgroundGradient != null && (!settingsState.useCustomTheme || settingsState.backgroundImagePath == null || settingsState.backgroundImagePath!.isEmpty))
             Positioned.fill(
               child: Container(
                 decoration: BoxDecoration(
@@ -209,6 +211,11 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
             ),
           Scaffold(
             key: _scaffoldKey,
+            onDrawerChanged: (isOpened) {
+              if (isOpened) {
+                FocusManager.instance.primaryFocus?.unfocus();
+              }
+            },
             backgroundColor: Colors.transparent,
             drawerEdgeDragWidth: MediaQuery.of(context).size.width * 0.25,
             drawer: MobileNavigationDrawer(
@@ -223,9 +230,7 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
             ),
             body: fluent.NavigationPaneTheme(
               data: fluent.NavigationPaneThemeData(
-                backgroundColor: isDark
-                    ? fluent.FluentTheme.of(context).scaffoldBackgroundColor
-                    : Colors.transparent,
+                backgroundColor: fluent.FluentTheme.of(context).scaffoldBackgroundColor,
               ),
               child: CachedPageStack(
                 selectedKey: _currentViewKey,

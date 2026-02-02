@@ -12,6 +12,7 @@ import 'features/chat/presentation/chat_provider.dart';
 import 'features/chat/presentation/topic_provider.dart';
 import 'features/settings/data/settings_storage.dart';
 import 'features/settings/presentation/settings_provider.dart';
+import 'shared/widgets/global_background.dart';
 import 'shared/utils/windows_injector.dart';
 import 'features/skills/presentation/skill_provider.dart';
 import 'package:flutter_displaymode/flutter_displaymode.dart';
@@ -149,6 +150,11 @@ void main() async {
           closeBehavior: appSettings?.closeBehavior ?? 0,
           executionModel: appSettings?.executionModel,
           executionProviderId: appSettings?.executionProviderId,
+          fontSize: appSettings?.fontSize ?? 14.0,
+          backgroundImagePath: appSettings?.backgroundImagePath,
+          backgroundBrightness: appSettings?.backgroundBrightness ?? 0.5,
+          backgroundBlur: appSettings?.backgroundBlur ?? 0.0,
+          useCustomTheme: appSettings?.useCustomTheme ?? false,
         );
       }),
     ],
@@ -208,9 +214,21 @@ class MyApp extends ConsumerWidget {
 
     final backgroundColorStr =
         ref.watch(settingsProvider.select((value) => value.backgroundColor));
+    
+    bool hasCustomBackground(WidgetRef ref) {
+      final settings = ref.watch(settingsProvider);
+      return (settings.useCustomTheme || settings.themeMode == 'custom') && 
+              settings.backgroundImagePath != null && 
+              settings.backgroundImagePath!.isNotEmpty;
+    }
 
     fluent.Color getBackgroundColor(
-        String color, fluent.Brightness brightness) {
+        String color, fluent.Brightness brightness, bool hasCustomBackground) {
+      if (hasCustomBackground) {
+        return brightness == fluent.Brightness.dark
+            ? fluent.Colors.black.withOpacity(0.55)
+            : fluent.Colors.white.withOpacity(0.55);
+      }
       if (brightness == fluent.Brightness.dark) {
         switch (color) {
           case 'pure_black':
@@ -254,14 +272,22 @@ class MyApp extends ConsumerWidget {
             return const fluent.Color(0xFF2B2B2B);
         }
       } else {
+        if (hasCustomBackground) return fluent.Colors.transparent;
         return fluent.Colors.white;
       }
     }
 
     fluent.Color getNavBackgroundColor(
         String color, fluent.Brightness brightness) {
+      final hasCustomBg = hasCustomBackground(ref);
+      if (hasCustomBg) {
+        return brightness == fluent.Brightness.dark
+            ? fluent.Colors.black.withOpacity(0.55)
+            : fluent.Colors.white.withOpacity(0.55);
+      }
+      
       if (brightness == fluent.Brightness.dark) {
-        return getBackgroundColor(color, brightness);
+        return getBackgroundColor(color, brightness, hasCustomBg);
       } else {
         // Light mode nav background
         switch (color) {
@@ -288,9 +314,14 @@ class MyApp extends ConsumerWidget {
     }
 
     fluent.ThemeMode fluentMode;
-    if (themeModeStr == 'light') {
+    final settingsForMode = ref.watch(settingsProvider);
+    if (hasCustomBackground(ref)) {
+      fluentMode = fluent.ThemeMode.dark;
+    } else if (settingsForMode.themeMode == 'light') {
       fluentMode = fluent.ThemeMode.light;
-    } else if (themeModeStr == 'dark') {
+    } else if (settingsForMode.themeMode == 'dark') {
+      fluentMode = fluent.ThemeMode.dark;
+    } else if (settingsForMode.themeMode == 'custom') {
       fluentMode = fluent.ThemeMode.dark;
     } else {
       fluentMode = fluent.ThemeMode.system;
@@ -315,81 +346,107 @@ class MyApp extends ConsumerWidget {
         accentColor: accentColorVal,
         brightness: fluent.Brightness.light,
         scaffoldBackgroundColor:
-            getBackgroundColor(backgroundColorStr, fluent.Brightness.light),
+            getBackgroundColor(backgroundColorStr, fluent.Brightness.light, hasCustomBackground(ref)),
         cardColor: fluent.Colors.white,
         navigationPaneTheme: fluent.NavigationPaneThemeData(
           backgroundColor: getNavBackgroundColor(backgroundColorStr, fluent.Brightness.light),
         ),
       ),
       builder: (context, child) {
-        final fluentTheme = fluent.FluentTheme.of(context);
-        final brightness = fluentTheme.brightness;
-        final accentColor = fluentTheme.accentColor;
-        final materialPrimary = Color(accentColor.normal.value);
-        return MediaQuery(
-          data: MediaQuery.of(context).copyWith(
-            textScaler: TextScaler.linear(fontSize / 14.0),
-          ),
-          child: Theme(
-          data: ThemeData(
-            fontFamily: fontFamily,
-            brightness: brightness == fluent.Brightness.dark
-                ? Brightness.dark
-                : Brightness.light,
-            primaryColor: materialPrimary,
-            scaffoldBackgroundColor: fluentTheme.scaffoldBackgroundColor,
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: materialPrimary,
-              brightness: brightness == fluent.Brightness.dark
-                  ? Brightness.dark
-                  : Brightness.light,
-              primary: materialPrimary,
-            ),
-            appBarTheme: AppBarTheme(
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              iconTheme: IconThemeData(
-                color: brightness == fluent.Brightness.dark
-                    ? Colors.white
-                    : Colors.black,
+        final hasCustomBg = hasCustomBackground(ref);
+        return GlobalBackground(
+          child: Builder(builder: (context) {
+            final fluentTheme = fluent.FluentTheme.of(context);
+            final brightness = fluentTheme.brightness;
+            final accentColor = fluentTheme.accentColor;
+            final materialPrimary = Color(accentColor.normal.value);
+            return MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                textScaler: TextScaler.linear(fontSize / 14.0),
               ),
-              titleTextStyle: TextStyle(
-                color: brightness == fluent.Brightness.dark
-                    ? Colors.white
-                    : Colors.black,
-                fontSize: 20,
-                fontWeight: FontWeight.w500,
+              child: Theme(
+                data: ThemeData(
+                  fontFamily: fontFamily,
+                  brightness: brightness == fluent.Brightness.dark
+                      ? Brightness.dark
+                      : Brightness.light,
+                  primaryColor: materialPrimary,
+                  scaffoldBackgroundColor: hasCustomBg 
+                      ? (brightness == fluent.Brightness.dark ? Colors.black.withOpacity(0.55) : Colors.white.withOpacity(0.55))
+                      : fluentTheme.scaffoldBackgroundColor,
+                  colorScheme: ColorScheme.fromSeed(
+                    seedColor: materialPrimary,
+                    primary: materialPrimary,
+                    brightness: brightness == fluent.Brightness.dark
+                        ? Brightness.dark
+                        : Brightness.light,
+                  ),
+                  dialogTheme: DialogThemeData(
+                    backgroundColor: hasCustomBg
+                        ? (brightness == fluent.Brightness.dark ? Colors.black.withOpacity(0.65) : Colors.white.withOpacity(0.65))
+                        : null,
+                    surfaceTintColor: Colors.transparent,
+                  ),
+                  bottomSheetTheme: BottomSheetThemeData(
+                    backgroundColor: hasCustomBg
+                        ? (brightness == fluent.Brightness.dark ? Colors.black.withOpacity(0.65) : Colors.white.withOpacity(0.65))
+                        : null,
+                    surfaceTintColor: Colors.transparent,
+                  ),
+                  popupMenuTheme: PopupMenuThemeData(
+                    color: hasCustomBg
+                        ? (brightness == fluent.Brightness.dark ? Colors.black.withOpacity(0.65) : Colors.white.withOpacity(0.65))
+                        : null,
+                    surfaceTintColor: Colors.transparent,
+                  ),
+                  appBarTheme: AppBarTheme(
+                    backgroundColor: Colors.transparent,
+                    elevation: 0,
+                    iconTheme: IconThemeData(
+                      color: brightness == fluent.Brightness.dark
+                          ? Colors.white
+                          : Colors.black,
+                    ),
+                    titleTextStyle: TextStyle(
+                      color: brightness == fluent.Brightness.dark
+                          ? Colors.white
+                          : Colors.black,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    systemOverlayStyle: SystemUiOverlayStyle(
+                      statusBarColor: Colors.transparent,
+                      statusBarIconBrightness: brightness == fluent.Brightness.dark
+                          ? Brightness.light
+                          : Brightness.dark,
+                      statusBarBrightness: brightness == fluent.Brightness.dark
+                          ? Brightness.dark
+                          : Brightness.light,
+                    ),
+                  ),
+                  useMaterial3: true,
+                  textSelectionTheme: TextSelectionThemeData(
+                    selectionColor: brightness == fluent.Brightness.dark
+                        ? const Color(0xFF3A5A80) // Neutral dark blue for dark mode
+                        : const Color(0xFFB3D4FC), // Light blue for light mode
+                    cursorColor: materialPrimary,
+                    selectionHandleColor: materialPrimary,
+                  ),
+                ),
+                child: ScaffoldMessenger(
+                  child: child ?? const SizedBox.shrink(),
+                ),
               ),
-              systemOverlayStyle: SystemUiOverlayStyle(
-                statusBarColor: Colors.transparent,
-                statusBarIconBrightness: brightness == fluent.Brightness.dark
-                    ? Brightness.light
-                    : Brightness.dark,
-                statusBarBrightness: brightness == fluent.Brightness.dark
-                    ? Brightness.dark
-                    : Brightness.light,
-              ),
-            ),
-            useMaterial3: true,
-            textSelectionTheme: TextSelectionThemeData(
-              selectionColor: brightness == fluent.Brightness.dark
-                  ? const Color(0xFF3A5A80) // Neutral dark blue for dark mode
-                  : const Color(0xFFB3D4FC), // Light blue for light mode
-              cursorColor: materialPrimary,
-              selectionHandleColor: materialPrimary,
-            ),
-          ),
-          child: ScaffoldMessenger(
-            child: child ?? const SizedBox.shrink(),
-          ),
-        ));
+            );
+          }),
+        );
       },
       darkTheme: fluent.FluentThemeData(
         fontFamily: fontFamily,
         accentColor: accentColorVal,
         brightness: fluent.Brightness.dark,
         scaffoldBackgroundColor:
-            getBackgroundColor(backgroundColorStr, fluent.Brightness.dark),
+            getBackgroundColor(backgroundColorStr, fluent.Brightness.dark, hasCustomBackground(ref)),
         cardColor: const Color(0xFF2D2D2D),
         navigationPaneTheme: fluent.NavigationPaneThemeData(
           backgroundColor: getNavBackgroundColor(backgroundColorStr, fluent.Brightness.dark),

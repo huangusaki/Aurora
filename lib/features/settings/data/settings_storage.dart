@@ -16,7 +16,13 @@ class SettingsStorage {
   late Isar _isar;
   Isar get isar => _isar;
   Future<void> init() async {
-    final dir = await getApplicationDocumentsDirectory();
+    final supportDir = await getApplicationSupportDirectory();
+    final documentsDir = await getApplicationDocumentsDirectory();
+    
+    // Migration logic
+    await _migrateFromExampleIfNeeded(supportDir);
+    await _migrateIfNeeded(documentsDir, supportDir);
+
     _isar = await Isar.open(
       [
         ProviderConfigEntitySchema,
@@ -28,8 +34,107 @@ class SettingsStorage {
         TopicEntitySchema,
         ChatPresetEntitySchema,
       ],
-      directory: dir.path,
+      directory: supportDir.path,
     );
+
+    // Fix legacy absolute paths inside the database content
+    await _fixLegacyPaths(supportDir.path);
+  }
+
+  Future<void> _migrateIfNeeded(Directory oldDir, Directory newDir) async {
+    // If the new directory doesn't have the database, but the old one does, migrate.
+    final oldIsarFile = File('${oldDir.path}/default.isar');
+    final newIsarFile = File('${newDir.path}/default.isar');
+
+    if (await oldIsarFile.exists() && !await newIsarFile.exists()) {
+      print('Migrating Aurora data from ${oldDir.path} to ${newDir.path}');
+      
+      // Ensure new directory exists
+      if (!await newDir.exists()) {
+        await newDir.create(recursive: true);
+      }
+
+      // 1. Migrate Isar database files
+      final filesToMigrate = [
+        'default.isar',
+        'default.isar.lock',
+      ];
+
+      for (final fileName in filesToMigrate) {
+        final oldFile = File('${oldDir.path}/$fileName');
+        if (await oldFile.exists()) {
+          await oldFile.copy('${newDir.path}/$fileName');
+          await oldFile.delete();
+        }
+      }
+
+      // 2. Migrate JSON config files
+      final jsonFiles = [
+        'session_order.json',
+        'provider_order.json',
+        'novel_writing_state.json',
+      ];
+
+      for (final fileName in jsonFiles) {
+        final oldFile = File('${oldDir.path}/$fileName');
+        if (await oldFile.exists()) {
+          await oldFile.copy('${newDir.path}/$fileName');
+          await oldFile.delete();
+        }
+      }
+
+      // 3. Migrate background images
+      try {
+        final backgroundDir = Directory('${newDir.path}/backgrounds');
+        if (!await backgroundDir.exists()) {
+          await backgroundDir.create(recursive: true);
+        }
+
+        final files = oldDir.listSync();
+        for (var file in files) {
+          if (file is File) {
+            final fileName = file.uri.pathSegments.last;
+            if (fileName.startsWith('custom_background')) {
+              await file.copy('${backgroundDir.path}/$fileName');
+              await file.delete();
+            }
+          }
+        }
+      } catch (e) {
+        print('Error migrating background images: $e');
+      }
+
+      // 4. Migrate Aurora attachments folder
+      try {
+        final oldAuroraDir = Directory('${oldDir.path}/Aurora');
+        if (await oldAuroraDir.exists()) {
+          // We can just move the whole directory if it's on the same partition, 
+          // but copy/delete is safer across partitions if that were ever the case.
+          // For simplicity and consistency with other steps, let's copy recursive.
+          await _copyDirectory(oldAuroraDir, Directory(newDir.path));
+          await oldAuroraDir.delete(recursive: true);
+        }
+      } catch (e) {
+        print('Error migrating Aurora attachments: $e');
+      }
+      
+      print('Migration completed successfully.');
+    }
+  }
+
+  Future<void> _copyDirectory(Directory source, Directory destination) async {
+    if (!await destination.exists()) {
+      await destination.create(recursive: true);
+    }
+    await for (var entity in source.list(recursive: false)) {
+      final fileName = entity.path.split(Platform.pathSeparator).last;
+      final newPath = '${destination.path}${Platform.pathSeparator}$fileName';
+      if (entity is Directory) {
+        await _copyDirectory(entity, Directory(newPath));
+      } else if (entity is File) {
+        await entity.copy(newPath);
+      }
+    }
   }
 
   Future<void> saveProvider(ProviderConfigEntity provider) async {
@@ -67,7 +172,7 @@ class SettingsStorage {
   }
 
   Future<void> saveAppSettings({
-    required String activeProviderId,
+    String? activeProviderId,
     String? selectedModel,
     List<String>? availableModels,
     String? userName,
@@ -89,10 +194,15 @@ class SettingsStorage {
     String? executionModel,
     String? executionProviderId,
     double? fontSize,
+    String? backgroundImagePath,
+    double? backgroundBrightness,
+    double? backgroundBlur,
+    bool? useCustomTheme,
+    bool clearBackgroundImage = false,
   }) async {
     final existing = await loadAppSettings();
     final settings = AppSettingsEntity()
-      ..activeProviderId = activeProviderId
+      ..activeProviderId = activeProviderId ?? existing?.activeProviderId ?? ''
       ..selectedModel = selectedModel ?? existing?.selectedModel
       ..availableModels = availableModels ?? existing?.availableModels ?? []
       ..userName = userName ?? existing?.userName ?? 'User'
@@ -116,7 +226,13 @@ class SettingsStorage {
       ..closeBehavior = closeBehavior ?? existing?.closeBehavior ?? 0
       ..executionModel = executionModel ?? existing?.executionModel
       ..executionProviderId = executionProviderId ?? existing?.executionProviderId
-      ..fontSize = fontSize ?? existing?.fontSize ?? 14.0;
+      ..fontSize = fontSize ?? existing?.fontSize ?? 14.0
+      ..backgroundImagePath = clearBackgroundImage
+          ? null
+          : (backgroundImagePath ?? existing?.backgroundImagePath)
+      ..backgroundBrightness = backgroundBrightness ?? existing?.backgroundBrightness ?? 0.5
+      ..backgroundBlur = backgroundBlur ?? existing?.backgroundBlur ?? 0.0
+      ..useCustomTheme = useCustomTheme ?? existing?.useCustomTheme ?? false;
     await _isar.writeTxn(() async {
       await _isar.appSettingsEntitys.clear();
       await _isar.appSettingsEntitys.put(settings);
@@ -149,7 +265,11 @@ class SettingsStorage {
       ..closeBehavior = existing.closeBehavior
       ..executionModel = existing.executionModel
       ..executionProviderId = existing.executionProviderId
-      ..fontSize = existing.fontSize;
+      ..fontSize = existing.fontSize
+      ..backgroundImagePath = existing.backgroundImagePath
+      ..backgroundBrightness = existing.backgroundBrightness
+      ..backgroundBlur = existing.backgroundBlur
+      ..useCustomTheme = existing.useCustomTheme;
     await _isar.writeTxn(() async {
       await _isar.appSettingsEntitys.clear();
       await _isar.appSettingsEntitys.put(settings);
@@ -190,7 +310,11 @@ class SettingsStorage {
       ..closeBehavior = existing.closeBehavior
       ..executionModel = existing.executionModel
       ..executionProviderId = existing.executionProviderId
-      ..fontSize = existing.fontSize;
+      ..fontSize = existing.fontSize
+      ..backgroundImagePath = existing.backgroundImagePath
+      ..backgroundBrightness = existing.backgroundBrightness
+      ..backgroundBlur = existing.backgroundBlur
+      ..useCustomTheme = existing.useCustomTheme;
     await _isar.writeTxn(() async {
       await _isar.appSettingsEntitys.clear();
       await _isar.appSettingsEntitys.put(settings);
@@ -198,7 +322,7 @@ class SettingsStorage {
   }
 
   Future<File> get _orderFile async {
-    final dir = await getApplicationDocumentsDirectory();
+    final dir = await getApplicationSupportDirectory();
     return File('${dir.path}/session_order.json');
   }
 
@@ -222,7 +346,7 @@ class SettingsStorage {
   }
 
   Future<File> get _providerOrderFile async {
-    final dir = await getApplicationDocumentsDirectory();
+    final dir = await getApplicationSupportDirectory();
     return File('${dir.path}/provider_order.json');
   }
 
@@ -440,7 +564,11 @@ class SettingsStorage {
       ..closeBehavior = existing.closeBehavior
       ..executionModel = existing.executionModel
       ..executionProviderId = existing.executionProviderId
-      ..fontSize = existing.fontSize;
+      ..fontSize = existing.fontSize
+      ..backgroundImagePath = existing.backgroundImagePath
+      ..backgroundBrightness = existing.backgroundBrightness
+      ..backgroundBlur = existing.backgroundBlur
+      ..useCustomTheme = existing.useCustomTheme;
     await _isar.writeTxn(() async {
       await _isar.appSettingsEntitys.clear();
       await _isar.appSettingsEntitys.put(settings);
@@ -492,10 +620,112 @@ class SettingsStorage {
       ..closeBehavior = existing.closeBehavior
       ..executionModel = existing.executionModel
       ..executionProviderId = existing.executionProviderId
-      ..fontSize = existing.fontSize;
+      ..fontSize = existing.fontSize
+      ..backgroundImagePath = existing.backgroundImagePath
+      ..backgroundBrightness = existing.backgroundBrightness
+      ..backgroundBlur = existing.backgroundBlur
+      ..useCustomTheme = existing.useCustomTheme;
     await _isar.writeTxn(() async {
       await _isar.appSettingsEntitys.clear();
       await _isar.appSettingsEntitys.put(settings);
     });
+  }
+
+  Future<void> _migrateFromExampleIfNeeded(Directory newDir) async {
+    try {
+      final List<Directory> potentialOldDirs = [];
+      
+      if (Platform.isWindows) {
+        // Gen 1: com.example\Aurora
+        // Gen 2: Aurora\Aurora
+        final roamingDir = newDir.parent;
+        potentialOldDirs.add(Directory('${roamingDir.path}${Platform.pathSeparator}com.example${Platform.pathSeparator}Aurora'));
+        potentialOldDirs.add(Directory('${newDir.path}${Platform.pathSeparator}Aurora'));
+      } else if (Platform.isMacOS) {
+        final supportDir = newDir.parent;
+        potentialOldDirs.add(Directory('${supportDir.path}${Platform.pathSeparator}com.aurora.aurora'));
+      } else if (Platform.isLinux) {
+        final shareDir = newDir.parent;
+        potentialOldDirs.add(Directory('${shareDir.path}${Platform.pathSeparator}com.aurora.aurora'));
+      }
+
+      for (var oldDir in potentialOldDirs) {
+        if (!await oldDir.exists() || oldDir.path == newDir.path) continue;
+
+        final oldIsar = File('${oldDir.path}${Platform.pathSeparator}default.isar');
+        final newIsar = File('${newDir.path}${Platform.pathSeparator}default.isar');
+        
+        bool oldHasData = await oldIsar.exists() || await File('${oldDir.path}${Platform.pathSeparator}session_order.json').exists();
+        bool newIsEmpty = !await newIsar.exists() || (await newIsar.length() <= 1048576);
+
+        if (oldHasData && newIsEmpty) {
+          print('Aggressive Migration Triggered: Data found in ${oldDir.path}');
+          
+          if (!await newDir.exists()) {
+            await newDir.create(recursive: true);
+          }
+
+          if (await newIsar.exists()) {
+             await newIsar.rename('${newIsar.path}.bak');
+          }
+
+          await for (var entity in oldDir.list()) {
+            final fileName = entity.path.split(Platform.pathSeparator).last;
+            if (fileName == 'Aurora') continue; 
+
+            final newPath = '${newDir.path}${Platform.pathSeparator}$fileName';
+            
+            try {
+              if (entity is File) {
+                await entity.copy(newPath);
+                await entity.delete();
+              } else if (entity is Directory) {
+                await _copyDirectory(entity, Directory(newPath));
+                await entity.delete(recursive: true);
+              }
+            } catch (e) {
+              print('Warning: Migration failed for $fileName: $e');
+            }
+          }
+          print('Successfully migrated from ${oldDir.path}');
+          break; 
+        }
+      }
+    } catch (e) {
+      print('Critical error during aggressive migration: $e');
+    }
+  }
+
+  Future<void> _fixLegacyPaths(String currentSupportPath) async {
+    try {
+      final existing = await loadAppSettings();
+      if (existing == null) return;
+
+      bool needsUpdate = false;
+      String? path = existing.backgroundImagePath;
+
+      if (path != null) {
+        final bool isLegacyExample = path.contains('com.example');
+        final bool isLegacyDoubleAurora = path.contains('${Platform.pathSeparator}Aurora${Platform.pathSeparator}Aurora');
+        
+        if (isLegacyExample || isLegacyDoubleAurora) {
+          if (path.contains('backgrounds')) {
+            final fileName = path.split(Platform.pathSeparator).last;
+            final newPath = '${currentSupportPath}${Platform.pathSeparator}backgrounds${Platform.pathSeparator}$fileName';
+            if (newPath != path) {
+              path = newPath;
+              needsUpdate = true;
+            }
+          }
+        }
+      }
+
+      if (needsUpdate) {
+        print('Repairing legacy path in DB: $path');
+        await saveAppSettings(backgroundImagePath: path);
+      }
+    } catch (e) {
+      print('Error fixing legacy paths: $e');
+    }
   }
 }

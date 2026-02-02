@@ -805,7 +805,7 @@ class MarkdownGenerator {
         decoration: isHeader
             ? BoxDecoration(
                 color: isDark
-                    ? Colors.white10
+                    ? Colors.white10.withValues(alpha: 0.6)
                     : Colors.black.withValues(alpha: 0.03),
               )
             : null,
@@ -1094,7 +1094,9 @@ class _ExpandableCodeBlockState extends State<_ExpandableCodeBlock> {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 4),
       decoration: BoxDecoration(
-        color: widget.isDark ? const Color(0xFF1E1E1E) : const Color(0xFFF5F5F5),
+        color: widget.isDark
+            ? const Color(0xFF1E1E1E).withValues(alpha: 0.6)
+            : const Color(0xFFF5F5F5).withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: widget.isDark ? Colors.white24 : Colors.black12,

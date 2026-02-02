@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
 import 'novel_state.dart';
 import 'package:aurora/features/chat/domain/message.dart';
@@ -412,8 +413,8 @@ class NovelNotifier extends StateNotifier<NovelWritingState> {
   }
 
   Future<File> get _stateFile async {
-    final dir = await getApplicationDocumentsDirectory();
-    return File('${dir.path}/novel_writing_state.json');
+    final dir = await getApplicationSupportDirectory();
+    return File(p.join(dir.path, 'novel_writing_state.json'));
   }
 
   Future<void> loadState() async {

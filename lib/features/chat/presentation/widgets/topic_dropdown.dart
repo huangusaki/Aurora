@@ -311,10 +311,15 @@ class _TopicDropdownState extends ConsumerState<TopicDropdown> {
     } else {
       showDialog(
         context: context,
-        builder: (context) => TopicManagementDialog(
-          onConfirm: (name) {
-            ref.read(topicNotifierProvider.notifier).createTopic(name);
-          },
+        builder: (context) => Dialog(
+          child: SizedBox(
+            width: 350,
+            child: TopicManagementDialog(
+              onConfirm: (name) {
+                ref.read(topicNotifierProvider.notifier).createTopic(name);
+              },
+            ),
+          ),
         ),
       );
     }
@@ -435,12 +440,17 @@ class _TopicDropdownState extends ConsumerState<TopicDropdown> {
     } else {
       showDialog(
         context: context,
-        builder: (context) => TopicManagementDialog(
-          existingTopicId: id,
-          initialName: name,
-          onConfirm: (newName) {
-            ref.read(topicNotifierProvider.notifier).updateTopic(id, newName);
-          },
+        builder: (context) => Dialog(
+          child: SizedBox(
+            width: 350,
+            child: TopicManagementDialog(
+              existingTopicId: id,
+              initialName: name,
+              onConfirm: (newName) {
+                ref.read(topicNotifierProvider.notifier).updateTopic(id, newName);
+              },
+            ),
+          ),
         ),
       );
     }

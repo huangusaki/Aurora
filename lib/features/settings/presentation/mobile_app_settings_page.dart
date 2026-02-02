@@ -7,6 +7,11 @@ import 'package:aurora/l10n/app_localizations.dart';
 import 'package:aurora/shared/widgets/aurora_bottom_sheet.dart';
 import 'package:aurora/shared/theme/aurora_icons.dart';
 import 'widgets/mobile_settings_widgets.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:image_cropper/image_cropper.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'dart:io';
+import 'package:package_info_plus/package_info_plus.dart';
 
 class MobileAppSettingsPage extends ConsumerWidget {
   final VoidCallback? onBack;
@@ -46,10 +51,23 @@ class MobileAppSettingsPage extends ConsumerWidget {
                 onTap: () => _showLanguagePicker(context, ref),
               ),
               MobileSettingsTile(
-                leading: const Icon(Icons.brightness_6),
+                leading: const Icon(Icons.brightness_medium),
                 title: l10n.themeMode,
-                subtitle: _getThemeModeLabel(settingsState.themeMode, l10n),
+                subtitle: _getThemeModeLabel(settingsState.themeMode, l10n, settingsState),
                 onTap: () => _showThemeModePicker(context, ref, settingsState, l10n),
+              ),
+              MobileSettingsTile(
+                leading: const Icon(Icons.palette_outlined),
+                title: l10n.themeCustom,
+                trailing: Switch.adaptive(
+                  value: settingsState.useCustomTheme,
+                  onChanged: (bool value) {
+                    ref.read(settingsProvider.notifier).setUseCustomTheme(value);
+                  },
+                ),
+                onTap: () {
+                  ref.read(settingsProvider.notifier).setUseCustomTheme(!settingsState.useCustomTheme);
+                },
               ),
               MobileSettingsTile(
                 leading: const Icon(Icons.color_lens),
@@ -76,6 +94,12 @@ class MobileAppSettingsPage extends ConsumerWidget {
                 title: l10n.fontSize,
                 subtitle: '${settingsState.fontSize.toStringAsFixed(1)} pt',
                 onTap: () => _showFontSizePicker(context, ref, settingsState, l10n),
+              ),
+              MobileSettingsTile(
+                leading: const Icon(Icons.image),
+                title: l10n.backgroundImage,
+                subtitle: settingsState.backgroundImagePath != null ? l10n.enabled : l10n.disabled,
+                onTap: () => _showBackgroundImageSettings(context, ref, settingsState, l10n),
               ),
             ],
           ),
@@ -112,11 +136,18 @@ class MobileAppSettingsPage extends ConsumerWidget {
           MobileSettingsSection(
             title: l10n.about,
             children: [
-              MobileSettingsTile(
-                leading: const Icon(Icons.info_outline),
-                title: l10n.version,
-                subtitle: 'v1.2.5',
-                showChevron: false,
+              FutureBuilder<PackageInfo>(
+                future: PackageInfo.fromPlatform(),
+                builder: (context, snapshot) {
+                  return MobileSettingsTile(
+                    leading: const Icon(Icons.info_outline),
+                    title: l10n.version,
+                    subtitle: snapshot.hasData
+                        ? 'v${snapshot.data!.version}'
+                        : 'Loading...',
+                    showChevron: false,
+                  );
+                },
               ),
               MobileSettingsTile(
                 leading: const Icon(AuroraIcons.github),
@@ -173,10 +204,12 @@ class MobileAppSettingsPage extends ConsumerWidget {
     );
   }
 
-  String _getThemeModeLabel(String mode, AppLocalizations l10n) {
+  String _getThemeModeLabel(String mode, AppLocalizations l10n, SettingsState settings) {
+    if (settings.useCustomTheme) return l10n.themeCustom;
     switch (mode) {
       case 'light': return l10n.themeLight;
       case 'dark': return l10n.themeDark;
+      case 'custom': return l10n.themeCustom;
       default: return l10n.themeSystem;
     }
   }
@@ -454,7 +487,7 @@ class MobileAppSettingsPage extends ConsumerWidget {
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     TextButton(
-                      child: const Text('Reset'),
+                      child: Text(l10n.reset),
                       onPressed: () {
                         ref.read(settingsProvider.notifier).setFontSize(14.0);
                       },
@@ -465,6 +498,132 @@ class MobileAppSettingsPage extends ConsumerWidget {
                       onPressed: () => Navigator.pop(ctx),
                     ),
                   ],
+                ),
+                const SizedBox(height: 10),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _showBackgroundImageSettings(BuildContext context, WidgetRef ref, SettingsState settings, AppLocalizations l10n) {
+    
+    AuroraBottomSheet.show(
+      context: context,
+      builder: (ctx) => Consumer(
+        builder: (context, ref, _) {
+          final s = ref.watch(settingsProvider);
+          
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AuroraBottomSheet.buildTitle(context, l10n.backgroundImage),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        icon: const Icon(Icons.photo_library),
+                        label: Text(l10n.selectBackgroundImage),
+                        onPressed: () async {
+                          if (Platform.isAndroid) {
+                            try {
+                              // On Android 13+ (API 33+), we should use Permission.photos
+                              // On older versions, we use Permission.storage
+                              PermissionStatus status;
+                              if (await Permission.photos.isRestricted || await Permission.photos.isDenied || await Permission.photos.isLimited) {
+                                status = await Permission.photos.request();
+                              } else {
+                                status = await Permission.photos.status;
+                              }
+
+                              if (status.isDenied || status.isPermanentlyDenied) {
+                                // Fallback for older Android versions or if photos permission is not supported
+                                final storageStatus = await Permission.storage.request();
+                                if (storageStatus.isPermanentlyDenied) {
+                                  openAppSettings();
+                                  return;
+                                }
+                                if (!storageStatus.isGranted) return;
+                              }
+                            } catch (e) {
+                              print('Permission request error: $e');
+                              // If permission request fails, try to proceed anyway, picker might handle it or show its own UI
+                            }
+                          }
+
+                          final picker = ImagePicker();
+                          final file = await picker.pickImage(source: ImageSource.gallery);
+                          if (file != null) {
+                            final croppedFile = await ImageCropper().cropImage(
+                              sourcePath: file.path,
+                              aspectRatio: const CropAspectRatio(ratioX: 9, ratioY: 16),
+                              uiSettings: [
+                                AndroidUiSettings(
+                                  toolbarTitle: l10n.cropImage,
+                                  toolbarColor: Theme.of(context).primaryColor,
+                                  toolbarWidgetColor: Colors.white,
+                                  initAspectRatio: CropAspectRatioPreset.original,
+                                  lockAspectRatio: true,
+                                ),
+                                IOSUiSettings(
+                                  title: l10n.cropImage,
+                                  aspectRatioLockEnabled: true,
+                                ),
+                              ],
+                            );
+                            
+                            if (croppedFile != null) {
+                              ref.read(settingsProvider.notifier).setBackgroundImagePath(croppedFile.path);
+                            }
+                          }
+                        },
+                      ),
+                    ),
+                    if (s.backgroundImagePath != null) ...[
+                      const SizedBox(width: 8),
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline, color: Colors.pink),
+                        onPressed: () {
+                          ref.read(settingsProvider.notifier).setBackgroundImagePath(null);
+                        },
+                      ),
+                    ],
+                  ],
+                ),
+                if (s.backgroundImagePath != null) ...[
+                  const SizedBox(height: 20),
+                  Text('${l10n.backgroundBrightness}: ${(s.backgroundBrightness * 100).toInt()}%'),
+                  Slider(
+                    value: s.backgroundBrightness,
+                    min: 0.0,
+                    max: 1.0,
+                    onChanged: (v) {
+                      ref.read(settingsProvider.notifier).setBackgroundBrightness(v);
+                    },
+                  ),
+                  const SizedBox(height: 10),
+                  Text('${l10n.backgroundBlur}: ${s.backgroundBlur.toStringAsFixed(1)} px'),
+                  Slider(
+                    value: s.backgroundBlur,
+                    min: 0.0,
+                    max: 20.0,
+                    onChanged: (v) {
+                      ref.read(settingsProvider.notifier).setBackgroundBlur(v);
+                    },
+                  ),
+                ],
+                const SizedBox(height: 20),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: ElevatedButton(
+                    child: Text(l10n.done),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
                 ),
                 const SizedBox(height: 10),
               ],

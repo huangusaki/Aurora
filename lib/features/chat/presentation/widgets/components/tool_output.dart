@@ -6,14 +6,17 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 
-class BuildToolOutput extends StatefulWidget {
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:aurora/features/settings/presentation/settings_provider.dart';
+
+class BuildToolOutput extends ConsumerStatefulWidget {
   final String content;
   const BuildToolOutput({super.key, required this.content});
   @override
-  State<BuildToolOutput> createState() => _BuildToolOutputState();
+  ConsumerState<BuildToolOutput> createState() => _BuildToolOutputState();
 }
 
-class _BuildToolOutputState extends State<BuildToolOutput> {
+class _BuildToolOutputState extends ConsumerState<BuildToolOutput> {
   bool _isExpanded = false;
   @override
   Widget build(BuildContext context) {
@@ -32,9 +35,12 @@ class _BuildToolOutputState extends State<BuildToolOutput> {
     final exitCode = data?['exitCode'] as int?;
     final error = data?['error'] as String?;
 
+    final hasBackground = ref.watch(settingsProvider.select((s) => s.useCustomTheme && s.backgroundImagePath != null && s.backgroundImagePath!.isNotEmpty));
+    final isDark = theme.brightness == fluent.Brightness.dark;
+
     // Handle Shell Tool Output (Terminal Style)
     if (stdout != null || stderr != null || exitCode != null) {
-      return _buildTerminalOutput(l10n, theme, stdout, stderr, exitCode);
+      return _buildTerminalOutput(l10n, theme, stdout, stderr, exitCode, hasBackground, isDark);
     }
 
     // Handle Generic Errors from Skill execution
@@ -43,7 +49,7 @@ class _BuildToolOutputState extends State<BuildToolOutput> {
         padding: const EdgeInsets.all(12),
         margin: const EdgeInsets.symmetric(vertical: 4),
         decoration: BoxDecoration(
-          color: Colors.red.withOpacity(0.05),
+          color: Colors.red.withOpacity(hasBackground ? 0.2 : 0.05),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(color: Colors.red.withOpacity(0.2)),
         ),
@@ -89,9 +95,9 @@ class _BuildToolOutputState extends State<BuildToolOutput> {
         return Container(
           margin: const EdgeInsets.symmetric(vertical: 4),
           decoration: BoxDecoration(
-             color: theme.accentColor.withOpacity(0.05),
+             color: theme.accentColor.withOpacity(hasBackground ? 0.2 : 0.05),
              borderRadius: BorderRadius.circular(8),
-             border: Border.all(color: theme.accentColor.withOpacity(0.2)),
+             border: Border.all(color: theme.accentColor.withOpacity(hasBackground ? 0.3 : 0.2)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -148,9 +154,9 @@ class _BuildToolOutputState extends State<BuildToolOutput> {
        return Container(
           margin: const EdgeInsets.symmetric(vertical: 4),
           decoration: BoxDecoration(
-             color: theme.accentColor.withOpacity(0.05),
+             color: theme.accentColor.withOpacity(hasBackground ? 0.2 : 0.05),
              borderRadius: BorderRadius.circular(8),
-             border: Border.all(color: theme.accentColor.withOpacity(0.2)),
+             border: Border.all(color: theme.accentColor.withOpacity(hasBackground ? 0.3 : 0.2)),
           ),
           child: Column(
              crossAxisAlignment: CrossAxisAlignment.start,
@@ -200,9 +206,13 @@ class _BuildToolOutputState extends State<BuildToolOutput> {
       return Container(
         margin: const EdgeInsets.only(top: 8, bottom: 8),
         decoration: BoxDecoration(
-          color: theme.cardColor,
+          color: hasBackground 
+              ? (isDark ? Colors.black.withOpacity(0.45) : Colors.white.withOpacity(0.45))
+              : theme.cardColor,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: theme.resources.controlStrokeColorDefault),
+          border: Border.all(color: hasBackground 
+              ? (isDark ? Colors.white10 : Colors.black12)
+              : theme.resources.controlStrokeColorDefault),
         ),
         child: Material(
           type: MaterialType.transparency,
@@ -239,7 +249,9 @@ class _BuildToolOutputState extends State<BuildToolOutput> {
                                   shape: BoxShape.circle,
                                   color: Colors.white,
                                   border: Border.all(
-                                      color: theme.scaffoldBackgroundColor,
+                                      color: hasBackground 
+                                          ? Colors.transparent 
+                                          : theme.scaffoldBackgroundColor,
                                       width: 2),
                                   boxShadow: [
                                     BoxShadow(
@@ -382,7 +394,7 @@ class _BuildToolOutputState extends State<BuildToolOutput> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: theme.accentColor.withOpacity(0.1),
+              color: theme.accentColor.withOpacity(hasBackground ? 0.25 : 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Row(
@@ -421,10 +433,14 @@ class _BuildToolOutputState extends State<BuildToolOutput> {
               margin: const EdgeInsets.only(bottom: 8),
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: theme.cardColor,
+                color: hasBackground 
+                    ? (isDark ? Colors.black.withOpacity(0.45) : Colors.white.withOpacity(0.45))
+                    : theme.cardColor,
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                    color: theme.resources.dividerStrokeColorDefault),
+                    color: hasBackground 
+                        ? (isDark ? Colors.white10 : Colors.black12)
+                        : theme.resources.dividerStrokeColorDefault),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -454,13 +470,15 @@ class _BuildToolOutputState extends State<BuildToolOutput> {
     );
   }
 
-  Widget _buildTerminalOutput(AppLocalizations? l10n, fluent.FluentThemeData theme, String? stdout, String? stderr, int? exitCode) {
+  Widget _buildTerminalOutput(AppLocalizations? l10n, fluent.FluentThemeData theme, String? stdout, String? stderr, int? exitCode, bool hasBackground, bool isDark) {
     final isError = (exitCode != null && exitCode != 0) || (stderr != null && stderr.isNotEmpty && (stdout == null || stdout.isEmpty));
     
     return Container(
       margin: const EdgeInsets.only(top: 8, bottom: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E), // Terminal black
+        color: hasBackground 
+            ? const Color(0xFF1E1E1E).withOpacity(0.8)
+            : const Color(0xFF1E1E1E), // Terminal black
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: isError ? Colors.red.withOpacity(0.5) : Colors.grey.withOpacity(0.3)),
       ),

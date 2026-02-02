@@ -178,7 +178,11 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
               child: Container(
                 margin: const EdgeInsets.only(top: 8, right: 8, bottom: 8),
                 decoration: BoxDecoration(
-                  color: theme.cardColor,
+                  color: settingsState.useCustomTheme &&
+                          settingsState.backgroundImagePath != null &&
+                          settingsState.backgroundImagePath!.isNotEmpty
+                      ? theme.cardColor.withValues(alpha: 0.7)
+                      : theme.cardColor,
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
@@ -1271,6 +1275,12 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
               ],
             ),
           ),
+          const SizedBox(height: 12),
+          fluent.ToggleSwitch(
+            checked: settingsState.useCustomTheme,
+            onChanged: (v) => ref.read(settingsProvider.notifier).setUseCustomTheme(v),
+            content: Text(l10n.themeCustom),
+          ),
           const SizedBox(height: 24),
           fluent.InfoLabel(
             label: l10n.accentColor,
@@ -1327,23 +1337,23 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
               children: [
                 (l10n.bgDefault, 'default', [const Color(0xFF2B2B2B)], [const Color(0xFFE0F7FA), const Color(0xFFF1F8E9)]),
                 (l10n.bgPureBlack, 'pure_black', [const Color(0xFF000000)], [const Color(0xFFFFFFFF)]),
-                (l10n.bgWarm, 'warm', [const Color(0xFF1E1C1A), const Color(0xFF2E241E)], [const Color(0xFFFFF8F0), const Color(0xFFFFEBD6)]),
-                (l10n.bgCool, 'cool', [const Color(0xFF1A1C1E), const Color(0xFF1E252E)], [const Color(0xFFF0F8FF), const Color(0xFFD6EAFF)]),
-                (l10n.bgRose, 'rose', [const Color(0xFF2D1A1E), const Color(0xFF3B1E26)], [const Color(0xFFFFF0F5), const Color(0xFFFFD6E4)]),
-                (l10n.bgLavender, 'lavender', [const Color(0xFF1F1A2D), const Color(0xFF261E3B)], [const Color(0xFFF3E5F5), const Color(0xFFE6D6FF)]),
-                (l10n.bgMint, 'mint', [const Color(0xFF1A2D24), const Color(0xFF1E3B2E)], [const Color(0xFFE0F2F1), const Color(0xFFC2E8DC)]),
-                (l10n.bgSky, 'sky', [const Color(0xFF1A202D), const Color(0xFF1E263B)], [const Color(0xFFE1F5FE), const Color(0xFFC7E6FF)]),
-                (l10n.bgGray, 'gray', [const Color(0xFF1E1E1E), const Color(0xFF2C2C2C)], [const Color(0xFFF5F5F5), const Color(0xFFE0E0E0)]),
-                (l10n.bgSunset, 'sunset', [const Color(0xFF1A0B0E), const Color(0xFF4A1F28)], [const Color(0xFFFFF3E0), const Color(0xFFFFCCBC)]),
-                (l10n.bgOcean, 'ocean', [const Color(0xFF05101A), const Color(0xFF0D2B42)], [const Color(0xFFE1F5FE), const Color(0xFF81D4FA)]),
-                (l10n.bgForest, 'forest', [const Color(0xFF051408), const Color(0xFF0E3316)], [const Color(0xFFE8F5E9), const Color(0xFFA5D6A7)]),
-                (l10n.bgDream, 'dream', [const Color(0xFF120817), const Color(0xFF261233)], [const Color(0xFFF3E5F5), const Color(0xFFBBDEFB)]),
-                (l10n.bgAurora, 'aurora', [const Color(0xFF051715), const Color(0xFF181533)], [const Color(0xFFE0F2F1), const Color(0xFFD1C4E9)]),
-                (l10n.bgVolcano, 'volcano', [const Color(0xFF1F0808), const Color(0xFF3E1212)], [const Color(0xFFFFEBEE), const Color(0xFFFFCCBC)]),
-                (l10n.bgMidnight, 'midnight', [const Color(0xFF020205), const Color(0xFF141426)], [const Color(0xFFECEFF1), const Color(0xFF90A4AE)]),
-                (l10n.bgDawn, 'dawn', [const Color(0xFF141005), const Color(0xFF33260D)], [const Color(0xFFFFF8E1), const Color(0xFFFFE082)]),
-                (l10n.bgNeon, 'neon', [const Color(0xFF08181A), const Color(0xFF240C21)], [const Color(0xFFE0F7FA), const Color(0xFFE1BEE7)]),
-                (l10n.bgBlossom, 'blossom', [const Color(0xFF1F050B), const Color(0xFF3D0F19)], [const Color(0xFFFCE4EC), const Color(0xFFF8BBD0)]),
+                (l10n.bgWarm, 'warm', [const Color(0xFF1E1C1A), const Color(0xFF2E241E)], [const Color(0xFFFFF8E1), const Color(0xFFFFF3E0)]),
+                (l10n.bgCool, 'cool', [const Color(0xFF1A1C1E), const Color(0xFF1E252E)], [const Color(0xFFE1F5FE), const Color(0xFFE3F2FD)]),
+                (l10n.bgRose, 'rose', [const Color(0xFF2D1A1E), const Color(0xFF3B1E26)], [const Color(0xFFFCE4EC), const Color(0xFFFFEBEE)]),
+                (l10n.bgLavender, 'lavender', [const Color(0xFF1F1A2D), const Color(0xFF261E3B)], [const Color(0xFFF3E5F5), const Color(0xFFEDE7F6)]),
+                (l10n.bgMint, 'mint', [const Color(0xFF1A2D24), const Color(0xFF1E3B2E)], [const Color(0xFFE0F2F1), const Color(0xFFE8F5E9)]),
+                (l10n.bgSky, 'sky', [const Color(0xFF1A202D), const Color(0xFF1E263B)], [const Color(0xFFE0F7FA), const Color(0xFFE1F5FE)]),
+                (l10n.bgGray, 'gray', [const Color(0xFF1E1E1E), const Color(0xFF2C2C2C)], [const Color(0xFFFAFAFA), const Color(0xFFF5F5F5)]),
+                (l10n.bgSunset, 'sunset', [const Color(0xFF1A0B0E), const Color(0xFF4A1F28)], [const Color(0xFFFFF3E0), const Color(0xFFFBE9E7)]),
+                (l10n.bgOcean, 'ocean', [const Color(0xFF05101A), const Color(0xFF0D2B42)], [const Color(0xFFE3F2FD), const Color(0xFFE8EAF6)]),
+                (l10n.bgForest, 'forest', [const Color(0xFF051408), const Color(0xFF0E3316)], [const Color(0xFFE8F5E9), const Color(0xFFF1F8E9)]),
+                (l10n.bgDream, 'dream', [const Color(0xFF120817), const Color(0xFF261233)], [const Color(0xFFEDE7F6), const Color(0xFFE8EAF6)]),
+                (l10n.bgAurora, 'aurora', [const Color(0xFF051715), const Color(0xFF181533)], [const Color(0xFFE0F2F1), const Color(0xFFEDE7F6)]),
+                (l10n.bgVolcano, 'volcano', [const Color(0xFF1F0808), const Color(0xFF3E1212)], [const Color(0xFFFBE9E7), const Color(0xFFFFEBEE)]),
+                (l10n.bgMidnight, 'midnight', [const Color(0xFF020205), const Color(0xFF141426)], [const Color(0xFFECEFF1), const Color(0xFFFAFAFA)]),
+                (l10n.bgDawn, 'dawn', [const Color(0xFF141005), const Color(0xFF33260D)], [const Color(0xFFFFFDE7), const Color(0xFFFFF8E1)]),
+                (l10n.bgNeon, 'neon', [const Color(0xFF08181A), const Color(0xFF240C21)], [const Color(0xFFE0F7FA), const Color(0xFFF3E5F5)]),
+                (l10n.bgBlossom, 'blossom', [const Color(0xFF1F050B), const Color(0xFF3D0F19)], [const Color(0xFFFFEBEE), const Color(0xFFFCE4EC)]),
               ].map((c) {
                 final isSelected = settingsState.backgroundColor == c.$2;
                 final isDark = theme.brightness == fluent.Brightness.dark;
@@ -1418,9 +1428,87 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
               ],
             ),
           ),
-        ],
-      ),
-    );
+          const Divider(),
+          const SizedBox(height: 24),
+          fluent.InfoLabel(
+              label: l10n.backgroundImage,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      fluent.Button(
+                        onPressed: () async {
+                          const typeGroup = XTypeGroup(
+                            label: 'images',
+                            extensions: ['jpg', 'png', 'jpeg', 'webp'],
+                          );
+                          final file = await openFile(acceptedTypeGroups: [typeGroup]);
+                          if (file != null) {
+                            ref.read(settingsProvider.notifier).setBackgroundImagePath(file.path);
+                          }
+                        },
+                        child: Text(l10n.selectBackgroundImage),
+                      ),
+                      if (settingsState.backgroundImagePath != null && settingsState.backgroundImagePath!.isNotEmpty) ...[
+                        const SizedBox(width: 12),
+                        fluent.Button(
+                          onPressed: () {
+                            ref.read(settingsProvider.notifier).setBackgroundImagePath(null);
+                          },
+                          child: Text(l10n.clearBackgroundImage),
+                        ),
+                      ],
+                    ],
+                  ),
+                  if (settingsState.backgroundImagePath != null && settingsState.backgroundImagePath!.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    fluent.InfoLabel(
+                      label: l10n.backgroundBrightness,
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: fluent.Slider(
+                              value: settingsState.backgroundBrightness,
+                              min: 0.0,
+                              max: 1.0,
+                              onChanged: (v) {
+                                ref.read(settingsProvider.notifier).setBackgroundBrightness(v);
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Text('${(settingsState.backgroundBrightness * 100).toInt()}%'),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    fluent.InfoLabel(
+                      label: l10n.backgroundBlur,
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: fluent.Slider(
+                              value: settingsState.backgroundBlur,
+                              min: 0.0,
+                              max: 20.0,
+                              onChanged: (v) {
+                                ref.read(settingsProvider.notifier).setBackgroundBlur(v);
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Text('${settingsState.backgroundBlur.toStringAsFixed(1)} px'),
+                        ],
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
   }
 
   Widget _buildDataSettings() {

@@ -1,5 +1,8 @@
+import 'dart:io';
 import 'dart:convert';
 import 'dart:math';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 
 import 'package:flutter/painting.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -127,6 +130,10 @@ class SettingsState {
   final String? executionModel;
   final String? executionProviderId;
   final double fontSize;
+  final String? backgroundImagePath;
+  final double backgroundBrightness;
+  final double backgroundBlur;
+  final bool useCustomTheme;
   SettingsState({
     required this.providers,
     required this.activeProviderId,
@@ -152,6 +159,10 @@ class SettingsState {
     this.executionModel,
     this.executionProviderId,
     this.fontSize = 14.0,
+    this.backgroundImagePath,
+    this.backgroundBrightness = 0.5,
+    this.backgroundBlur = 0.0,
+    this.useCustomTheme = false,
   });
   ProviderConfig get activeProvider =>
       providers.firstWhere((p) => p.id == activeProviderId);
@@ -185,6 +196,10 @@ class SettingsState {
     String? executionModel,
     String? executionProviderId,
     double? fontSize,
+    Object? backgroundImagePath = _settingsSentinel,
+    double? backgroundBrightness,
+    double? backgroundBlur,
+    bool? useCustomTheme,
   }) {
     return SettingsState(
       providers: providers ?? this.providers,
@@ -213,6 +228,12 @@ class SettingsState {
       executionModel: executionModel ?? this.executionModel,
       executionProviderId: executionProviderId ?? this.executionProviderId,
       fontSize: fontSize ?? this.fontSize,
+      backgroundImagePath: backgroundImagePath == _settingsSentinel
+          ? this.backgroundImagePath
+          : backgroundImagePath as String?,
+      backgroundBrightness: backgroundBrightness ?? this.backgroundBrightness,
+      backgroundBlur: backgroundBlur ?? this.backgroundBlur,
+      useCustomTheme: useCustomTheme ?? this.useCustomTheme,
     );
   }
 }
@@ -243,6 +264,10 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     String? executionModel,
     String? executionProviderId,
     double fontSize = 14.0,
+    String? backgroundImagePath,
+    double backgroundBrightness = 0.5,
+    double backgroundBlur = 0.0,
+    bool useCustomTheme = false,
   })  : _storage = storage,
         super(SettingsState(
           providers: initialProviders,
@@ -266,7 +291,12 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
           executionModel: executionModel,
           executionProviderId: executionProviderId,
           fontSize: fontSize,
+          backgroundImagePath: backgroundImagePath,
+          backgroundBrightness: backgroundBrightness,
+          backgroundBlur: backgroundBlur,
+          useCustomTheme: useCustomTheme,
         )) {
+    print('SettingsNotifier initialized with backgroundImagePath: $backgroundImagePath');
     loadPresets();
   }
 
@@ -359,7 +389,12 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
       executionModel: appSettings?.executionModel,
       executionProviderId: appSettings?.executionProviderId,
       fontSize: appSettings?.fontSize ?? 14.0,
+      backgroundImagePath: appSettings?.backgroundImagePath,
+      backgroundBrightness: appSettings?.backgroundBrightness ?? 0.5,
+      backgroundBlur: appSettings?.backgroundBlur ?? 0.0,
+      useCustomTheme: appSettings?.useCustomTheme ?? false,
     );
+    print('Settings reloaded with backgroundImagePath: ${appSettings?.backgroundImagePath}');
     print('DEBUG: refreshSettings loaded - executionModel: ${appSettings?.executionModel}, executionProviderId: ${appSettings?.executionProviderId}');
 
     await loadPresets();
@@ -684,10 +719,12 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
   }
 
   Future<void> setThemeMode(String mode) async {
-    state = state.copyWith(themeMode: mode);
+    final useCustom = mode == 'custom';
+    state = state.copyWith(themeMode: mode, useCustomTheme: useCustom);
     await _storage.saveAppSettings(
       activeProviderId: state.activeProviderId,
       themeMode: mode,
+      useCustomTheme: useCustom,
     );
   }
 
@@ -772,6 +809,15 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     await loadPresets();
   }
 
+  Future<void> setUseCustomTheme(bool value) async {
+    final mode = value ? 'custom' : 'system'; // Fallback to system if disabling custom
+    state = state.copyWith(useCustomTheme: value, themeMode: mode);
+    await _storage.saveAppSettings(
+      activeProviderId: state.activeProviderId,
+      useCustomTheme: value,
+      themeMode: mode,
+    );
+  }
   Future<void> updatePreset(ChatPreset preset) async {
     final entity = ChatPresetEntity()
       ..presetId = preset.id
@@ -805,6 +851,86 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     await _storage.saveAppSettings(
       activeProviderId: state.activeProviderId,
       backgroundColor: color,
+    );
+  }
+
+  Future<void> setBackgroundImagePath(String? path) async {
+    print('Saving background image path: $path');
+    
+    String? finalPath;
+    if (path != null && path.isNotEmpty) {
+      try {
+        final supportDir = await getApplicationSupportDirectory();
+        final bgDir = Directory(p.join(supportDir.path, 'backgrounds'));
+        if (!await bgDir.exists()) {
+          await bgDir.create(recursive: true);
+        }
+        
+        // Clean up any existing background files before saving the new one
+        try {
+          final files = bgDir.listSync();
+          for (var file in files) {
+            if (p.basename(file.path).startsWith('custom_background')) {
+              await file.delete();
+            }
+          }
+        } catch (e) {
+          print('Error during background cleanup: $e');
+        }
+
+        final fileName = 'custom_background_${DateTime.now().millisecondsSinceEpoch}${p.extension(path)}';
+        final savedFile = File(p.join(bgDir.path, fileName));
+        
+        // Copy file to persistent storage
+        await File(path).copy(savedFile.path);
+        finalPath = savedFile.path;
+        print('Background image persisted to: $finalPath');
+      } catch (e) {
+        print('Error persisting background image: $e');
+        finalPath = path; // Fallback to original path if copy fails
+      }
+    } else {
+      // If path is null, try to clean up the existing file
+      try {
+        final supportDir = await getApplicationSupportDirectory();
+        final bgDir = Directory(p.join(supportDir.path, 'backgrounds'));
+        if (await bgDir.exists()) {
+          final files = bgDir.listSync();
+          for (var file in files) {
+            if (p.basename(file.path).startsWith('custom_background')) {
+              await file.delete();
+            }
+          }
+        }
+      } catch (_) {}
+    }
+
+    state = state.copyWith(backgroundImagePath: finalPath);
+    await _storage.saveAppSettings(
+      activeProviderId: state.activeProviderId,
+      backgroundImagePath: finalPath,
+      clearBackgroundImage: finalPath == null,
+    );
+
+    // If a new background image is set, automatically enable custom theme
+    if (finalPath != null && finalPath.isNotEmpty) {
+      await setUseCustomTheme(true);
+    }
+  }
+
+  Future<void> setBackgroundBrightness(double brightness) async {
+    state = state.copyWith(backgroundBrightness: brightness);
+    await _storage.saveAppSettings(
+      activeProviderId: state.activeProviderId,
+      backgroundBrightness: brightness,
+    );
+  }
+
+  Future<void> setBackgroundBlur(double blur) async {
+    state = state.copyWith(backgroundBlur: blur);
+    await _storage.saveAppSettings(
+      activeProviderId: state.activeProviderId,
+      backgroundBlur: blur,
     );
   }
 

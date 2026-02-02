@@ -214,6 +214,7 @@ class _DesktopChatScreenState extends ConsumerState<DesktopChatScreen> with Wind
     });
     
     final theme = fluent.FluentTheme.of(context);
+    final settings = ref.watch(settingsProvider);
     final isExpanded = ref.watch(isSidebarExpandedProvider);
     final selectedIndex = ref.watch(desktopActiveTabProvider);
     final l10n = AppLocalizations.of(context)!;
@@ -359,12 +360,13 @@ class _DesktopChatScreenState extends ConsumerState<DesktopChatScreen> with Wind
 
     return Stack(
       children: [
-        Positioned.fill(
-          child: Container(
-            color: solidBackgroundColor, // Base color
+        if (!settings.useCustomTheme || settings.backgroundImagePath == null || settings.backgroundImagePath!.isEmpty)
+          Positioned.fill(
+            child: Container(
+              color: solidBackgroundColor, // Base color
+            ),
           ),
-        ),
-        if (backgroundGradient != null)
+        if (backgroundGradient != null && (!settings.useCustomTheme || settings.backgroundImagePath == null || settings.backgroundImagePath!.isNotEmpty))
            Positioned.fill(
             child: Container(
               decoration: BoxDecoration(

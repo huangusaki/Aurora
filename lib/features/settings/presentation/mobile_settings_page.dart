@@ -22,13 +22,11 @@ class _MobileSettingsPageState extends ConsumerState<MobileSettingsPage> {
   final TextEditingController _apiKeyController = TextEditingController();
   final TextEditingController _baseUrlController = TextEditingController();
   final TextEditingController _userNameController = TextEditingController();
-  final TextEditingController _colorController = TextEditingController();
   @override
   void dispose() {
     _apiKeyController.dispose();
     _baseUrlController.dispose();
     _userNameController.dispose();
-    _colorController.dispose();
     super.dispose();
   }
 
@@ -67,28 +65,7 @@ class _MobileSettingsPageState extends ConsumerState<MobileSettingsPage> {
                 subtitle: activeProvider?.name ?? l10n.notConfigured,
                 onTap: () => _showProviderPicker(context, settingsState),
               ),
-              MobileSettingsTile(
-                leading: const Icon(Icons.palette),
-                title: 'Color',
-                subtitle: activeProvider?.color ?? l10n.notConfigured,
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                     if (activeProvider?.color != null && activeProvider!.color!.isNotEmpty)
-                      Container(
-                        width: 20,
-                        height: 20,
-                        margin: const EdgeInsets.only(right: 8),
-                        decoration: BoxDecoration(
-                          color: Color(int.tryParse(activeProvider.color!.replaceFirst('#', '0xFF')) ?? 0xFF000000),
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.grey.withOpacity(0.5)),
-                        ),
-                      ),
-                  ],
-                ),
-                onTap: () => _showColorEditor(context, activeProvider),
-              ),
+
               MobileSettingsTile(
                 leading: const Icon(Icons.key),
                 title: l10n.apiKeys,
@@ -501,22 +478,7 @@ class _MobileSettingsPageState extends ConsumerState<MobileSettingsPage> {
     }
   }
 
-  void _showColorEditor(BuildContext context, ProviderConfig? provider) async {
-    if (provider == null) return;
-    final l10n = AppLocalizations.of(context)!;
-    final newColor = await AuroraBottomSheet.showInput(
-      context: context,
-      title: 'Edit Color',
-      initialValue: provider.color ?? '',
-      hintText: '#FF0000',
-    );
-    if (newColor != null) {
-      ref.read(settingsProvider.notifier).updateProvider(
-            id: provider.id,
-            color: newColor,
-          );
-    }
-  }
+
 
   void _showTextEditor(BuildContext context, String title, String currentValue,
       Function(String) onSave) async {

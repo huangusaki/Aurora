@@ -609,7 +609,11 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
 
     return Container(
       decoration: BoxDecoration(
-        color: theme.cardColor,
+        color: settings.useCustomTheme &&
+                settings.backgroundImagePath != null &&
+                settings.backgroundImagePath!.isNotEmpty
+            ? theme.cardColor.withValues(alpha: 0.55)
+            : theme.cardColor,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: theme.resources.dividerStrokeColorDefault,
@@ -934,7 +938,10 @@ class MobileChatInputArea extends ConsumerWidget {
       margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
       padding: const EdgeInsets.fromLTRB(16, 12, 8, 8),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: settings.backgroundImagePath != null &&
+                settings.backgroundImagePath!.isNotEmpty
+            ? Theme.of(context).colorScheme.surface.withValues(alpha: 0.55)
+            : Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(26),
         border: Border.all(
           color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.5),

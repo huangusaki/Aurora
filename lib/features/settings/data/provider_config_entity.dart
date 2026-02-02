@@ -52,4 +52,8 @@ class AppSettingsEntity {
   String? executionModel;
   String? executionProviderId;
   double fontSize = 14.0;
+  String? backgroundImagePath;
+  double backgroundBrightness = 0.5;
+  double backgroundBlur = 0.0;
+  bool useCustomTheme = false;
 }

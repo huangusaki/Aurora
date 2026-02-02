@@ -31,13 +31,13 @@
 *   **Privacy**: Chat history and settings are stored locally on the device.
 *   **Reasoning**: Displays Chain-of-Thought (CoT) and reasoning processes.
 *   **Internet Access**: Built-in web search capability with source citations.
-*   **Attachments**: Supports image uploads and analysis.
+*   **Attachments**: Supports various file types (images, audio, video, documents) with multimodal analysis.
 *   **Rendering**: Full Markdown support with syntax highlighting and LaTeX math.
 *   **Session Management**: Auto-generates topics for conversations; easy history management.
-*   **Interface**: Dark/Light mode, custom background and accent colors, Fluent Design with Mica effect, custom avatars, and streamed responses.
+*   **Interface**: Dark/Light mode, custom background (with blur and brightness control), global transparency style, accent colors, Fluent Design with Mica effect, and custom avatars.
 *   **Translation**: Built-in text translation feature powered by LLM.
-*   **Studio**: Multi-LLM collaborative workflow for professional creative writing.
-*   **Skills**: Extend capabilities via external skill plugins (SKILL.md).
+*   **Studio (WIP)**: Multi-LLM joint execution environment for complex collaborative workflows.
+*   **Skills (WIP)**: Extend capabilities via external skill plugins (SKILL.md).
 *   **Multi-Key Polling**: Automatically switch between API keys.
 *   **Multi-Device Sync**: Sync chat history and settings across devices via WebDAV.
 *   **Custom Backup**: Support for selective backup and restore of chat history, presets, and settings.

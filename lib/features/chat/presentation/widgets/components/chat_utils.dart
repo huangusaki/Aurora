@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:fluent_ui/fluent_ui.dart' as fluent;
 import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
 import '../../../domain/message.dart';
 
 abstract class DisplayItem {
@@ -24,9 +25,8 @@ class MergedGroupItem extends DisplayItem {
 }
 
 Future<Directory> getAttachmentsDir() async {
-  final appDir = await getApplicationDocumentsDirectory();
-  final attachmentsDir = Directory(
-      '${appDir.path}${Platform.pathSeparator}Aurora${Platform.pathSeparator}attachments');
+  final appDir = await getApplicationSupportDirectory();
+  final attachmentsDir = Directory(p.join(appDir.path, 'attachments'));
   if (!await attachmentsDir.exists()) {
     await attachmentsDir.create(recursive: true);
   }
@@ -57,10 +57,12 @@ class ActionButton extends StatelessWidget {
 class MobileActionButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onPressed;
+  final Color? color;
   const MobileActionButton({
     super.key,
     required this.icon,
     required this.onPressed,
+    this.color,
   });
   @override
   Widget build(BuildContext context) {
@@ -69,7 +71,7 @@ class MobileActionButton extends StatelessWidget {
       height: 36,
       child: IconButton(
         padding: EdgeInsets.zero,
-        icon: Icon(icon, size: 18, color: Colors.grey[600]),
+        icon: Icon(icon, size: 18, color: color ?? Colors.grey[600]),
         onPressed: onPressed,
       ),
     );

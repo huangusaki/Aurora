@@ -120,6 +120,7 @@ class _MergedMessageBubbleState extends ConsumerState<MergedMessageBubble>
   @override
   Widget build(BuildContext context) {
     super.build(context);
+    final settingsState = ref.watch(settingsProvider);
     final theme = fluent.FluentTheme.of(context);
     final messages = widget.group.messages;
     final lastMsg = messages.last;
@@ -187,10 +188,15 @@ class _MergedMessageBubbleState extends ConsumerState<MergedMessageBubble>
                       children: [
                         Text(
                           '${headerMsg.model ?? 'AI'} | ${headerMsg.provider ?? 'Assistant'}',
-                          style:
-                              TextStyle(color: Colors.grey[600], fontSize: 12),
+                          style: TextStyle(
+                            color: (settingsState.useCustomTheme &&
+                                    settingsState.backgroundImagePath != null &&
+                                    settingsState.backgroundImagePath!.isNotEmpty)
+                                ? Colors.white.withValues(alpha: 0.7)
+                                : Colors.grey[600],
+                            fontSize: 12,
+                          ),
                         ),
-
                       ],
                     ),
                   ),
@@ -198,7 +204,13 @@ class _MergedMessageBubbleState extends ConsumerState<MergedMessageBubble>
                     padding:
                         _isEditing ? EdgeInsets.zero : const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: _isEditing ? Colors.transparent : theme.cardColor,
+                      color: _isEditing
+                          ? Colors.transparent
+                          : (settingsState.useCustomTheme &&
+                                  settingsState.backgroundImagePath != null &&
+                                  settingsState.backgroundImagePath!.isNotEmpty
+                              ? theme.cardColor.withValues(alpha: 0.55)
+                              : theme.cardColor),
                       borderRadius: BorderRadius.circular(12),
                       border: _isEditing
                           ? null
@@ -346,22 +358,47 @@ class _MergedMessageBubbleState extends ConsumerState<MergedMessageBubble>
                                 children: [
                                   MobileActionButton(
                                     icon: AuroraIcons.refresh,
+                                    color: (settingsState.useCustomTheme &&
+                                            settingsState.backgroundImagePath != null &&
+                                            settingsState.backgroundImagePath!.isNotEmpty)
+                                        ? Colors.white.withValues(alpha: 0.7)
+                                        : null,
                                     onPressed: () => _handleAction('retry'),
                                   ),
                                   MobileActionButton(
                                     icon: AuroraIcons.edit,
+                                    color: (settingsState.useCustomTheme &&
+                                            settingsState.backgroundImagePath != null &&
+                                            settingsState.backgroundImagePath!.isNotEmpty)
+                                        ? Colors.white.withValues(alpha: 0.7)
+                                        : null,
                                     onPressed: () => _handleAction('edit'),
                                   ),
                                   MobileActionButton(
                                     icon: AuroraIcons.copy,
+                                    color: (settingsState.useCustomTheme &&
+                                            settingsState.backgroundImagePath != null &&
+                                            settingsState.backgroundImagePath!.isNotEmpty)
+                                        ? Colors.white.withValues(alpha: 0.7)
+                                        : null,
                                     onPressed: () => _handleAction('copy'),
                                   ),
                                   MobileActionButton(
                                     icon: AuroraIcons.branch,
+                                    color: (settingsState.useCustomTheme &&
+                                            settingsState.backgroundImagePath != null &&
+                                            settingsState.backgroundImagePath!.isNotEmpty)
+                                        ? Colors.white.withValues(alpha: 0.7)
+                                        : null,
                                     onPressed: () => _handleAction('branch'),
                                   ),
                                   MobileActionButton(
                                     icon: AuroraIcons.delete,
+                                    color: (settingsState.useCustomTheme &&
+                                            settingsState.backgroundImagePath != null &&
+                                            settingsState.backgroundImagePath!.isNotEmpty)
+                                        ? Colors.white.withValues(alpha: 0.7)
+                                        : null,
                                     onPressed: () => _handleAction('delete'),
                                   ),
                                 ],

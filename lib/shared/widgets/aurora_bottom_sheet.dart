@@ -13,23 +13,31 @@ class AuroraBottomSheet {
       isScrollControlled: isScrollControlled,
       useSafeArea: useSafeArea,
       backgroundColor: Colors.transparent,
-      builder: (context) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-        child: Container(
-          decoration: BoxDecoration(
-            color: theme.scaffoldBackgroundColor,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Handle Bar
+      builder: (context) {
+        final screenIsDark = theme.brightness == Brightness.dark;
+        // If the theme background is transparent (custom background), used a more opaque background for safety
+        final bgColor = theme.scaffoldBackgroundColor.opacity < 0.8
+            ? (screenIsDark ? Colors.black.withOpacity(0.7) : Colors.white.withOpacity(0.7))
+            : theme.scaffoldBackgroundColor;
+            
+        return Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+          child: Container(
+            decoration: BoxDecoration(
+              color: bgColor,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Handle Bar
 
-              Flexible(child: builder(context)),
-            ],
+                Flexible(child: builder(context)),
+              ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 

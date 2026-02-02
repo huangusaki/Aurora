@@ -63,6 +63,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clear => 'Clear';
 
   @override
+  String get reset => 'Reset';
+
+  @override
   String get translating => 'Translating...';
 
   @override
@@ -1163,6 +1166,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accentColor => 'Accent Color';
 
   @override
+  String get themeCustom => 'Custom';
+
+  @override
+  String get customTheme => 'Custom';
+
+  @override
+  String get customThemeDescription =>
+      'Allow setting custom background image, brightness and blur';
+
+  @override
   String get backgroundStyle => 'Background Style';
 
   @override
@@ -1194,6 +1207,24 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get fontSizeHint => 'Adjust global text display size';
+
+  @override
+  String get backgroundImage => 'Background Image';
+
+  @override
+  String get backgroundBlur => 'Background Blur';
+
+  @override
+  String get backgroundBrightness => 'Background Brightness';
+
+  @override
+  String get selectBackgroundImage => 'Select Background';
+
+  @override
+  String get clearBackgroundImage => 'Clear Background';
+
+  @override
+  String get cropImage => 'Crop Image';
 
   @override
   String get generationConfig => 'Generation Config';

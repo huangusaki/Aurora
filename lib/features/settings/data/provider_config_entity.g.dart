@@ -3354,108 +3354,128 @@ const AppSettingsEntitySchema = CollectionSchema(
       name: r'availableModels',
       type: IsarType.stringList,
     ),
-    r'backgroundColor': PropertySchema(
+    r'backgroundBlur': PropertySchema(
       id: 2,
+      name: r'backgroundBlur',
+      type: IsarType.double,
+    ),
+    r'backgroundBrightness': PropertySchema(
+      id: 3,
+      name: r'backgroundBrightness',
+      type: IsarType.double,
+    ),
+    r'backgroundColor': PropertySchema(
+      id: 4,
       name: r'backgroundColor',
       type: IsarType.string,
     ),
+    r'backgroundImagePath': PropertySchema(
+      id: 5,
+      name: r'backgroundImagePath',
+      type: IsarType.string,
+    ),
     r'closeBehavior': PropertySchema(
-      id: 3,
+      id: 6,
       name: r'closeBehavior',
       type: IsarType.long,
     ),
     r'enableSmartTopic': PropertySchema(
-      id: 4,
+      id: 7,
       name: r'enableSmartTopic',
       type: IsarType.bool,
     ),
     r'executionModel': PropertySchema(
-      id: 5,
+      id: 8,
       name: r'executionModel',
       type: IsarType.string,
     ),
     r'executionProviderId': PropertySchema(
-      id: 6,
+      id: 9,
       name: r'executionProviderId',
       type: IsarType.string,
     ),
     r'fontSize': PropertySchema(
-      id: 7,
+      id: 10,
       name: r'fontSize',
       type: IsarType.double,
     ),
     r'isSearchEnabled': PropertySchema(
-      id: 8,
+      id: 11,
       name: r'isSearchEnabled',
       type: IsarType.bool,
     ),
     r'isStreamEnabled': PropertySchema(
-      id: 9,
+      id: 12,
       name: r'isStreamEnabled',
       type: IsarType.bool,
     ),
     r'language': PropertySchema(
-      id: 10,
+      id: 13,
       name: r'language',
       type: IsarType.string,
     ),
     r'lastPresetId': PropertySchema(
-      id: 11,
+      id: 14,
       name: r'lastPresetId',
       type: IsarType.string,
     ),
     r'lastSessionId': PropertySchema(
-      id: 12,
+      id: 15,
       name: r'lastSessionId',
       type: IsarType.string,
     ),
     r'lastTopicId': PropertySchema(
-      id: 13,
+      id: 16,
       name: r'lastTopicId',
       type: IsarType.string,
     ),
     r'llmAvatar': PropertySchema(
-      id: 14,
+      id: 17,
       name: r'llmAvatar',
       type: IsarType.string,
     ),
     r'llmName': PropertySchema(
-      id: 15,
+      id: 18,
       name: r'llmName',
       type: IsarType.string,
     ),
     r'searchEngine': PropertySchema(
-      id: 16,
+      id: 19,
       name: r'searchEngine',
       type: IsarType.string,
     ),
     r'selectedModel': PropertySchema(
-      id: 17,
+      id: 20,
       name: r'selectedModel',
       type: IsarType.string,
     ),
     r'themeColor': PropertySchema(
-      id: 18,
+      id: 21,
       name: r'themeColor',
       type: IsarType.string,
     ),
     r'themeMode': PropertySchema(
-      id: 19,
+      id: 22,
       name: r'themeMode',
       type: IsarType.string,
     ),
     r'topicGenerationModel': PropertySchema(
-      id: 20,
+      id: 23,
       name: r'topicGenerationModel',
       type: IsarType.string,
     ),
+    r'useCustomTheme': PropertySchema(
+      id: 24,
+      name: r'useCustomTheme',
+      type: IsarType.bool,
+    ),
     r'userAvatar': PropertySchema(
-      id: 21,
+      id: 25,
       name: r'userAvatar',
       type: IsarType.string,
     ),
     r'userName': PropertySchema(
-      id: 22,
+      id: 26,
       name: r'userName',
       type: IsarType.string,
     )
@@ -3504,6 +3524,12 @@ int _appSettingsEntityEstimateSize(
   }
   {
     final value = object.backgroundColor;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.backgroundImagePath;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
     }
@@ -3584,27 +3610,31 @@ void _appSettingsEntitySerialize(
 ) {
   writer.writeString(offsets[0], object.activeProviderId);
   writer.writeStringList(offsets[1], object.availableModels);
-  writer.writeString(offsets[2], object.backgroundColor);
-  writer.writeLong(offsets[3], object.closeBehavior);
-  writer.writeBool(offsets[4], object.enableSmartTopic);
-  writer.writeString(offsets[5], object.executionModel);
-  writer.writeString(offsets[6], object.executionProviderId);
-  writer.writeDouble(offsets[7], object.fontSize);
-  writer.writeBool(offsets[8], object.isSearchEnabled);
-  writer.writeBool(offsets[9], object.isStreamEnabled);
-  writer.writeString(offsets[10], object.language);
-  writer.writeString(offsets[11], object.lastPresetId);
-  writer.writeString(offsets[12], object.lastSessionId);
-  writer.writeString(offsets[13], object.lastTopicId);
-  writer.writeString(offsets[14], object.llmAvatar);
-  writer.writeString(offsets[15], object.llmName);
-  writer.writeString(offsets[16], object.searchEngine);
-  writer.writeString(offsets[17], object.selectedModel);
-  writer.writeString(offsets[18], object.themeColor);
-  writer.writeString(offsets[19], object.themeMode);
-  writer.writeString(offsets[20], object.topicGenerationModel);
-  writer.writeString(offsets[21], object.userAvatar);
-  writer.writeString(offsets[22], object.userName);
+  writer.writeDouble(offsets[2], object.backgroundBlur);
+  writer.writeDouble(offsets[3], object.backgroundBrightness);
+  writer.writeString(offsets[4], object.backgroundColor);
+  writer.writeString(offsets[5], object.backgroundImagePath);
+  writer.writeLong(offsets[6], object.closeBehavior);
+  writer.writeBool(offsets[7], object.enableSmartTopic);
+  writer.writeString(offsets[8], object.executionModel);
+  writer.writeString(offsets[9], object.executionProviderId);
+  writer.writeDouble(offsets[10], object.fontSize);
+  writer.writeBool(offsets[11], object.isSearchEnabled);
+  writer.writeBool(offsets[12], object.isStreamEnabled);
+  writer.writeString(offsets[13], object.language);
+  writer.writeString(offsets[14], object.lastPresetId);
+  writer.writeString(offsets[15], object.lastSessionId);
+  writer.writeString(offsets[16], object.lastTopicId);
+  writer.writeString(offsets[17], object.llmAvatar);
+  writer.writeString(offsets[18], object.llmName);
+  writer.writeString(offsets[19], object.searchEngine);
+  writer.writeString(offsets[20], object.selectedModel);
+  writer.writeString(offsets[21], object.themeColor);
+  writer.writeString(offsets[22], object.themeMode);
+  writer.writeString(offsets[23], object.topicGenerationModel);
+  writer.writeBool(offsets[24], object.useCustomTheme);
+  writer.writeString(offsets[25], object.userAvatar);
+  writer.writeString(offsets[26], object.userName);
 }
 
 AppSettingsEntity _appSettingsEntityDeserialize(
@@ -3616,28 +3646,32 @@ AppSettingsEntity _appSettingsEntityDeserialize(
   final object = AppSettingsEntity();
   object.activeProviderId = reader.readString(offsets[0]);
   object.availableModels = reader.readStringList(offsets[1]) ?? [];
-  object.backgroundColor = reader.readStringOrNull(offsets[2]);
-  object.closeBehavior = reader.readLong(offsets[3]);
-  object.enableSmartTopic = reader.readBool(offsets[4]);
-  object.executionModel = reader.readStringOrNull(offsets[5]);
-  object.executionProviderId = reader.readStringOrNull(offsets[6]);
-  object.fontSize = reader.readDouble(offsets[7]);
+  object.backgroundBlur = reader.readDouble(offsets[2]);
+  object.backgroundBrightness = reader.readDouble(offsets[3]);
+  object.backgroundColor = reader.readStringOrNull(offsets[4]);
+  object.backgroundImagePath = reader.readStringOrNull(offsets[5]);
+  object.closeBehavior = reader.readLong(offsets[6]);
+  object.enableSmartTopic = reader.readBool(offsets[7]);
+  object.executionModel = reader.readStringOrNull(offsets[8]);
+  object.executionProviderId = reader.readStringOrNull(offsets[9]);
+  object.fontSize = reader.readDouble(offsets[10]);
   object.id = id;
-  object.isSearchEnabled = reader.readBool(offsets[8]);
-  object.isStreamEnabled = reader.readBool(offsets[9]);
-  object.language = reader.readString(offsets[10]);
-  object.lastPresetId = reader.readStringOrNull(offsets[11]);
-  object.lastSessionId = reader.readStringOrNull(offsets[12]);
-  object.lastTopicId = reader.readStringOrNull(offsets[13]);
-  object.llmAvatar = reader.readStringOrNull(offsets[14]);
-  object.llmName = reader.readString(offsets[15]);
-  object.searchEngine = reader.readString(offsets[16]);
-  object.selectedModel = reader.readStringOrNull(offsets[17]);
-  object.themeColor = reader.readStringOrNull(offsets[18]);
-  object.themeMode = reader.readString(offsets[19]);
-  object.topicGenerationModel = reader.readStringOrNull(offsets[20]);
-  object.userAvatar = reader.readStringOrNull(offsets[21]);
-  object.userName = reader.readString(offsets[22]);
+  object.isSearchEnabled = reader.readBool(offsets[11]);
+  object.isStreamEnabled = reader.readBool(offsets[12]);
+  object.language = reader.readString(offsets[13]);
+  object.lastPresetId = reader.readStringOrNull(offsets[14]);
+  object.lastSessionId = reader.readStringOrNull(offsets[15]);
+  object.lastTopicId = reader.readStringOrNull(offsets[16]);
+  object.llmAvatar = reader.readStringOrNull(offsets[17]);
+  object.llmName = reader.readString(offsets[18]);
+  object.searchEngine = reader.readString(offsets[19]);
+  object.selectedModel = reader.readStringOrNull(offsets[20]);
+  object.themeColor = reader.readStringOrNull(offsets[21]);
+  object.themeMode = reader.readString(offsets[22]);
+  object.topicGenerationModel = reader.readStringOrNull(offsets[23]);
+  object.useCustomTheme = reader.readBool(offsets[24]);
+  object.userAvatar = reader.readStringOrNull(offsets[25]);
+  object.userName = reader.readString(offsets[26]);
   return object;
 }
 
@@ -3653,39 +3687,39 @@ P _appSettingsEntityDeserializeProp<P>(
     case 1:
       return (reader.readStringList(offset) ?? []) as P;
     case 2:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDouble(offset)) as P;
     case 3:
-      return (reader.readLong(offset)) as P;
+      return (reader.readDouble(offset)) as P;
     case 4:
-      return (reader.readBool(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 5:
       return (reader.readStringOrNull(offset)) as P;
     case 6:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readLong(offset)) as P;
     case 7:
-      return (reader.readDouble(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 8:
-      return (reader.readBool(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 9:
-      return (reader.readBool(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 10:
-      return (reader.readString(offset)) as P;
+      return (reader.readDouble(offset)) as P;
     case 11:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 12:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 13:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 14:
       return (reader.readStringOrNull(offset)) as P;
     case 15:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 16:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 17:
       return (reader.readStringOrNull(offset)) as P;
     case 18:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 19:
       return (reader.readString(offset)) as P;
     case 20:
@@ -3693,6 +3727,14 @@ P _appSettingsEntityDeserializeProp<P>(
     case 21:
       return (reader.readStringOrNull(offset)) as P;
     case 22:
+      return (reader.readString(offset)) as P;
+    case 23:
+      return (reader.readStringOrNull(offset)) as P;
+    case 24:
+      return (reader.readBool(offset)) as P;
+    case 25:
+      return (reader.readStringOrNull(offset)) as P;
+    case 26:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -4261,6 +4303,138 @@ extension AppSettingsEntityQueryFilter
   }
 
   QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      backgroundBlurEqualTo(
+    double value, {
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'backgroundBlur',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      backgroundBlurGreaterThan(
+    double value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'backgroundBlur',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      backgroundBlurLessThan(
+    double value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'backgroundBlur',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      backgroundBlurBetween(
+    double lower,
+    double upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'backgroundBlur',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      backgroundBrightnessEqualTo(
+    double value, {
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'backgroundBrightness',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      backgroundBrightnessGreaterThan(
+    double value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'backgroundBrightness',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      backgroundBrightnessLessThan(
+    double value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'backgroundBrightness',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      backgroundBrightnessBetween(
+    double lower,
+    double upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'backgroundBrightness',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
       backgroundColorIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
@@ -4409,6 +4583,160 @@ extension AppSettingsEntityQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.greaterThan(
         property: r'backgroundColor',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      backgroundImagePathIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'backgroundImagePath',
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      backgroundImagePathIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'backgroundImagePath',
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      backgroundImagePathEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'backgroundImagePath',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      backgroundImagePathGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'backgroundImagePath',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      backgroundImagePathLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'backgroundImagePath',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      backgroundImagePathBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'backgroundImagePath',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      backgroundImagePathStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'backgroundImagePath',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      backgroundImagePathEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'backgroundImagePath',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      backgroundImagePathContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'backgroundImagePath',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      backgroundImagePathMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'backgroundImagePath',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      backgroundImagePathIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'backgroundImagePath',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      backgroundImagePathIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'backgroundImagePath',
         value: '',
       ));
     });
@@ -6553,6 +6881,16 @@ extension AppSettingsEntityQueryFilter
   }
 
   QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      useCustomThemeEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'useCustomTheme',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
       userAvatarIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
@@ -6866,6 +7204,34 @@ extension AppSettingsEntityQuerySortBy
   }
 
   QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      sortByBackgroundBlur() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'backgroundBlur', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      sortByBackgroundBlurDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'backgroundBlur', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      sortByBackgroundBrightness() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'backgroundBrightness', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      sortByBackgroundBrightnessDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'backgroundBrightness', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
       sortByBackgroundColor() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'backgroundColor', Sort.asc);
@@ -6876,6 +7242,20 @@ extension AppSettingsEntityQuerySortBy
       sortByBackgroundColorDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'backgroundColor', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      sortByBackgroundImagePath() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'backgroundImagePath', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      sortByBackgroundImagePathDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'backgroundImagePath', Sort.desc);
     });
   }
 
@@ -7132,6 +7512,20 @@ extension AppSettingsEntityQuerySortBy
   }
 
   QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      sortByUseCustomTheme() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'useCustomTheme', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      sortByUseCustomThemeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'useCustomTheme', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
       sortByUserAvatar() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'userAvatar', Sort.asc);
@@ -7177,6 +7571,34 @@ extension AppSettingsEntityQuerySortThenBy
   }
 
   QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      thenByBackgroundBlur() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'backgroundBlur', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      thenByBackgroundBlurDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'backgroundBlur', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      thenByBackgroundBrightness() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'backgroundBrightness', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      thenByBackgroundBrightnessDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'backgroundBrightness', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
       thenByBackgroundColor() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'backgroundColor', Sort.asc);
@@ -7187,6 +7609,20 @@ extension AppSettingsEntityQuerySortThenBy
       thenByBackgroundColorDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'backgroundColor', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      thenByBackgroundImagePath() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'backgroundImagePath', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      thenByBackgroundImagePathDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'backgroundImagePath', Sort.desc);
     });
   }
 
@@ -7456,6 +7892,20 @@ extension AppSettingsEntityQuerySortThenBy
   }
 
   QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      thenByUseCustomTheme() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'useCustomTheme', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      thenByUseCustomThemeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'useCustomTheme', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
       thenByUserAvatar() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'userAvatar', Sort.asc);
@@ -7502,9 +7952,31 @@ extension AppSettingsEntityQueryWhereDistinct
   }
 
   QueryBuilder<AppSettingsEntity, AppSettingsEntity, QDistinct>
+      distinctByBackgroundBlur() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'backgroundBlur');
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QDistinct>
+      distinctByBackgroundBrightness() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'backgroundBrightness');
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QDistinct>
       distinctByBackgroundColor({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'backgroundColor',
+          caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QDistinct>
+      distinctByBackgroundImagePath({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'backgroundImagePath',
           caseSensitive: caseSensitive);
     });
   }
@@ -7641,6 +8113,13 @@ extension AppSettingsEntityQueryWhereDistinct
   }
 
   QueryBuilder<AppSettingsEntity, AppSettingsEntity, QDistinct>
+      distinctByUseCustomTheme() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'useCustomTheme');
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QDistinct>
       distinctByUserAvatar({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'userAvatar', caseSensitive: caseSensitive);
@@ -7677,10 +8156,31 @@ extension AppSettingsEntityQueryProperty
     });
   }
 
+  QueryBuilder<AppSettingsEntity, double, QQueryOperations>
+      backgroundBlurProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'backgroundBlur');
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, double, QQueryOperations>
+      backgroundBrightnessProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'backgroundBrightness');
+    });
+  }
+
   QueryBuilder<AppSettingsEntity, String?, QQueryOperations>
       backgroundColorProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'backgroundColor');
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, String?, QQueryOperations>
+      backgroundImagePathProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'backgroundImagePath');
     });
   }
 
@@ -7804,6 +8304,13 @@ extension AppSettingsEntityQueryProperty
       topicGenerationModelProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'topicGenerationModel');
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, bool, QQueryOperations>
+      useCustomThemeProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'useCustomTheme');
     });
   }
 

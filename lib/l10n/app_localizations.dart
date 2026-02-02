@@ -206,6 +206,12 @@ abstract class AppLocalizations {
   /// **'清空'**
   String get clear;
 
+  /// No description provided for @reset.
+  ///
+  /// In zh, this message translates to:
+  /// **'重置'**
+  String get reset;
+
   /// No description provided for @translating.
   ///
   /// In zh, this message translates to:
@@ -2300,6 +2306,24 @@ abstract class AppLocalizations {
   /// **'强调色'**
   String get accentColor;
 
+  /// No description provided for @themeCustom.
+  ///
+  /// In zh, this message translates to:
+  /// **'自定义'**
+  String get themeCustom;
+
+  /// No description provided for @customTheme.
+  ///
+  /// In zh, this message translates to:
+  /// **'自定义'**
+  String get customTheme;
+
+  /// No description provided for @customThemeDescription.
+  ///
+  /// In zh, this message translates to:
+  /// **'允许设置自定义背景图片、亮度和模糊度'**
+  String get customThemeDescription;
+
   /// No description provided for @backgroundStyle.
   ///
   /// In zh, this message translates to:
@@ -2365,6 +2389,42 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'调整全局文字显示大小'**
   String get fontSizeHint;
+
+  /// No description provided for @backgroundImage.
+  ///
+  /// In zh, this message translates to:
+  /// **'背景图片'**
+  String get backgroundImage;
+
+  /// No description provided for @backgroundBlur.
+  ///
+  /// In zh, this message translates to:
+  /// **'背景模糊'**
+  String get backgroundBlur;
+
+  /// No description provided for @backgroundBrightness.
+  ///
+  /// In zh, this message translates to:
+  /// **'背景亮度'**
+  String get backgroundBrightness;
+
+  /// No description provided for @selectBackgroundImage.
+  ///
+  /// In zh, this message translates to:
+  /// **'选择背景图片'**
+  String get selectBackgroundImage;
+
+  /// No description provided for @clearBackgroundImage.
+  ///
+  /// In zh, this message translates to:
+  /// **'清除背景图片'**
+  String get clearBackgroundImage;
+
+  /// No description provided for @cropImage.
+  ///
+  /// In zh, this message translates to:
+  /// **'裁剪图片'**
+  String get cropImage;
 
   /// No description provided for @generationConfig.
   ///

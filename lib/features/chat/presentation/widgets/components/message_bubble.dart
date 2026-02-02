@@ -327,23 +327,33 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
                             crossAxisAlignment: CrossAxisAlignment.baseline,
                             textBaseline: TextBaseline.alphabetic,
                             children: [
-                              if (isUser) ...[
-
-                                Text(
-                                  settingsState.userName.isNotEmpty
-                                      ? settingsState.userName
-                                      : AppLocalizations.of(context)!.user,
-                                  style: TextStyle(
-                                      color: Colors.grey[600], fontSize: 12),
-                                ),
-                              ] else ...[
-                                Text(
-                                  '${message.model ?? settingsState.selectedModel} | ${message.provider ?? settingsState.activeProvider?.name ?? 'AI'}',
-                                  style: TextStyle(
-                                      color: Colors.grey[600], fontSize: 12),
-                                ),
-
-                              ],
+                                if (isUser) ...[
+                                  Text(
+                                    settingsState.userName.isNotEmpty
+                                        ? settingsState.userName
+                                        : AppLocalizations.of(context)!.user,
+                                    style: TextStyle(
+                                      color: (settingsState.useCustomTheme &&
+                                              settingsState.backgroundImagePath != null &&
+                                              settingsState.backgroundImagePath!.isNotEmpty)
+                                          ? Colors.white.withValues(alpha: 0.7)
+                                          : Colors.grey[600],
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ] else ...[
+                                  Text(
+                                    '${message.model ?? settingsState.selectedModel} | ${message.provider ?? settingsState.activeProvider?.name ?? 'AI'}',
+                                    style: TextStyle(
+                                      color: (settingsState.useCustomTheme &&
+                                              settingsState.backgroundImagePath != null &&
+                                              settingsState.backgroundImagePath!.isNotEmpty)
+                                          ? Colors.white.withValues(alpha: 0.7)
+                                          : Colors.grey[600],
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
                             ],
                           ),
                         ),
@@ -356,7 +366,11 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
                           decoration: BoxDecoration(
                             color: _isEditing
                                 ? fluent.Colors.transparent
-                                : theme.cardColor,
+                                  : (settingsState.useCustomTheme &&
+                                         settingsState.backgroundImagePath != null &&
+                                         settingsState.backgroundImagePath!.isNotEmpty
+                                     ? theme.cardColor.withValues(alpha: 0.55)
+                                    : theme.cardColor),
                             borderRadius: BorderRadius.circular(12),
                             border: _isEditing
                                 ? null
@@ -808,23 +822,43 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
                           children: [
                             MobileActionButton(
                               icon: AuroraIcons.retry,
+                              color: (settingsState.backgroundImagePath != null &&
+                                      settingsState.backgroundImagePath!.isNotEmpty)
+                                  ? Colors.white.withValues(alpha: 0.7)
+                                  : null,
                               onPressed: () => _handleAction('retry'),
                             ),
                             MobileActionButton(
                               icon: AuroraIcons.edit,
+                              color: (settingsState.backgroundImagePath != null &&
+                                      settingsState.backgroundImagePath!.isNotEmpty)
+                                  ? Colors.white.withValues(alpha: 0.7)
+                                  : null,
                               onPressed: () => _handleAction('edit'),
                             ),
                             MobileActionButton(
                               icon: AuroraIcons.copy,
+                              color: (settingsState.backgroundImagePath != null &&
+                                      settingsState.backgroundImagePath!.isNotEmpty)
+                                  ? Colors.white.withValues(alpha: 0.7)
+                                  : null,
                               onPressed: () => _handleAction('copy'),
                             ),
                             if (!isUser)
                               MobileActionButton(
                                 icon: AuroraIcons.branch,
+                                color: (settingsState.backgroundImagePath != null &&
+                                        settingsState.backgroundImagePath!.isNotEmpty)
+                                    ? Colors.white.withValues(alpha: 0.7)
+                                    : null,
                                 onPressed: () => _handleAction('branch'),
                               ),
                             MobileActionButton(
                               icon: AuroraIcons.delete,
+                              color: (settingsState.backgroundImagePath != null &&
+                                      settingsState.backgroundImagePath!.isNotEmpty)
+                                  ? Colors.white.withValues(alpha: 0.7)
+                                  : null,
                               onPressed: () => _handleAction('delete'),
                             ),
                           ],

@@ -1,16 +1,18 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 import 'novel/novel_writing_page.dart';
 import 'package:aurora/shared/theme/aurora_icons.dart';
+import '../../settings/presentation/settings_provider.dart';
 
-class StudioContent extends StatefulWidget {
+class StudioContent extends ConsumerStatefulWidget {
   const StudioContent({super.key});
 
   @override
-  State<StudioContent> createState() => _StudioContentState();
+  ConsumerState<StudioContent> createState() => _StudioContentState();
 }
 
-class _StudioContentState extends State<StudioContent> {
+class _StudioContentState extends ConsumerState<StudioContent> {
   // 0: Dashboard, 1: Novel Writing
   int _viewIndex = 0;
 
@@ -28,7 +30,11 @@ class _StudioContentState extends State<StudioContent> {
 
     final theme = FluentTheme.of(context);
     final l10n = AppLocalizations.of(context)!;
-    
+    final settings = ref.watch(settingsProvider);
+    final hasBackground = settings.useCustomTheme &&
+        settings.backgroundImagePath != null &&
+        settings.backgroundImagePath!.isNotEmpty;
+
     // Dashboard View
     return Container(
       color: Colors.transparent,
@@ -63,6 +69,7 @@ class _StudioContentState extends State<StudioContent> {
                     icon: AuroraIcons.edit,
                     title: l10n.novelWriting,
                     description: l10n.novelWritingDescription,
+                    hasBackground: hasBackground,
                     onTap: () {
                       setState(() {
                         _viewIndex = 1;
@@ -75,6 +82,7 @@ class _StudioContentState extends State<StudioContent> {
                     title: l10n.schedulePlanning,
                     description: l10n.schedulePlanningDescription,
                     comingSoon: true,
+                    hasBackground: hasBackground,
                     onTap: null,
                   ),
                   _buildFeatureCard(
@@ -83,6 +91,7 @@ class _StudioContentState extends State<StudioContent> {
                     title: l10n.imageManagement,
                     description: l10n.imageManagementDescription,
                     comingSoon: true,
+                    hasBackground: hasBackground,
                     onTap: null,
                   ),
                 ],
@@ -101,6 +110,7 @@ class _StudioContentState extends State<StudioContent> {
     required String title,
     required String description,
     bool comingSoon = false,
+    bool hasBackground = false,
     VoidCallback? onTap,
   }) {
     final theme = FluentTheme.of(context);
@@ -109,6 +119,9 @@ class _StudioContentState extends State<StudioContent> {
     return Card(
       padding: EdgeInsets.zero,
       borderRadius: BorderRadius.circular(12),
+      backgroundColor: hasBackground
+          ? theme.cardColor.withValues(alpha: 0.7)
+          : null,
       child: HoverButton(
         onPressed: onTap,
         cursor: comingSoon ? SystemMouseCursors.basic : SystemMouseCursors.click,
