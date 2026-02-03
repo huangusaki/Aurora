@@ -616,5 +616,9 @@
   "pressAgainToExit": "Press again to exit",
   "pleaseConfigureModel": "Please configure a model in settings first",
   "version": "Version",
-  "assistantSystem": "Assistant"
+  "assistantSystem": "Assistant",
+  "imagePayload": "Image Parameters",
+  "aspectRatio": "Aspect Ratio",
+  "imageSize": "Image Size",
+  "auto": "Auto"
 }

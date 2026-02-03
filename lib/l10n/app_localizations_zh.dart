@@ -1451,4 +1451,16 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get assistantSystem => '助理';
+
+  @override
+  String get imagePayload => '图片参数';
+
+  @override
+  String get aspectRatio => '宽高比';
+
+  @override
+  String get imageSize => '图片分辨率';
+
+  @override
+  String get auto => '自动';
 }

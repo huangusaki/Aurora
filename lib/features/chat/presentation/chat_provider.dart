@@ -692,8 +692,6 @@ To invoke a skill, output a skill tag in this exact format:
                    final skill = activeSkills.firstWhere(
                       (s) => s.name == skillName, 
                       orElse: () {
-                        // If skill not found, maybe just pick the most likely one based on description? 
-                        // Too risky. Throw specific error.
                         throw Exception('Skill "$skillName" not found. Available: ${activeSkills.map((s) => s.name).join(", ")}');
                       }
                    );
@@ -804,10 +802,7 @@ To invoke a skill, output a skill tag in this exact format:
                   searchResult = jsonEncode({'error': e.toString()});
                 }
                 
-                // Create a tool call ID for display purposes
                 final toolCallId = 'search_${const Uuid().v4().substring(0, 8)}';
-                
-                // Display search results to user as tool message
                 final toolMsg = Message.tool(searchResult, toolCallId: toolCallId);
                 state = state.copyWith(messages: [...state.messages, toolMsg]);
                 
@@ -824,7 +819,6 @@ To invoke a skill, output a skill tag in this exact format:
                 state = state.copyWith(messages: [...state.messages, aiMsg]);
               }
             }
-            // Legacy JSON-based tool calls (fallback for non-streaming)
             else if (aiMsg.toolCalls != null && aiMsg.toolCalls!.isNotEmpty) {
               continueGeneration = true;
               messagesForApi.add(aiMsg);
@@ -848,16 +842,13 @@ To invoke a skill, output a skill tag in this exact format:
           }
         }
       }
-      // If we hit the turn limit and AI message is empty or still has search tag, force a final response
       if (_currentGenerationId == myGenerationId && 
           mounted && 
           turns >= 3 && 
           (aiMsg.content.isEmpty || aiMsg.content.contains('<search>'))) {
-        // Remove search tag from content if present
         final cleanedContent = aiMsg.content.replaceAll(RegExp(r'<search>.*?</search>', dotAll: true), '').trim();
         aiMsg = aiMsg.copyWith(content: cleanedContent);
         
-        // Add instruction to synthesize without further search
         messagesForApi.add(Message(
           id: const Uuid().v4(),
           role: 'user',
@@ -866,20 +857,17 @@ To invoke a skill, output a skill tag in this exact format:
           isUser: false,
         ));
         
-        // Make one final request without search capability
         aiMsg = Message.ai('', model: currentModel, provider: currentProvider);
         final newMessages = List<Message>.from(state.messages);
-        // Remove empty messages at the end
         while (newMessages.isNotEmpty && !newMessages.last.isUser && newMessages.last.content.isEmpty) {
           newMessages.removeLast();
         }
         newMessages.add(aiMsg);
         state = state.copyWith(messages: newMessages);
         
-        // Final generation without tools
         final finalStream = llmService.streamResponse(
           messagesForApi,
-          tools: null, // No tools for final response
+          tools: null,
           cancelToken: _currentCancelToken,
         );
         await for (final chunk in finalStream) {
@@ -927,7 +915,6 @@ To invoke a skill, output a skill tag in this exact format:
               break;
             }
             var m = unsaved[i];
-            // Add timing metrics to the last non-tool AI message
             if (!m.isUser && m.role != 'tool' && i == unsaved.length - 1) {
               m = m.copyWith(
                 promptTokens: promptTokens,

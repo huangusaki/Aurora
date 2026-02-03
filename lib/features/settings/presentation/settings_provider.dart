@@ -653,6 +653,31 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     await updateProvider(id: providerId, autoRotateKeys: enabled);
   }
 
+  Map<String, dynamic> getModelSettings(String providerId, String modelName) {
+    try {
+      final provider = state.providers.firstWhere((p) => p.id == providerId);
+      return provider.modelSettings[modelName] ?? {};
+    } catch (_) {
+      return {};
+    }
+  }
+
+  Future<void> updateModelSettings({
+    required String providerId,
+    required String modelName,
+    required Map<String, dynamic> settings,
+  }) async {
+    final provider = state.providers.firstWhere((p) => p.id == providerId);
+    final newModelSettings = Map<String, Map<String, dynamic>>.from(provider.modelSettings);
+    if (settings.isEmpty) {
+      newModelSettings.remove(modelName);
+    } else {
+      newModelSettings[modelName] = settings;
+    }
+    
+    await updateProvider(id: providerId, modelSettings: newModelSettings);
+  }
+
   Future<void> fetchModels() async {
     final provider = state.viewingProvider;
     if (provider.apiKey.isEmpty) {

@@ -616,5 +616,9 @@
   "pressAgainToExit": "再按一次退出应用",
   "pleaseConfigureModel": "请先在设置中配置模型",
   "version": "版本",
-  "assistantSystem": "助理"
+  "assistantSystem": "助理",
+  "imagePayload": "图片参数",
+  "aspectRatio": "宽高比",
+  "imageSize": "图片分辨率",
+  "auto": "自动"
 }

@@ -439,6 +439,27 @@ Use search for:
           }
         }
 
+        // Handle Image Config (for gemini-3-pro-image-preview)
+        final imageConfig = activeParams['image_config'];
+        if (imageConfig != null && imageConfig is Map) {
+          final isGemini = selectedModel.toLowerCase().contains('gemini');
+          if (isGemini) {
+             final Map<String, dynamic> googleConfig = (requestData['extra_body']?['google'] as Map<String, dynamic>?) ?? {};
+             final String? aspectRatio = imageConfig['aspect_ratio'];
+             final String? imageSize = imageConfig['image_size'];
+             
+             if (aspectRatio != null || imageSize != null) {
+               googleConfig['image_config'] = {
+                 if (aspectRatio != null) 'aspect_ratio': aspectRatio,
+                 if (imageSize != null) 'image_size': imageSize,
+               };
+               requestData['extra_body'] = {
+                 'google': googleConfig,
+               };
+             }
+          }
+        }
+
 
       _logRequest('${baseUrl}chat/completions', requestData);
       final response = await _dio.post(

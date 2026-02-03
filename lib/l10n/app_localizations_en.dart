@@ -1481,4 +1481,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get assistantSystem => 'Assistant';
+
+  @override
+  String get imagePayload => 'Image Parameters';
+
+  @override
+  String get aspectRatio => 'Aspect Ratio';
+
+  @override
+  String get imageSize => 'Image Size';
+
+  @override
+  String get auto => 'Auto';
 }

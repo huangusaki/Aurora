@@ -2911,6 +2911,30 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'助理'**
   String get assistantSystem;
+
+  /// No description provided for @imagePayload.
+  ///
+  /// In zh, this message translates to:
+  /// **'图片参数'**
+  String get imagePayload;
+
+  /// No description provided for @aspectRatio.
+  ///
+  /// In zh, this message translates to:
+  /// **'宽高比'**
+  String get aspectRatio;
+
+  /// No description provided for @imageSize.
+  ///
+  /// In zh, this message translates to:
+  /// **'图片分辨率'**
+  String get imageSize;
+
+  /// No description provided for @auto.
+  ///
+  /// In zh, this message translates to:
+  /// **'自动'**
+  String get auto;
 }
 
 class _AppLocalizationsDelegate
