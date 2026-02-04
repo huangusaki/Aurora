@@ -524,7 +524,7 @@ class _AddParamDialogState extends State<_AddParamDialog> {
             label: l10n.paramKey,
             child: TextBox(
               controller: _keyController,
-              placeholder: 'e.g. image_config',
+              placeholder: 'e.g. _aurora_image_config',
             ),
           ),
           const SizedBox(height: 12),

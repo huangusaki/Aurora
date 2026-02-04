@@ -440,7 +440,7 @@ Use search for:
         }
 
         // Handle Image Config (for gemini-3-pro-image-preview)
-        final imageConfig = activeParams['image_config'];
+        final imageConfig = activeParams['_aurora_image_config'] ?? activeParams['image_config'];
         if (imageConfig != null && imageConfig is Map) {
           final isGemini = selectedModel.toLowerCase().contains('gemini');
           if (isGemini) {

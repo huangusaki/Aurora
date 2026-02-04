@@ -76,7 +76,7 @@ class _PayloadConfigPanelState extends ConsumerState<PayloadConfigPanel> {
   Widget _buildImageConfig(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final Map<String, dynamic> imageConfig =
-        Map<String, dynamic>.from(_modelSettings['image_config'] ?? {});
+        Map<String, dynamic>.from(_modelSettings['_aurora_image_config'] ?? _modelSettings['image_config'] ?? {});
 
     final String currentSize = imageConfig['image_size'] ?? '2K';
 
@@ -120,7 +120,9 @@ class _PayloadConfigPanelState extends ConsumerState<PayloadConfigPanel> {
                   imageConfig['aspect_ratio'] = v;
                 }
                 final newSettings = Map<String, dynamic>.from(_modelSettings);
-                newSettings['image_config'] = imageConfig;
+                // Remove old key if present to migrate
+                newSettings.remove('image_config');
+                newSettings['_aurora_image_config'] = imageConfig;
                 _saveSettings(newSettings);
               }
             },
@@ -142,7 +144,9 @@ class _PayloadConfigPanelState extends ConsumerState<PayloadConfigPanel> {
                     final newSize = sizes[v.toInt()];
                     imageConfig['image_size'] = newSize;
                     final newSettings = Map<String, dynamic>.from(_modelSettings);
-                    newSettings['image_config'] = imageConfig;
+                    // Remove old key if present to migrate
+                    newSettings.remove('image_config');
+                    newSettings['_aurora_image_config'] = imageConfig;
                     _saveSettings(newSettings);
                   },
                 ),

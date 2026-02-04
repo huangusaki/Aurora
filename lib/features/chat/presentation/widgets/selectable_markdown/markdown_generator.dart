@@ -806,7 +806,7 @@ class MarkdownGenerator {
         decoration: isHeader
             ? BoxDecoration(
                 color: isDark
-                    ? Colors.white10.withValues(alpha: 0.6)
+                    ? Colors.white.withValues(alpha: 0.1)
                     : Colors.black.withValues(alpha: 0.03),
               )
             : null,
