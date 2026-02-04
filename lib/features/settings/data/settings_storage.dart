@@ -264,6 +264,7 @@ class SettingsStorage {
       ..lastTopicId = existing.lastTopicId
       ..language = existing.language
       ..lastPresetId = existing.lastPresetId
+      ..lastAssistantId = existing.lastAssistantId
       ..themeColor = existing.themeColor
       ..backgroundColor = existing.backgroundColor
       ..closeBehavior = existing.closeBehavior
@@ -309,6 +310,7 @@ class SettingsStorage {
       ..lastTopicId = existing.lastTopicId
       ..language = existing.language
       ..lastPresetId = existing.lastPresetId
+      ..lastAssistantId = existing.lastAssistantId
       ..themeColor = existing.themeColor
       ..backgroundColor = existing.backgroundColor
       ..closeBehavior = existing.closeBehavior
@@ -563,6 +565,7 @@ class SettingsStorage {
       ..lastTopicId = topicId
       ..language = existing.language
       ..lastPresetId = existing.lastPresetId
+      ..lastAssistantId = existing.lastAssistantId
       ..themeColor = existing.themeColor
       ..backgroundColor = existing.backgroundColor
       ..closeBehavior = existing.closeBehavior

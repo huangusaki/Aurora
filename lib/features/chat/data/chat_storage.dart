@@ -224,6 +224,23 @@ class ChatStorage {
   Future<void> updateMessage(Message message) async {
     final intId = int.tryParse(message.id);
     if (intId == null) return;
+    
+    // Get existing message to compare attachments before transaction
+    final existing = await _isar.messageEntitys.get(intId);
+    if (existing != null) {
+      // Find attachments that were removed
+      final oldAttachments = existing.attachments;
+      final newAttachments = message.attachments;
+      final removedAttachments = oldAttachments
+          .where((path) => !newAttachments.contains(path))
+          .toList();
+      
+      // Delete removed attachment files
+      if (removedAttachments.isNotEmpty) {
+        await _deleteAttachmentFiles(removedAttachments);
+      }
+    }
+    
     await _isar.writeTxn(() async {
       final existing = await _isar.messageEntitys.get(intId);
       if (existing != null) {
@@ -269,6 +286,7 @@ class ChatStorage {
       }
     });
   }
+
 
   Future<void> clearSessionMessages(String sessionId) async {
     await _isar.writeTxn(() async {

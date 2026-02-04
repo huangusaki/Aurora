@@ -8,20 +8,27 @@ class AssistantAvatar extends StatelessWidget {
   final Assistant? assistant;
   final double size;
   final Color? fallbackColor;
+  final String? fallbackAvatarPath;
 
   const AssistantAvatar({
     super.key,
     this.assistant,
     this.size = 40,
     this.fallbackColor,
+    this.fallbackAvatarPath,
   });
 
   @override
   Widget build(BuildContext context) {
-    if (assistant?.avatar != null && assistant!.avatar!.isNotEmpty) {
+    String? path = assistant?.avatar;
+    if (path == null || path.isEmpty) {
+      path = fallbackAvatarPath;
+    }
+
+    if (path != null && path.isNotEmpty) {
       return CircleAvatar(
         radius: size / 2,
-        backgroundImage: FileImage(File(assistant!.avatar!)),
+        backgroundImage: FileImage(File(path)),
         backgroundColor: Colors.transparent,
       );
     }

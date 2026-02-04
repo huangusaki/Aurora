@@ -35,6 +35,7 @@ class MarkdownGenerator {
         md.HtmlBlockSyntax(), // Explicitly include HTML block syntax
       ],
       inlineSyntaxes: [
+        GeneralBoldSyntax(), // General bold syntax for edge cases
         CjkBoldSyntax(), 
         CjkSuffixBoldSyntax(),
         LatexInlineSyntax(),
@@ -1362,6 +1363,27 @@ class CjkSuffixBoldSyntax extends md.InlineSyntax {
   @override
   bool onMatch(md.InlineParser parser, Match match) {
     final innerContent = match[1]!;
+    final innerParser = md.InlineParser(innerContent, parser.document);
+    final children = innerParser.parse();
+    final element = md.Element('strong', children);
+    parser.addNode(element);
+    return true;
+  }
+}
+
+/// General bold syntax that handles edge cases where standard markdown
+/// and CJK-specific syntaxes fail to match.
+/// This matches `**content**` where content does not start or end with whitespace.
+class GeneralBoldSyntax extends md.InlineSyntax {
+  GeneralBoldSyntax() : super(r'\*\*(?!\s)(.+?)(?<!\s)\*\*');
+
+  @override
+  bool onMatch(md.InlineParser parser, Match match) {
+    final innerContent = match[1]!;
+    // Don't match if it looks like it should be handled by other syntaxes
+    // or if content is empty
+    if (innerContent.trim().isEmpty) return false;
+    
     final innerParser = md.InlineParser(innerContent, parser.document);
     final children = innerParser.parse();
     final element = md.Element('strong', children);

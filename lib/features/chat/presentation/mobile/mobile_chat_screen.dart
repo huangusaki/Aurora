@@ -343,8 +343,7 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
               },
               child: Row(
                 children: [
-                  _buildAssistantAvatar(ref, sessionId, size: 36),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 14),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -433,7 +432,6 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
 
   void _openModelSwitcher() {
     final settingsState = ref.read(settingsProvider);
-    final assistantState = ref.read(assistantProvider);
     final providers = settingsState.providers;
     final activeProvider = settingsState.activeProvider;
     final selectedModel = settingsState.selectedModel;
@@ -461,60 +459,6 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
                 child: ListView(
                   shrinkWrap: true,
                   children: [
-                    // Assistant Section
-                    ListTile(
-                      dense: true,
-                      enabled: false,
-                      title: const Text(
-                        '当前助理',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ),
-                    // Default Assistant Option
-                    AuroraBottomSheet.buildListItem(
-                      context: context,
-                      leading: Icon(
-                        assistantState.selectedAssistantId == null
-                            ? Icons.check_circle
-                            : Icons.autorenew,
-                        color: assistantState.selectedAssistantId == null
-                            ? Theme.of(context).primaryColor
-                            : null,
-                      ),
-                      title: const Text('Default'),
-                      onTap: () async {
-                        await ref.read(assistantProvider.notifier).selectAssistant(null);
-                        if (context.mounted) Navigator.pop(ctx);
-                      },
-                    ),
-                    // Custom Assistants
-                    for (final assistant in assistantState.assistants)
-                      AuroraBottomSheet.buildListItem(
-                        context: context,
-                        leading: Container(
-                          width: 24,
-                          height: 24,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: assistantState.selectedAssistantId == assistant.id
-                                  ? Theme.of(context).primaryColor
-                                  : Colors.transparent,
-                              width: 2,
-                            ),
-                          ),
-                          child: AssistantAvatar(assistant: assistant, size: 24),
-                        ),
-                        title: Text(assistant.name),
-                        onTap: () async {
-                          await ref.read(assistantProvider.notifier).selectAssistant(assistant.id);
-                          if (context.mounted) Navigator.pop(ctx);
-                        },
-                      ),
-                    const Divider(),
                     // Model Section
                     ListTile(
                       dense: true,
@@ -669,13 +613,4 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
     return isDark ? gradient.$1 : gradient.$2;
   }
 
-  Widget _buildAssistantAvatar(WidgetRef ref, String sessionId,
-      {double size = 32}) {
-    // Always use global assistant selection
-    final selectedId = ref.watch(assistantProvider).selectedAssistantId;
-    final assistants = ref.watch(assistantProvider).assistants;
-    final assistant = assistants.where((a) => a.id == selectedId).firstOrNull;
-
-    return AssistantAvatar(assistant: assistant, size: size);
-  }
 }

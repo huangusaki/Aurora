@@ -327,7 +327,11 @@ class ChatNotifier extends StateNotifier<ChatState> {
         final systemMsg = messagesForApi.where((m) => m.role == 'system').firstOrNull;
         if (systemMsg != null) {
           final index = messagesForApi.indexOf(systemMsg);
-          messagesForApi[index] = systemMsg.copyWith(content: assistant.systemPrompt);
+          // Merge preset prompt and assistant prompt
+          final combinedPrompt = systemMsg.content.isEmpty 
+              ? assistant.systemPrompt 
+              : '${systemMsg.content}\n\n${assistant.systemPrompt}';
+          messagesForApi[index] = systemMsg.copyWith(content: combinedPrompt);
         } else {
           messagesForApi.insert(
             0,
@@ -1177,14 +1181,10 @@ To invoke a skill, output a skill tag in this exact format:
   Future<void> updateSystemPrompt(String template, [String? presetName]) async {
     await _updateSystemMessageInternal(template);
     
-    // Preset Mode: Activate Preset, Clear Assistant (use global provider)
+    // Preset Mode: Activate Preset
     state = state.copyWith(
       activePresetName: presetName,
     );
-    // Clear global assistant selection when a preset is chosen
-    if (presetName != null) {
-      _ref.read(assistantProvider.notifier).selectAssistant(null);
-    }
     
     debugPrint(
         '[PresetSave] updateSystemPrompt called with presetName: $presetName, sessionId: $_sessionId');
@@ -1196,14 +1196,11 @@ To invoke a skill, output a skill tag in this exact format:
         final newPresetId = match.first.id;
         if (_sessionId != 'chat' && _sessionId != 'new_chat') {
           await _storage.updateSessionPreset(_sessionId, newPresetId);
-          // Also clear assistant association in storage
-          await _storage.updateSessionAssistant(_sessionId, null);
         }
       }
     } else {
       if (_sessionId != 'chat' && _sessionId != 'new_chat') {
          await _storage.updateSessionPreset(_sessionId, '');
-         await _storage.updateSessionAssistant(_sessionId, null);
       }
     }
     // Force global trigger update for indicators

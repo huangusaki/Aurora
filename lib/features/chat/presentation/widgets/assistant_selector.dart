@@ -4,6 +4,7 @@ import 'package:fluent_ui/fluent_ui.dart' as fluent;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:aurora/features/assistant/presentation/assistant_provider.dart';
+import 'package:aurora/features/settings/presentation/settings_provider.dart';
 import '../chat_provider.dart';
 
 import 'custom_dropdown_overlay.dart';
@@ -69,6 +70,7 @@ class _AssistantSelectorState extends ConsumerState<AssistantSelector> {
   List<fluent.CommandBarItem> _buildDropdownItems(
       fluent.FluentThemeData theme, AppLocalizations l10n) {
     final assistants = ref.watch(assistantProvider).assistants;
+    final settings = ref.watch(settingsProvider);
     final List<fluent.CommandBarItem> items = [];
 
     // Add Default option first
@@ -81,9 +83,9 @@ class _AssistantSelectorState extends ConsumerState<AssistantSelector> {
         padding: const EdgeInsets.only(left: 8),
         child: Row(
           children: [
-            const Icon(Icons.autorenew, size: 24),
+            AssistantAvatar(assistant: null, size: 24),
             const SizedBox(width: 8),
-            Text('Default', style: const TextStyle(fontWeight: FontWeight.w500)),
+            const Text('Default', style: TextStyle(fontWeight: FontWeight.w500)),
           ],
         ),
       ),
@@ -103,7 +105,11 @@ class _AssistantSelectorState extends ConsumerState<AssistantSelector> {
           padding: const EdgeInsets.only(left: 8),
           child: Row(
             children: [
-              AssistantAvatar(assistant: assistant, size: 24),
+              AssistantAvatar(
+                assistant: assistant,
+                size: 24,
+                fallbackAvatarPath: settings.llmAvatar,
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: Column(
@@ -140,6 +146,9 @@ class _AssistantSelectorState extends ConsumerState<AssistantSelector> {
         .where((a) => a.id == selectedId)
         .firstOrNull;
 
+    final settings = ref.watch(settingsProvider);
+    final llmAvatar = settings.llmAvatar;
+
     return CompositedTransformTarget(
       link: _layerLink,
       child: fluent.HoverButton(
@@ -156,10 +165,10 @@ class _AssistantSelectorState extends ConsumerState<AssistantSelector> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (selectedAssistant != null)
-                   AssistantAvatar(assistant: selectedAssistant, size: 18)
-                else
-                   const Icon(Icons.person, size: 16),
+                AssistantAvatar(
+                  assistant: selectedAssistant,
+                  size: 18,
+                ),
                 const SizedBox(width: 6),
                 Container(
                   constraints: const BoxConstraints(maxWidth: 120),
