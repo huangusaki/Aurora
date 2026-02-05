@@ -143,6 +143,10 @@ void main() async {
           isStreamEnabled: appSettings?.isStreamEnabled ?? true,
           isSearchEnabled: appSettings?.isSearchEnabled ?? false,
           searchEngine: appSettings?.searchEngine ?? 'duckduckgo',
+          searchRegion: appSettings?.searchRegion ?? 'us-en',
+          searchSafeSearch: appSettings?.searchSafeSearch ?? 'moderate',
+          searchMaxResults: appSettings?.searchMaxResults ?? 5,
+          searchTimeoutSeconds: appSettings?.searchTimeoutSeconds ?? 15,
           enableSmartTopic: appSettings?.enableSmartTopic ?? true,
           topicGenerationModel: appSettings?.topicGenerationModel,
           language: appSettings?.language ??

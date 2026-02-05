@@ -41,6 +41,13 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "2.13.0"
+  aurora_search:
+    dependency: "direct main"
+    description:
+      path: "packages/aurora_search"
+      relative: true
+    source: path
+    version: "0.1.0"
   boolean_selector:
     dependency: transitive
     description:
@@ -217,13 +224,6 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "1.2.0"
-  ddgs:
-    dependency: "direct main"
-    description:
-      path: "packages/aurora_search"
-      relative: true
-    source: path
-    version: "0.3.1"
   device_info_plus:
     dependency: transitive
     description:

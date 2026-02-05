@@ -1,10 +1,7 @@
-name: ddgs
-description: A professional metasearch library that aggregates results from multiple web search engines including DuckDuckGo, Google, Bing, Brave, Ecosia, Qwant, and more.
-version: 0.3.1
-homepage: https://github.com/kamranxdev/ddgs
-repository: https://github.com/kamranxdev/ddgs
-issue_tracker: https://github.com/kamranxdev/ddgs/issues
-documentation: https://github.com/kamranxdev/ddgs#readme
+name: aurora_search
+description: A metasearch library used by Aurora.
+version: 0.1.0
+publish_to: 'none'
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -33,4 +30,3 @@ topics:
   - bing
   - web-scraping
   - cli
-

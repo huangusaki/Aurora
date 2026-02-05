@@ -315,7 +315,12 @@ class ChatNotifier extends StateNotifier<ChatState> {
           : null;
 
       final llmService = _ref.read(llmServiceProvider);
-      final toolManager = ToolManager();
+      final toolManager = ToolManager(
+        searchRegion: settings.searchRegion,
+        searchSafeSearch: settings.searchSafeSearch,
+        searchMaxResults: settings.searchMaxResults,
+        searchTimeout: Duration(seconds: settings.searchTimeoutSeconds),
+      );
 
       // Assistant specific model config removed per user request. Always use global settings.
       final currentModel = settings.activeProvider.selectedModel;

@@ -67,7 +67,7 @@ class HttpClient {
               .timeout(timeout);
           break;
         default:
-          throw DDGSException('Unsupported HTTP method: $method');
+          throw AuroraSearchException('Unsupported HTTP method: $method');
       }
       return HttpResponse(
         statusCode: response.statusCode,
@@ -75,13 +75,13 @@ class HttpClient {
         bodyBytes: response.bodyBytes,
       );
     } on io.SocketException catch (e) {
-      throw DDGSException('Network error: ${e.message}');
+      throw AuroraSearchException('Network error: ${e.message}');
     } on http.ClientException catch (e) {
-      throw DDGSException('HTTP client error: $e');
+      throw AuroraSearchException('HTTP client error: $e');
     } on TimeoutException catch (e) {
-      throw TimeoutException('Request timed out: $e');
+      throw AuroraSearchTimeoutException('Request timed out: $e');
     } catch (e) {
-      throw DDGSException('Request failed: $e');
+      throw AuroraSearchException('Request failed: $e');
     }
   }
 

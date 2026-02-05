@@ -2,9 +2,9 @@ library;
 
 import 'dart:convert';
 import '../base_search_engine.dart';
-import '../results.dart';
+import '../search_result.dart';
 
-class QwantEngine extends BaseSearchEngine<TextResult> {
+class QwantEngine extends BaseSearchEngine<TextSearchResult> {
   QwantEngine({super.proxy, super.timeout, super.verify});
   @override
   String get name => 'qwant';
@@ -68,8 +68,8 @@ class QwantEngine extends BaseSearchEngine<TextResult> {
   }
 
   @override
-  List<TextResult> extractResults(String htmlText) {
-    final results = <TextResult>[];
+  List<TextSearchResult> extractResults(String htmlText) {
+    final results = <TextSearchResult>[];
     try {
       final json = jsonDecode(htmlText) as Map<String, dynamic>;
       final data = json['data'] as Map<String, dynamic>?;
@@ -85,7 +85,14 @@ class QwantEngine extends BaseSearchEngine<TextResult> {
               final url = item['url'] as String? ?? '';
               final desc = item['desc'] as String? ?? '';
               if (title.isNotEmpty && url.isNotEmpty) {
-                results.add(TextResult(title: title, href: url, body: desc));
+                results.add(
+                  TextSearchResult.normalized(
+                    title: title,
+                    href: url,
+                    body: desc,
+                    provider: name,
+                  ),
+                );
               }
             }
           }
@@ -101,7 +108,14 @@ class QwantEngine extends BaseSearchEngine<TextResult> {
         final href = titleEl?.attributes['href'] ?? '';
         final body = bodyEl?.text ?? '';
         if (title.isNotEmpty && href.isNotEmpty) {
-          results.add(TextResult(title: title, href: href, body: body));
+          results.add(
+            TextSearchResult.normalized(
+              title: title,
+              href: href,
+              body: body,
+              provider: name,
+            ),
+          );
         }
       }
     }
@@ -109,7 +123,7 @@ class QwantEngine extends BaseSearchEngine<TextResult> {
   }
 }
 
-class QwantImagesEngine extends BaseSearchEngine<ImagesResult> {
+class QwantImagesEngine extends BaseSearchEngine<ImageSearchResult> {
   QwantImagesEngine({super.proxy, super.timeout, super.verify});
   @override
   String get name => 'qwant_images';
@@ -152,8 +166,8 @@ class QwantImagesEngine extends BaseSearchEngine<ImagesResult> {
   }
 
   @override
-  List<ImagesResult> extractResults(String htmlText) {
-    final results = <ImagesResult>[];
+  List<ImageSearchResult> extractResults(String htmlText) {
+    final results = <ImageSearchResult>[];
     try {
       final json = jsonDecode(htmlText) as Map<String, dynamic>;
       final data = json['data'] as Map<String, dynamic>?;
@@ -165,18 +179,19 @@ class QwantImagesEngine extends BaseSearchEngine<ImagesResult> {
           final mediaUrl = item['media'] as String? ?? '';
           final thumbnailUrl = item['thumbnail'] as String? ?? '';
           final sourceUrl = item['url'] as String? ?? '';
-          final width = item['width']?.toString() ?? '';
-          final height = item['height']?.toString() ?? '';
+          final width = int.tryParse(item['width']?.toString() ?? '');
+          final height = int.tryParse(item['height']?.toString() ?? '');
           if (mediaUrl.isNotEmpty) {
             results.add(
-              ImagesResult(
+              ImageSearchResult.normalized(
                 title: title,
-                image: mediaUrl,
-                thumbnail: thumbnailUrl,
-                url: sourceUrl,
+                imageUrl: mediaUrl,
+                thumbnailUrl: thumbnailUrl,
+                sourceUrl: sourceUrl,
                 width: width,
                 height: height,
                 source: 'qwant',
+                provider: name,
               ),
             );
           }
@@ -189,7 +204,7 @@ class QwantImagesEngine extends BaseSearchEngine<ImagesResult> {
   }
 }
 
-class QwantNewsEngine extends BaseSearchEngine<NewsResult> {
+class QwantNewsEngine extends BaseSearchEngine<NewsSearchResult> {
   QwantNewsEngine({super.proxy, super.timeout, super.verify});
   @override
   String get name => 'qwant_news';
@@ -232,8 +247,8 @@ class QwantNewsEngine extends BaseSearchEngine<NewsResult> {
   }
 
   @override
-  List<NewsResult> extractResults(String htmlText) {
-    final results = <NewsResult>[];
+  List<NewsSearchResult> extractResults(String htmlText) {
+    final results = <NewsSearchResult>[];
     try {
       final json = jsonDecode(htmlText) as Map<String, dynamic>;
       final data = json['data'] as Map<String, dynamic>?;
@@ -249,13 +264,15 @@ class QwantNewsEngine extends BaseSearchEngine<NewsResult> {
           final thumbnail = item['thumbnail'] as String?;
           if (title.isNotEmpty && url.isNotEmpty) {
             results.add(
-              NewsResult(
+              NewsSearchResult.normalized(
                 title: title,
                 url: url,
                 body: desc,
-                date: date,
+                dateRaw: date,
+                publishedDate: DateTime.tryParse(date),
                 source: source,
-                image: thumbnail ?? '',
+                imageUrl: thumbnail,
+                provider: name,
               ),
             );
           }

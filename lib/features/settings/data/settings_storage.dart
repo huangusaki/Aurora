@@ -187,6 +187,10 @@ class SettingsStorage {
     bool? isStreamEnabled,
     bool? isSearchEnabled,
     String? searchEngine,
+    String? searchRegion,
+    String? searchSafeSearch,
+    int? searchMaxResults,
+    int? searchTimeoutSeconds,
     bool? enableSmartTopic,
     String? topicGenerationModel,
     String? lastSessionId,
@@ -217,6 +221,12 @@ class SettingsStorage {
       ..isStreamEnabled = isStreamEnabled ?? existing?.isStreamEnabled ?? true
       ..isSearchEnabled = isSearchEnabled ?? existing?.isSearchEnabled ?? false
       ..searchEngine = searchEngine ?? existing?.searchEngine ?? 'duckduckgo'
+      ..searchRegion = searchRegion ?? existing?.searchRegion ?? 'us-en'
+      ..searchSafeSearch =
+          searchSafeSearch ?? existing?.searchSafeSearch ?? 'moderate'
+      ..searchMaxResults = searchMaxResults ?? existing?.searchMaxResults ?? 5
+      ..searchTimeoutSeconds =
+          searchTimeoutSeconds ?? existing?.searchTimeoutSeconds ?? 15
       ..enableSmartTopic =
           enableSmartTopic ?? existing?.enableSmartTopic ?? true
       ..topicGenerationModel =
@@ -261,6 +271,10 @@ class SettingsStorage {
       ..isStreamEnabled = existing.isStreamEnabled
       ..isSearchEnabled = existing.isSearchEnabled
       ..searchEngine = existing.searchEngine
+      ..searchRegion = existing.searchRegion
+      ..searchSafeSearch = existing.searchSafeSearch
+      ..searchMaxResults = existing.searchMaxResults
+      ..searchTimeoutSeconds = existing.searchTimeoutSeconds
       ..enableSmartTopic = existing.enableSmartTopic
       ..topicGenerationModel = existing.topicGenerationModel
       ..lastSessionId = sessionId
@@ -308,6 +322,10 @@ class SettingsStorage {
       ..isStreamEnabled = existing.isStreamEnabled
       ..isSearchEnabled = existing.isSearchEnabled
       ..searchEngine = existing.searchEngine
+      ..searchRegion = existing.searchRegion
+      ..searchSafeSearch = existing.searchSafeSearch
+      ..searchMaxResults = existing.searchMaxResults
+      ..searchTimeoutSeconds = existing.searchTimeoutSeconds
       ..enableSmartTopic = existing.enableSmartTopic
       ..topicGenerationModel = existing.topicGenerationModel
       ..lastTopicId = existing.lastTopicId
@@ -587,6 +605,10 @@ class SettingsStorage {
       ..isStreamEnabled = existing.isStreamEnabled
       ..isSearchEnabled = existing.isSearchEnabled
       ..searchEngine = existing.searchEngine
+      ..searchRegion = existing.searchRegion
+      ..searchSafeSearch = existing.searchSafeSearch
+      ..searchMaxResults = existing.searchMaxResults
+      ..searchTimeoutSeconds = existing.searchTimeoutSeconds
       ..enableSmartTopic = existing.enableSmartTopic
       ..topicGenerationModel = existing.topicGenerationModel
       ..lastTopicId = topicId
@@ -643,6 +665,10 @@ class SettingsStorage {
       ..isStreamEnabled = existing.isStreamEnabled
       ..isSearchEnabled = existing.isSearchEnabled
       ..searchEngine = existing.searchEngine
+      ..searchRegion = existing.searchRegion
+      ..searchSafeSearch = existing.searchSafeSearch
+      ..searchMaxResults = existing.searchMaxResults
+      ..searchTimeoutSeconds = existing.searchTimeoutSeconds
       ..enableSmartTopic = existing.enableSmartTopic
       ..topicGenerationModel = existing.topicGenerationModel
       ..lastSessionId = existing.lastSessionId
@@ -700,6 +726,10 @@ class SettingsStorage {
       ..isStreamEnabled = existing.isStreamEnabled
       ..isSearchEnabled = existing.isSearchEnabled
       ..searchEngine = existing.searchEngine
+      ..searchRegion = existing.searchRegion
+      ..searchSafeSearch = existing.searchSafeSearch
+      ..searchMaxResults = existing.searchMaxResults
+      ..searchTimeoutSeconds = existing.searchTimeoutSeconds
       ..enableSmartTopic = existing.enableSmartTopic
       ..topicGenerationModel = existing.topicGenerationModel
       ..lastSessionId = existing.lastSessionId

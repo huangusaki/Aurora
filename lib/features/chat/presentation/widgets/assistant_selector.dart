@@ -69,7 +69,7 @@ class _AssistantSelectorState extends ConsumerState<AssistantSelector> {
   List<fluent.CommandBarItem> _buildDropdownItems(
       fluent.FluentThemeData theme, AppLocalizations l10n) {
     final assistants = ref.watch(assistantProvider).assistants;
-    final settings = ref.watch(settingsProvider);
+    ref.watch(settingsProvider);
     final List<fluent.CommandBarItem> items = [];
 
     // Add Default option first
@@ -108,7 +108,6 @@ class _AssistantSelectorState extends ConsumerState<AssistantSelector> {
               AssistantAvatar(
                 assistant: assistant,
                 size: 24,
-                fallbackAvatarPath: settings.llmAvatar,
               ),
               const SizedBox(width: 8),
               Expanded(

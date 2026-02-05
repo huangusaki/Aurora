@@ -918,7 +918,31 @@ class AppLocalizationsZh extends AppLocalizations {
   String get enableSearch => '启用搜索';
 
   @override
+  String get searchSettings => '搜索设置';
+
+  @override
   String get searchEngine => '搜索引擎';
+
+  @override
+  String get searchRegion => '搜索地区';
+
+  @override
+  String get searchSafeSearch => '安全搜索';
+
+  @override
+  String get searchSafeSearchOff => '关闭过滤';
+
+  @override
+  String get searchSafeSearchModerate => '适度过滤';
+
+  @override
+  String get searchSafeSearchStrict => '严格过滤';
+
+  @override
+  String get searchMaxResults => '最大结果数';
+
+  @override
+  String get searchTimeoutSeconds => '超时（秒）';
 
   @override
   String get clearContext => '清空上下文';

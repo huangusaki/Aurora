@@ -14,15 +14,16 @@ import 'search_result.dart';
 import 'streaming.dart';
 import 'utils.dart';
 
-class DDGS {
-  DDGS({
+class AuroraSearch {
+  AuroraSearch({
     String? proxy,
     Duration? timeout,
     bool verify = true,
     CacheConfig cacheConfig = CacheConfig.disabled,
     int maxRequestsPerSecond = 10,
   })  : _proxy =
-            expandProxyTbAlias(proxy) ?? Platform.environment['DDGS_PROXY'],
+            expandProxyTbAlias(proxy) ??
+            Platform.environment['AURORA_SEARCH_PROXY'],
         _timeout = timeout ?? const Duration(seconds: 5),
         _verify = verify,
         _cache = cacheConfig.enabled ? ResultCache(cacheConfig) : null,
@@ -30,7 +31,7 @@ class DDGS {
   final String? _proxy;
   final Duration _timeout;
   final bool _verify;
-  final Map<Type, BaseSearchEngine> _enginesCache = {};
+  final Map<Type, BaseSearchEngine<SearchResult>> _enginesCache = {};
   final ResultCache? _cache;
   final RateLimiter _rateLimiter;
   InstantAnswerService? _instantAnswerService;
@@ -44,7 +45,8 @@ class DDGS {
     return _instantAnswerService!;
   }
 
-  List<BaseSearchEngine> _getEngines(String category, String backend) {
+  List<BaseSearchEngine<SearchResult>> _getEngines(
+      String category, String backend) {
     final backendList = backend.split(',').map((e) => e.trim()).toList();
     final engineKeys = engines[category]?.keys.toList() ?? [];
     engineKeys.shuffle();
@@ -58,7 +60,7 @@ class DDGS {
       keys = backendList;
     }
     try {
-      final instances = <BaseSearchEngine>[];
+      final instances = <BaseSearchEngine<SearchResult>>[];
       for (final key in keys) {
         final engineClass = engines[category]?[key];
         if (engineClass == null) continue;
@@ -85,7 +87,7 @@ class DDGS {
     }
   }
 
-  Future<List<Map<String, dynamic>>> _search({
+  Future<List<SearchResult>> _searchTyped({
     required String category,
     required String query,
     String region = 'us-en',
@@ -97,7 +99,7 @@ class DDGS {
     Map<String, dynamic>? extra,
   }) async {
     if (query.isEmpty) {
-      throw DDGSException('query is mandatory.');
+      throw AuroraSearchException('query is mandatory.');
     }
     final enginesList = _getEngines(category, backend);
     final uniqueProviders = enginesList.map((e) => e.provider).toSet();
@@ -113,7 +115,7 @@ class DDGS {
       default:
         uniqueFields = {'href', 'url'};
     }
-    final resultsAggregator = ResultsAggregator<BaseResult>(uniqueFields);
+    final resultsAggregator = ResultsAggregator<SearchResult>(uniqueFields);
     final maxWorkers = maxResults != null
         ? min(uniqueProviders.length, (maxResults / 10).ceil() + 1)
         : uniqueProviders.length;
@@ -130,7 +132,6 @@ class DDGS {
         safesearch,
         timelimit,
         page,
-        maxResults,
         extra,
         resultsAggregator,
         seenProviders,
@@ -145,22 +146,52 @@ class DDGS {
     if (futures.isNotEmpty) {
       await Future.wait(futures);
     }
-    return resultsAggregator.results.map((r) => r.toJson()).toList();
+    final allResults = resultsAggregator.results;
+    if (maxResults != null && allResults.length > maxResults) {
+      return allResults.take(maxResults).toList();
+    }
+    return allResults;
+  }
+
+  Future<List<Map<String, dynamic>>> _search({
+    required String category,
+    required String query,
+    String region = 'us-en',
+    String safesearch = 'moderate',
+    String? timelimit,
+    int? maxResults = 10,
+    int page = 1,
+    String backend = 'auto',
+    Map<String, dynamic>? extra,
+  }) async {
+    final results = await _searchTyped(
+      category: category,
+      query: query,
+      region: region,
+      safesearch: safesearch,
+      timelimit: timelimit,
+      maxResults: maxResults,
+      page: page,
+      backend: backend,
+      extra: extra,
+    );
+    return results.map((r) => r.toJson()).toList();
   }
 
   Future<void> _executeEngineSearch(
-    BaseSearchEngine engine,
+    BaseSearchEngine<SearchResult> engine,
     String query,
     String region,
     String safesearch,
     String? timelimit,
     int page,
-    int? maxResults,
     Map<String, dynamic>? extra,
-    ResultsAggregator resultsAggregator,
+    ResultsAggregator<SearchResult> resultsAggregator,
     Set<String> seenProviders,
   ) async {
     try {
+      await _rateLimiter.waitForSlot(engine.name);
+      _rateLimiter.recordRequest(engine.name);
       final results = await engine
           .search(
             query: query,
@@ -277,8 +308,9 @@ class DDGS {
     String query, {
     SearchOptions options = const SearchOptions(),
   }) async {
-    final results = await text(
-      query,
+    final results = await _searchTyped(
+      category: 'text',
+      query: query,
       region: options.region.code,
       safesearch: options.safeSearch.code,
       timelimit: options.timeLimit.code,
@@ -286,15 +318,16 @@ class DDGS {
       page: options.page,
       backend: options.backend,
     );
-    return results.map(TextSearchResult.fromJson).toList();
+    return results.whereType<TextSearchResult>().toList();
   }
 
   Future<List<ImageSearchResult>> imagesTyped(
     String query, {
     SearchOptions options = const SearchOptions(),
   }) async {
-    final results = await images(
-      query,
+    final results = await _searchTyped(
+      category: 'images',
+      query: query,
       region: options.region.code,
       safesearch: options.safeSearch.code,
       timelimit: options.timeLimit.code,
@@ -302,15 +335,16 @@ class DDGS {
       page: options.page,
       backend: options.backend,
     );
-    return results.map(ImageSearchResult.fromJson).toList();
+    return results.whereType<ImageSearchResult>().toList();
   }
 
   Future<List<VideoSearchResult>> videosTyped(
     String query, {
     SearchOptions options = const SearchOptions(),
   }) async {
-    final results = await videos(
-      query,
+    final results = await _searchTyped(
+      category: 'videos',
+      query: query,
       region: options.region.code,
       safesearch: options.safeSearch.code,
       timelimit: options.timeLimit.code,
@@ -318,15 +352,16 @@ class DDGS {
       page: options.page,
       backend: options.backend,
     );
-    return results.map(VideoSearchResult.fromJson).toList();
+    return results.whereType<VideoSearchResult>().toList();
   }
 
   Future<List<NewsSearchResult>> newsTyped(
     String query, {
     SearchOptions options = const SearchOptions(),
   }) async {
-    final results = await news(
-      query,
+    final results = await _searchTyped(
+      category: 'news',
+      query: query,
       region: options.region.code,
       safesearch: options.safeSearch.code,
       timelimit: options.timeLimit.code,
@@ -334,7 +369,7 @@ class DDGS {
       page: options.page,
       backend: options.backend,
     );
-    return results.map(NewsSearchResult.fromJson).toList();
+    return results.whereType<NewsSearchResult>().toList();
   }
 
   Future<InstantAnswer?> instantAnswer(String query) =>

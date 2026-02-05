@@ -12,6 +12,7 @@ import 'package:image_cropper/image_cropper.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:io';
 import 'package:aurora/core/constants/build_info.dart';
+import 'mobile_search_settings_page.dart';
 
 class MobileAppSettingsPage extends ConsumerWidget {
   final VoidCallback? onBack;
@@ -144,6 +145,19 @@ class MobileAppSettingsPage extends ConsumerWidget {
                       : settingsState.topicGenerationModel!.split('@').last,
                   onTap: () => _showModelPicker(context, ref, settingsState),
                 ),
+              MobileSettingsTile(
+                leading: const Icon(AuroraIcons.globe),
+                title: l10n.searchSettings,
+                subtitle: settingsState.isSearchEnabled
+                    ? '${l10n.enabled} • ${settingsState.searchEngine}'
+                    : l10n.disabled,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const MobileSearchSettingsPage(),
+                  ),
+                ),
+              ),
             ],
           ),
           MobileSettingsSection(

@@ -616,7 +616,7 @@ class OpenAILLMService implements LLMService {
         'stream_options': {'include_usage': true},
       };
 
-      if (tools != null) {
+      if (tools != null && tools.isNotEmpty) {
         requestData['tools'] = tools;
         if (toolChoice != null) {
           requestData['tool_choice'] = toolChoice;
@@ -728,20 +728,50 @@ Use search for:
       }
 
       _logRequest('${baseUrl}chat/completions', requestData);
-      final response = await _dio.post(
-        '${baseUrl}chat/completions',
-        options: Options(
-          headers: {
-            'Authorization': 'Bearer $apiKey',
-            'Content-Type': 'application/json',
-            'Accept': 'text/event-stream',
-          },
-          responseType: ResponseType.stream,
-        ),
-        data: requestData,
-        cancelToken: cancelToken,
-      );
-      final stream = response.data.stream as Stream<List<int>>;
+      Response<ResponseBody> response;
+      try {
+        response = await _dio.post(
+          '${baseUrl}chat/completions',
+          options: Options(
+            headers: {
+              'Authorization': 'Bearer $apiKey',
+              'Content-Type': 'application/json',
+              'Accept': 'text/event-stream',
+            },
+            responseType: ResponseType.stream,
+          ),
+          data: requestData,
+          cancelToken: cancelToken,
+        );
+      } on DioException catch (e) {
+        final isGemini = selectedModel.toLowerCase().contains('gemini');
+        if (isGemini &&
+            e.type == DioExceptionType.badResponse &&
+            e.response?.statusCode == 400 &&
+            requestData.containsKey('stream_options')) {
+          final retryData = Map<String, dynamic>.from(requestData)
+            ..remove('stream_options');
+          _debugLog(
+              'Gemini backend rejected stream_options (400). Retrying without it.');
+          _logRequest('${baseUrl}chat/completions', retryData);
+          response = await _dio.post(
+            '${baseUrl}chat/completions',
+            options: Options(
+              headers: {
+                'Authorization': 'Bearer $apiKey',
+                'Content-Type': 'application/json',
+                'Accept': 'text/event-stream',
+              },
+              responseType: ResponseType.stream,
+            ),
+            data: retryData,
+            cancelToken: cancelToken,
+          );
+        } else {
+          rethrow;
+        }
+      }
+      final stream = response.data!.stream as Stream<List<int>>;
       String lineBuffer = '';
       bool isInThoughtTag = false;
 
@@ -1156,18 +1186,43 @@ Use search for:
   Future<List<Map<String, dynamic>>> _buildApiMessages(
       List<Message> messages) async {
     final List<Map<String, dynamic>> result = [];
+    final Set<String> knownToolCallIds = {};
     for (final m in messages) {
       if (m.role == 'tool') {
-        result.add({
-          'role': 'tool',
-          'tool_call_id': m.toolCallId,
-          'content': m.content,
-        });
+        final toolCallId = m.toolCallId;
+        if (toolCallId != null && knownToolCallIds.contains(toolCallId)) {
+          result.add({
+            'role': 'tool',
+            'tool_call_id': toolCallId,
+            'content': m.content,
+          });
+        } else {
+          // Some OpenAI-compatible backends (notably Gemini compatibility layers)
+          // reject tool-role messages unless they correspond to an assistant tool_call.
+          // Aurora's built-in web search uses a <search> tag workflow instead of
+          // tool_calls, so we degrade gracefully by sending it as plain user context.
+          String toolName = 'Tool';
+          if (toolCallId != null && toolCallId.startsWith('search_')) {
+            toolName = 'SearchWeb';
+          }
+          result.add({
+            'role': 'user',
+            'content': '<result name="$toolName">\n${m.content}\n</result>',
+          });
+        }
+        continue;
+      }
+      if (m.role == 'assistant' &&
+          m.content.trim().isEmpty &&
+          (m.toolCalls == null || m.toolCalls!.isEmpty) &&
+          m.attachments.isEmpty &&
+          m.images.isEmpty) {
         continue;
       }
       if (m.role == 'assistant' &&
           m.toolCalls != null &&
           m.toolCalls!.isNotEmpty) {
+        knownToolCallIds.addAll(m.toolCalls!.map((tc) => tc.id));
         result.add({
           'role': 'assistant',
           'content': m.content.isEmpty ? null : m.content,
@@ -1402,7 +1457,7 @@ Use search for:
         'stream': false,
       };
 
-      if (tools != null) {
+      if (tools != null && tools.isNotEmpty) {
         requestData['tools'] = tools;
         if (toolChoice != null) {
           requestData['tool_choice'] = toolChoice;

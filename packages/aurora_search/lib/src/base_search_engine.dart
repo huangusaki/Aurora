@@ -3,9 +3,9 @@ library;
 import 'package:html/dom.dart';
 import 'package:html/parser.dart' as html_parser;
 import 'http_client.dart';
-import 'results.dart';
+import 'search_result.dart';
 
-abstract class BaseSearchEngine<T extends BaseResult> {
+abstract class BaseSearchEngine<T extends SearchResult> {
   BaseSearchEngine({
     String? proxy,
     Duration? timeout,
@@ -26,7 +26,6 @@ abstract class BaseSearchEngine<T extends BaseResult> {
   String get itemsSelector;
   Map<String, String> get elementsSelector;
   final HttpClient httpClient;
-  final List<T> results = [];
   Map<String, String> buildPayload({
     required String query,
     required String region,

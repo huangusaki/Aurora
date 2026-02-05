@@ -120,6 +120,10 @@ class SettingsState {
   final bool isStreamEnabled;
   final bool isSearchEnabled;
   final String searchEngine;
+  final String searchRegion;
+  final String searchSafeSearch;
+  final int searchMaxResults;
+  final int searchTimeoutSeconds;
   final bool enableSmartTopic;
   final String? topicGenerationModel;
   final String language;
@@ -149,6 +153,10 @@ class SettingsState {
     this.isStreamEnabled = true,
     this.isSearchEnabled = false,
     this.searchEngine = 'duckduckgo',
+    this.searchRegion = 'us-en',
+    this.searchSafeSearch = 'moderate',
+    this.searchMaxResults = 5,
+    this.searchTimeoutSeconds = 15,
     this.enableSmartTopic = true,
     this.topicGenerationModel,
     this.language = 'zh',
@@ -186,6 +194,10 @@ class SettingsState {
     bool? isStreamEnabled,
     bool? isSearchEnabled,
     String? searchEngine,
+    String? searchRegion,
+    String? searchSafeSearch,
+    int? searchMaxResults,
+    int? searchTimeoutSeconds,
     bool? enableSmartTopic,
     String? topicGenerationModel,
     String? language,
@@ -216,6 +228,14 @@ class SettingsState {
       isStreamEnabled: isStreamEnabled ?? this.isStreamEnabled,
       isSearchEnabled: isSearchEnabled ?? this.isSearchEnabled,
       searchEngine: searchEngine ?? this.searchEngine,
+      searchRegion: searchRegion ?? this.searchRegion,
+      searchSafeSearch: searchSafeSearch ?? this.searchSafeSearch,
+      searchMaxResults: searchMaxResults != null
+          ? _clampInt(searchMaxResults, 1, 50)
+          : this.searchMaxResults,
+      searchTimeoutSeconds: searchTimeoutSeconds != null
+          ? _clampInt(searchTimeoutSeconds, 5, 60)
+          : this.searchTimeoutSeconds,
       enableSmartTopic: enableSmartTopic ?? this.enableSmartTopic,
       topicGenerationModel: topicGenerationModel ?? this.topicGenerationModel,
       language: language ?? this.language,
@@ -241,6 +261,34 @@ class SettingsState {
 
 const Object _settingsSentinel = Object();
 
+int _clampInt(int value, int min, int max) {
+  if (value < min) return min;
+  if (value > max) return max;
+  return value;
+}
+
+String _normalizeSearchEngine(String engine) {
+  final normalized = engine.trim().toLowerCase();
+  return normalized.isEmpty ? 'duckduckgo' : normalized;
+}
+
+String _normalizeSearchRegion(String region) {
+  final normalized = region.trim().toLowerCase();
+  return normalized.isEmpty ? 'us-en' : normalized;
+}
+
+String _normalizeSafeSearch(String safeSearch) {
+  final normalized = safeSearch.trim().toLowerCase();
+  switch (normalized) {
+    case 'off':
+    case 'moderate':
+    case 'on':
+      return normalized;
+    default:
+      return 'moderate';
+  }
+}
+
 class SettingsNotifier extends StateNotifier<SettingsState> {
   final SettingsStorage _storage;
   SettingsStorage get storage => _storage;
@@ -256,6 +304,10 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     bool isStreamEnabled = true,
     bool isSearchEnabled = false,
     String searchEngine = 'duckduckgo',
+    String searchRegion = 'us-en',
+    String searchSafeSearch = 'moderate',
+    int searchMaxResults = 5,
+    int searchTimeoutSeconds = 15,
     bool enableSmartTopic = true,
     String? topicGenerationModel,
     String language = 'zh',
@@ -281,7 +333,11 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
           themeMode: themeMode,
           isStreamEnabled: isStreamEnabled,
           isSearchEnabled: isSearchEnabled,
-          searchEngine: searchEngine,
+          searchEngine: _normalizeSearchEngine(searchEngine),
+          searchRegion: _normalizeSearchRegion(searchRegion),
+          searchSafeSearch: _normalizeSafeSearch(searchSafeSearch),
+          searchMaxResults: _clampInt(searchMaxResults, 1, 50),
+          searchTimeoutSeconds: _clampInt(searchTimeoutSeconds, 5, 60),
           enableSmartTopic: enableSmartTopic,
           topicGenerationModel: topicGenerationModel,
           language: language,
@@ -383,7 +439,14 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
       themeMode: appSettings?.themeMode ?? 'system',
       isStreamEnabled: appSettings?.isStreamEnabled ?? true,
       isSearchEnabled: appSettings?.isSearchEnabled ?? false,
-      searchEngine: appSettings?.searchEngine ?? 'duckduckgo',
+      searchEngine: _normalizeSearchEngine(
+          appSettings?.searchEngine ?? 'duckduckgo'),
+      searchRegion: _normalizeSearchRegion(appSettings?.searchRegion ?? 'us-en'),
+      searchSafeSearch:
+          _normalizeSafeSearch(appSettings?.searchSafeSearch ?? 'moderate'),
+      searchMaxResults: _clampInt(appSettings?.searchMaxResults ?? 5, 1, 50),
+      searchTimeoutSeconds:
+          _clampInt(appSettings?.searchTimeoutSeconds ?? 15, 5, 60),
       enableSmartTopic: appSettings?.enableSmartTopic ?? true,
       topicGenerationModel: appSettings?.topicGenerationModel,
       language: appSettings?.language ?? 'zh',
@@ -780,13 +843,17 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     );
   }
 
-  Future<void> toggleSearchEnabled() async {
-    final newValue = !state.isSearchEnabled;
-    state = state.copyWith(isSearchEnabled: newValue);
+  Future<void> setSearchEnabled(bool enabled) async {
+    if (state.isSearchEnabled == enabled) return;
+    state = state.copyWith(isSearchEnabled: enabled);
     await _storage.saveAppSettings(
       activeProviderId: state.activeProviderId,
-      isSearchEnabled: newValue,
+      isSearchEnabled: enabled,
     );
+  }
+
+  Future<void> toggleSearchEnabled() async {
+    await setSearchEnabled(!state.isSearchEnabled);
   }
 
   Future<void> setSearchEngine(String engine) async {
@@ -794,6 +861,44 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     await _storage.saveAppSettings(
       activeProviderId: state.activeProviderId,
       searchEngine: engine,
+    );
+  }
+
+  Future<void> setSearchRegion(String region) async {
+    final normalized = region.trim().toLowerCase();
+    if (normalized.isEmpty) return;
+    state = state.copyWith(searchRegion: normalized);
+    await _storage.saveAppSettings(
+      activeProviderId: state.activeProviderId,
+      searchRegion: normalized,
+    );
+  }
+
+  Future<void> setSearchSafeSearch(String safeSearch) async {
+    final normalized = safeSearch.trim().toLowerCase();
+    if (normalized.isEmpty) return;
+    state = state.copyWith(searchSafeSearch: normalized);
+    await _storage.saveAppSettings(
+      activeProviderId: state.activeProviderId,
+      searchSafeSearch: normalized,
+    );
+  }
+
+  Future<void> setSearchMaxResults(int maxResults) async {
+    final clamped = maxResults.clamp(1, 50);
+    state = state.copyWith(searchMaxResults: clamped);
+    await _storage.saveAppSettings(
+      activeProviderId: state.activeProviderId,
+      searchMaxResults: clamped,
+    );
+  }
+
+  Future<void> setSearchTimeoutSeconds(int seconds) async {
+    final clamped = seconds.clamp(5, 60);
+    state = state.copyWith(searchTimeoutSeconds: clamped);
+    await _storage.saveAppSettings(
+      activeProviderId: state.activeProviderId,
+      searchTimeoutSeconds: clamped,
     );
   }
 

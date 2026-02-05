@@ -18,7 +18,7 @@ String jsonEncode(Object? obj) {
   try {
     return const JsonEncoder.withIndent('  ').convert(obj);
   } catch (e) {
-    throw DDGSException('JSON encode error: $e');
+    throw AuroraSearchException('JSON encode error: $e');
   }
 }
 
@@ -26,7 +26,7 @@ dynamic jsonDecode(String str) {
   try {
     return json.decode(str);
   } catch (e) {
-    throw DDGSException('JSON decode error: $e');
+    throw AuroraSearchException('JSON decode error: $e');
   }
 }
 

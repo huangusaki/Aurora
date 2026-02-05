@@ -3449,38 +3449,58 @@ const AppSettingsEntitySchema = CollectionSchema(
       name: r'searchEngine',
       type: IsarType.string,
     ),
-    r'selectedModel': PropertySchema(
+    r'searchMaxResults': PropertySchema(
       id: 21,
+      name: r'searchMaxResults',
+      type: IsarType.long,
+    ),
+    r'searchRegion': PropertySchema(
+      id: 22,
+      name: r'searchRegion',
+      type: IsarType.string,
+    ),
+    r'searchSafeSearch': PropertySchema(
+      id: 23,
+      name: r'searchSafeSearch',
+      type: IsarType.string,
+    ),
+    r'searchTimeoutSeconds': PropertySchema(
+      id: 24,
+      name: r'searchTimeoutSeconds',
+      type: IsarType.long,
+    ),
+    r'selectedModel': PropertySchema(
+      id: 25,
       name: r'selectedModel',
       type: IsarType.string,
     ),
     r'themeColor': PropertySchema(
-      id: 22,
+      id: 26,
       name: r'themeColor',
       type: IsarType.string,
     ),
     r'themeMode': PropertySchema(
-      id: 23,
+      id: 27,
       name: r'themeMode',
       type: IsarType.string,
     ),
     r'topicGenerationModel': PropertySchema(
-      id: 24,
+      id: 28,
       name: r'topicGenerationModel',
       type: IsarType.string,
     ),
     r'useCustomTheme': PropertySchema(
-      id: 25,
+      id: 29,
       name: r'useCustomTheme',
       type: IsarType.bool,
     ),
     r'userAvatar': PropertySchema(
-      id: 26,
+      id: 30,
       name: r'userAvatar',
       type: IsarType.string,
     ),
     r'userName': PropertySchema(
-      id: 27,
+      id: 31,
       name: r'userName',
       type: IsarType.string,
     )
@@ -3584,6 +3604,8 @@ int _appSettingsEntityEstimateSize(
   }
   bytesCount += 3 + object.llmName.length * 3;
   bytesCount += 3 + object.searchEngine.length * 3;
+  bytesCount += 3 + object.searchRegion.length * 3;
+  bytesCount += 3 + object.searchSafeSearch.length * 3;
   {
     final value = object.selectedModel;
     if (value != null) {
@@ -3640,13 +3662,17 @@ void _appSettingsEntitySerialize(
   writer.writeString(offsets[18], object.llmAvatar);
   writer.writeString(offsets[19], object.llmName);
   writer.writeString(offsets[20], object.searchEngine);
-  writer.writeString(offsets[21], object.selectedModel);
-  writer.writeString(offsets[22], object.themeColor);
-  writer.writeString(offsets[23], object.themeMode);
-  writer.writeString(offsets[24], object.topicGenerationModel);
-  writer.writeBool(offsets[25], object.useCustomTheme);
-  writer.writeString(offsets[26], object.userAvatar);
-  writer.writeString(offsets[27], object.userName);
+  writer.writeLong(offsets[21], object.searchMaxResults);
+  writer.writeString(offsets[22], object.searchRegion);
+  writer.writeString(offsets[23], object.searchSafeSearch);
+  writer.writeLong(offsets[24], object.searchTimeoutSeconds);
+  writer.writeString(offsets[25], object.selectedModel);
+  writer.writeString(offsets[26], object.themeColor);
+  writer.writeString(offsets[27], object.themeMode);
+  writer.writeString(offsets[28], object.topicGenerationModel);
+  writer.writeBool(offsets[29], object.useCustomTheme);
+  writer.writeString(offsets[30], object.userAvatar);
+  writer.writeString(offsets[31], object.userName);
 }
 
 AppSettingsEntity _appSettingsEntityDeserialize(
@@ -3678,13 +3704,17 @@ AppSettingsEntity _appSettingsEntityDeserialize(
   object.llmAvatar = reader.readStringOrNull(offsets[18]);
   object.llmName = reader.readString(offsets[19]);
   object.searchEngine = reader.readString(offsets[20]);
-  object.selectedModel = reader.readStringOrNull(offsets[21]);
-  object.themeColor = reader.readStringOrNull(offsets[22]);
-  object.themeMode = reader.readString(offsets[23]);
-  object.topicGenerationModel = reader.readStringOrNull(offsets[24]);
-  object.useCustomTheme = reader.readBool(offsets[25]);
-  object.userAvatar = reader.readStringOrNull(offsets[26]);
-  object.userName = reader.readString(offsets[27]);
+  object.searchMaxResults = reader.readLong(offsets[21]);
+  object.searchRegion = reader.readString(offsets[22]);
+  object.searchSafeSearch = reader.readString(offsets[23]);
+  object.searchTimeoutSeconds = reader.readLong(offsets[24]);
+  object.selectedModel = reader.readStringOrNull(offsets[25]);
+  object.themeColor = reader.readStringOrNull(offsets[26]);
+  object.themeMode = reader.readString(offsets[27]);
+  object.topicGenerationModel = reader.readStringOrNull(offsets[28]);
+  object.useCustomTheme = reader.readBool(offsets[29]);
+  object.userAvatar = reader.readStringOrNull(offsets[30]);
+  object.userName = reader.readString(offsets[31]);
   return object;
 }
 
@@ -3738,18 +3768,26 @@ P _appSettingsEntityDeserializeProp<P>(
     case 20:
       return (reader.readString(offset)) as P;
     case 21:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readLong(offset)) as P;
     case 22:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 23:
       return (reader.readString(offset)) as P;
     case 24:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readLong(offset)) as P;
     case 25:
-      return (reader.readBool(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 26:
       return (reader.readStringOrNull(offset)) as P;
     case 27:
+      return (reader.readString(offset)) as P;
+    case 28:
+      return (reader.readStringOrNull(offset)) as P;
+    case 29:
+      return (reader.readBool(offset)) as P;
+    case 30:
+      return (reader.readStringOrNull(offset)) as P;
+    case 31:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -6452,6 +6490,390 @@ extension AppSettingsEntityQueryFilter
   }
 
   QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      searchMaxResultsEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'searchMaxResults',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      searchMaxResultsGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'searchMaxResults',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      searchMaxResultsLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'searchMaxResults',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      searchMaxResultsBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'searchMaxResults',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      searchRegionEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'searchRegion',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      searchRegionGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'searchRegion',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      searchRegionLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'searchRegion',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      searchRegionBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'searchRegion',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      searchRegionStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'searchRegion',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      searchRegionEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'searchRegion',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      searchRegionContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'searchRegion',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      searchRegionMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'searchRegion',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      searchRegionIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'searchRegion',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      searchRegionIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'searchRegion',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      searchSafeSearchEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'searchSafeSearch',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      searchSafeSearchGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'searchSafeSearch',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      searchSafeSearchLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'searchSafeSearch',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      searchSafeSearchBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'searchSafeSearch',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      searchSafeSearchStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'searchSafeSearch',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      searchSafeSearchEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'searchSafeSearch',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      searchSafeSearchContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'searchSafeSearch',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      searchSafeSearchMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'searchSafeSearch',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      searchSafeSearchIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'searchSafeSearch',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      searchSafeSearchIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'searchSafeSearch',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      searchTimeoutSecondsEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'searchTimeoutSeconds',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      searchTimeoutSecondsGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'searchTimeoutSeconds',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      searchTimeoutSecondsLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'searchTimeoutSeconds',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      searchTimeoutSecondsBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'searchTimeoutSeconds',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
       selectedModelIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
@@ -7639,6 +8061,62 @@ extension AppSettingsEntityQuerySortBy
   }
 
   QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      sortBySearchMaxResults() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'searchMaxResults', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      sortBySearchMaxResultsDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'searchMaxResults', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      sortBySearchRegion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'searchRegion', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      sortBySearchRegionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'searchRegion', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      sortBySearchSafeSearch() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'searchSafeSearch', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      sortBySearchSafeSearchDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'searchSafeSearch', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      sortBySearchTimeoutSeconds() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'searchTimeoutSeconds', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      sortBySearchTimeoutSecondsDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'searchTimeoutSeconds', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
       sortBySelectedModel() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'selectedModel', Sort.asc);
@@ -8033,6 +8511,62 @@ extension AppSettingsEntityQuerySortThenBy
   }
 
   QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      thenBySearchMaxResults() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'searchMaxResults', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      thenBySearchMaxResultsDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'searchMaxResults', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      thenBySearchRegion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'searchRegion', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      thenBySearchRegionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'searchRegion', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      thenBySearchSafeSearch() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'searchSafeSearch', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      thenBySearchSafeSearchDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'searchSafeSearch', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      thenBySearchTimeoutSeconds() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'searchTimeoutSeconds', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      thenBySearchTimeoutSecondsDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'searchTimeoutSeconds', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
       thenBySelectedModel() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'selectedModel', Sort.asc);
@@ -8288,6 +8822,35 @@ extension AppSettingsEntityQueryWhereDistinct
   }
 
   QueryBuilder<AppSettingsEntity, AppSettingsEntity, QDistinct>
+      distinctBySearchMaxResults() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'searchMaxResults');
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QDistinct>
+      distinctBySearchRegion({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'searchRegion', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QDistinct>
+      distinctBySearchSafeSearch({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'searchSafeSearch',
+          caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QDistinct>
+      distinctBySearchTimeoutSeconds() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'searchTimeoutSeconds');
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QDistinct>
       distinctBySelectedModel({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'selectedModel',
@@ -8488,6 +9051,34 @@ extension AppSettingsEntityQueryProperty
       searchEngineProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'searchEngine');
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, int, QQueryOperations>
+      searchMaxResultsProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'searchMaxResults');
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, String, QQueryOperations>
+      searchRegionProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'searchRegion');
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, String, QQueryOperations>
+      searchSafeSearchProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'searchSafeSearch');
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, int, QQueryOperations>
+      searchTimeoutSecondsProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'searchTimeoutSeconds');
     });
   }
 

@@ -1,12 +1,25 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:dio/dio.dart';
-import 'package:ddgs/ddgs.dart';
+import 'package:aurora_search/aurora_search.dart';
 import '../../features/skills/domain/skill_entity.dart';
 import 'package:aurora/shared/utils/platform_utils.dart';
 
 class ToolManager {
-  final DDGS _ddgs = DDGS(timeout: const Duration(seconds: 15));
+  ToolManager({
+    this.searchRegion = 'us-en',
+    this.searchSafeSearch = 'moderate',
+    int searchMaxResults = 5,
+    this.searchTimeout = const Duration(seconds: 15),
+  })  : searchMaxResults = searchMaxResults.clamp(1, 50),
+        _search = AuroraSearch(timeout: searchTimeout);
+
+  final String searchRegion;
+  final String searchSafeSearch;
+  final int searchMaxResults;
+  final Duration searchTimeout;
+
+  final AuroraSearch _search;
   final Dio _dio =
       Dio(BaseOptions(connectTimeout: const Duration(seconds: 10)));
 
@@ -40,7 +53,7 @@ class ToolManager {
 
   Future<String> executeTool(String name, Map<String, dynamic> args,
       {String preferredEngine = 'duckduckgo',
-      List<Skill> skills = const []}) async {
+       List<Skill> skills = const []}) async {
     if (name == 'SearchWeb') {
       return await _searchWeb(args['query'] ?? '', preferredEngine);
     }
@@ -178,8 +191,9 @@ class ToolManager {
     return jsonEncode({'error': 'Unsupported tool type: ${tool.type}'});
   }
 
-  Future<String> _searchWeb(String query, String preferredEngine,
-      {String region = 'us-en'}) async {
+  Future<String> _searchWeb(String query, String preferredEngine) async {
+    final region = searchRegion;
+    final safeSearch = searchSafeSearch;
     final enginesToTry = {
       preferredEngine,
       'duckduckgo',
@@ -192,14 +206,15 @@ class ToolManager {
     for (final engine in enginesToTry) {
       if (finalResults.isNotEmpty) break;
       try {
-        final results = await _ddgs
+        final results = await _search
             .text(
               query,
               region: region,
+              safesearch: safeSearch,
               backend: engine,
-              maxResults: 5,
+              maxResults: searchMaxResults,
             )
-            .timeout(const Duration(seconds: 15));
+            .timeout(searchTimeout);
         if (results.isNotEmpty) {
           finalResults = results;
           successfulEngine = engine;

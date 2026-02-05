@@ -1,9 +1,9 @@
 library;
 
 import '../base_search_engine.dart';
-import '../results.dart';
+import '../search_result.dart';
 
-class StartPageEngine extends BaseSearchEngine<TextResult> {
+class StartPageEngine extends BaseSearchEngine<TextSearchResult> {
   StartPageEngine({super.proxy, super.timeout, super.verify});
   @override
   String get name => 'startpage';
@@ -65,8 +65,8 @@ class StartPageEngine extends BaseSearchEngine<TextResult> {
   }
 
   @override
-  List<TextResult> extractResults(String htmlText) {
-    final results = <TextResult>[];
+  List<TextSearchResult> extractResults(String htmlText) {
+    final results = <TextSearchResult>[];
     final document = extractTree(htmlText);
     var items = document.querySelectorAll(itemsSelector);
     if (items.isEmpty) {
@@ -88,7 +88,14 @@ class StartPageEngine extends BaseSearchEngine<TextResult> {
       if (title.isNotEmpty &&
           href.isNotEmpty &&
           !href.contains('startpage.com')) {
-        results.add(TextResult(title: title, href: href, body: body));
+        results.add(
+          TextSearchResult.normalized(
+            title: title,
+            href: href,
+            body: body,
+            provider: name,
+          ),
+        );
       }
     }
     return results;

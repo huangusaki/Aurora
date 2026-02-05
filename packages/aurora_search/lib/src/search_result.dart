@@ -1,17 +1,17 @@
 library;
 
-import 'results.dart';
+import 'utils.dart';
 
 sealed class SearchResult {
   const SearchResult({this.provider, this.relevanceScore});
   final String? provider;
   final int? relevanceScore;
   Map<String, dynamic> toJson();
-  static SearchResult fromJson(Map<String, dynamic> json, String type) =>
-      switch (type) {
+  static SearchResult fromJson(Map<String, dynamic> json, String category) =>
+      switch (category) {
         'text' => TextSearchResult.fromJson(json),
-        'image' => ImageSearchResult.fromJson(json),
-        'video' => VideoSearchResult.fromJson(json),
+        'image' || 'images' => ImageSearchResult.fromJson(json),
+        'video' || 'videos' => VideoSearchResult.fromJson(json),
         'news' => NewsSearchResult.fromJson(json),
         _ => TextSearchResult.fromJson(json),
       };
@@ -27,22 +27,34 @@ final class TextSearchResult extends SearchResult {
     super.provider,
     super.relevanceScore,
   });
-  factory TextSearchResult.fromJson(Map<String, dynamic> json) =>
+  factory TextSearchResult.normalized({
+    required String title,
+    required String href,
+    required String body,
+    String? favicon,
+    DateTime? publishedDate,
+    String? provider,
+    int? relevanceScore,
+  }) =>
       TextSearchResult(
+        title: normalizeText(title),
+        href: normalizeUrl(href),
+        body: normalizeText(body),
+        favicon: favicon != null ? normalizeUrl(favicon) : null,
+        publishedDate: publishedDate,
+        provider: provider,
+        relevanceScore: relevanceScore,
+      );
+  factory TextSearchResult.fromJson(Map<String, dynamic> json) =>
+      TextSearchResult.normalized(
         title: json['title'] as String? ?? '',
         href: json['href'] as String? ?? json['url'] as String? ?? '',
         body: json['body'] as String? ?? json['description'] as String? ?? '',
         favicon: json['favicon'] as String?,
+        publishedDate:
+            DateTime.tryParse(json['publishedDate'] as String? ?? ''),
         provider: json['provider'] as String?,
         relevanceScore: json['relevanceScore'] as int?,
-      );
-  factory TextSearchResult.fromTextResult(TextResult result,
-          {String? provider}) =>
-      TextSearchResult(
-        title: result.title,
-        href: result.href,
-        body: result.body,
-        provider: provider,
       );
   final String title;
   final String href;
@@ -83,8 +95,34 @@ final class ImageSearchResult extends SearchResult {
     super.provider,
     super.relevanceScore,
   });
-  factory ImageSearchResult.fromJson(Map<String, dynamic> json) =>
+  factory ImageSearchResult.normalized({
+    required String title,
+    required String imageUrl,
+    required String thumbnailUrl,
+    required String sourceUrl,
+    int? width,
+    int? height,
+    String? source,
+    String? format,
+    int? fileSize,
+    String? provider,
+    int? relevanceScore,
+  }) =>
       ImageSearchResult(
+        title: normalizeText(title),
+        imageUrl: normalizeUrl(imageUrl),
+        thumbnailUrl: normalizeUrl(thumbnailUrl),
+        sourceUrl: normalizeUrl(sourceUrl),
+        width: width,
+        height: height,
+        source: source != null ? normalizeText(source) : null,
+        format: format != null ? normalizeText(format) : null,
+        fileSize: fileSize,
+        provider: provider,
+        relevanceScore: relevanceScore,
+      );
+  factory ImageSearchResult.fromJson(Map<String, dynamic> json) =>
+      ImageSearchResult.normalized(
         title: json['title'] as String? ?? '',
         imageUrl: json['image'] as String? ?? '',
         thumbnailUrl: json['thumbnail'] as String? ?? '',
@@ -95,18 +133,6 @@ final class ImageSearchResult extends SearchResult {
         format: json['format'] as String?,
         fileSize: json['fileSize'] as int?,
         provider: json['provider'] as String?,
-      );
-  factory ImageSearchResult.fromImagesResult(ImagesResult result,
-          {String? provider}) =>
-      ImageSearchResult(
-        title: result.title,
-        imageUrl: result.image,
-        thumbnailUrl: result.thumbnail,
-        sourceUrl: result.url,
-        width: int.tryParse(result.width),
-        height: int.tryParse(result.height),
-        source: result.source,
-        provider: provider,
       );
   final String title;
   final String imageUrl;
@@ -158,8 +184,36 @@ final class VideoSearchResult extends SearchResult {
     super.provider,
     super.relevanceScore,
   });
-  factory VideoSearchResult.fromJson(Map<String, dynamic> json) =>
+  factory VideoSearchResult.normalized({
+    required String title,
+    required String description,
+    required String embedUrl,
+    String? embedHtml,
+    String? thumbnailUrl,
+    Duration? duration,
+    String? publisher,
+    DateTime? publishedDate,
+    int? viewCount,
+    String? uploader,
+    String? provider,
+    int? relevanceScore,
+  }) =>
       VideoSearchResult(
+        title: normalizeText(title),
+        description: normalizeText(description),
+        embedUrl: normalizeUrl(embedUrl),
+        embedHtml: embedHtml,
+        thumbnailUrl: thumbnailUrl != null ? normalizeUrl(thumbnailUrl) : null,
+        duration: duration,
+        publisher: publisher != null ? normalizeText(publisher) : null,
+        publishedDate: publishedDate,
+        viewCount: viewCount,
+        uploader: uploader != null ? normalizeText(uploader) : null,
+        provider: provider,
+        relevanceScore: relevanceScore,
+      );
+  factory VideoSearchResult.fromJson(Map<String, dynamic> json) =>
+      VideoSearchResult.normalized(
         title: json['title'] as String? ?? '',
         description:
             json['description'] as String? ?? json['content'] as String? ?? '',
@@ -167,22 +221,12 @@ final class VideoSearchResult extends SearchResult {
         embedHtml: json['embed_html'] as String?,
         thumbnailUrl: json['thumbnail'] as String?,
         duration: _parseDuration(json['duration'] as String?),
+        publishedDate:
+            DateTime.tryParse(json['publishedDate'] as String? ?? ''),
+        viewCount: json['viewCount'] as int?,
         publisher: json['publisher'] as String?,
         uploader: json['uploader'] as String?,
         provider: json['provider'] as String?,
-      );
-  factory VideoSearchResult.fromVideosResult(VideosResult result,
-          {String? provider}) =>
-      VideoSearchResult(
-        title: result.title,
-        description:
-            result.description.isNotEmpty ? result.description : result.content,
-        embedUrl: result.embedUrl,
-        embedHtml: result.embedHtml,
-        duration: _parseDuration(result.duration),
-        publisher: result.publisher,
-        uploader: result.uploader,
-        provider: provider ?? result.provider,
       );
   final String title;
   final String description;
@@ -244,40 +288,58 @@ final class NewsSearchResult extends SearchResult {
     required this.url,
     this.imageUrl,
     this.source,
+    this.dateRaw,
     this.publishedDate,
     this.author,
     this.category,
     super.provider,
     super.relevanceScore,
   });
-  factory NewsSearchResult.fromJson(Map<String, dynamic> json) =>
+  factory NewsSearchResult.normalized({
+    required String title,
+    required String body,
+    required String url,
+    String? imageUrl,
+    String? source,
+    String? dateRaw,
+    DateTime? publishedDate,
+    String? author,
+    String? category,
+    String? provider,
+    int? relevanceScore,
+  }) =>
       NewsSearchResult(
+        title: normalizeText(title),
+        body: normalizeText(body),
+        url: normalizeUrl(url),
+        imageUrl: imageUrl != null ? normalizeUrl(imageUrl) : null,
+        source: source != null ? normalizeText(source) : null,
+        dateRaw: dateRaw,
+        publishedDate: publishedDate,
+        author: author != null ? normalizeText(author) : null,
+        category: category != null ? normalizeText(category) : null,
+        provider: provider,
+        relevanceScore: relevanceScore,
+      );
+  factory NewsSearchResult.fromJson(Map<String, dynamic> json) =>
+      NewsSearchResult.normalized(
         title: json['title'] as String? ?? '',
         body: json['body'] as String? ?? '',
         url: json['url'] as String? ?? '',
         imageUrl: json['image'] as String?,
         source: json['source'] as String?,
+        dateRaw: json['date'] as String?,
         publishedDate: DateTime.tryParse(json['date'] as String? ?? ''),
         author: json['author'] as String?,
         category: json['category'] as String?,
         provider: json['provider'] as String?,
-      );
-  factory NewsSearchResult.fromNewsResult(NewsResult result,
-          {String? provider}) =>
-      NewsSearchResult(
-        title: result.title,
-        body: result.body,
-        url: result.url,
-        imageUrl: result.image,
-        source: result.source,
-        publishedDate: DateTime.tryParse(result.date),
-        provider: provider,
       );
   final String title;
   final String body;
   final String url;
   final String? imageUrl;
   final String? source;
+  final String? dateRaw;
   final DateTime? publishedDate;
   final String? author;
   final String? category;
@@ -302,7 +364,10 @@ final class NewsSearchResult extends SearchResult {
         'url': url,
         if (imageUrl != null) 'image': imageUrl,
         if (source != null) 'source': source,
-        if (publishedDate != null) 'date': publishedDate?.toIso8601String(),
+        if (publishedDate != null)
+          'date': publishedDate!.toIso8601String()
+        else if (dateRaw != null)
+          'date': dateRaw,
         if (author != null) 'author': author,
         if (category != null) 'category': category,
         if (provider != null) 'provider': provider,

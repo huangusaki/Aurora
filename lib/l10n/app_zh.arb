@@ -409,7 +409,15 @@
   
   "streamOutput": "流式输出",
   "enableSearch": "启用搜索",
+  "searchSettings": "搜索设置",
   "searchEngine": "搜索引擎",
+  "searchRegion": "搜索地区",
+  "searchSafeSearch": "安全搜索",
+  "searchSafeSearchOff": "关闭过滤",
+  "searchSafeSearchModerate": "适度过滤",
+  "searchSafeSearchStrict": "严格过滤",
+  "searchMaxResults": "最大结果数",
+  "searchTimeoutSeconds": "超时（秒）",
   
   "clearContext": "清空上下文",
   "clearContextConfirm": "确定要清空当前对话的历史记录吗？此操作不可撤销。",

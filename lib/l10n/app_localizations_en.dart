@@ -935,7 +935,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get enableSearch => 'Enable Search';
 
   @override
+  String get searchSettings => 'Search Settings';
+
+  @override
   String get searchEngine => 'Search Engine';
+
+  @override
+  String get searchRegion => 'Search Region';
+
+  @override
+  String get searchSafeSearch => 'Safe Search';
+
+  @override
+  String get searchSafeSearchOff => 'Off';
+
+  @override
+  String get searchSafeSearchModerate => 'Moderate';
+
+  @override
+  String get searchSafeSearchStrict => 'Strict';
+
+  @override
+  String get searchMaxResults => 'Max Results';
+
+  @override
+  String get searchTimeoutSeconds => 'Timeout (seconds)';
 
   @override
   String get clearContext => 'Clear Context';

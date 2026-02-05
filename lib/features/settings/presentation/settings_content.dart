@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:aurora/l10n/app_localizations.dart';
+import 'package:aurora_search/aurora_search.dart';
 import 'package:aurora/shared/utils/platform_utils.dart';
 import 'settings_provider.dart';
 import 'usage_stats_view.dart';
@@ -99,6 +100,7 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
       final settingsPages = [
         (icon: AuroraIcons.model, label: l10n.modelProvider),
         (icon: AuroraIcons.translation, label: l10n.chatSettings),
+        (icon: AuroraIcons.globe, label: l10n.searchSettings),
         (icon: AuroraIcons.edit, label: l10n.promptPresets),
         (icon: AuroraIcons.image, label: l10n.displaySettings),
         (icon: AuroraIcons.backup, label: l10n.dataSettings),
@@ -191,6 +193,7 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
                     children: [
                       _buildProviderSettings(settingsState, viewingProvider),
                       _buildChatSettings(settingsState),
+                      _buildSearchSettings(settingsState),
                       const PresetSettingsPage(),
                       _buildDisplaySettings(),
                       _buildDataSettings(),
@@ -1202,6 +1205,156 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
                   },
                   content: Text(l10n.exitApplicationOption),
                 ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchSettings(SettingsState settingsState) {
+    final l10n = AppLocalizations.of(context)!;
+
+    String safeSearchLabel(String code) {
+      switch (code) {
+        case 'off':
+          return l10n.searchSafeSearchOff;
+        case 'moderate':
+          return l10n.searchSafeSearchModerate;
+        case 'on':
+          return l10n.searchSafeSearchStrict;
+        default:
+          return code;
+      }
+    }
+
+    final enabled = settingsState.isSearchEnabled;
+    final engines = <String>{
+      ...getAvailableEngines('text'),
+      settingsState.searchEngine,
+    }.toList()
+      ..sort();
+    final region = SearchRegion.fromCode(settingsState.searchRegion);
+    final safeSearchCode = settingsState.searchSafeSearch.trim().toLowerCase();
+    final maxResults = settingsState.searchMaxResults.clamp(1, 50);
+    final timeoutSeconds = settingsState.searchTimeoutSeconds.clamp(5, 60);
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          fluent.Text(
+            l10n.searchSettings,
+            style: fluent.FluentTheme.of(context).typography.subtitle,
+          ),
+          const SizedBox(height: 24),
+
+          fluent.InfoLabel(
+            label: l10n.searchEngine,
+            child: Builder(builder: (context) {
+              final items = engines.map((engine) {
+                final isSelected = settingsState.searchEngine == engine;
+                return fluent.MenuFlyoutItem(
+                  leading: isSelected
+                      ? const Icon(AuroraIcons.check, size: 12)
+                      : null,
+                  text: Text(engine),
+                  onPressed: () => ref
+                      .read(settingsProvider.notifier)
+                      .setSearchEngine(engine),
+                );
+              }).toList();
+              return fluent.DropDownButton(
+                title: Text(settingsState.searchEngine),
+                items: items,
+              );
+            }),
+          ),
+          const SizedBox(height: 16),
+          fluent.InfoLabel(
+            label: l10n.searchRegion,
+            child: Builder(builder: (context) {
+              final items = SearchRegion.values.map((r) {
+                final isSelected = region.code == r.code;
+                return fluent.MenuFlyoutItem(
+                  leading: isSelected
+                      ? const Icon(AuroraIcons.check, size: 12)
+                      : null,
+                  text: Text('${r.code} - ${r.displayName}'),
+                  onPressed: () => ref
+                      .read(settingsProvider.notifier)
+                      .setSearchRegion(r.code),
+                );
+              }).toList();
+
+              return fluent.DropDownButton(
+                title: Text('${region.code} - ${region.displayName}'),
+                items: items,
+              );
+            }),
+          ),
+          const SizedBox(height: 16),
+          fluent.InfoLabel(
+            label: l10n.searchSafeSearch,
+            child: Builder(builder: (context) {
+              const levels = ['off', 'moderate', 'on'];
+              final items = levels.map((level) {
+                final isSelected = safeSearchCode == level;
+                return fluent.MenuFlyoutItem(
+                  leading: isSelected
+                      ? const Icon(AuroraIcons.check, size: 12)
+                      : null,
+                  text: Text(safeSearchLabel(level)),
+                  onPressed: () => ref
+                      .read(settingsProvider.notifier)
+                      .setSearchSafeSearch(level),
+                );
+              }).toList();
+              return fluent.DropDownButton(
+                title: Text(safeSearchLabel(safeSearchCode)),
+                items: items,
+              );
+            }),
+          ),
+          const SizedBox(height: 16),
+          fluent.InfoLabel(
+            label: l10n.searchMaxResults,
+            child: Row(
+              children: [
+                Expanded(
+                  child: fluent.Slider(
+                    value: maxResults.toDouble(),
+                    min: 1,
+                    max: 50,
+                    onChanged: (v) => ref
+                        .read(settingsProvider.notifier)
+                        .setSearchMaxResults(v.round()),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text('${maxResults.toInt()}'),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          fluent.InfoLabel(
+            label: l10n.searchTimeoutSeconds,
+            child: Row(
+              children: [
+                Expanded(
+                  child: fluent.Slider(
+                    value: timeoutSeconds.toDouble(),
+                    min: 5,
+                    max: 60,
+                    onChanged: (v) => ref
+                        .read(settingsProvider.notifier)
+                        .setSearchTimeoutSeconds(v.round()),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text('${timeoutSeconds.toInt()}s'),
               ],
             ),
           ),

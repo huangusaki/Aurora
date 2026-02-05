@@ -1,7 +1,7 @@
 library;
 
 export 'src/base_search_engine.dart';
-export 'src/ddgs_base.dart';
+export 'src/aurora_search_client.dart';
 export 'src/engines/engines.dart'
     show getAvailableEngines, supportedCategories, isEngineAvailable;
 export 'src/exceptions.dart';

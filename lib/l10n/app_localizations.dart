@@ -1856,11 +1856,59 @@ abstract class AppLocalizations {
   /// **'启用搜索'**
   String get enableSearch;
 
+  /// No description provided for @searchSettings.
+  ///
+  /// In zh, this message translates to:
+  /// **'搜索设置'**
+  String get searchSettings;
+
   /// No description provided for @searchEngine.
   ///
   /// In zh, this message translates to:
   /// **'搜索引擎'**
   String get searchEngine;
+
+  /// No description provided for @searchRegion.
+  ///
+  /// In zh, this message translates to:
+  /// **'搜索地区'**
+  String get searchRegion;
+
+  /// No description provided for @searchSafeSearch.
+  ///
+  /// In zh, this message translates to:
+  /// **'安全搜索'**
+  String get searchSafeSearch;
+
+  /// No description provided for @searchSafeSearchOff.
+  ///
+  /// In zh, this message translates to:
+  /// **'关闭过滤'**
+  String get searchSafeSearchOff;
+
+  /// No description provided for @searchSafeSearchModerate.
+  ///
+  /// In zh, this message translates to:
+  /// **'适度过滤'**
+  String get searchSafeSearchModerate;
+
+  /// No description provided for @searchSafeSearchStrict.
+  ///
+  /// In zh, this message translates to:
+  /// **'严格过滤'**
+  String get searchSafeSearchStrict;
+
+  /// No description provided for @searchMaxResults.
+  ///
+  /// In zh, this message translates to:
+  /// **'最大结果数'**
+  String get searchMaxResults;
+
+  /// No description provided for @searchTimeoutSeconds.
+  ///
+  /// In zh, this message translates to:
+  /// **'超时（秒）'**
+  String get searchTimeoutSeconds;
 
   /// No description provided for @clearContext.
   ///

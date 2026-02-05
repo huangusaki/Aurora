@@ -1,10 +1,10 @@
 library;
 
 import '../base_search_engine.dart';
-import '../results.dart';
+import '../search_result.dart';
 import '../utils.dart';
 
-class DuckDuckGoImagesEngine extends BaseSearchEngine<ImagesResult> {
+class DuckDuckGoImagesEngine extends BaseSearchEngine<ImageSearchResult> {
   DuckDuckGoImagesEngine({super.proxy, super.timeout, super.verify});
   @override
   String get name => 'duckduckgo';
@@ -79,7 +79,7 @@ class DuckDuckGoImagesEngine extends BaseSearchEngine<ImagesResult> {
   }
 
   @override
-  Future<List<ImagesResult>?> search({
+  Future<List<ImageSearchResult>?> search({
     required String query,
     String region = 'us-en',
     String safesearch = 'moderate',
@@ -110,22 +110,23 @@ class DuckDuckGoImagesEngine extends BaseSearchEngine<ImagesResult> {
   }
 
   @override
-  List<ImagesResult> extractResults(String htmlText) {
-    final results = <ImagesResult>[];
+  List<ImageSearchResult> extractResults(String htmlText) {
+    final results = <ImageSearchResult>[];
     try {
       final jsonData = jsonDecode(htmlText) as Map<String, dynamic>;
       final items = jsonData['results'] as List<dynamic>? ?? [];
       for (final item in items) {
         if (item is! Map<String, dynamic>) continue;
         results.add(
-          ImagesResult(
+          ImageSearchResult.normalized(
             title: item['title']?.toString() ?? '',
-            image: item['image']?.toString() ?? '',
-            thumbnail: item['thumbnail']?.toString() ?? '',
-            url: item['url']?.toString() ?? '',
-            height: item['height']?.toString() ?? '',
-            width: item['width']?.toString() ?? '',
+            imageUrl: item['image']?.toString() ?? '',
+            thumbnailUrl: item['thumbnail']?.toString() ?? '',
+            sourceUrl: item['url']?.toString() ?? '',
+            height: int.tryParse(item['height']?.toString() ?? ''),
+            width: int.tryParse(item['width']?.toString() ?? ''),
             source: item['source']?.toString() ?? '',
+            provider: name,
           ),
         );
       }

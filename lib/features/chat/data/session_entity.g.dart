@@ -17,38 +17,43 @@ const SessionEntitySchema = CollectionSchema(
   name: r'SessionEntity',
   id: 7472964409236372477,
   properties: {
-    r'lastMessageTime': PropertySchema(
+    r'assistantId': PropertySchema(
       id: 0,
+      name: r'assistantId',
+      type: IsarType.string,
+    ),
+    r'lastMessageTime': PropertySchema(
+      id: 1,
       name: r'lastMessageTime',
       type: IsarType.dateTime,
     ),
     r'presetId': PropertySchema(
-      id: 1,
+      id: 2,
       name: r'presetId',
       type: IsarType.string,
     ),
     r'sessionId': PropertySchema(
-      id: 2,
+      id: 3,
       name: r'sessionId',
       type: IsarType.string,
     ),
     r'snippet': PropertySchema(
-      id: 3,
+      id: 4,
       name: r'snippet',
       type: IsarType.string,
     ),
     r'title': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'title',
       type: IsarType.string,
     ),
     r'topicId': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'topicId',
       type: IsarType.long,
     ),
     r'totalTokens': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'totalTokens',
       type: IsarType.long,
     )
@@ -88,6 +93,12 @@ int _sessionEntityEstimateSize(
 ) {
   var bytesCount = offsets.last;
   {
+    final value = object.assistantId;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
     final value = object.presetId;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
@@ -110,13 +121,14 @@ void _sessionEntitySerialize(
   List<int> offsets,
   Map<Type, List<int>> allOffsets,
 ) {
-  writer.writeDateTime(offsets[0], object.lastMessageTime);
-  writer.writeString(offsets[1], object.presetId);
-  writer.writeString(offsets[2], object.sessionId);
-  writer.writeString(offsets[3], object.snippet);
-  writer.writeString(offsets[4], object.title);
-  writer.writeLong(offsets[5], object.topicId);
-  writer.writeLong(offsets[6], object.totalTokens);
+  writer.writeString(offsets[0], object.assistantId);
+  writer.writeDateTime(offsets[1], object.lastMessageTime);
+  writer.writeString(offsets[2], object.presetId);
+  writer.writeString(offsets[3], object.sessionId);
+  writer.writeString(offsets[4], object.snippet);
+  writer.writeString(offsets[5], object.title);
+  writer.writeLong(offsets[6], object.topicId);
+  writer.writeLong(offsets[7], object.totalTokens);
 }
 
 SessionEntity _sessionEntityDeserialize(
@@ -126,14 +138,15 @@ SessionEntity _sessionEntityDeserialize(
   Map<Type, List<int>> allOffsets,
 ) {
   final object = SessionEntity();
+  object.assistantId = reader.readStringOrNull(offsets[0]);
   object.id = id;
-  object.lastMessageTime = reader.readDateTime(offsets[0]);
-  object.presetId = reader.readStringOrNull(offsets[1]);
-  object.sessionId = reader.readString(offsets[2]);
-  object.snippet = reader.readStringOrNull(offsets[3]);
-  object.title = reader.readString(offsets[4]);
-  object.topicId = reader.readLongOrNull(offsets[5]);
-  object.totalTokens = reader.readLong(offsets[6]);
+  object.lastMessageTime = reader.readDateTime(offsets[1]);
+  object.presetId = reader.readStringOrNull(offsets[2]);
+  object.sessionId = reader.readString(offsets[3]);
+  object.snippet = reader.readStringOrNull(offsets[4]);
+  object.title = reader.readString(offsets[5]);
+  object.topicId = reader.readLongOrNull(offsets[6]);
+  object.totalTokens = reader.readLong(offsets[7]);
   return object;
 }
 
@@ -145,18 +158,20 @@ P _sessionEntityDeserializeProp<P>(
 ) {
   switch (propertyId) {
     case 0:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 1:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDateTime(offset)) as P;
     case 2:
-      return (reader.readString(offset)) as P;
-    case 3:
       return (reader.readStringOrNull(offset)) as P;
-    case 4:
+    case 3:
       return (reader.readString(offset)) as P;
+    case 4:
+      return (reader.readStringOrNull(offset)) as P;
     case 5:
-      return (reader.readLongOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 6:
+      return (reader.readLongOrNull(offset)) as P;
+    case 7:
       return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -359,6 +374,160 @@ extension SessionEntityQueryWhere
 
 extension SessionEntityQueryFilter
     on QueryBuilder<SessionEntity, SessionEntity, QFilterCondition> {
+  QueryBuilder<SessionEntity, SessionEntity, QAfterFilterCondition>
+      assistantIdIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'assistantId',
+      ));
+    });
+  }
+
+  QueryBuilder<SessionEntity, SessionEntity, QAfterFilterCondition>
+      assistantIdIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'assistantId',
+      ));
+    });
+  }
+
+  QueryBuilder<SessionEntity, SessionEntity, QAfterFilterCondition>
+      assistantIdEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'assistantId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<SessionEntity, SessionEntity, QAfterFilterCondition>
+      assistantIdGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'assistantId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<SessionEntity, SessionEntity, QAfterFilterCondition>
+      assistantIdLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'assistantId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<SessionEntity, SessionEntity, QAfterFilterCondition>
+      assistantIdBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'assistantId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<SessionEntity, SessionEntity, QAfterFilterCondition>
+      assistantIdStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'assistantId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<SessionEntity, SessionEntity, QAfterFilterCondition>
+      assistantIdEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'assistantId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<SessionEntity, SessionEntity, QAfterFilterCondition>
+      assistantIdContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'assistantId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<SessionEntity, SessionEntity, QAfterFilterCondition>
+      assistantIdMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'assistantId',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<SessionEntity, SessionEntity, QAfterFilterCondition>
+      assistantIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'assistantId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<SessionEntity, SessionEntity, QAfterFilterCondition>
+      assistantIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'assistantId',
+        value: '',
+      ));
+    });
+  }
+
   QueryBuilder<SessionEntity, SessionEntity, QAfterFilterCondition> idEqualTo(
       Id value) {
     return QueryBuilder.apply(this, (query) {
@@ -1188,6 +1357,19 @@ extension SessionEntityQueryLinks
 
 extension SessionEntityQuerySortBy
     on QueryBuilder<SessionEntity, SessionEntity, QSortBy> {
+  QueryBuilder<SessionEntity, SessionEntity, QAfterSortBy> sortByAssistantId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'assistantId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<SessionEntity, SessionEntity, QAfterSortBy>
+      sortByAssistantIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'assistantId', Sort.desc);
+    });
+  }
+
   QueryBuilder<SessionEntity, SessionEntity, QAfterSortBy>
       sortByLastMessageTime() {
     return QueryBuilder.apply(this, (query) {
@@ -1280,6 +1462,19 @@ extension SessionEntityQuerySortBy
 
 extension SessionEntityQuerySortThenBy
     on QueryBuilder<SessionEntity, SessionEntity, QSortThenBy> {
+  QueryBuilder<SessionEntity, SessionEntity, QAfterSortBy> thenByAssistantId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'assistantId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<SessionEntity, SessionEntity, QAfterSortBy>
+      thenByAssistantIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'assistantId', Sort.desc);
+    });
+  }
+
   QueryBuilder<SessionEntity, SessionEntity, QAfterSortBy> thenById() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'id', Sort.asc);
@@ -1384,6 +1579,13 @@ extension SessionEntityQuerySortThenBy
 
 extension SessionEntityQueryWhereDistinct
     on QueryBuilder<SessionEntity, SessionEntity, QDistinct> {
+  QueryBuilder<SessionEntity, SessionEntity, QDistinct> distinctByAssistantId(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'assistantId', caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<SessionEntity, SessionEntity, QDistinct>
       distinctByLastMessageTime() {
     return QueryBuilder.apply(this, (query) {
@@ -1438,6 +1640,12 @@ extension SessionEntityQueryProperty
   QueryBuilder<SessionEntity, int, QQueryOperations> idProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'id');
+    });
+  }
+
+  QueryBuilder<SessionEntity, String?, QQueryOperations> assistantIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'assistantId');
     });
   }
 

@@ -1,10 +1,10 @@
 library;
 
 import '../base_search_engine.dart';
-import '../results.dart';
+import '../search_result.dart';
 import '../utils.dart';
 
-class DuckDuckGoVideosEngine extends BaseSearchEngine<VideosResult> {
+class DuckDuckGoVideosEngine extends BaseSearchEngine<VideoSearchResult> {
   DuckDuckGoVideosEngine({super.proxy, super.timeout, super.verify});
   @override
   String get name => 'duckduckgo';
@@ -71,7 +71,7 @@ class DuckDuckGoVideosEngine extends BaseSearchEngine<VideosResult> {
   }
 
   @override
-  Future<List<VideosResult>?> search({
+  Future<List<VideoSearchResult>?> search({
     required String query,
     String region = 'us-en',
     String safesearch = 'moderate',
@@ -101,37 +101,54 @@ class DuckDuckGoVideosEngine extends BaseSearchEngine<VideosResult> {
   }
 
   @override
-  List<VideosResult> extractResults(String htmlText) {
-    final results = <VideosResult>[];
+  List<VideoSearchResult> extractResults(String htmlText) {
+    final results = <VideoSearchResult>[];
     try {
       final jsonData = jsonDecode(htmlText) as Map<String, dynamic>;
       final items = jsonData['results'] as List<dynamic>? ?? [];
       for (final item in items) {
         if (item is! Map<String, dynamic>) continue;
+        final title = item['title']?.toString() ?? '';
+        final content = item['content']?.toString() ?? '';
+        final description = item['description']?.toString() ?? '';
+        final embedUrl = item['embed_url']?.toString() ?? '';
         final images = item['images'] as Map<String, dynamic>?;
-        final statistics = item['statistics'] as Map<String, dynamic>?;
-        results.add(
-          VideosResult(
-            title: item['title']?.toString() ?? '',
-            content: item['content']?.toString() ?? '',
-            description: item['description']?.toString() ?? '',
-            duration: item['duration']?.toString() ?? '',
-            embedHtml: item['embed_html']?.toString() ?? '',
-            embedUrl: item['embed_url']?.toString() ?? '',
-            imageToken: item['image_token']?.toString() ?? '',
-            images: images?.map((k, v) => MapEntry(k, v.toString())) ?? {},
-            provider: item['provider']?.toString() ?? '',
-            published: item['published']?.toString() ?? '',
-            publisher: item['publisher']?.toString() ?? '',
-            statistics:
-                statistics?.map((k, v) => MapEntry(k, v.toString())) ?? {},
-            uploader: item['uploader']?.toString() ?? '',
-          ),
-        );
+        final thumbnail = images == null ? null : _pickThumbnail(images);
+        final result = VideoSearchResult.fromJson({
+          'title': title,
+          'description': description.isNotEmpty ? description : content,
+          'embed_url': embedUrl,
+          'embed_html': item['embed_html']?.toString(),
+          'thumbnail': thumbnail,
+          'duration': item['duration']?.toString(),
+          'publisher': item['publisher']?.toString(),
+          'uploader': item['uploader']?.toString(),
+          'publishedDate': item['published']?.toString(),
+          'provider': name,
+        });
+        if (title.isNotEmpty && embedUrl.isNotEmpty) {
+          results.add(result);
+        }
       }
     } catch (_) {
       return results;
     }
     return results;
+  }
+
+  String? _pickThumbnail(Map<String, dynamic> images) {
+    const preferredKeys = ['medium', 'small', 'large', 'thumbnail'];
+    for (final key in preferredKeys) {
+      final value = images[key];
+      if (value != null && value.toString().isNotEmpty) {
+        return value.toString();
+      }
+    }
+    for (final value in images.values) {
+      if (value != null && value.toString().isNotEmpty) {
+        return value.toString();
+      }
+    }
+    return null;
   }
 }

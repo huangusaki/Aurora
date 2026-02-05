@@ -409,7 +409,15 @@
   
   "streamOutput": "Stream Output",
   "enableSearch": "Enable Search",
+  "searchSettings": "Search Settings",
   "searchEngine": "Search Engine",
+  "searchRegion": "Search Region",
+  "searchSafeSearch": "Safe Search",
+  "searchSafeSearchOff": "Off",
+  "searchSafeSearchModerate": "Moderate",
+  "searchSafeSearchStrict": "Strict",
+  "searchMaxResults": "Max Results",
+  "searchTimeoutSeconds": "Timeout (seconds)",
   
   "clearContext": "Clear Context",
   "clearContextConfirm": "Are you sure you want to clear the context? This cannot be undone.",

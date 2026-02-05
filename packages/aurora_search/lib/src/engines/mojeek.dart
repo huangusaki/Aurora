@@ -1,9 +1,9 @@
 library;
 
 import '../base_search_engine.dart';
-import '../results.dart';
+import '../search_result.dart';
 
-class MojeekEngine extends BaseSearchEngine<TextResult> {
+class MojeekEngine extends BaseSearchEngine<TextSearchResult> {
   MojeekEngine({super.proxy, super.timeout, super.verify});
   @override
   String get name => 'mojeek';
@@ -45,8 +45,8 @@ class MojeekEngine extends BaseSearchEngine<TextResult> {
   }
 
   @override
-  List<TextResult> extractResults(String htmlText) {
-    final results = <TextResult>[];
+  List<TextSearchResult> extractResults(String htmlText) {
+    final results = <TextSearchResult>[];
     final document = extractTree(htmlText);
     final items = document.querySelectorAll(itemsSelector);
     for (final item in items) {
@@ -57,7 +57,14 @@ class MojeekEngine extends BaseSearchEngine<TextResult> {
       final href = hrefElement?.attributes['href'] ?? '';
       final body = bodyElement?.text ?? '';
       if (title.isNotEmpty || href.isNotEmpty) {
-        results.add(TextResult(title: title, href: href, body: body));
+        results.add(
+          TextSearchResult.normalized(
+            title: title,
+            href: href,
+            body: body,
+            provider: name,
+          ),
+        );
       }
     }
     return results;

@@ -1,9 +1,9 @@
 library;
 
 import '../base_search_engine.dart';
-import '../results.dart';
+import '../search_result.dart';
 
-class EcosiaEngine extends BaseSearchEngine<TextResult> {
+class EcosiaEngine extends BaseSearchEngine<TextSearchResult> {
   EcosiaEngine({super.proxy, super.timeout, super.verify});
   @override
   String get name => 'ecosia';
@@ -58,8 +58,8 @@ class EcosiaEngine extends BaseSearchEngine<TextResult> {
   }
 
   @override
-  List<TextResult> extractResults(String htmlText) {
-    final results = <TextResult>[];
+  List<TextSearchResult> extractResults(String htmlText) {
+    final results = <TextSearchResult>[];
     final document = extractTree(htmlText);
     var items = document.querySelectorAll(itemsSelector);
     if (items.isEmpty) {
@@ -79,7 +79,14 @@ class EcosiaEngine extends BaseSearchEngine<TextResult> {
       final href = titleElement?.attributes['href'] ?? '';
       final body = bodyElement?.text ?? '';
       if (title.isNotEmpty && href.isNotEmpty && href.startsWith('http')) {
-        results.add(TextResult(title: title, href: href, body: body));
+        results.add(
+          TextSearchResult.normalized(
+            title: title,
+            href: href,
+            body: body,
+            provider: name,
+          ),
+        );
       }
     }
     return results;

@@ -1,20 +1,20 @@
 library;
 
-class DDGSException implements Exception {
-  DDGSException(this.message);
+class AuroraSearchException implements Exception {
+  AuroraSearchException(this.message);
   final String message;
   @override
-  String toString() => 'DDGSException: $message';
+  String toString() => 'AuroraSearchException: $message';
 }
 
-class RatelimitException extends DDGSException {
-  RatelimitException(super.message);
+class AuroraSearchRateLimitException extends AuroraSearchException {
+  AuroraSearchRateLimitException(super.message);
   @override
-  String toString() => 'RatelimitException: $message';
+  String toString() => 'AuroraSearchRateLimitException: $message';
 }
 
-class TimeoutException extends DDGSException {
-  TimeoutException(super.message);
+class AuroraSearchTimeoutException extends AuroraSearchException {
+  AuroraSearchTimeoutException(super.message);
   @override
-  String toString() => 'TimeoutException: $message';
+  String toString() => 'AuroraSearchTimeoutException: $message';
 }

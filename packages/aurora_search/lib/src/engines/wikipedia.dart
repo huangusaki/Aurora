@@ -1,9 +1,11 @@
 library;
 
+import 'dart:convert';
 import '../base_search_engine.dart';
-import '../results.dart';
+import '../search_result.dart';
+import 'package:html/parser.dart' as html_parser;
 
-class WikipediaEngine extends BaseSearchEngine<TextResult> {
+class WikipediaEngine extends BaseSearchEngine<TextSearchResult> {
   WikipediaEngine({super.proxy, super.timeout, super.verify});
   @override
   String get name => 'wikipedia';
@@ -16,13 +18,9 @@ class WikipediaEngine extends BaseSearchEngine<TextResult> {
   @override
   String get searchMethod => 'GET';
   @override
-  String get itemsSelector => '.mw-search-result';
+  String get itemsSelector => '';
   @override
-  Map<String, String> get elementsSelector => {
-        'title': '.mw-search-result-heading',
-        'href': '.mw-search-result-heading a',
-        'body': '.searchresult',
-      };
+  Map<String, String> get elementsSelector => {};
   @override
   Map<String, String> buildPayload({
     required String query,
@@ -41,22 +39,34 @@ class WikipediaEngine extends BaseSearchEngine<TextResult> {
         'sroffset': ((page - 1) * 10).toString(),
       };
   @override
-  List<TextResult> extractResults(String htmlText) {
-    final results = <TextResult>[];
-    final document = extractTree(htmlText);
-    final items = document.querySelectorAll(itemsSelector);
-    for (final item in items) {
-      final titleElement = item.querySelector(elementsSelector['title']!);
-      final hrefElement = item.querySelector(elementsSelector['href']!);
-      final bodyElement = item.querySelector(elementsSelector['body']!);
-      final title = titleElement?.text ?? '';
-      final href = hrefElement?.attributes['href'] ?? '';
-      final body = bodyElement?.text ?? '';
-      if (title.isNotEmpty || href.isNotEmpty) {
-        final fullHref =
-            href.startsWith('http') ? href : 'https://en.wikipedia.org$href';
-        results.add(TextResult(title: title, href: fullHref, body: body));
+  List<TextSearchResult> extractResults(String htmlText) {
+    final results = <TextSearchResult>[];
+    try {
+      final json = jsonDecode(htmlText) as Map<String, dynamic>;
+      final query = json['query'] as Map<String, dynamic>?;
+      final search = query?['search'] as List<dynamic>? ?? const [];
+      for (final item in search) {
+        if (item is! Map<String, dynamic>) continue;
+        final title = item['title'] as String? ?? '';
+        final snippet = item['snippet'] as String? ?? '';
+        final pageId = item['pageid'];
+        final href = pageId != null
+            ? 'https://en.wikipedia.org/?curid=$pageId'
+            : '';
+        final body = html_parser.parseFragment(snippet).text ?? '';
+        if (title.isNotEmpty && href.isNotEmpty) {
+          results.add(
+            TextSearchResult.normalized(
+              title: title,
+              href: href,
+              body: body,
+              provider: name,
+            ),
+          );
+        }
       }
+    } catch (_) {
+      return results;
     }
     return results;
   }

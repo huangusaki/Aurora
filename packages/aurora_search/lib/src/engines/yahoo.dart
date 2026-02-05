@@ -1,7 +1,7 @@
 library;
 
 import '../base_search_engine.dart';
-import '../results.dart';
+import '../search_result.dart';
 
 String extractYahooUrl(String u) {
   try {
@@ -15,7 +15,7 @@ String extractYahooUrl(String u) {
   }
 }
 
-class YahooEngine extends BaseSearchEngine<TextResult> {
+class YahooEngine extends BaseSearchEngine<TextSearchResult> {
   YahooEngine({super.proxy, super.timeout, super.verify});
   @override
   String get name => 'yahoo';
@@ -57,8 +57,8 @@ class YahooEngine extends BaseSearchEngine<TextResult> {
   }
 
   @override
-  List<TextResult> extractResults(String htmlText) {
-    final results = <TextResult>[];
+  List<TextSearchResult> extractResults(String htmlText) {
+    final results = <TextSearchResult>[];
     final document = extractTree(htmlText);
     final items = document.querySelectorAll(itemsSelector);
     for (final item in items) {
@@ -73,7 +73,14 @@ class YahooEngine extends BaseSearchEngine<TextResult> {
       }
       if ((title.isNotEmpty || href.isNotEmpty) &&
           !href.startsWith('https://www.bing.com/aclick?')) {
-        results.add(TextResult(title: title, href: href, body: body));
+        results.add(
+          TextSearchResult.normalized(
+            title: title,
+            href: href,
+            body: body,
+            provider: name,
+          ),
+        );
       }
     }
     return results;

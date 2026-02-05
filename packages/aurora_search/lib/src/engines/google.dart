@@ -1,9 +1,9 @@
 library;
 
 import '../base_search_engine.dart';
-import '../results.dart';
+import '../search_result.dart';
 
-class GoogleEngine extends BaseSearchEngine<TextResult> {
+class GoogleEngine extends BaseSearchEngine<TextSearchResult> {
   GoogleEngine({super.proxy, super.timeout, super.verify});
   @override
   String get name => 'google';
@@ -72,8 +72,8 @@ class GoogleEngine extends BaseSearchEngine<TextResult> {
   }
 
   @override
-  List<TextResult> extractResults(String htmlText) {
-    final results = <TextResult>[];
+  List<TextSearchResult> extractResults(String htmlText) {
+    final results = <TextSearchResult>[];
     final document = extractTree(htmlText);
     var items = document.querySelectorAll(itemsSelector);
     if (items.isEmpty) {
@@ -97,14 +97,21 @@ class GoogleEngine extends BaseSearchEngine<TextResult> {
       if (title.isNotEmpty &&
           href.isNotEmpty &&
           !href.contains('google.com/search')) {
-        results.add(TextResult(title: title, href: href, body: body));
+        results.add(
+          TextSearchResult.normalized(
+            title: title,
+            href: href,
+            body: body,
+            provider: name,
+          ),
+        );
       }
     }
     return results;
   }
 }
 
-class GoogleImagesEngine extends BaseSearchEngine<ImagesResult> {
+class GoogleImagesEngine extends BaseSearchEngine<ImageSearchResult> {
   GoogleImagesEngine({super.proxy, super.timeout, super.verify});
   @override
   String get name => 'google_images';
@@ -140,8 +147,8 @@ class GoogleImagesEngine extends BaseSearchEngine<ImagesResult> {
   }
 
   @override
-  List<ImagesResult> extractResults(String htmlText) {
-    final results = <ImagesResult>[];
+  List<ImageSearchResult> extractResults(String htmlText) {
+    final results = <ImageSearchResult>[];
     final regex =
         RegExp(r'\["(https?://[^"]+\.(jpg|jpeg|png|gif|webp))"[^\]]*\]');
     final matches = regex.allMatches(htmlText);
@@ -149,11 +156,13 @@ class GoogleImagesEngine extends BaseSearchEngine<ImagesResult> {
       final imageUrl = match.group(1);
       if (imageUrl != null && !imageUrl.contains('gstatic.com')) {
         results.add(
-          ImagesResult(
-            image: imageUrl,
-            url: imageUrl,
+          ImageSearchResult.normalized(
             title: 'Google Image',
+            imageUrl: imageUrl,
+            thumbnailUrl: imageUrl,
+            sourceUrl: imageUrl,
             source: 'google',
+            provider: name,
           ),
         );
       }

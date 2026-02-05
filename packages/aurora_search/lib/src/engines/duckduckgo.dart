@@ -1,9 +1,9 @@
 library;
 
 import '../base_search_engine.dart';
-import '../results.dart';
+import '../search_result.dart';
 
-class DuckDuckGoEngine extends BaseSearchEngine<TextResult> {
+class DuckDuckGoEngine extends BaseSearchEngine<TextSearchResult> {
   DuckDuckGoEngine({super.proxy, super.timeout, super.verify});
   @override
   String get name => 'duckduckgo';
@@ -45,8 +45,8 @@ class DuckDuckGoEngine extends BaseSearchEngine<TextResult> {
   }
 
   @override
-  List<TextResult> extractResults(String htmlText) {
-    final results = <TextResult>[];
+  List<TextSearchResult> extractResults(String htmlText) {
+    final results = <TextSearchResult>[];
     final document = extractTree(htmlText);
     final items = document.querySelectorAll(itemsSelector);
     for (final item in items) {
@@ -62,7 +62,14 @@ class DuckDuckGoEngine extends BaseSearchEngine<TextResult> {
       }
       final body = bodyElement?.text ?? '';
       if (title.isNotEmpty || href.isNotEmpty) {
-        results.add(TextResult(title: title, href: href, body: body));
+        results.add(
+          TextSearchResult.normalized(
+            title: title,
+            href: href,
+            body: body,
+            provider: name,
+          ),
+        );
       }
     }
     return results;

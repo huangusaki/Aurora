@@ -1,9 +1,9 @@
 library;
 
 import '../base_search_engine.dart';
-import '../results.dart';
+import '../search_result.dart';
 
-class BingEngine extends BaseSearchEngine<TextResult> {
+class BingEngine extends BaseSearchEngine<TextSearchResult> {
   BingEngine({super.proxy, super.timeout, super.verify});
   @override
   String get name => 'bing';
@@ -75,8 +75,8 @@ class BingEngine extends BaseSearchEngine<TextResult> {
   }
 
   @override
-  List<TextResult> extractResults(String htmlText) {
-    final results = <TextResult>[];
+  List<TextSearchResult> extractResults(String htmlText) {
+    final results = <TextSearchResult>[];
     final document = extractTree(htmlText);
     final items = document.querySelectorAll(itemsSelector);
     for (final item in items) {
@@ -91,7 +91,14 @@ class BingEngine extends BaseSearchEngine<TextResult> {
       bodyElement ??= item.querySelector('p');
       final body = bodyElement?.text ?? '';
       if (title.isNotEmpty && href.isNotEmpty && href.startsWith('http')) {
-        results.add(TextResult(title: title, href: href, body: body));
+        results.add(
+          TextSearchResult.normalized(
+            title: title,
+            href: href,
+            body: body,
+            provider: name,
+          ),
+        );
       }
     }
     return results;

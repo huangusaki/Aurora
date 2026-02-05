@@ -1,6 +1,7 @@
 library;
 
 import '../base_search_engine.dart';
+import '../search_result.dart';
 import 'bing.dart';
 import 'brave.dart';
 import 'duckduckgo.dart';
@@ -20,7 +21,7 @@ final Map<
     String,
     Map<
         String,
-        BaseSearchEngine Function({
+        BaseSearchEngine<SearchResult> Function({
           String? proxy,
           Duration? timeout,
           bool verify,
