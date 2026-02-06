@@ -6,6 +6,7 @@ import 'chat_provider.dart';
 import '../../settings/presentation/settings_provider.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 import 'package:aurora/shared/utils/translation_prompt_utils.dart';
+import 'package:aurora/shared/widgets/aurora_notice.dart';
 
 class MobileTranslationPage extends ConsumerStatefulWidget {
   final VoidCallback? onBack;
@@ -18,30 +19,30 @@ class MobileTranslationPage extends ConsumerStatefulWidget {
 class _MobileTranslationPageState extends ConsumerState<MobileTranslationPage> {
   final TextEditingController _sourceController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
-  String _sourceLang = '自动检测';
-  String _targetLang = '简体中文';
+  String _sourceLang = 'auto';
+  String _targetLang = 'zh_hans';
   bool _showComparison = true;
   bool _hasRestored = false;
   final List<String> _sourceLanguages = [
-    '自动检测',
-    '英语',
-    '日语',
-    '韩语',
-    '简体中文',
-    '繁体中文',
-    '俄语',
-    '法语',
-    '德语'
+    'auto',
+    'en',
+    'ja',
+    'ko',
+    'zh_hans',
+    'zh_hant',
+    'ru',
+    'fr',
+    'de',
   ];
   final List<String> _targetLanguages = [
-    '简体中文',
-    '英语',
-    '日语',
-    '韩语',
-    '繁体中文',
-    '俄语',
-    '法语',
-    '德语'
+    'zh_hans',
+    'en',
+    'ja',
+    'ko',
+    'zh_hant',
+    'ru',
+    'fr',
+    'de',
   ];
   @override
   void initState() {
@@ -75,27 +76,59 @@ class _MobileTranslationPageState extends ConsumerState<MobileTranslationPage> {
   void _translate() {
     if (_sourceController.text.trim().isEmpty) return;
     final notifier = ref.read(translationProvider.notifier);
+    final l10n = AppLocalizations.of(context)!;
+    final sourceLabel = _languageLabel(_sourceLang, l10n);
+    final targetLabel = _languageLabel(_targetLang, l10n);
     notifier.clearContext().then((_) {
       final sb = StringBuffer();
-      sb.writeln(
-          '你是一位精通多国语言的专业翻译专家。请将以下${_sourceLang == '自动检测' ? '' : _sourceLang}文本翻译成$_targetLang。');
-      sb.writeln('要求：');
-      sb.writeln('1. 翻译准确、地道，符合目标语言的表达习惯。');
-      sb.writeln('2. 严格保留原文的换行格式和段落结构，不要合并段落。');
-      sb.writeln('3. 只输出翻译后的内容，不要包含任何解释、前言或后缀。');
-      sb.writeln('');
-      sb.writeln('原文内容：');
+      sb.writeln(_sourceLang == 'auto'
+          ? l10n.translationPromptIntroAuto(targetLabel)
+          : l10n.translationPromptIntro(sourceLabel, targetLabel));
+      sb.writeln(l10n.translationPromptRequirements);
+      sb.writeln(l10n.translationPromptRequirement1);
+      sb.writeln(l10n.translationPromptRequirement2);
+      sb.writeln(l10n.translationPromptRequirement3);
+      sb.writeln();
+      sb.writeln(l10n.translationPromptSourceText);
       sb.writeln(_sourceController.text);
       notifier.sendMessage(_sourceController.text, apiContent: sb.toString());
     });
   }
 
+  String _languageLabel(String code, AppLocalizations l10n) {
+    switch (code) {
+      case 'auto':
+        return l10n.autoDetect;
+      case 'en':
+        return l10n.english;
+      case 'ja':
+        return l10n.japanese;
+      case 'ko':
+        return l10n.korean;
+      case 'zh_hans':
+        return l10n.simplifiedChinese;
+      case 'zh_hant':
+        return l10n.traditionalChinese;
+      case 'ru':
+        return l10n.russian;
+      case 'fr':
+        return l10n.french;
+      case 'de':
+        return l10n.german;
+      default:
+        return code;
+    }
+  }
+
   void _openModelSwitcher() {
     final settingsState = ref.read(settingsProvider);
     final provider = settingsState.activeProvider;
+    final l10n = AppLocalizations.of(context)!;
     if (provider.models.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context)!.noModelsFetch)),
+      showAuroraNotice(
+        context,
+        l10n.noModelsFetch,
+        icon: Icons.info_outline_rounded,
       );
       return;
     }
@@ -235,12 +268,13 @@ class _MobileTranslationPageState extends ConsumerState<MobileTranslationPage> {
                     value: _sourceLang,
                     items: _sourceLanguages,
                     onChanged: (v) => setState(() => _sourceLang = v!),
+                    labelBuilder: (value) => _languageLabel(value, l10n),
                   ),
                 ),
                 IconButton(
                   icon: const Icon(Icons.swap_horiz, size: 22),
                   onPressed: () {
-                    if (_sourceLang != '自动检测' && _targetLang != _sourceLang) {
+                    if (_sourceLang != 'auto' && _targetLang != _sourceLang) {
                       setState(() {
                         final temp = _sourceLang;
                         _sourceLang = _targetLang;
@@ -254,6 +288,7 @@ class _MobileTranslationPageState extends ConsumerState<MobileTranslationPage> {
                     value: _targetLang,
                     items: _targetLanguages,
                     onChanged: (v) => setState(() => _targetLang = v!),
+                    labelBuilder: (value) => _languageLabel(value, l10n),
                   ),
                 ),
               ],
@@ -435,10 +470,12 @@ class _LanguageDropdown extends StatelessWidget {
   final String value;
   final List<String> items;
   final ValueChanged<String?> onChanged;
+  final String Function(String value) labelBuilder;
   const _LanguageDropdown({
     required this.value,
     required this.items,
     required this.onChanged,
+    required this.labelBuilder,
   });
   @override
   Widget build(BuildContext context) {
@@ -453,10 +490,15 @@ class _LanguageDropdown extends StatelessWidget {
         isExpanded: true,
         underline: const SizedBox.shrink(),
         icon: const Icon(Icons.arrow_drop_down, size: 20),
-        items: items
-            .map((e) => DropdownMenuItem(
-                value: e, child: Text(e, style: const TextStyle(fontSize: 14))))
-            .toList(),
+        items: items.map((e) {
+          return DropdownMenuItem(
+            value: e,
+            child: Text(
+              labelBuilder(e),
+              style: const TextStyle(fontSize: 14),
+            ),
+          );
+        }).toList(),
         onChanged: onChanged,
       ),
     );

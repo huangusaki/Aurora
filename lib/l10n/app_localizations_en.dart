@@ -1010,6 +1010,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get allChats => 'All';
 
   @override
+  String get requestConfig => 'Request Config';
+
+  @override
   String get thinkingConfig => 'Thinking Config';
 
   @override
@@ -1517,4 +1520,110 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get auto => 'Auto';
+
+  @override
+  String get assistantBasicConfig => 'Basic Configuration';
+
+  @override
+  String get assistantName => 'Name';
+
+  @override
+  String get assistantDescription => 'Description';
+
+  @override
+  String get assistantCoreSettings => 'Core Settings';
+
+  @override
+  String get assistantCapabilities => 'Capabilities';
+
+  @override
+  String get assistantSkillManagement => 'Skill Management';
+
+  @override
+  String assistantSkillEnabledCount(int count) {
+    return '$count skills enabled';
+  }
+
+  @override
+  String get assistantLongTermMemory => 'Long-term Memory';
+
+  @override
+  String get assistantAvailableSkillsTitle => 'Available Skills';
+
+  @override
+  String get assistantNoSkillsAvailable => 'No available skills';
+
+  @override
+  String get assistantDeleteTitle => 'Delete Assistant';
+
+  @override
+  String assistantDeleteConfirm(String name) {
+    return 'Delete assistant \"$name\"? This action cannot be undone.';
+  }
+
+  @override
+  String get defaultAssistant => 'Default';
+
+  @override
+  String get noSpecificAssistant => 'No specific assistant';
+
+  @override
+  String get noAssistantDescription => 'No description';
+
+  @override
+  String get newAssistant => 'New Assistant';
+
+  @override
+  String get cropAvatarTitle => 'Crop Avatar';
+
+  @override
+  String get lightMode => 'Light Mode';
+
+  @override
+  String get darkMode => 'Dark Mode';
+
+  @override
+  String get followSystem => 'Follow System';
+
+  @override
+  String switchedToTheme(String label) {
+    return 'Switched to $label';
+  }
+
+  @override
+  String get appTagline => 'An elegant cross-platform AI chat assistant';
+
+  @override
+  String get back => 'Back';
+
+  @override
+  String get rotate => 'Rotate';
+
+  @override
+  String translationPromptIntro(String sourceLanguage, String targetLanguage) {
+    return 'You are a professional multilingual translator. Please translate the following $sourceLanguage text into $targetLanguage.';
+  }
+
+  @override
+  String translationPromptIntroAuto(String targetLanguage) {
+    return 'You are a professional multilingual translator. Please translate the following text into $targetLanguage.';
+  }
+
+  @override
+  String get translationPromptRequirements => 'Requirements:';
+
+  @override
+  String get translationPromptRequirement1 =>
+      '1. Ensure translation is accurate, natural, and idiomatic in the target language.';
+
+  @override
+  String get translationPromptRequirement2 =>
+      '2. Preserve all line breaks and paragraph structure exactly as in the source.';
+
+  @override
+  String get translationPromptRequirement3 =>
+      '3. Output only the translated text, without explanations, introductions, or suffixes.';
+
+  @override
+  String get translationPromptSourceText => 'Source text:';
 }

@@ -435,6 +435,7 @@
   "topicNamePlaceholder": "Group Name",
   "allChats": "All",
   
+  "requestConfig": "Request Config",
   "thinkingConfig": "Thinking Config",
   "enableThinking": "Enable Thinking",
   "thinkingBudget": "Thinking Budget",
@@ -628,5 +629,74 @@
   "imagePayload": "Image Parameters",
   "aspectRatio": "Aspect Ratio",
   "imageSize": "Image Size",
-  "auto": "Auto"
+  "auto": "Auto",
+  "assistantBasicConfig": "Basic Configuration",
+  "assistantName": "Name",
+  "assistantDescription": "Description",
+  "assistantCoreSettings": "Core Settings",
+  "assistantCapabilities": "Capabilities",
+  "assistantSkillManagement": "Skill Management",
+  "assistantSkillEnabledCount": "{count} skills enabled",
+  "@assistantSkillEnabledCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "assistantLongTermMemory": "Long-term Memory",
+  "assistantAvailableSkillsTitle": "Available Skills",
+  "assistantNoSkillsAvailable": "No available skills",
+  "assistantDeleteTitle": "Delete Assistant",
+  "assistantDeleteConfirm": "Delete assistant \"{name}\"? This action cannot be undone.",
+  "@assistantDeleteConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "defaultAssistant": "Default",
+  "noSpecificAssistant": "No specific assistant",
+  "noAssistantDescription": "No description",
+  "newAssistant": "New Assistant",
+  "cropAvatarTitle": "Crop Avatar",
+  "lightMode": "Light Mode",
+  "darkMode": "Dark Mode",
+  "followSystem": "Follow System",
+  "switchedToTheme": "Switched to {label}",
+  "@switchedToTheme": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "appTagline": "An elegant cross-platform AI chat assistant",
+  "back": "Back",
+  "rotate": "Rotate",
+  "translationPromptIntro": "You are a professional multilingual translator. Please translate the following {sourceLanguage} text into {targetLanguage}.",
+  "@translationPromptIntro": {
+    "placeholders": {
+      "sourceLanguage": {
+        "type": "String"
+      },
+      "targetLanguage": {
+        "type": "String"
+      }
+    }
+  },
+  "translationPromptIntroAuto": "You are a professional multilingual translator. Please translate the following text into {targetLanguage}.",
+  "@translationPromptIntroAuto": {
+    "placeholders": {
+      "targetLanguage": {
+        "type": "String"
+      }
+    }
+  },
+  "translationPromptRequirements": "Requirements:",
+  "translationPromptRequirement1": "1. Ensure translation is accurate, natural, and idiomatic in the target language.",
+  "translationPromptRequirement2": "2. Preserve all line breaks and paragraph structure exactly as in the source.",
+  "translationPromptRequirement3": "3. Output only the translated text, without explanations, introductions, or suffixes.",
+  "translationPromptSourceText": "Source text:"
 }

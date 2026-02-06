@@ -20,6 +20,7 @@ import 'package:aurora/features/studio/presentation/studio_content.dart';
 import 'package:aurora/features/skills/presentation/skills_page.dart';
 import 'package:aurora/features/assistant/presentation/assistant_content.dart';
 import 'package:aurora/shared/theme/aurora_icons.dart';
+import 'package:aurora/shared/theme/chat_background_theme.dart';
 import '../chat_provider.dart';
 
 class DesktopChatScreen extends ConsumerStatefulWidget {
@@ -255,112 +256,13 @@ class _DesktopChatScreenState extends ConsumerState<DesktopChatScreen>
     final backgroundColor =
         ref.watch(settingsProvider.select((s) => s.backgroundColor));
 
-    List<Color>? getBackgroundGradient(String bg, bool isDark) {
-      if (isDark) {
-        switch (bg) {
-          case 'sunset':
-            return [const Color(0xFF1A0B0E), const Color(0xFF4A1F28)];
-          case 'ocean':
-            return [const Color(0xFF05101A), const Color(0xFF0D2B42)];
-          case 'forest':
-            return [const Color(0xFF051408), const Color(0xFF0E3316)];
-          case 'dream':
-            return [const Color(0xFF120817), const Color(0xFF261233)];
-          case 'aurora':
-            return [const Color(0xFF051715), const Color(0xFF181533)];
-          case 'volcano':
-            return [const Color(0xFF1F0808), const Color(0xFF3E1212)];
-          case 'midnight':
-            return [const Color(0xFF020205), const Color(0xFF141426)];
-          case 'dawn':
-            return [const Color(0xFF141005), const Color(0xFF33260D)];
-          case 'neon':
-            return [const Color(0xFF08181A), const Color(0xFF240C21)];
-          case 'blossom':
-            return [const Color(0xFF1F050B), const Color(0xFF3D0F19)];
-          case 'warm':
-            return [const Color(0xFF1E1C1A), const Color(0xFF2E241E)];
-          case 'cool':
-            return [const Color(0xFF1A1C1E), const Color(0xFF1E252E)];
-          case 'rose':
-            return [const Color(0xFF2D1A1E), const Color(0xFF3B1E26)];
-          case 'lavender':
-            return [const Color(0xFF1F1A2D), const Color(0xFF261E3B)];
-          case 'mint':
-            return [const Color(0xFF1A2D24), const Color(0xFF1E3B2E)];
-          case 'sky':
-            return [const Color(0xFF1A202D), const Color(0xFF1E263B)];
-          case 'gray':
-            return [const Color(0xFF1E1E1E), const Color(0xFF2C2C2C)];
-          default:
-            return null; // Fallback to solid color
-        }
-      } else {
-        switch (bg) {
-          case 'warm':
-            return [const Color(0xFFFFF8F0), const Color(0xFFFFEBD6)];
-          case 'cool':
-            return [const Color(0xFFF0F8FF), const Color(0xFFD6EAFF)];
-          case 'rose':
-            return [const Color(0xFFFFF0F5), const Color(0xFFFFD6E4)];
-          case 'lavender':
-            return [const Color(0xFFF3E5F5), const Color(0xFFE6D6FF)];
-          case 'mint':
-            return [const Color(0xFFE0F2F1), const Color(0xFFC2E8DC)];
-          case 'sky':
-            return [const Color(0xFFE1F5FE), const Color(0xFFC7E6FF)];
-          case 'gray':
-            return [const Color(0xFFF5F5F5), const Color(0xFFE0E0E0)];
-          case 'sunset':
-            return [const Color(0xFFFFF3E0), const Color(0xFFFFCCBC)];
-          case 'ocean':
-            return [const Color(0xFFE1F5FE), const Color(0xFF81D4FA)];
-          case 'forest':
-            return [const Color(0xFFE8F5E9), const Color(0xFFA5D6A7)];
-          case 'dream':
-            return [const Color(0xFFF3E5F5), const Color(0xFFBBDEFB)];
-          case 'aurora':
-            return [const Color(0xFFE0F2F1), const Color(0xFFD1C4E9)];
-          case 'volcano':
-            return [const Color(0xFFFFEBEE), const Color(0xFFFFCCBC)];
-          case 'midnight':
-            return [const Color(0xFFECEFF1), const Color(0xFF90A4AE)];
-          case 'dawn':
-            return [const Color(0xFFFFF8E1), const Color(0xFFFFE082)];
-          case 'neon':
-            return [const Color(0xFFE0F7FA), const Color(0xFFE1BEE7)];
-          case 'blossom':
-            return [const Color(0xFFFCE4EC), const Color(0xFFF8BBD0)];
-          case 'pure_black':
-            return null; // Pure white
-          case 'default':
-          default:
-            return [const Color(0xFFE0F7FA), const Color(0xFFF1F8E9)];
-        }
-      }
-    }
-
     final isDark = theme.brightness == fluent.Brightness.dark;
-    final backgroundGradient = getBackgroundGradient(backgroundColor, isDark);
-
-    // Determine solid background color fallback
-    final solidBackgroundColor = () {
-      if (isDark) {
-        switch (backgroundColor) {
-          case 'pure_black':
-            return const Color(0xFF000000);
-          case 'warm':
-            return const Color(0xFF1E1C1A);
-          case 'cool':
-            return const Color(0xFF1A1C1E);
-          case 'default':
-          default:
-            return const Color(0xFF202020);
-        }
-      } else {
-        return Colors.white;
-      }
-    }();
+    final backgroundGradient =
+        ChatBackgroundTheme.getGradient(backgroundColor, isDark: isDark);
+    final solidBackgroundColor = ChatBackgroundTheme.getSolidBackgroundColor(
+      backgroundColor,
+      isDark: isDark,
+    );
 
     return Stack(
       children: [
@@ -375,7 +277,7 @@ class _DesktopChatScreenState extends ConsumerState<DesktopChatScreen>
         if (backgroundGradient != null &&
             (!settings.useCustomTheme ||
                 settings.backgroundImagePath == null ||
-                settings.backgroundImagePath!.isNotEmpty))
+                settings.backgroundImagePath!.isEmpty))
           Positioned.fill(
             child: Container(
               decoration: BoxDecoration(

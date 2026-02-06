@@ -250,51 +250,12 @@ class SettingsStorage {
           backgroundBrightness ?? existing?.backgroundBrightness ?? 0.5
       ..backgroundBlur = backgroundBlur ?? existing?.backgroundBlur ?? 0.0
       ..useCustomTheme = useCustomTheme ?? existing?.useCustomTheme ?? false;
-    await _isar.writeTxn(() async {
-      await _isar.appSettingsEntitys.clear();
-      await _isar.appSettingsEntitys.put(settings);
-    });
+    await _saveSingleAppSettings(settings);
   }
 
   Future<void> saveLastSessionId(String sessionId) async {
-    final existing = await loadAppSettings();
-    if (existing == null) return;
-    final settings = AppSettingsEntity()
-      ..activeProviderId = existing.activeProviderId
-      ..selectedModel = existing.selectedModel
-      ..availableModels = existing.availableModels
-      ..userName = existing.userName
-      ..userAvatar = existing.userAvatar
-      ..llmName = existing.llmName
-      ..llmAvatar = existing.llmAvatar
-      ..themeMode = existing.themeMode
-      ..isStreamEnabled = existing.isStreamEnabled
-      ..isSearchEnabled = existing.isSearchEnabled
-      ..searchEngine = existing.searchEngine
-      ..searchRegion = existing.searchRegion
-      ..searchSafeSearch = existing.searchSafeSearch
-      ..searchMaxResults = existing.searchMaxResults
-      ..searchTimeoutSeconds = existing.searchTimeoutSeconds
-      ..enableSmartTopic = existing.enableSmartTopic
-      ..topicGenerationModel = existing.topicGenerationModel
-      ..lastSessionId = sessionId
-      ..lastTopicId = existing.lastTopicId
-      ..language = existing.language
-      ..lastPresetId = existing.lastPresetId
-      ..lastAssistantId = existing.lastAssistantId
-      ..themeColor = existing.themeColor
-      ..backgroundColor = existing.backgroundColor
-      ..closeBehavior = existing.closeBehavior
-      ..executionModel = existing.executionModel
-      ..executionProviderId = existing.executionProviderId
-      ..fontSize = existing.fontSize
-      ..backgroundImagePath = existing.backgroundImagePath
-      ..backgroundBrightness = existing.backgroundBrightness
-      ..backgroundBlur = existing.backgroundBlur
-      ..useCustomTheme = existing.useCustomTheme;
-    await _isar.writeTxn(() async {
-      await _isar.appSettingsEntitys.clear();
-      await _isar.appSettingsEntitys.put(settings);
+    await _updateExistingAppSettings((settings) {
+      settings.lastSessionId = sessionId;
     });
   }
 
@@ -308,43 +269,11 @@ class SettingsStorage {
     String? llmName,
     String? llmAvatar,
   }) async {
-    final existing = await loadAppSettings();
-    if (existing == null) return;
-    final settings = AppSettingsEntity()
-      ..activeProviderId = existing.activeProviderId
-      ..selectedModel = existing.selectedModel
-      ..availableModels = existing.availableModels
-      ..userName = userName ?? existing.userName
-      ..userAvatar = userAvatar ?? existing.userAvatar
-      ..llmName = llmName ?? existing.llmName
-      ..llmAvatar = llmAvatar ?? existing.llmAvatar
-      ..themeMode = existing.themeMode
-      ..isStreamEnabled = existing.isStreamEnabled
-      ..isSearchEnabled = existing.isSearchEnabled
-      ..searchEngine = existing.searchEngine
-      ..searchRegion = existing.searchRegion
-      ..searchSafeSearch = existing.searchSafeSearch
-      ..searchMaxResults = existing.searchMaxResults
-      ..searchTimeoutSeconds = existing.searchTimeoutSeconds
-      ..enableSmartTopic = existing.enableSmartTopic
-      ..topicGenerationModel = existing.topicGenerationModel
-      ..lastTopicId = existing.lastTopicId
-      ..language = existing.language
-      ..lastPresetId = existing.lastPresetId
-      ..lastAssistantId = existing.lastAssistantId
-      ..themeColor = existing.themeColor
-      ..backgroundColor = existing.backgroundColor
-      ..closeBehavior = existing.closeBehavior
-      ..executionModel = existing.executionModel
-      ..executionProviderId = existing.executionProviderId
-      ..fontSize = existing.fontSize
-      ..backgroundImagePath = existing.backgroundImagePath
-      ..backgroundBrightness = existing.backgroundBrightness
-      ..backgroundBlur = existing.backgroundBlur
-      ..useCustomTheme = existing.useCustomTheme;
-    await _isar.writeTxn(() async {
-      await _isar.appSettingsEntitys.clear();
-      await _isar.appSettingsEntitys.put(settings);
+    await _updateExistingAppSettings((settings) {
+      settings.userName = userName ?? settings.userName;
+      settings.userAvatar = userAvatar ?? settings.userAvatar;
+      settings.llmName = llmName ?? settings.llmName;
+      settings.llmAvatar = llmAvatar ?? settings.llmAvatar;
     });
   }
 
@@ -591,43 +520,8 @@ class SettingsStorage {
   }
 
   Future<void> saveLastTopicId(String? topicId) async {
-    final existing = await loadAppSettings();
-    if (existing == null) return;
-    final settings = AppSettingsEntity()
-      ..activeProviderId = existing.activeProviderId
-      ..selectedModel = existing.selectedModel
-      ..availableModels = existing.availableModels
-      ..userName = existing.userName
-      ..userAvatar = existing.userAvatar
-      ..llmName = existing.llmName
-      ..llmAvatar = existing.llmAvatar
-      ..themeMode = existing.themeMode
-      ..isStreamEnabled = existing.isStreamEnabled
-      ..isSearchEnabled = existing.isSearchEnabled
-      ..searchEngine = existing.searchEngine
-      ..searchRegion = existing.searchRegion
-      ..searchSafeSearch = existing.searchSafeSearch
-      ..searchMaxResults = existing.searchMaxResults
-      ..searchTimeoutSeconds = existing.searchTimeoutSeconds
-      ..enableSmartTopic = existing.enableSmartTopic
-      ..topicGenerationModel = existing.topicGenerationModel
-      ..lastTopicId = topicId
-      ..language = existing.language
-      ..lastPresetId = existing.lastPresetId
-      ..lastAssistantId = existing.lastAssistantId
-      ..themeColor = existing.themeColor
-      ..backgroundColor = existing.backgroundColor
-      ..closeBehavior = existing.closeBehavior
-      ..executionModel = existing.executionModel
-      ..executionProviderId = existing.executionProviderId
-      ..fontSize = existing.fontSize
-      ..backgroundImagePath = existing.backgroundImagePath
-      ..backgroundBrightness = existing.backgroundBrightness
-      ..backgroundBlur = existing.backgroundBlur
-      ..useCustomTheme = existing.useCustomTheme;
-    await _isar.writeTxn(() async {
-      await _isar.appSettingsEntitys.clear();
-      await _isar.appSettingsEntitys.put(settings);
+    await _updateExistingAppSettings((settings) {
+      settings.lastTopicId = topicId;
     });
   }
 
@@ -651,44 +545,8 @@ class SettingsStorage {
   }
 
   Future<void> saveLastPresetId(String? presetId) async {
-    final existing = await loadAppSettings();
-    if (existing == null) return;
-    final settings = AppSettingsEntity()
-      ..activeProviderId = existing.activeProviderId
-      ..selectedModel = existing.selectedModel
-      ..availableModels = existing.availableModels
-      ..userName = existing.userName
-      ..userAvatar = existing.userAvatar
-      ..llmName = existing.llmName
-      ..llmAvatar = existing.llmAvatar
-      ..themeMode = existing.themeMode
-      ..isStreamEnabled = existing.isStreamEnabled
-      ..isSearchEnabled = existing.isSearchEnabled
-      ..searchEngine = existing.searchEngine
-      ..searchRegion = existing.searchRegion
-      ..searchSafeSearch = existing.searchSafeSearch
-      ..searchMaxResults = existing.searchMaxResults
-      ..searchTimeoutSeconds = existing.searchTimeoutSeconds
-      ..enableSmartTopic = existing.enableSmartTopic
-      ..topicGenerationModel = existing.topicGenerationModel
-      ..lastSessionId = existing.lastSessionId
-      ..lastTopicId = existing.lastTopicId
-      ..language = existing.language
-      ..lastPresetId = presetId
-      ..lastAssistantId = existing.lastAssistantId
-      ..themeColor = existing.themeColor
-      ..backgroundColor = existing.backgroundColor
-      ..closeBehavior = existing.closeBehavior
-      ..executionModel = existing.executionModel
-      ..executionProviderId = existing.executionProviderId
-      ..fontSize = existing.fontSize
-      ..backgroundImagePath = existing.backgroundImagePath
-      ..backgroundBrightness = existing.backgroundBrightness
-      ..backgroundBlur = existing.backgroundBlur
-      ..useCustomTheme = existing.useCustomTheme;
-    await _isar.writeTxn(() async {
-      await _isar.appSettingsEntitys.clear();
-      await _isar.appSettingsEntitys.put(settings);
+    await _updateExistingAppSettings((settings) {
+      settings.lastPresetId = presetId;
     });
   }
 
@@ -712,45 +570,61 @@ class SettingsStorage {
   }
 
   Future<void> saveLastAssistantId(String? assistantId) async {
-    final existing = await loadAppSettings();
-    if (existing == null) return;
-    final settings = AppSettingsEntity()
-      ..activeProviderId = existing.activeProviderId
-      ..selectedModel = existing.selectedModel
-      ..availableModels = existing.availableModels
-      ..userName = existing.userName
-      ..userAvatar = existing.userAvatar
-      ..llmName = existing.llmName
-      ..llmAvatar = existing.llmAvatar
-      ..themeMode = existing.themeMode
-      ..isStreamEnabled = existing.isStreamEnabled
-      ..isSearchEnabled = existing.isSearchEnabled
-      ..searchEngine = existing.searchEngine
-      ..searchRegion = existing.searchRegion
-      ..searchSafeSearch = existing.searchSafeSearch
-      ..searchMaxResults = existing.searchMaxResults
-      ..searchTimeoutSeconds = existing.searchTimeoutSeconds
-      ..enableSmartTopic = existing.enableSmartTopic
-      ..topicGenerationModel = existing.topicGenerationModel
-      ..lastSessionId = existing.lastSessionId
-      ..lastTopicId = existing.lastTopicId
-      ..language = existing.language
-      ..lastPresetId = existing.lastPresetId
-      ..lastAssistantId = assistantId
-      ..themeColor = existing.themeColor
-      ..backgroundColor = existing.backgroundColor
-      ..closeBehavior = existing.closeBehavior
-      ..executionModel = existing.executionModel
-      ..executionProviderId = existing.executionProviderId
-      ..fontSize = existing.fontSize
-      ..backgroundImagePath = existing.backgroundImagePath
-      ..backgroundBrightness = existing.backgroundBrightness
-      ..backgroundBlur = existing.backgroundBlur
-      ..useCustomTheme = existing.useCustomTheme;
+    await _updateExistingAppSettings((settings) {
+      settings.lastAssistantId = assistantId;
+    });
+  }
+
+  Future<void> _saveSingleAppSettings(AppSettingsEntity settings) async {
     await _isar.writeTxn(() async {
       await _isar.appSettingsEntitys.clear();
       await _isar.appSettingsEntitys.put(settings);
     });
+  }
+
+  AppSettingsEntity _copyAppSettingsEntity(AppSettingsEntity source) {
+    return AppSettingsEntity()
+      ..activeProviderId = source.activeProviderId
+      ..selectedModel = source.selectedModel
+      ..availableModels = List<String>.from(source.availableModels)
+      ..userName = source.userName
+      ..userAvatar = source.userAvatar
+      ..llmName = source.llmName
+      ..llmAvatar = source.llmAvatar
+      ..themeMode = source.themeMode
+      ..isStreamEnabled = source.isStreamEnabled
+      ..isSearchEnabled = source.isSearchEnabled
+      ..searchEngine = source.searchEngine
+      ..searchRegion = source.searchRegion
+      ..searchSafeSearch = source.searchSafeSearch
+      ..searchMaxResults = source.searchMaxResults
+      ..searchTimeoutSeconds = source.searchTimeoutSeconds
+      ..enableSmartTopic = source.enableSmartTopic
+      ..topicGenerationModel = source.topicGenerationModel
+      ..lastSessionId = source.lastSessionId
+      ..lastTopicId = source.lastTopicId
+      ..language = source.language
+      ..lastPresetId = source.lastPresetId
+      ..lastAssistantId = source.lastAssistantId
+      ..themeColor = source.themeColor
+      ..backgroundColor = source.backgroundColor
+      ..closeBehavior = source.closeBehavior
+      ..executionModel = source.executionModel
+      ..executionProviderId = source.executionProviderId
+      ..fontSize = source.fontSize
+      ..backgroundImagePath = source.backgroundImagePath
+      ..backgroundBrightness = source.backgroundBrightness
+      ..backgroundBlur = source.backgroundBlur
+      ..useCustomTheme = source.useCustomTheme;
+  }
+
+  Future<void> _updateExistingAppSettings(
+      void Function(AppSettingsEntity settings) applyUpdate) async {
+    final existing = await loadAppSettings();
+    if (existing == null) return;
+    final settings = _copyAppSettingsEntity(existing);
+    applyUpdate(settings);
+    await _saveSingleAppSettings(settings);
   }
 
   Future<void> _migrateFromExampleIfNeeded(Directory newDir) async {

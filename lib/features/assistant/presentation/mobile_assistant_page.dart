@@ -40,8 +40,8 @@ class MobileAssistantPage extends ConsumerWidget {
               children: [
                 MobileSettingsTile(
                   leading: const Icon(Icons.autorenew, size: 24),
-                  title: 'Default',
-                  subtitle: '不使用特定助理',
+                  title: l10n.defaultAssistant,
+                  subtitle: l10n.noSpecificAssistant,
                   showChevron: false,
                   trailing: IconButton(
                     icon: Icon(
@@ -79,7 +79,7 @@ class MobileAssistantPage extends ConsumerWidget {
                     title: assistant.name,
                     subtitle: assistant.description.isNotEmpty
                         ? assistant.description
-                        : '没有描述',
+                        : l10n.noAssistantDescription,
                     showChevron: false,
                     trailing: IconButton(
                       icon: Icon(
@@ -121,7 +121,7 @@ class MobileAssistantPage extends ConsumerWidget {
         onPressed: () async {
           final newAssistant =
               await ref.read(assistantProvider.notifier).createAssistant(
-                    name: '新助理',
+                    name: l10n.newAssistant,
                   );
           if (context.mounted) {
             Navigator.push(

@@ -6,8 +6,8 @@ import '../novel/novel_provider.dart';
 import '../novel/novel_state.dart';
 import 'mobile_model_config_sheet.dart';
 import 'package:flutter/services.dart';
-import '../../../../shared/widgets/custom_toast.dart';
 import '../../../../shared/widgets/aurora_bottom_sheet.dart';
+import '../../../../shared/widgets/aurora_notice.dart';
 
 class MobileNovelWritingPage extends ConsumerStatefulWidget {
   final VoidCallback? onBack;
@@ -792,7 +792,12 @@ class _MobileNovelWritingPageState extends ConsumerState<MobileNovelWritingPage>
                 onPressed: () {
                   if (content.isNotEmpty) {
                     Clipboard.setData(ClipboardData(text: content));
-                    showTopToast(context, '已复制到剪贴板');
+                    showAuroraNotice(
+                      context,
+                      '已复制到剪贴板',
+                      icon: AuroraIcons.copy,
+                      top: MediaQuery.of(context).padding.top + 64 + 60,
+                    );
                   }
                 },
               ),

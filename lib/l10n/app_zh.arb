@@ -435,6 +435,7 @@
   "topicNamePlaceholder": "分组名称",
   "allChats": "所有",
   
+  "requestConfig": "请求配置",
   "thinkingConfig": "思考配置",
   "enableThinking": "启用思考",
   "thinkingBudget": "思考预算",
@@ -628,5 +629,74 @@
   "imagePayload": "图片参数",
   "aspectRatio": "宽高比",
   "imageSize": "图片分辨率",
-  "auto": "自动"
+  "auto": "自动",
+  "assistantBasicConfig": "基本配置",
+  "assistantName": "名称",
+  "assistantDescription": "描述",
+  "assistantCoreSettings": "核心设定",
+  "assistantCapabilities": "能力配置",
+  "assistantSkillManagement": "技能管理",
+  "assistantSkillEnabledCount": "已启用 {count} 个技能",
+  "@assistantSkillEnabledCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "assistantLongTermMemory": "长期记忆",
+  "assistantAvailableSkillsTitle": "可用技能",
+  "assistantNoSkillsAvailable": "暂无可用技能",
+  "assistantDeleteTitle": "确认删除助理",
+  "assistantDeleteConfirm": "确认要删除助理 \"{name}\" 吗？此操作无法撤销。",
+  "@assistantDeleteConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "defaultAssistant": "默认",
+  "noSpecificAssistant": "不使用特定助理",
+  "noAssistantDescription": "没有描述",
+  "newAssistant": "新助理",
+  "cropAvatarTitle": "裁剪头像",
+  "lightMode": "浅色模式",
+  "darkMode": "深色模式",
+  "followSystem": "跟随系统",
+  "switchedToTheme": "已切换到{label}",
+  "@switchedToTheme": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "appTagline": "一款优雅的跨平台 AI 对话助手",
+  "back": "返回",
+  "rotate": "旋转",
+  "translationPromptIntro": "你是一位精通多国语言的专业翻译专家。请将以下{sourceLanguage}文本翻译成{targetLanguage}。",
+  "@translationPromptIntro": {
+    "placeholders": {
+      "sourceLanguage": {
+        "type": "String"
+      },
+      "targetLanguage": {
+        "type": "String"
+      }
+    }
+  },
+  "translationPromptIntroAuto": "你是一位精通多国语言的专业翻译专家。请将以下文本翻译成{targetLanguage}。",
+  "@translationPromptIntroAuto": {
+    "placeholders": {
+      "targetLanguage": {
+        "type": "String"
+      }
+    }
+  },
+  "translationPromptRequirements": "要求：",
+  "translationPromptRequirement1": "1. 翻译准确、地道，符合目标语言的表达习惯。",
+  "translationPromptRequirement2": "2. 严格保留原文的换行格式和段落结构，不要合并段落。",
+  "translationPromptRequirement3": "3. 只输出翻译后的内容，不要包含任何解释、前言或后缀。",
+  "translationPromptSourceText": "原文内容："
 }

@@ -991,6 +991,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get allChats => '所有';
 
   @override
+  String get requestConfig => '请求配置';
+
+  @override
   String get thinkingConfig => '思考配置';
 
   @override
@@ -1487,4 +1490,107 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get auto => '自动';
+
+  @override
+  String get assistantBasicConfig => '基本配置';
+
+  @override
+  String get assistantName => '名称';
+
+  @override
+  String get assistantDescription => '描述';
+
+  @override
+  String get assistantCoreSettings => '核心设定';
+
+  @override
+  String get assistantCapabilities => '能力配置';
+
+  @override
+  String get assistantSkillManagement => '技能管理';
+
+  @override
+  String assistantSkillEnabledCount(int count) {
+    return '已启用 $count 个技能';
+  }
+
+  @override
+  String get assistantLongTermMemory => '长期记忆';
+
+  @override
+  String get assistantAvailableSkillsTitle => '可用技能';
+
+  @override
+  String get assistantNoSkillsAvailable => '暂无可用技能';
+
+  @override
+  String get assistantDeleteTitle => '确认删除助理';
+
+  @override
+  String assistantDeleteConfirm(String name) {
+    return '确认要删除助理 \"$name\" 吗？此操作无法撤销。';
+  }
+
+  @override
+  String get defaultAssistant => '默认';
+
+  @override
+  String get noSpecificAssistant => '不使用特定助理';
+
+  @override
+  String get noAssistantDescription => '没有描述';
+
+  @override
+  String get newAssistant => '新助理';
+
+  @override
+  String get cropAvatarTitle => '裁剪头像';
+
+  @override
+  String get lightMode => '浅色模式';
+
+  @override
+  String get darkMode => '深色模式';
+
+  @override
+  String get followSystem => '跟随系统';
+
+  @override
+  String switchedToTheme(String label) {
+    return '已切换到$label';
+  }
+
+  @override
+  String get appTagline => '一款优雅的跨平台 AI 对话助手';
+
+  @override
+  String get back => '返回';
+
+  @override
+  String get rotate => '旋转';
+
+  @override
+  String translationPromptIntro(String sourceLanguage, String targetLanguage) {
+    return '你是一位精通多国语言的专业翻译专家。请将以下$sourceLanguage文本翻译成$targetLanguage。';
+  }
+
+  @override
+  String translationPromptIntroAuto(String targetLanguage) {
+    return '你是一位精通多国语言的专业翻译专家。请将以下文本翻译成$targetLanguage。';
+  }
+
+  @override
+  String get translationPromptRequirements => '要求：';
+
+  @override
+  String get translationPromptRequirement1 => '1. 翻译准确、地道，符合目标语言的表达习惯。';
+
+  @override
+  String get translationPromptRequirement2 => '2. 严格保留原文的换行格式和段落结构，不要合并段落。';
+
+  @override
+  String get translationPromptRequirement3 => '3. 只输出翻译后的内容，不要包含任何解释、前言或后缀。';
+
+  @override
+  String get translationPromptSourceText => '原文内容：';
 }

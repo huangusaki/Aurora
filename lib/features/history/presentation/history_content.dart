@@ -12,10 +12,22 @@ import 'package:aurora/features/settings/presentation/settings_provider.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 import 'package:aurora/shared/utils/number_format_utils.dart';
 import 'package:aurora/shared/utils/platform_utils.dart';
-import 'package:aurora/features/assistant/presentation/assistant_provider.dart';
-import 'package:aurora/features/assistant/presentation/widgets/assistant_avatar.dart';
-import 'package:aurora/features/assistant/domain/assistant.dart';
 import 'package:aurora/features/chat/data/session_entity.dart';
+
+List<SessionEntity> _filterSessions(
+  List<SessionEntity> sessions, {
+  required int? selectedTopicId,
+  String searchQuery = '',
+}) {
+  final normalizedQuery = searchQuery.trim().toLowerCase();
+  return sessions.where((session) {
+    final matchesTopic =
+        selectedTopicId == null || session.topicId == selectedTopicId;
+    if (!matchesTopic) return false;
+    if (normalizedQuery.isEmpty) return true;
+    return session.title.toLowerCase().contains(normalizedQuery);
+  }).toList();
+}
 
 class HistoryContent extends ConsumerStatefulWidget {
   const HistoryContent({super.key});
@@ -191,10 +203,10 @@ class _SessionList extends ConsumerWidget {
     });
     final selectedTopicId = ref.watch(selectedTopicIdProvider);
     final l10n = AppLocalizations.of(context)!;
-    final filteredSessions = sessionsState.sessions.where((s) {
-      if (selectedTopicId == null) return true;
-      return s.topicId == selectedTopicId;
-    }).toList();
+    final filteredSessions = _filterSessions(
+      sessionsState.sessions,
+      selectedTopicId: selectedTopicId,
+    );
     return Column(
       children: [
         Padding(
@@ -437,11 +449,6 @@ class _SessionItemState extends ConsumerState<_SessionItem> {
                       ),
                     ),
                   ),
-                if (_buildAssistantAvatar(ref, widget.session, theme)
-                    case final avatar?) ...[
-                  avatar,
-                  const SizedBox(width: 8),
-                ],
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -526,12 +533,11 @@ class SessionListWidget extends ConsumerWidget {
     }
     final searchQuery = ref.watch(sessionSearchQueryProvider).toLowerCase();
     final selectedTopicId = ref.watch(selectedTopicIdProvider);
-    final filteredSessions = sessionsState.sessions.where((s) {
-      final matchesSearch = s.title.toLowerCase().contains(searchQuery);
-      final matchesTopic =
-          selectedTopicId == null || s.topicId == selectedTopicId;
-      return matchesSearch && matchesTopic;
-    }).toList();
+    final filteredSessions = _filterSessions(
+      sessionsState.sessions,
+      selectedTopicId: selectedTopicId,
+      searchQuery: searchQuery,
+    );
     return ReorderableListView.builder(
       buildDefaultDragHandles: false,
       onReorder: (oldIndex, newIndex) {
@@ -556,12 +562,7 @@ class SessionListWidget extends ConsumerWidget {
                 leading: Stack(
                   clipBehavior: Clip.none,
                   children: [
-                    if (_buildAssistantAvatar(ref, session, Theme.of(context),
-                            size: 28)
-                        case final avatar?)
-                      avatar
-                    else
-                      const SizedBox(width: 28, height: 28),
+                    const SizedBox(width: 28, height: 28),
                     Positioned(
                       top: -1,
                       right: -1,
@@ -662,21 +663,4 @@ class _TapDetectorState extends State<_TapDetector> {
       child: widget.child,
     );
   }
-}
-
-Widget? _buildAssistantAvatar(
-    WidgetRef ref, SessionEntity session, dynamic theme,
-    {double size = 20}) {
-  final assistantState = ref.watch(assistantProvider);
-  Assistant? assistant;
-  if (session.assistantId != null) {
-    assistant = assistantState.assistants
-        .where((a) => a.id == session.assistantId)
-        .firstOrNull;
-  }
-
-  if (assistant?.avatar != null && assistant!.avatar!.isNotEmpty) {
-    return AssistantAvatar(assistant: assistant, size: size);
-  }
-  return null;
 }

@@ -143,13 +143,11 @@ class _ReasoningDisplayState extends ConsumerState<ReasoningDisplay>
               child: AnimatedBuilder(
                 animation: _controller,
                 builder: (context, _) {
-                  final isCollapsed = _controller.isDismissed;
                   return Padding(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     child: Row(
-                      mainAxisSize:
-                          isCollapsed ? MainAxisSize.min : MainAxisSize.max,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
                           AuroraIcons.lightbulb,
@@ -176,7 +174,6 @@ class _ReasoningDisplayState extends ConsumerState<ReasoningDisplay>
                             ),
                           ),
                         ),
-                        if (!isCollapsed) const Spacer(),
                         const SizedBox(width: 8),
                         RotationTransition(
                           turns:

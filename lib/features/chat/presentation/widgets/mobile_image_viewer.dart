@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:gal/gal.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:super_clipboard/super_clipboard.dart';
+import 'package:aurora/l10n/app_localizations.dart';
+import 'package:aurora/shared/widgets/aurora_notice.dart';
 
 class MobileImageViewer extends StatefulWidget {
   final Uint8List imageBytes;
@@ -73,12 +75,11 @@ class _MobileImageViewerState extends State<MobileImageViewer>
       item.add(Formats.png(widget.imageBytes));
       await clipboard.write([item]);
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('已复制到剪贴板'),
-            behavior: SnackBarBehavior.floating,
-            duration: Duration(seconds: 2),
-          ),
+        final l10n = AppLocalizations.of(context)!;
+        showAuroraNotice(
+          context,
+          l10n.copied,
+          icon: Icons.copy_rounded,
         );
       }
     } catch (e) {
@@ -96,23 +97,21 @@ class _MobileImageViewerState extends State<MobileImageViewer>
       await Gal.putImage(tempPath);
       await tempFile.delete();
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('已保存到相册'),
-            behavior: SnackBarBehavior.floating,
-            duration: Duration(seconds: 2),
-          ),
+        final l10n = AppLocalizations.of(context)!;
+        showAuroraNotice(
+          context,
+          l10n.imageSaved,
+          icon: Icons.check_circle_outline_rounded,
         );
       }
     } catch (e) {
       debugPrint('Save error: $e');
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('保存失败: $e'),
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 2),
-          ),
+        final l10n = AppLocalizations.of(context)!;
+        showAuroraNotice(
+          context,
+          '${l10n.imageSaveFailed}: $e',
+          icon: Icons.error_outline_rounded,
         );
       }
     }
@@ -127,6 +126,7 @@ class _MobileImageViewerState extends State<MobileImageViewer>
   double _rotation = 0.0;
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: Colors.black,
       extendBodyBehindAppBar: true,
@@ -137,7 +137,7 @@ class _MobileImageViewerState extends State<MobileImageViewer>
               leading: IconButton(
                 icon: const Icon(Icons.arrow_back, color: Colors.white),
                 onPressed: widget.onClose ?? () => Navigator.pop(context),
-                tooltip: 'Back',
+                tooltip: l10n.back,
               ),
             )
           : null,
@@ -183,17 +183,17 @@ class _MobileImageViewerState extends State<MobileImageViewer>
                         icon:
                             const Icon(Icons.rotate_right, color: Colors.white),
                         onPressed: _rotateClockwise,
-                        tooltip: 'Rotate',
+                        tooltip: l10n.rotate,
                       ),
                       IconButton(
                         icon: const Icon(Icons.copy, color: Colors.white),
                         onPressed: () => _handleCopy(context),
-                        tooltip: 'Copy',
+                        tooltip: l10n.copy,
                       ),
                       IconButton(
                         icon: const Icon(Icons.save_alt, color: Colors.white),
                         onPressed: () => _handleSave(context),
-                        tooltip: 'Save',
+                        tooltip: l10n.save,
                       ),
                     ],
                   ),

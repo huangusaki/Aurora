@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:aurora/l10n/app_localizations.dart';
+import 'package:aurora/shared/widgets/aurora_bottom_sheet.dart';
 import '../../chat_provider.dart';
 import '../../../../settings/presentation/settings_provider.dart';
 import '../custom_dropdown_overlay.dart'; // for generateColorFromString
@@ -83,7 +84,6 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
   final FocusNode _focusNode = FocusNode();
-  final fluent.FlyoutController _flyoutController = fluent.FlyoutController();
 
   @override
   void initState() {
@@ -114,7 +114,6 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
     _presetScrollController.dispose();
     _animationController.dispose();
     _focusNode.dispose();
-    _flyoutController.dispose();
     super.dispose();
   }
 
@@ -580,6 +579,34 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
     _focusNode.requestFocus();
   }
 
+  void _showDesktopRequestConfigDialog(
+      BuildContext context, SettingsState settings, AppLocalizations l10n) {
+    showDialog(
+      context: context,
+      builder: (ctx) => fluent.ContentDialog(
+        constraints: const BoxConstraints(maxWidth: 420, maxHeight: 640),
+        title: Text(
+          settings.selectedModel == 'gemini-3-pro-image-preview'
+              ? l10n.imagePayload
+              : l10n.requestConfig,
+        ),
+        content: SizedBox(
+          width: 360,
+          child: PayloadConfigPanel(
+            providerId: settings.activeProviderId,
+            modelName: settings.selectedModel ?? '',
+          ),
+        ),
+        actions: [
+          fluent.Button(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(l10n.close),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = fluent.FluentTheme.of(context);
@@ -905,45 +932,14 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
                 ),
               ),
               const SizedBox(width: 4),
-              fluent.FlyoutTarget(
-                controller: _flyoutController,
-                child: fluent.IconButton(
-                  icon: Icon(
-                    AuroraIcons.parameter,
-                    size: 16,
-                    color: theme.resources.textFillColorSecondary,
-                  ),
-                  onPressed: () {
-                    _flyoutController.showFlyout(
-                      autoModeConfiguration: fluent.FlyoutAutoConfiguration(
-                        preferredMode: fluent.FlyoutPlacementMode.topCenter,
-                      ),
-                      barrierDismissible: true,
-                      builder: (context) {
-                        return fluent.MenuFlyout(
-                          constraints: const BoxConstraints(maxWidth: 320),
-                          items: [
-                            fluent.MenuFlyoutItem(
-                              text: Text(settings.selectedModel ==
-                                      'gemini-3-pro-image-preview'
-                                  ? l10n.imagePayload
-                                  : l10n.thinkingConfig),
-                              onPressed: () {},
-                            ),
-                            fluent.MenuFlyoutSeparator(),
-                            fluent.MenuFlyoutItem(
-                              text: PayloadConfigPanel(
-                                providerId: settings.activeProviderId,
-                                modelName: settings.selectedModel ?? '',
-                              ),
-                              onPressed: () {},
-                            ),
-                          ],
-                        );
-                      },
-                    );
-                  },
+              fluent.IconButton(
+                icon: Icon(
+                  AuroraIcons.parameter,
+                  size: 16,
+                  color: theme.resources.textFillColorSecondary,
                 ),
+                onPressed: () =>
+                    _showDesktopRequestConfigDialog(context, settings, l10n),
               ),
               const Spacer(),
               if (widget.isLoading)
@@ -1130,48 +1126,33 @@ class MobileChatInputArea extends ConsumerWidget {
               const SizedBox(width: 4),
               InkWell(
                 onTap: () {
-                  showModalBottomSheet(
+                  AuroraBottomSheet.show(
                     context: context,
-                    backgroundColor: Colors.transparent,
-                    isScrollControlled: true,
-                    builder: (context) => Container(
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surface,
-                        borderRadius: const BorderRadius.vertical(
-                            top: Radius.circular(20)),
+                    builder: (ctx) => ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxHeight: MediaQuery.of(ctx).size.height * 0.75,
                       ),
-                      padding: const EdgeInsets.all(20),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Container(
-                            width: 40,
-                            height: 4,
-                            margin: const EdgeInsets.only(bottom: 20),
-                            decoration: BoxDecoration(
-                              color:
-                                  Theme.of(context).colorScheme.outlineVariant,
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                          ),
-                          Text(
+                          AuroraBottomSheet.buildTitle(
+                            ctx,
                             settings.selectedModel ==
                                     'gemini-3-pro-image-preview'
                                 ? l10n.imagePayload
-                                : l10n.thinkingConfig,
-                            style: Theme.of(context).textTheme.titleMedium,
+                                : l10n.requestConfig,
                           ),
-                          const SizedBox(height: 20),
-                          Padding(
-                            padding: EdgeInsets.only(
-                              bottom: MediaQuery.of(context).viewInsets.bottom,
-                            ),
-                            child: PayloadConfigPanel(
-                              providerId: settings.activeProviderId,
-                              modelName: settings.selectedModel ?? '',
+                          const Divider(height: 1),
+                          Flexible(
+                            child: SingleChildScrollView(
+                              padding: const EdgeInsets.all(20),
+                              child: PayloadConfigPanel(
+                                providerId: settings.activeProviderId,
+                                modelName: settings.selectedModel ?? '',
+                              ),
                             ),
                           ),
-                          const SizedBox(height: 20),
+                          const SizedBox(height: 16),
                         ],
                       ),
                     ),

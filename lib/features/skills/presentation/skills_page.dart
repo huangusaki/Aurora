@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 import 'package:aurora/shared/widgets/aurora_bottom_sheet.dart';
+import 'package:aurora/shared/widgets/aurora_notice.dart';
 import '../domain/skill_entity.dart';
 import '../presentation/skill_provider.dart';
 import '../../settings/presentation/settings_provider.dart';
@@ -659,8 +660,10 @@ class _SkillSettingsPageState extends ConsumerState<SkillSettingsPage> {
                                 .saveSkill(skill, controller.text);
                             if (ctx.mounted) {
                               Navigator.pop(ctx);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text(l10n.saveSuccess)),
+                              showAuroraNotice(
+                                context,
+                                l10n.saveSuccess,
+                                icon: Icons.check_circle_outline_rounded,
                               );
                             }
                           },

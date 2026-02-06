@@ -17,6 +17,7 @@ import '../../../history/presentation/widgets/hover_image_preview.dart';
 
 import 'components/chat_utils.dart';
 import 'package:aurora/shared/utils/platform_utils.dart';
+import 'package:aurora/shared/widgets/aurora_notice.dart';
 
 import 'components/message_bubble.dart';
 import 'components/merged_message_bubble.dart';
@@ -35,72 +36,15 @@ class ChatViewState extends ConsumerState<ChatView> {
   late final ScrollController _scrollController;
   final List<String> _attachments = [];
   String get _sessionId => widget.sessionId;
-  bool _toastVisible = false;
-  String _toastMessage = '';
-  IconData? _toastIcon;
-  Timer? _toastTimer;
-  void _showPillToast(String message, IconData icon) {
-    _toastTimer?.cancel();
-    setState(() {
-      _toastMessage = message;
-      _toastIcon = icon;
-      _toastVisible = true;
-    });
-    _toastTimer = Timer(const Duration(seconds: 2), () {
-      if (mounted) setState(() => _toastVisible = false);
-    });
-  }
 
-  Widget _buildPillToastWidget() {
-    final theme = fluent.FluentTheme.of(context);
-    return Positioned(
-      top: 60,
-      left: 0,
-      right: 0,
-      child: IgnorePointer(
-        ignoring: !_toastVisible,
-        child: Center(
-          child: AnimatedOpacity(
-            opacity: _toastVisible ? 1.0 : 0.0,
-            duration: const Duration(milliseconds: 200),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              decoration: BoxDecoration(
-                color: theme.cardColor,
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.12),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-                border: Border.all(
-                  color: theme.resources.dividerStrokeColorDefault,
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (_toastIcon != null) ...[
-                    Icon(_toastIcon,
-                        size: 18, color: Theme.of(context).colorScheme.primary),
-                    const SizedBox(width: 10),
-                  ],
-                  Text(
-                    _toastMessage,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: theme.typography.body?.color,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
+  void _showPillToast(String message, IconData icon) {
+    showAuroraNotice(
+      context,
+      message,
+      icon: icon,
+      top: PlatformUtils.isDesktop
+          ? 60
+          : MediaQuery.of(context).padding.top + 64 + 60,
     );
   }
 
@@ -526,7 +470,6 @@ class ChatViewState extends ConsumerState<ChatView> {
               ],
             ),
           ),
-          _buildPillToastWidget(),
         ],
       );
     }
@@ -863,7 +806,6 @@ class ChatViewState extends ConsumerState<ChatView> {
             ],
           ),
         ),
-        _buildPillToastWidget(),
       ],
     );
   }

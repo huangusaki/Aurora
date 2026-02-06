@@ -17,10 +17,11 @@ import '../widgets/cached_page_stack.dart';
 import 'mobile_navigation_drawer.dart';
 import '../../../assistant/presentation/mobile_assistant_page.dart';
 import '../../../studio/presentation/pages/mobile_studio_page.dart';
-import '../../../../shared/widgets/custom_toast.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 import 'package:aurora/shared/utils/number_format_utils.dart';
+import 'package:aurora/shared/theme/chat_background_theme.dart';
 import 'package:aurora/shared/widgets/aurora_bottom_sheet.dart';
+import 'package:aurora/shared/widgets/aurora_notice.dart';
 
 class MobileChatScreen extends ConsumerStatefulWidget {
   const MobileChatScreen({super.key});
@@ -43,82 +44,10 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
   Timer? _exitTimer;
   bool _isDrawerOpen = false;
 
-  bool _toastVisible = false;
-  String _toastMessage = '';
-  IconData? _toastIcon;
-  Timer? _toastTimer;
-
-  void _showPillToast(String message, IconData? icon) {
-    _toastTimer?.cancel();
-    setState(() {
-      _toastMessage = message;
-      _toastIcon = icon;
-      _toastVisible = true;
-    });
-    _toastTimer = Timer(const Duration(seconds: 2), () {
-      if (mounted) setState(() => _toastVisible = false);
-    });
-  }
-
   @override
   void dispose() {
-    _toastTimer?.cancel();
     _exitTimer?.cancel();
     super.dispose();
-  }
-
-  Widget _buildPillToastWidget() {
-    final theme = fluent.FluentTheme.of(context);
-    final topPadding = MediaQuery.of(context).padding.top;
-    return Positioned(
-      top: topPadding + 64 + 60,
-      left: 0,
-      right: 0,
-      child: IgnorePointer(
-        ignoring: !_toastVisible,
-        child: Center(
-          child: AnimatedOpacity(
-            opacity: _toastVisible ? 1.0 : 0.0,
-            duration: const Duration(milliseconds: 200),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              decoration: BoxDecoration(
-                color: theme.cardColor,
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.12),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-                border: Border.all(
-                  color: theme.resources.dividerStrokeColorDefault,
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (_toastIcon != null) ...[
-                    Icon(_toastIcon,
-                        size: 18, color: Theme.of(context).colorScheme.primary),
-                    const SizedBox(width: 10),
-                  ],
-                  Text(
-                    _toastMessage,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: theme.typography.body?.color,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
   }
 
   @override
@@ -209,8 +138,10 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
       }
     }
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final backgroundGradient =
-        _getBackgroundGradient(settingsState.backgroundColor, isDark);
+    final backgroundGradient = ChatBackgroundTheme.getGradient(
+      settingsState.backgroundColor,
+      isDark: isDark,
+    );
     final bool isSpecialView = _isSpecialKey(_currentViewKey);
     final bool isFirstRoute = ModalRoute.of(context)?.isFirst ?? true;
     final bool canPop = _isDrawerOpen ||
@@ -227,8 +158,12 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
         if (_lastPopTime == null ||
             now.difference(_lastPopTime!) > const Duration(seconds: 2)) {
           _lastPopTime = now;
-          _showPillToast(
-              AppLocalizations.of(context)!.pressAgainToExit, AuroraIcons.info);
+          showAuroraNotice(
+            context,
+            AppLocalizations.of(context)!.pressAgainToExit,
+            icon: AuroraIcons.info,
+            top: MediaQuery.of(context).padding.top + 64 + 60,
+          );
           _exitTimer?.cancel();
           _exitTimer = Timer(const Duration(seconds: 2), () {
             if (!mounted) return;
@@ -316,7 +251,6 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
               ),
             ),
           ),
-          _buildPillToastWidget(),
         ],
       ),
     );
@@ -417,7 +351,9 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
                           children: [
                             Flexible(
                               child: Text(
-                                currentSettings.selectedModel ?? '未选择模型',
+                                currentSettings.selectedModel ??
+                                    AppLocalizations.of(context)!
+                                        .modelNotSelected,
                                 style: TextStyle(
                                     fontSize: 13, color: Colors.grey[600]),
                                 overflow: TextOverflow.ellipsis,
@@ -457,6 +393,7 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
   }
 
   void _openModelSwitcher() {
+    final l10n = AppLocalizations.of(context)!;
     final settingsState = ref.read(settingsProvider);
     final providers = settingsState.providers;
     final activeProvider = settingsState.activeProvider;
@@ -464,9 +401,11 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
     final hasAnyModels =
         providers.any((p) => p.isEnabled && p.models.isNotEmpty);
     if (!hasAnyModels) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text(AppLocalizations.of(context)!.pleaseConfigureModel)),
+      showAuroraNotice(
+        context,
+        l10n.pleaseConfigureModel,
+        icon: AuroraIcons.info,
+        top: MediaQuery.of(context).padding.top + 64 + 60,
       );
       return;
     }
@@ -480,7 +419,7 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              AuroraBottomSheet.buildTitle(context, '配置会话'),
+              AuroraBottomSheet.buildTitle(context, l10n.switchModel),
               const Divider(height: 1),
               Flexible(
                 child: ListView(
@@ -490,9 +429,9 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
                     ListTile(
                       dense: true,
                       enabled: false,
-                      title: const Text(
-                        '选择模型',
-                        style: TextStyle(
+                      title: Text(
+                        l10n.selectModel,
+                        style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           color: Colors.grey,
                         ),
@@ -555,6 +494,7 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
   }
 
   void _cycleTheme() {
+    final l10n = AppLocalizations.of(context)!;
     final current = ref.read(settingsProvider).themeMode;
     String next;
     switch (current) {
@@ -568,29 +508,36 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
         next = 'system';
     }
     ref.read(settingsProvider.notifier).setThemeMode(next);
-    final message =
-        next == 'light' ? '浅色模式' : (next == 'dark' ? '深色模式' : '跟随系统');
-    showTopToast(context, '已切换到$message');
+    final modeLabel = next == 'light'
+        ? l10n.lightMode
+        : (next == 'dark' ? l10n.darkMode : l10n.followSystem);
+    showAuroraNotice(
+      context,
+      l10n.switchedToTheme(modeLabel),
+      icon: AuroraIcons.info,
+      top: MediaQuery.of(context).padding.top + 64 + 60,
+    );
   }
 
   void _showAboutDialog() {
+    final l10n = AppLocalizations.of(context)!;
     AuroraBottomSheet.show(
       context: context,
       builder: (ctx) => Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          AuroraBottomSheet.buildTitle(context, 'Aurora'),
+          AuroraBottomSheet.buildTitle(context, l10n.appTitle),
           const Divider(height: 1),
-          const Padding(
+          Padding(
             padding: EdgeInsets.all(24),
             child: Column(
               children: [
-                Icon(Icons.stars, size: 48, color: Colors.amber),
-                SizedBox(height: 16),
-                Text('版本: v1.0.0',
+                const Icon(Icons.stars, size: 48, color: Colors.amber),
+                const SizedBox(height: 16),
+                Text('${l10n.version}: v1.0.0',
                     style: TextStyle(fontWeight: FontWeight.w600)),
-                SizedBox(height: 8),
-                Text('一款优雅的跨平台 AI 对话助手', textAlign: TextAlign.center),
+                const SizedBox(height: 8),
+                Text(l10n.appTagline, textAlign: TextAlign.center),
               ],
             ),
           ),
@@ -608,92 +555,5 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
         ],
       ),
     );
-  }
-
-  List<Color>? _getBackgroundGradient(String style, bool isDark) {
-    if (style == 'pure_black') {
-      return isDark ? [const Color(0xFF000000), const Color(0xFF000000)] : null;
-    }
-
-    final gradients = <String, (List<Color>, List<Color>)>{
-      'default': (
-        [const Color(0xFF2B2B2B), const Color(0xFF2B2B2B)],
-        [const Color(0xFFE0F7FA), const Color(0xFFF1F8E9)]
-      ),
-      'warm': (
-        [const Color(0xFF1E1C1A), const Color(0xFF2E241E)],
-        [const Color(0xFFFFF8F0), const Color(0xFFFFEBD6)]
-      ),
-      'cool': (
-        [const Color(0xFF1A1C1E), const Color(0xFF1E252E)],
-        [const Color(0xFFF0F8FF), const Color(0xFFD6EAFF)]
-      ),
-      'rose': (
-        [const Color(0xFF2D1A1E), const Color(0xFF3B1E26)],
-        [const Color(0xFFFFF0F5), const Color(0xFFFFD6E4)]
-      ),
-      'lavender': (
-        [const Color(0xFF1F1A2D), const Color(0xFF261E3B)],
-        [const Color(0xFFF3E5F5), const Color(0xFFE6D6FF)]
-      ),
-      'mint': (
-        [const Color(0xFF1A2D24), const Color(0xFF1E3B2E)],
-        [const Color(0xFFE0F2F1), const Color(0xFFC2E8DC)]
-      ),
-      'sky': (
-        [const Color(0xFF1A202D), const Color(0xFF1E263B)],
-        [const Color(0xFFE1F5FE), const Color(0xFFC7E6FF)]
-      ),
-      'gray': (
-        [const Color(0xFF1E1E1E), const Color(0xFF2C2C2C)],
-        [const Color(0xFFF5F5F5), const Color(0xFFE0E0E0)]
-      ),
-      'sunset': (
-        [const Color(0xFF1A0B0E), const Color(0xFF4A1F28)],
-        [const Color(0xFFFFF3E0), const Color(0xFFFFCCBC)]
-      ),
-      'ocean': (
-        [const Color(0xFF05101A), const Color(0xFF0D2B42)],
-        [const Color(0xFFE1F5FE), const Color(0xFF81D4FA)]
-      ),
-      'forest': (
-        [const Color(0xFF051408), const Color(0xFF0E3316)],
-        [const Color(0xFFE8F5E9), const Color(0xFFA5D6A7)]
-      ),
-      'dream': (
-        [const Color(0xFF120817), const Color(0xFF261233)],
-        [const Color(0xFFF3E5F5), const Color(0xFFBBDEFB)]
-      ),
-      'aurora': (
-        [const Color(0xFF051715), const Color(0xFF181533)],
-        [const Color(0xFFE0F2F1), const Color(0xFFD1C4E9)]
-      ),
-      'volcano': (
-        [const Color(0xFF1F0808), const Color(0xFF3E1212)],
-        [const Color(0xFFFFEBEE), const Color(0xFFFFCCBC)]
-      ),
-      'midnight': (
-        [const Color(0xFF020205), const Color(0xFF141426)],
-        [const Color(0xFFECEFF1), const Color(0xFF90A4AE)]
-      ),
-      'dawn': (
-        [const Color(0xFF141005), const Color(0xFF33260D)],
-        [const Color(0xFFFFF8E1), const Color(0xFFFFE082)]
-      ),
-      'neon': (
-        [const Color(0xFF08181A), const Color(0xFF240C21)],
-        [const Color(0xFFE0F7FA), const Color(0xFFE1BEE7)]
-      ),
-      'blossom': (
-        [const Color(0xFF1F050B), const Color(0xFF3D0F19)],
-        [const Color(0xFFFCE4EC), const Color(0xFFF8BBD0)]
-      ),
-    };
-
-    final gradient = gradients[style];
-    if (gradient == null) {
-      return isDark ? null : [const Color(0xFFE0F7FA), const Color(0xFFF1F8E9)];
-    }
-    return isDark ? gradient.$1 : gradient.$2;
   }
 }

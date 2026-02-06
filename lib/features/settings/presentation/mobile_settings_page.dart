@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'settings_provider.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 import 'package:aurora/shared/widgets/aurora_bottom_sheet.dart';
+import 'package:aurora/shared/widgets/aurora_notice.dart';
 import 'widgets/mobile_settings_widgets.dart';
 
 class MobileSettingsPage extends ConsumerStatefulWidget {
@@ -1129,8 +1130,10 @@ class _ParameterConfigDialogState extends State<_ParameterConfigDialog> {
                       widget.onSave(key, value);
                       Navigator.pop(context);
                     } catch (e) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('${l10n.formatError}: $e')),
+                      showAuroraNotice(
+                        context,
+                        '${l10n.formatError}: $e',
+                        icon: Icons.error_outline_rounded,
                       );
                     }
                   },

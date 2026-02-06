@@ -8,6 +8,7 @@ import '../../../shared/utils/avatar_cropper.dart';
 import 'settings_provider.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 import 'package:aurora/shared/widgets/aurora_bottom_sheet.dart';
+import 'package:aurora/shared/widgets/aurora_notice.dart';
 import 'package:aurora/shared/utils/platform_utils.dart';
 import 'widgets/mobile_settings_widgets.dart';
 
@@ -192,10 +193,11 @@ class _MobileUserPageState extends ConsumerState<MobileUserPage> {
   }
 
   Future<void> _pickImage(ImageSource source, bool isUser) async {
+    final l10n = AppLocalizations.of(context)!;
     if (source == ImageSource.camera) {
       final status = await Permission.camera.request();
       if (status.isPermanentlyDenied) {
-        if (mounted) _showPermissionDialog('相机');
+        if (mounted) _showPermissionDialog(l10n.camera);
         return;
       }
       if (!status.isGranted) return;
@@ -234,8 +236,10 @@ class _MobileUserPageState extends ConsumerState<MobileUserPage> {
     } catch (e) {
       if (mounted) {
         final l10n = AppLocalizations.of(context)!;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${l10n.pickImageFailed}: $e')),
+        showAuroraNotice(
+          context,
+          '${l10n.pickImageFailed}: $e',
+          icon: Icons.error_outline_rounded,
         );
       }
     }
@@ -243,11 +247,10 @@ class _MobileUserPageState extends ConsumerState<MobileUserPage> {
 
   void _showPermissionDialog(String name) async {
     final l10n = AppLocalizations.of(context)!;
-    final localizedName = name == '相机' ? l10n.camera : name;
     final confirmed = await AuroraBottomSheet.showConfirm(
       context: context,
-      title: l10n.permissionRequired(localizedName),
-      content: l10n.permissionContent(localizedName),
+      title: l10n.permissionRequired(name),
+      content: l10n.permissionContent(name),
       confirmText: l10n.goToSettings,
     );
     if (confirmed == true) {

@@ -243,14 +243,10 @@ class ChatNotifier extends StateNotifier<ChatState> {
     if (text != null && (_sessionId == 'chat' || _sessionId == 'new_chat')) {
       final title = text.length > 15 ? '${text.substring(0, 15)}...' : text;
       final topicId = _ref.read(selectedTopicIdProvider);
-      final assistantId = _ref.read(assistantProvider).selectedAssistantId;
 
       // Don't use currentPresetId for new chats to avoid "leaking" presets
       final realId = await _storage.createSession(
-          title: title,
-          topicId: topicId,
-          presetId: '',
-          assistantId: assistantId);
+          title: title, topicId: topicId, presetId: '');
 
       if (!mounted) return realId;
 

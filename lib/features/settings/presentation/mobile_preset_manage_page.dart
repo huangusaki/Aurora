@@ -5,6 +5,7 @@ import '../../settings/domain/chat_preset.dart';
 import '../../settings/presentation/settings_provider.dart';
 import '../../../../shared/widgets/aurora_bottom_sheet.dart';
 import 'package:aurora/shared/widgets/aurora_page_route.dart';
+import 'package:aurora/shared/widgets/aurora_notice.dart';
 
 class MobilePresetManagePage extends ConsumerWidget {
   const MobilePresetManagePage({super.key});
@@ -110,9 +111,10 @@ class _MobilePresetEditPageState extends ConsumerState<MobilePresetEditPage> {
 
   void _save() {
     if (_nameController.text.isEmpty || _promptController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text(AppLocalizations.of(context)!.fillRequiredFields)),
+      showAuroraNotice(
+        context,
+        AppLocalizations.of(context)!.fillRequiredFields,
+        icon: Icons.info_outline_rounded,
       );
       return;
     }
