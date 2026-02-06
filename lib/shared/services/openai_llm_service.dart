@@ -303,6 +303,42 @@ void _mergeExtraBodyProvider(
   requestData['extra_body'] = extraBody;
 }
 
+bool _isAutoAspectRatio(String raw) {
+  final v = raw.trim().toLowerCase();
+  return v.isEmpty || v == 'auto' || v == '自动';
+}
+
+void _applyImageConfigToRequest({
+  required Map<String, dynamic> requestData,
+  required Map<String, dynamic> activeParams,
+  required String selectedModel,
+}) {
+  final imageConfig =
+      activeParams['_aurora_image_config'] ?? activeParams['image_config'];
+  if (imageConfig is! Map) return;
+
+  final isGemini = selectedModel.toLowerCase().contains('gemini');
+  if (!isGemini) return;
+
+  final aspectRatioRaw = imageConfig['aspect_ratio']?.toString();
+  final imageSizeRaw = imageConfig['image_size']?.toString();
+
+  final aspectRatio =
+      (aspectRatioRaw == null || _isAutoAspectRatio(aspectRatioRaw))
+          ? null
+          : aspectRatioRaw.trim();
+  final imageSize = (imageSizeRaw == null || imageSizeRaw.trim().isEmpty)
+      ? null
+      : imageSizeRaw.trim();
+
+  if (aspectRatio == null && imageSize == null) return;
+
+  requestData['image_config'] = {
+    if (aspectRatio != null) 'aspect_ratio': aspectRatio,
+    if (imageSize != null) 'image_size': imageSize,
+  };
+}
+
 void _applyThinkingConfigToRequest({
   required Map<String, dynamic> requestData,
   required Map<String, dynamic> activeParams,
@@ -364,7 +400,6 @@ void _applyThinkingConfigToRequest({
             'thinking_config': {
               'thinkingLevel': level,
               'includeThoughts': true,
-              'include_thoughts': true,
             }
           },
         );
@@ -378,7 +413,6 @@ void _applyThinkingConfigToRequest({
             'thinking_config': {
               'thinking_budget': budgetTokens,
               'include_thoughts': true,
-              'includeThoughts': true,
             }
           },
         );
@@ -703,29 +737,12 @@ Use search for:
         baseUrl: baseUrl,
       );
 
-      // Handle Image Config (for gemini-3-pro-image-preview)
-      final imageConfig =
-          activeParams['_aurora_image_config'] ?? activeParams['image_config'];
-      if (imageConfig != null && imageConfig is Map) {
-        final isGemini = selectedModel.toLowerCase().contains('gemini');
-        if (isGemini) {
-          final Map<String, dynamic> googleConfig =
-              (requestData['extra_body']?['google'] as Map<String, dynamic>?) ??
-                  {};
-          final String? aspectRatio = imageConfig['aspect_ratio'];
-          final String? imageSize = imageConfig['image_size'];
-
-          if (aspectRatio != null || imageSize != null) {
-            googleConfig['image_config'] = {
-              if (aspectRatio != null) 'aspect_ratio': aspectRatio,
-              if (imageSize != null) 'image_size': imageSize,
-            };
-            requestData['extra_body'] = {
-              'google': googleConfig,
-            };
-          }
-        }
-      }
+      // Handle Image Config (for gemini image models)
+      _applyImageConfigToRequest(
+        requestData: requestData,
+        activeParams: activeParams,
+        selectedModel: selectedModel,
+      );
 
       _logRequest('${baseUrl}chat/completions', requestData);
       Response<ResponseBody> response;
@@ -1526,6 +1543,11 @@ Use search for:
         activeParams: activeParams,
         selectedModel: selectedModel,
         baseUrl: baseUrl,
+      );
+      _applyImageConfigToRequest(
+        requestData: requestData,
+        activeParams: activeParams,
+        selectedModel: selectedModel,
       );
 
       _logRequest('${baseUrl}chat/completions', requestData);

@@ -116,101 +116,125 @@ class _ReasoningDisplayState extends ConsumerState<ReasoningDisplay>
     final textColor = isDark ? Colors.white70 : Colors.black87;
     final iconColor = isDark ? Colors.white54 : Colors.black54;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: hasBackground
-              ? (isDark ? Colors.white24 : Colors.black26)
-              : (isDark ? Colors.white10 : Colors.black12),
-          width: 0.5,
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 150),
+      curve: Curves.easeInOut,
+      alignment: Alignment.topLeft,
+      clipBehavior: Clip.none,
+      child: Container(
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: hasBackground
+                ? (isDark ? Colors.white24 : Colors.black26)
+                : (isDark ? Colors.white10 : Colors.black12),
+            width: 0.5,
+          ),
         ),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          GestureDetector(
-            onTap: _toggleExpand,
-            behavior: HitTestBehavior.opaque,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              child: Row(
-                children: [
-                  Icon(
-                    AuroraIcons.lightbulb,
-                    size: 18,
-                    color: iconColor,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    widget.isRunning
-                        ? '${AppLocalizations.of(context)!.deepThinking} (${_currentDuration.toStringAsFixed(1)}s)'
-                        : (widget.duration != null
-                            ? AppLocalizations.of(context)!.deepThoughtFinished(
-                                widget.duration!.toStringAsFixed(1))
-                            : AppLocalizations.of(context)!.thoughtChain),
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: textColor,
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            GestureDetector(
+              onTap: _toggleExpand,
+              behavior: HitTestBehavior.opaque,
+              child: AnimatedBuilder(
+                animation: _controller,
+                builder: (context, _) {
+                  final isCollapsed = _controller.isDismissed;
+                  return Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    child: Row(
+                      mainAxisSize:
+                          isCollapsed ? MainAxisSize.min : MainAxisSize.max,
+                      children: [
+                        Icon(
+                          AuroraIcons.lightbulb,
+                          size: 18,
+                          color: iconColor,
+                        ),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Text(
+                            widget.isRunning
+                                ? '${AppLocalizations.of(context)!.deepThinking} (${_currentDuration.toStringAsFixed(1)}s)'
+                                : (widget.duration != null
+                                    ? AppLocalizations.of(context)!
+                                        .deepThoughtFinished(
+                                            widget.duration!.toStringAsFixed(1))
+                                    : AppLocalizations.of(context)!
+                                        .thoughtChain),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: textColor,
+                            ),
+                          ),
+                        ),
+                        if (!isCollapsed) const Spacer(),
+                        const SizedBox(width: 8),
+                        RotationTransition(
+                          turns:
+                              Tween(begin: 0.0, end: 0.5).animate(_controller),
+                          child: Icon(
+                            AuroraIcons.chevronDown,
+                            size: 16,
+                            color: iconColor,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  const Spacer(),
-                  RotationTransition(
-                    turns: Tween(begin: 0.0, end: 0.5).animate(_controller),
-                    child: Icon(
-                      AuroraIcons.chevronDown,
-                      size: 16,
-                      color: iconColor,
-                    ),
-                  ),
-                ],
+                  );
+                },
               ),
             ),
-          ),
-          AnimatedBuilder(
-            animation: _controller,
-            builder: (context, _) {
-              if (_controller.isDismissed) {
-                return const SizedBox.shrink();
-              }
-              return SizeTransition(
-                sizeFactor: _animation,
-                axisAlignment: -1.0,
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                  decoration: BoxDecoration(
-                      border: Border(
-                          top: BorderSide(
-                    color: isDark ? Colors.white10 : Colors.black12,
-                    width: 0.5,
-                  ))),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 8),
-                      SelectableText(
-                        widget.content,
-                        style: TextStyle(
-                          fontSize: 13,
-                          height: 1.5,
-                          fontFamily: widget.isWindows ? 'Consolas' : null,
-                          color: isDark ? Colors.white60 : Colors.black54,
+            AnimatedBuilder(
+              animation: _controller,
+              builder: (context, _) {
+                if (_controller.isDismissed) {
+                  return const SizedBox.shrink();
+                }
+                return SizeTransition(
+                  sizeFactor: _animation,
+                  axisAlignment: -1.0,
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                    decoration: BoxDecoration(
+                        border: Border(
+                            top: BorderSide(
+                      color: isDark ? Colors.white10 : Colors.black12,
+                      width: 0.5,
+                    ))),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 8),
+                        SelectableText(
+                          widget.content,
+                          style: TextStyle(
+                            fontSize: 13,
+                            height: 1.5,
+                            fontFamily: widget.isWindows ? 'Consolas' : null,
+                            color: isDark ? Colors.white60 : Colors.black54,
+                          ),
+                          selectionControls: widget.isWindows
+                              ? fluent.fluentTextSelectionControls
+                              : null,
                         ),
-                        selectionControls: widget.isWindows
-                            ? fluent.fluentTextSelectionControls
-                            : null,
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              );
-            },
-          ),
-        ],
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:aurora/shared/theme/wallpaper_tint.dart';
+import 'package:aurora/shared/theme/wallpaper_tint_provider.dart';
 import '../settings_provider.dart';
 
 class MobileSettingsSection extends ConsumerWidget {
@@ -17,16 +19,21 @@ class MobileSettingsSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(settingsProvider);
-    final hasBg = settings.useCustomTheme &&
+    final hasBg = (settings.useCustomTheme || settings.themeMode == 'custom') &&
         settings.backgroundImagePath != null &&
         settings.backgroundImagePath!.isNotEmpty;
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final wallpaperTint = ref.watch(wallpaperTintColorProvider);
 
     final cardBg = hasBg
-        ? (isDark
-            ? Colors.black.withValues(alpha: 0.45)
-            : Colors.white.withValues(alpha: 0.45))
+        ? tintedGlass(
+            wallpaperTint: wallpaperTint,
+            isDark: isDark,
+            fallback: isDark ? Colors.black : Colors.white,
+            alpha: 0.45,
+            mix: 0.22,
+          )
         : theme.cardColor;
 
     return Column(

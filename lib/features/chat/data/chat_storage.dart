@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:aurora/shared/utils/translation_prompt_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:isar/isar.dart';
 import '../../settings/data/settings_storage.dart';
@@ -65,9 +66,14 @@ class ChatStorage {
     }
     await _isar.writeTxn(() async {
       await _isar.messageEntitys.put(entity);
-      if (message.tokenCount != null || message.promptTokens != null) {
-        final session = await _isar.sessionEntitys.getBySessionId(sessionId);
-        if (session != null) {
+      final session = await _isar.sessionEntitys.getBySessionId(sessionId);
+      if (session != null) {
+        var shouldPersistSession = false;
+        if (message.isUser) {
+          session.lastMessageTime = message.timestamp;
+          shouldPersistSession = true;
+        }
+        if (message.tokenCount != null || message.promptTokens != null) {
           // Calculate total tokens for this message
           int msgTotal = message.tokenCount ?? 0;
           if (message.promptTokens != null ||
@@ -80,6 +86,9 @@ class ChatStorage {
           }
 
           session.totalTokens += msgTotal;
+          shouldPersistSession = true;
+        }
+        if (shouldPersistSession) {
           await _isar.sessionEntitys.put(session);
         }
       }
@@ -124,6 +133,21 @@ class ChatStorage {
         return e;
       }).toList();
       await _isar.messageEntitys.putAll(entities);
+
+      DateTime? lastUserMessageTime;
+      for (int i = messages.length - 1; i >= 0; i--) {
+        if (messages[i].isUser) {
+          lastUserMessageTime = messages[i].timestamp;
+          break;
+        }
+      }
+      if (lastUserMessageTime != null) {
+        final session = await _isar.sessionEntitys.getBySessionId(sessionId);
+        if (session != null) {
+          session.lastMessageTime = lastUserMessageTime;
+          await _isar.sessionEntitys.put(session);
+        }
+      }
     });
     _messagesCache[sessionId] = List.of(messages);
   }
@@ -200,25 +224,46 @@ class ChatStorage {
         await _deleteAttachmentFiles(entity.attachments);
       }
       final targetSessionId = sessionId ?? entity.sessionId;
-      if (_messagesCache.containsKey(targetSessionId)) {
+      if (targetSessionId != null &&
+          _messagesCache.containsKey(targetSessionId)) {
         _messagesCache[targetSessionId]!.removeWhere((m) => m.id == id);
       }
     }
     await _isar.writeTxn(() async {
-      if (entity != null &&
-          entity.tokenCount != null &&
-          entity.tokenCount! > 0) {
-        final session = await _isar.sessionEntitys
+      await _isar.messageEntitys.delete(intId);
+
+      final entitySessionId = entity?.sessionId;
+      if (entity == null || entitySessionId == null) return;
+
+      final session = await _isar.sessionEntitys
+          .filter()
+          .sessionIdEqualTo(entitySessionId)
+          .findFirst();
+      if (session == null) return;
+
+      var shouldPersistSession = false;
+      if (entity.tokenCount != null && entity.tokenCount! > 0) {
+        session.totalTokens =
+            (session.totalTokens - entity.tokenCount!).clamp(0, 999999999);
+        shouldPersistSession = true;
+      }
+
+      if (entity.isUser) {
+        final lastUserMessage = await _isar.messageEntitys
             .filter()
-            .sessionIdEqualTo(entity.sessionId!)
+            .sessionIdEqualTo(entitySessionId)
+            .isUserEqualTo(true)
+            .sortByTimestampDesc()
             .findFirst();
-        if (session != null) {
-          session.totalTokens =
-              (session.totalTokens - entity.tokenCount!).clamp(0, 999999999);
-          await _isar.sessionEntitys.put(session);
+        if (lastUserMessage != null) {
+          session.lastMessageTime = lastUserMessage.timestamp;
+          shouldPersistSession = true;
         }
       }
-      await _isar.messageEntitys.delete(intId);
+
+      if (shouldPersistSession) {
+        await _isar.sessionEntitys.put(session);
+      }
     });
   }
 
@@ -245,7 +290,11 @@ class ChatStorage {
     await _isar.writeTxn(() async {
       final existing = await _isar.messageEntitys.get(intId);
       if (existing != null) {
+        final entitySessionId = existing.sessionId;
+        final wasUser = existing.isUser;
         existing.content = message.content;
+        existing.timestamp = message.timestamp;
+        existing.isUser = message.isUser;
         existing.reasoningContent = message.reasoningContent;
         existing.images = message.images;
         existing.attachments = message.attachments;
@@ -260,30 +309,60 @@ class ChatStorage {
         } else {
           existing.toolCallsJson = null;
         }
+        SessionEntity? session;
+        var shouldPersistSession = false;
         if (message.tokenCount != null &&
             message.tokenCount != existing.tokenCount) {
           final diff = (message.tokenCount ?? 0) - (existing.tokenCount ?? 0);
           if (diff != 0) {
-            final session = await _isar.sessionEntitys
-                .filter()
-                .sessionIdEqualTo(existing.sessionId!)
-                .findFirst();
+            if (entitySessionId != null) {
+              session = await _isar.sessionEntitys
+                  .filter()
+                  .sessionIdEqualTo(entitySessionId)
+                  .findFirst();
+            }
             if (session != null) {
               session.totalTokens =
                   (session.totalTokens + diff).clamp(0, 999999999);
-              await _isar.sessionEntitys.put(session);
+              shouldPersistSession = true;
             }
           }
           existing.tokenCount = message.tokenCount;
         }
-        if (_messagesCache.containsKey(existing.sessionId!)) {
-          final cachedList = _messagesCache[existing.sessionId!]!;
+        final shouldUpdateLastMessageTime = wasUser || message.isUser;
+        await _isar.messageEntitys.put(existing);
+
+        if (entitySessionId != null && shouldUpdateLastMessageTime) {
+          session ??= await _isar.sessionEntitys
+              .filter()
+              .sessionIdEqualTo(entitySessionId)
+              .findFirst();
+          if (session != null) {
+            final lastUserMessage = await _isar.messageEntitys
+                .filter()
+                .sessionIdEqualTo(entitySessionId)
+                .isUserEqualTo(true)
+                .sortByTimestampDesc()
+                .findFirst();
+            if (lastUserMessage != null) {
+              session.lastMessageTime = lastUserMessage.timestamp;
+              shouldPersistSession = true;
+            }
+          }
+        }
+
+        if (shouldPersistSession && session != null) {
+          await _isar.sessionEntitys.put(session);
+        }
+
+        if (entitySessionId != null &&
+            _messagesCache.containsKey(entitySessionId)) {
+          final cachedList = _messagesCache[entitySessionId]!;
           final cacheIndex = cachedList.indexWhere((m) => m.id == message.id);
           if (cacheIndex != -1) {
             cachedList[cacheIndex] = message;
           }
         }
-        await _isar.messageEntitys.put(existing);
       }
     });
   }
@@ -303,6 +382,7 @@ class ChatStorage {
         await _isar.sessionEntitys.put(session);
       }
     });
+    invalidateCache(sessionId);
   }
 
   Future<String> createSession({
@@ -453,6 +533,32 @@ class ChatStorage {
     });
   }
 
+  Future<void> backfillSessionLastUserMessageTimes() async {
+    final sessions = await _isar.sessionEntitys.where().findAll();
+    if (sessions.isEmpty) return;
+
+    final sessionsToUpdate = <SessionEntity>[];
+    for (final session in sessions) {
+      final lastUserMessage = await _isar.messageEntitys
+          .filter()
+          .sessionIdEqualTo(session.sessionId)
+          .isUserEqualTo(true)
+          .sortByTimestampDesc()
+          .findFirst();
+      if (lastUserMessage == null) continue;
+
+      if (session.lastMessageTime != lastUserMessage.timestamp) {
+        session.lastMessageTime = lastUserMessage.timestamp;
+        sessionsToUpdate.add(session);
+      }
+    }
+
+    if (sessionsToUpdate.isEmpty) return;
+    await _isar.writeTxn(() async {
+      await _isar.sessionEntitys.putAll(sessionsToUpdate);
+    });
+  }
+
   Future<bool> deleteSessionIfEmpty(String sessionId) async {
     final count =
         await _isar.messageEntitys.filter().sessionIdEqualTo(sessionId).count();
@@ -462,6 +568,31 @@ class ChatStorage {
       return true;
     }
     return false;
+  }
+
+  Future<void> sanitizeTranslationUserMessages() async {
+    const translationSessionId = 'translation';
+    final entities = await _isar.messageEntitys
+        .filter()
+        .sessionIdEqualTo(translationSessionId)
+        .isUserEqualTo(true)
+        .findAll();
+    if (entities.isEmpty) return;
+
+    final toUpdate = <MessageEntity>[];
+    for (final e in entities) {
+      final extracted = TranslationPromptUtils.extractSourceText(e.content);
+      if (extracted != e.content) {
+        e.content = extracted;
+        toUpdate.add(e);
+      }
+    }
+
+    if (toUpdate.isEmpty) return;
+    await _isar.writeTxn(() async {
+      await _isar.messageEntitys.putAll(toUpdate);
+    });
+    invalidateCache(translationSessionId);
   }
 
   Future<List<String>> loadSessionOrder() =>

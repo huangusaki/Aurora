@@ -6,6 +6,8 @@ import 'package:file_selector/file_selector.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 import 'package:aurora_search/aurora_search.dart';
+import 'package:aurora/shared/theme/wallpaper_tint.dart';
+import 'package:aurora/shared/theme/wallpaper_tint_provider.dart';
 import 'package:aurora/shared/utils/platform_utils.dart';
 import 'settings_provider.dart';
 import 'usage_stats_view.dart';
@@ -235,18 +237,43 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
     required TextEditingController controller,
     String? placeholder,
     ValueChanged<String>? onChanged,
+    bool autofocus = false,
+    EdgeInsetsGeometry padding =
+        const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+    double radius = 8,
+    ValueChanged<String>? onSubmitted,
+    void Function(PointerDownEvent)? onTapOutside,
   }) {
     final theme = fluent.FluentTheme.of(context);
+    final settings = ref.watch(settingsProvider.select((s) => (
+          enabled: s.useCustomTheme || s.themeMode == 'custom',
+          path: s.backgroundImagePath,
+        )));
+    final hasBackground =
+        settings.enabled && settings.path != null && settings.path!.isNotEmpty;
+    final wallpaperTint = ref.watch(wallpaperTintColorProvider);
+    final baseFill = theme.brightness.isDark
+        ? const Color(0xFF3C3C3C)
+        : const Color(0xFFF3F3F3);
     return fluent.TextBox(
       controller: controller,
       placeholder: placeholder,
       onChanged: onChanged,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      autofocus: autofocus,
+      onSubmitted: onSubmitted,
+      onTapOutside: onTapOutside,
+      padding: padding,
       decoration: WidgetStateProperty.all(BoxDecoration(
-        color: theme.brightness.isDark
-            ? const Color(0xFF3C3C3C)
-            : const Color(0xFFF3F3F3),
-        borderRadius: BorderRadius.circular(8),
+        color: hasBackground
+            ? tintedGlassFromBase(
+                wallpaperTint: wallpaperTint,
+                base: baseFill,
+                fallback: baseFill,
+                alpha: 0.72,
+                mix: 0.22,
+              )
+            : baseFill,
+        borderRadius: BorderRadius.circular(radius),
         border: Border.all(
           color: theme.resources.controlStrokeColorDefault,
         ),
@@ -269,7 +296,7 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            fluent.TextBox(
+            _buildStyledTextBox(
               controller: controller,
               placeholder: l10n.apiKeyPlaceholder,
               autofocus: true,
@@ -305,6 +332,24 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
   Widget _buildProviderSettings(
       SettingsState settingsState, ProviderConfig viewingProvider) {
     final l10n = AppLocalizations.of(context)!;
+    final theme = fluent.FluentTheme.of(context);
+    final hasBackground =
+        (settingsState.useCustomTheme || settingsState.themeMode == 'custom') &&
+            settingsState.backgroundImagePath != null &&
+            settingsState.backgroundImagePath!.isNotEmpty;
+    final wallpaperTint = ref.watch(wallpaperTintColorProvider);
+    final apiKeyCardBaseBg = theme.brightness.isDark
+        ? const Color(0xFF323232)
+        : const Color(0xFFF9F9F9);
+    final apiKeyCardBg = hasBackground
+        ? tintedGlassFromBase(
+            wallpaperTint: wallpaperTint,
+            base: apiKeyCardBaseBg,
+            fallback: apiKeyCardBaseBg,
+            alpha: 0.68,
+            mix: 0.22,
+          )
+        : apiKeyCardBaseBg;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -358,9 +403,12 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
                           ),
                           child: fluent.ListTile(
                             title: isEditing
-                                ? fluent.TextBox(
+                                ? _buildStyledTextBox(
                                     controller: _renameListController,
                                     autofocus: true,
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 6),
+                                    radius: 6,
                                     onSubmitted: (value) {
                                       if (value.trim().isNotEmpty) {
                                         ref
@@ -613,11 +661,7 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
                           padding: const EdgeInsets.only(bottom: 8),
                           child: Container(
                             decoration: BoxDecoration(
-                              color: fluent.FluentTheme.of(context)
-                                      .brightness
-                                      .isDark
-                                  ? const Color(0xFF323232)
-                                  : const Color(0xFFF9F9F9),
+                              color: apiKeyCardBg,
                               borderRadius: BorderRadius.circular(4),
                               border: Border.all(
                                 color: isCurrent
@@ -1229,7 +1273,6 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
       }
     }
 
-    final enabled = settingsState.isSearchEnabled;
     final engines = <String>{
       ...getAvailableEngines('text'),
       settingsState.searchEngine,
@@ -1250,7 +1293,6 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
             style: fluent.FluentTheme.of(context).typography.subtitle,
           ),
           const SizedBox(height: 24),
-
           fluent.InfoLabel(
             label: l10n.searchEngine,
             child: Builder(builder: (context) {

@@ -1,4 +1,6 @@
 import 'package:aurora/shared/theme/aurora_icons.dart';
+import 'package:aurora/shared/theme/wallpaper_tint.dart';
+import 'package:aurora/shared/theme/wallpaper_tint_provider.dart';
 import 'dart:convert';
 import 'dart:math' as math;
 import 'package:fluent_ui/fluent_ui.dart' as fluent;
@@ -40,6 +42,7 @@ class _BuildToolOutputState extends ConsumerState<BuildToolOutput> {
         s.backgroundImagePath != null &&
         s.backgroundImagePath!.isNotEmpty));
     final isDark = theme.brightness == fluent.Brightness.dark;
+    final wallpaperTint = ref.watch(wallpaperTintColorProvider);
 
     // Handle Shell Tool Output (Terminal Style)
     if (stdout != null || stderr != null || exitCode != null) {
@@ -224,9 +227,13 @@ class _BuildToolOutputState extends ConsumerState<BuildToolOutput> {
         margin: const EdgeInsets.only(top: 8, bottom: 8),
         decoration: BoxDecoration(
           color: hasBackground
-              ? (isDark
-                  ? Colors.black.withValues(alpha: 0.45)
-                  : Colors.white.withValues(alpha: 0.45))
+              ? tintedGlass(
+                  wallpaperTint: wallpaperTint,
+                  isDark: isDark,
+                  fallback: isDark ? Colors.black : Colors.white,
+                  alpha: 0.45,
+                  mix: 0.22,
+                )
               : theme.cardColor,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
@@ -457,9 +464,13 @@ class _BuildToolOutputState extends ConsumerState<BuildToolOutput> {
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: hasBackground
-                    ? (isDark
-                        ? Colors.black.withValues(alpha: 0.45)
-                        : Colors.white.withValues(alpha: 0.45))
+                    ? tintedGlass(
+                        wallpaperTint: wallpaperTint,
+                        isDark: isDark,
+                        fallback: isDark ? Colors.black : Colors.white,
+                        alpha: 0.45,
+                        mix: 0.22,
+                      )
                     : theme.cardColor,
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(

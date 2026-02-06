@@ -5,6 +5,7 @@ import '../domain/message.dart';
 import 'chat_provider.dart';
 import '../../settings/presentation/settings_provider.dart';
 import 'package:aurora/l10n/app_localizations.dart';
+import 'package:aurora/shared/utils/translation_prompt_utils.dart';
 
 class MobileTranslationPage extends ConsumerStatefulWidget {
   final VoidCallback? onBack;
@@ -55,8 +56,10 @@ class _MobileTranslationPageState extends ConsumerState<MobileTranslationPage> {
       final lastUserMsg = chatState.messages.lastWhere((m) => m.isUser,
           orElse: () => Message(
               content: '', isUser: true, id: '', timestamp: DateTime.now()));
-      if (lastUserMsg.content.isNotEmpty) {
-        _sourceController.text = lastUserMsg.content;
+      final sourceText =
+          TranslationPromptUtils.extractSourceText(lastUserMsg.content);
+      if (sourceText.isNotEmpty) {
+        _sourceController.text = sourceText;
         _hasRestored = true;
       }
     }
@@ -149,8 +152,10 @@ class _MobileTranslationPageState extends ConsumerState<MobileTranslationPage> {
         final lastUserMsg = next.messages.lastWhere((m) => m.isUser,
             orElse: () => Message(
                 content: '', isUser: true, id: '', timestamp: DateTime.now()));
-        if (lastUserMsg.content.isNotEmpty) {
-          _sourceController.text = lastUserMsg.content;
+        final sourceText =
+            TranslationPromptUtils.extractSourceText(lastUserMsg.content);
+        if (sourceText.isNotEmpty) {
+          _sourceController.text = sourceText;
           _hasRestored = true;
         }
       }

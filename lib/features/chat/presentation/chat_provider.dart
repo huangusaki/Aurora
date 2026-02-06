@@ -192,6 +192,9 @@ class ChatNotifier extends StateNotifier<ChatState> {
     await Future.microtask(() {});
     if (!mounted) return;
     state = state.copyWith(isLoadingHistory: true);
+    if (_sessionId == 'translation') {
+      await _storage.sanitizeTranslationUserMessages();
+    }
     final messages = await _storage.loadHistory(_sessionId);
     if (!mounted) return;
     String? restoredPresetName;
@@ -280,8 +283,7 @@ class ChatNotifier extends StateNotifier<ChatState> {
 
     if (text != null) {
       if (!mounted) return _sessionId;
-      final content = apiContent ?? text;
-      final userMessage = Message.user(content, attachments: attachments);
+      final userMessage = Message.user(text, attachments: attachments);
       final dbId = await _storage.saveMessage(userMessage, _sessionId);
 
       if (!mounted) return _sessionId;
@@ -289,6 +291,9 @@ class ChatNotifier extends StateNotifier<ChatState> {
       state = state.copyWith(
         messages: [...state.messages, userMessageWithDbId],
       );
+      if (_sessionId != 'translation') {
+        _ref.read(sessionsProvider.notifier).loadSessions();
+      }
     }
 
     // Now it's safe to redirect, as state already contains the user message
@@ -305,6 +310,13 @@ class ChatNotifier extends StateNotifier<ChatState> {
     int reasoningTokens = 0;
     try {
       final messagesForApi = List<Message>.from(state.messages);
+      if (apiContent != null) {
+        final lastUserIndex = messagesForApi.lastIndexWhere((m) => m.isUser);
+        if (lastUserIndex != -1) {
+          messagesForApi[lastUserIndex] =
+              messagesForApi[lastUserIndex].copyWith(content: apiContent);
+        }
+      }
       final settings = _ref.read(settingsProvider);
       final assistantState = _ref.read(assistantProvider);
       // Use global assistant selection, not local state
@@ -1145,6 +1157,9 @@ To invoke a skill, output a skill tag in this exact format:
     final newMessages = state.messages.where((m) => m.id != id).toList();
     state = state.copyWith(messages: newMessages);
     await _storage.deleteMessage(id, sessionId: _sessionId);
+    if (_sessionId != 'translation') {
+      _ref.read(sessionsProvider.notifier).loadSessions();
+    }
   }
 
   Future<void> editMessage(String id, String newContent,
@@ -1194,6 +1209,7 @@ To invoke a skill, output a skill tag in this exact format:
           userMsgToUpdate.copyWith(timestamp: DateTime.now());
       await _storage.updateMessage(updatedUserMsg);
       historyToKeep[historyToKeep.length - 1] = updatedUserMsg;
+      _ref.read(sessionsProvider.notifier).loadSessions();
     }
 
     final oldMessages = state.messages;
@@ -1211,7 +1227,12 @@ To invoke a skill, output a skill tag in this exact format:
   }
 
   Future<void> clearContext() async {
-    if (_sessionId == 'new_chat' || _sessionId == 'translation') {
+    if (_sessionId == 'new_chat') {
+      state = state.copyWith(messages: [], isLoading: false, error: null);
+      return;
+    }
+    if (_sessionId == 'translation') {
+      await _storage.clearSessionMessages(_sessionId);
       state = state.copyWith(messages: [], isLoading: false, error: null);
       return;
     }
@@ -1384,6 +1405,7 @@ class SessionsNotifier extends StateNotifier<SessionsState> {
   }
   Future<void> _init() async {
     await _storage.cleanupEmptySessions();
+    await _storage.backfillSessionLastUserMessageTimes();
     await loadSessions();
     _storage.preloadAllSessions();
     final settings = await _ref.read(settingsStorageProvider).loadAppSettings();

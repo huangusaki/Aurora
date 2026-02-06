@@ -13,6 +13,8 @@ import 'features/chat/presentation/topic_provider.dart';
 import 'features/settings/data/settings_storage.dart';
 import 'features/settings/presentation/settings_provider.dart';
 import 'shared/widgets/global_background.dart';
+import 'shared/theme/wallpaper_tint.dart';
+import 'shared/theme/wallpaper_tint_provider.dart';
 import 'shared/utils/windows_injector.dart';
 import 'features/skills/presentation/skill_provider.dart';
 import 'package:flutter_displaymode/flutter_displaymode.dart';
@@ -219,6 +221,23 @@ class MyApp extends ConsumerWidget {
     final backgroundColorStr =
         ref.watch(settingsProvider.select((value) => value.backgroundColor));
 
+    final wallpaperTint = ref.watch(wallpaperTintColorProvider);
+
+    fluent.Color customBackgroundSurface(
+      fluent.Brightness brightness, {
+      required double alpha,
+      double mix = 0.25,
+    }) {
+      final isDark = brightness == fluent.Brightness.dark;
+      return tintedGlass(
+        wallpaperTint: wallpaperTint,
+        isDark: isDark,
+        fallback: isDark ? Colors.black : Colors.white,
+        alpha: alpha,
+        mix: mix,
+      );
+    }
+
     bool hasCustomBackground(WidgetRef ref) {
       final settings = ref.watch(settingsProvider);
       return (settings.useCustomTheme || settings.themeMode == 'custom') &&
@@ -229,9 +248,7 @@ class MyApp extends ConsumerWidget {
     fluent.Color getBackgroundColor(
         String color, fluent.Brightness brightness, bool hasCustomBackground) {
       if (hasCustomBackground) {
-        return brightness == fluent.Brightness.dark
-            ? fluent.Colors.black.withValues(alpha: 0.55)
-            : fluent.Colors.white.withValues(alpha: 0.55);
+        return customBackgroundSurface(brightness, alpha: 0.55, mix: 0.22);
       }
       if (brightness == fluent.Brightness.dark) {
         switch (color) {
@@ -285,9 +302,7 @@ class MyApp extends ConsumerWidget {
         String color, fluent.Brightness brightness) {
       final hasCustomBg = hasCustomBackground(ref);
       if (hasCustomBg) {
-        return brightness == fluent.Brightness.dark
-            ? fluent.Colors.black.withValues(alpha: 0.55)
-            : fluent.Colors.white.withValues(alpha: 0.55);
+        return customBackgroundSurface(brightness, alpha: 0.55, mix: 0.22);
       }
 
       if (brightness == fluent.Brightness.dark) {
@@ -352,7 +367,10 @@ class MyApp extends ConsumerWidget {
         brightness: fluent.Brightness.light,
         scaffoldBackgroundColor: getBackgroundColor(backgroundColorStr,
             fluent.Brightness.light, hasCustomBackground(ref)),
-        cardColor: fluent.Colors.white,
+        cardColor: hasCustomBackground(ref)
+            ? customBackgroundSurface(fluent.Brightness.light,
+                alpha: 0.65, mix: 0.28)
+            : fluent.Colors.white,
         navigationPaneTheme: fluent.NavigationPaneThemeData(
           backgroundColor: getNavBackgroundColor(
               backgroundColorStr, fluent.Brightness.light),
@@ -378,10 +396,13 @@ class MyApp extends ConsumerWidget {
                       : Brightness.light,
                   primaryColor: materialPrimary,
                   scaffoldBackgroundColor: hasCustomBg
-                      ? (brightness == fluent.Brightness.dark
-                          ? Colors.black.withValues(alpha: 0.55)
-                          : Colors.white.withValues(alpha: 0.55))
+                      ? customBackgroundSurface(brightness,
+                          alpha: 0.55, mix: 0.22)
                       : fluentTheme.scaffoldBackgroundColor,
+                  cardColor: hasCustomBg
+                      ? customBackgroundSurface(brightness,
+                          alpha: 0.65, mix: 0.28)
+                      : null,
                   colorScheme: ColorScheme.fromSeed(
                     seedColor: materialPrimary,
                     primary: materialPrimary,
@@ -391,25 +412,22 @@ class MyApp extends ConsumerWidget {
                   ),
                   dialogTheme: DialogThemeData(
                     backgroundColor: hasCustomBg
-                        ? (brightness == fluent.Brightness.dark
-                            ? Colors.black.withValues(alpha: 0.65)
-                            : Colors.white.withValues(alpha: 0.65))
+                        ? customBackgroundSurface(brightness,
+                            alpha: 0.65, mix: 0.28)
                         : null,
                     surfaceTintColor: Colors.transparent,
                   ),
                   bottomSheetTheme: BottomSheetThemeData(
                     backgroundColor: hasCustomBg
-                        ? (brightness == fluent.Brightness.dark
-                            ? Colors.black.withValues(alpha: 0.65)
-                            : Colors.white.withValues(alpha: 0.65))
+                        ? customBackgroundSurface(brightness,
+                            alpha: 0.65, mix: 0.28)
                         : null,
                     surfaceTintColor: Colors.transparent,
                   ),
                   popupMenuTheme: PopupMenuThemeData(
                     color: hasCustomBg
-                        ? (brightness == fluent.Brightness.dark
-                            ? Colors.black.withValues(alpha: 0.65)
-                            : Colors.white.withValues(alpha: 0.65))
+                        ? customBackgroundSurface(brightness,
+                            alpha: 0.65, mix: 0.28)
                         : null,
                     surfaceTintColor: Colors.transparent,
                   ),
@@ -463,7 +481,10 @@ class MyApp extends ConsumerWidget {
         brightness: fluent.Brightness.dark,
         scaffoldBackgroundColor: getBackgroundColor(backgroundColorStr,
             fluent.Brightness.dark, hasCustomBackground(ref)),
-        cardColor: const Color(0xFF2D2D2D),
+        cardColor: hasCustomBackground(ref)
+            ? customBackgroundSurface(fluent.Brightness.dark,
+                alpha: 0.65, mix: 0.28)
+            : const Color(0xFF2D2D2D),
         navigationPaneTheme: fluent.NavigationPaneThemeData(
           backgroundColor:
               getNavBackgroundColor(backgroundColorStr, fluent.Brightness.dark),
