@@ -226,74 +226,158 @@ class MarkdownGenerator {
   /// Preprocess markdown to enforce hard line breaks for single newlines,
   /// except inside code blocks.
   String _preprocessMarkdown(String text) {
-    // Normalize newlines to ensure consistent processing regardless of platform (CRLF -> LF)
+    // Normalize newlines to ensure consistent processing regardless of platform (CRLF -> LF).
     // This prevents issues where 'blank' lines containing only \r are treated as content,
     // breaking block termination (e.g., HTML blocks).
     text = text.replaceAll(RegExp(r'\r\n?'), '\n');
+
     final StringBuffer buffer = StringBuffer();
-    final List<String> segments = text.split('```');
+    final lines = text.split('\n');
 
-    for (int i = 0; i < segments.length; i++) {
-      String segment = segments[i];
-      if (i % 2 == 0) {
-        // Outside code block: replace newlines with double space + newline
-        // (Markdown hard break).
-        // We avoid replacing newlines that are already followed by spaces or other structure if possible,
-        // but broadly replacing \n with "  \n" works for "Chat" style.
-        // Also need to be careful not to break list markers.
-        // Actually, just replacing \n with "  \n" is risky for lists.
-        // BUT, since we are doing custom list rendering, maybe we don't need to force markdown parser to see hard breaks?
-        // If we want "text\ntext" to be distinct lines, the parser treats it as one p block "text text".
-        // Use "  \n" makes it "text<br>text".
+    _FenceInfo? openFence;
 
-        // We will do a simple pass: Regex remove single newlines?
-        // No, let's try a safer approach:
-        // Identify lines. If line ends with non-space, add "  ".
-        final lines = segment.split('\n');
-        // If segment ends with newline, split produces an empty string at the end.
-        // We handle that separately to avoid double newlines or missing content connections.
-        int limit = lines.length;
-        if (segment.endsWith('\n')) {
-          limit--;
+    for (int i = 0; i < lines.length; i++) {
+      final line = lines[i];
+      final hasNewlineAfter = i < lines.length - 1;
+
+      if (openFence != null) {
+        buffer.write(line);
+        if (hasNewlineAfter) buffer.write('\n');
+
+        if (_isClosingFenceLine(line, openFence)) {
+          openFence = null;
         }
+        continue;
+      }
 
-        for (int j = 0; j < limit; j++) {
-          String line = lines[j];
-          final isLastLineAndNoNewline =
-              (j == limit - 1 && !segment.endsWith('\n'));
+      final fence = _matchOpeningFenceLine(line);
+      if (fence != null) {
+        openFence = fence;
+        buffer.write(line);
+        if (hasNewlineAfter) buffer.write('\n');
+        continue;
+      }
 
-          if (isLastLineAndNoNewline) {
-            buffer.write(line);
-          } else {
-            // Regular line or last line that ended with \n
-            // AVOID adding "  " if line looks like it's part of an HTML tag or list
-            final trimmed = line.trim();
-            final isHtmlTag = trimmed.startsWith('<') &&
-                (trimmed.endsWith('>') || !trimmed.contains(' '));
-            final isListMarker =
-                RegExp(r'^(\s*)([*+-]|\d+\.)\s').hasMatch(line);
+      if (!hasNewlineAfter) {
+        buffer.write(line);
+        continue;
+      }
 
-            if (trimmed.isNotEmpty &&
-                !line.trimRight().endsWith('  ') &&
-                !isHtmlTag &&
-                !isListMarker) {
-              buffer.write('$line  \n');
-            } else {
-              buffer.write('$line\n');
-            }
-          }
-        }
+      if (_shouldAddHardLineBreak(line)) {
+        buffer.write('$line  \n');
       } else {
-        // Inside code block: keep as is, just re-add the backticks we split by.
-        // We remove trailing whitespace (indentation) from the segment
-        // to ensure the closing backticks appear at the start of the line.
-        // This prevents issues where indented closing fences (e.g. inside lists)
-        // are treated as content because they don't match the unindented opening fence.
-        final cleanSegment = segment.replaceFirst(RegExp(r'[ \t]+$'), '');
-        buffer.write('```$cleanSegment```');
+        buffer.write('$line\n');
       }
     }
+
     return buffer.toString();
+  }
+
+  /// Strips leading blockquote markers (`> `) for parsing heuristics.
+  /// This is used only for detection (list markers / fences), not for output.
+  _BlockQuoteStripResult _stripBlockQuotePrefixForCheck(
+    String line, {
+    int? maxMarkers,
+  }) {
+    var s = line.trimLeft();
+    var markerCount = 0;
+    var i = 0;
+
+    while (i < s.length &&
+        s[i] == '>' &&
+        (maxMarkers == null || markerCount < maxMarkers)) {
+      markerCount++;
+      i++; // consume '>'
+      if (i < s.length && s[i] == ' ') i++; // optional space
+
+      // Support nested blockquotes like `> > foo` without eating content indentation.
+      var peek = i;
+      while (peek < s.length && (s[peek] == ' ' || s[peek] == '\t')) {
+        peek++;
+      }
+      if (peek < s.length &&
+          s[peek] == '>' &&
+          (maxMarkers == null || markerCount < maxMarkers)) {
+        i = peek;
+        continue;
+      }
+
+      break;
+    }
+
+    return _BlockQuoteStripResult(
+      content: s.substring(i),
+      blockQuoteLevel: markerCount,
+    );
+  }
+
+  _FenceInfo? _matchOpeningFenceLine(String line) {
+    final stripped = _stripBlockQuotePrefixForCheck(line);
+    final content = stripped.content;
+    var i = 0;
+    while (i < content.length &&
+        (content.codeUnitAt(i) == 0x20 || content.codeUnitAt(i) == 0x09)) {
+      i++;
+    }
+    if (i >= content.length) return null;
+
+    final first = content[i];
+    if (first != '`' && first != '~') return null;
+
+    var run = 0;
+    while (i + run < content.length && content[i + run] == first) {
+      run++;
+    }
+    if (run < 3) return null;
+
+    return _FenceInfo(
+      markerChar: first,
+      markerLength: run,
+      blockQuoteLevel: stripped.blockQuoteLevel,
+    );
+  }
+
+  bool _isClosingFenceLine(String line, _FenceInfo openFence) {
+    final content = openFence.blockQuoteLevel > 0
+        ? _stripBlockQuotePrefixForCheck(line, maxMarkers: openFence.blockQuoteLevel)
+            .content
+        : line;
+    var i = 0;
+    while (i < content.length &&
+        (content.codeUnitAt(i) == 0x20 || content.codeUnitAt(i) == 0x09)) {
+      i++;
+    }
+    if (i >= content.length) return false;
+    if (content[i] != openFence.markerChar) return false;
+
+    var run = 0;
+    while (i + run < content.length && content[i + run] == openFence.markerChar) {
+      run++;
+    }
+    if (run < openFence.markerLength) return false;
+
+    for (var j = i + run; j < content.length; j++) {
+      final cu = content.codeUnitAt(j);
+      if (cu != 0x20 && cu != 0x09) return false;
+    }
+
+    return true;
+  }
+
+  bool _shouldAddHardLineBreak(String line) {
+    final trimmed = line.trim();
+    if (trimmed.isEmpty) return false;
+    if (line.trimRight().endsWith('  ')) return false;
+
+    final content = _stripBlockQuotePrefixForCheck(line).content;
+    final contentTrimmed = content.trim();
+
+    final isHtmlTag = contentTrimmed.startsWith('<') &&
+        (contentTrimmed.endsWith('>') || !contentTrimmed.contains(' '));
+    final isListMarker =
+        RegExp(r'^(\s*)([*+-]|\d+\.)\s').hasMatch(content);
+
+    return !isHtmlTag && !isListMarker;
   }
 
   bool _isHardBarrier(String tag) {
@@ -344,9 +428,32 @@ class MarkdownGenerator {
       final tag = node.tag;
 
       if (_isHardBarrier(tag)) {
+        final barrierWidget = _buildBarrierWidget(node, context);
+
+        // Hard barriers embedded inside list items need explicit line breaks,
+        // otherwise they can end up laid out "inline" right after the marker.
+        if (context.indentLevel > 0) {
+          final baseIndent =
+              context.indentLevel > 1 ? ('    ' * (context.indentLevel - 1)) : '';
+          final markerIndent = context.listType == 'ol'
+              ? ('${context.listIndex + 1}. '.length)
+              : 2;
+          final indentText = '$baseIndent${' ' * markerIndent}';
+
+          return [
+            const TextSpan(text: '\n'),
+            if (indentText.isNotEmpty) TextSpan(text: indentText),
+            WidgetSpan(
+              child: barrierWidget,
+              alignment: PlaceholderAlignment.middle,
+            ),
+            const TextSpan(text: '\n'),
+          ];
+        }
+
         return [
           WidgetSpan(
-            child: _buildBarrierWidget(node, context),
+            child: barrierWidget,
             alignment: PlaceholderAlignment.middle,
           ),
         ];
@@ -797,9 +904,8 @@ class MarkdownGenerator {
             (cellNode.tag == 'th' || cellNode.tag == 'td')) {
           final text = cellNode.textContent;
           final len = text.length;
-          colMaxLengths[cellIndex] = (colMaxLengths[cellIndex] ?? 0) < len
-              ? len
-              : colMaxLengths[cellIndex]!;
+          final currentMax = colMaxLengths[cellIndex] ?? 0;
+          colMaxLengths[cellIndex] = currentMax < len ? len : currentMax;
 
           cells.add(
             Padding(
@@ -1289,6 +1395,25 @@ class CjkBoldSyntax extends md.InlineSyntax {
 
     return true;
   }
+}
+
+class _FenceInfo {
+  final String markerChar;
+  final int markerLength;
+  final int blockQuoteLevel;
+
+  _FenceInfo({
+    required this.markerChar,
+    required this.markerLength,
+    required this.blockQuoteLevel,
+  });
+}
+
+class _BlockQuoteStripResult {
+  final String content;
+  final int blockQuoteLevel;
+
+  _BlockQuoteStripResult({required this.content, required this.blockQuoteLevel});
 }
 
 class LatexBlockSyntax extends md.BlockSyntax {
