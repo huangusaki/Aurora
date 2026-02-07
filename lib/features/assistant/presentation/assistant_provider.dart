@@ -63,6 +63,7 @@ class AssistantNotifier extends StateNotifier<AssistantState> {
               preferredModel: e.preferredModel,
               providerId: e.providerId,
               skillIds: e.skillIds,
+              knowledgeBaseIds: e.knowledgeBaseIds,
               enableMemory: e.enableMemory,
             ))
         .toList();
@@ -94,6 +95,7 @@ class AssistantNotifier extends StateNotifier<AssistantState> {
       ..preferredModel = assistant.preferredModel
       ..providerId = assistant.providerId
       ..skillIds = assistant.skillIds
+      ..knowledgeBaseIds = assistant.knowledgeBaseIds
       ..enableMemory = assistant.enableMemory
       ..updatedAt = DateTime.now();
 

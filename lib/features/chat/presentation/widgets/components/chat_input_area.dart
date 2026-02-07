@@ -72,8 +72,8 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
   final ScrollController _scrollController = ScrollController();
   static const double _itemHeight = 40.0;
   int? _triggerIndex;
-
-  // Preset selector state
+  final fluent.FlyoutController _configFlyoutController =
+      fluent.FlyoutController();
   OverlayEntry? _presetOverlayEntry;
   int _presetSelectedIndex = 0;
   List<PresetOption> _filteredPresets = [];
@@ -113,6 +113,7 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
     _scrollController.dispose();
     _presetScrollController.dispose();
     _animationController.dispose();
+    _configFlyoutController.dispose();
     _focusNode.dispose();
     super.dispose();
   }
@@ -579,33 +580,6 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
     _focusNode.requestFocus();
   }
 
-  void _showDesktopRequestConfigDialog(
-      BuildContext context, SettingsState settings, AppLocalizations l10n) {
-    showDialog(
-      context: context,
-      builder: (ctx) => fluent.ContentDialog(
-        constraints: const BoxConstraints(maxWidth: 420, maxHeight: 640),
-        title: Text(
-          settings.selectedModel == 'gemini-3-pro-image-preview'
-              ? l10n.imagePayload
-              : l10n.requestConfig,
-        ),
-        content: SizedBox(
-          width: 360,
-          child: PayloadConfigPanel(
-            providerId: settings.activeProviderId,
-            modelName: settings.selectedModel ?? '',
-          ),
-        ),
-        actions: [
-          fluent.Button(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(l10n.close),
-          ),
-        ],
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -932,14 +906,55 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
                 ),
               ),
               const SizedBox(width: 4),
-              fluent.IconButton(
-                icon: Icon(
-                  AuroraIcons.parameter,
-                  size: 16,
-                  color: theme.resources.textFillColorSecondary,
+              fluent.FlyoutTarget(
+                controller: _configFlyoutController,
+                child: fluent.IconButton(
+                  icon: Icon(
+                    AuroraIcons.parameter,
+                    size: 16,
+                    color: theme.resources.textFillColorSecondary,
+                  ),
+                  onPressed: () {
+                    final isImageModel =
+                        settings.selectedModel == 'gemini-3-pro-image-preview';
+
+                    _configFlyoutController.showFlyout(
+                      autoModeConfiguration: fluent.FlyoutAutoConfiguration(
+                        preferredMode: fluent.FlyoutPlacementMode.topCenter,
+                      ),
+                      barrierDismissible: true,
+                      dismissOnPointerMoveAway: false,
+                      dismissWithEsc: true,
+                      builder: (context) {
+                        return fluent.FlyoutContent(
+                          child: SizedBox(
+                            width: 320,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  isImageModel
+                                      ? l10n.imagePayload
+                                      : l10n.requestConfig,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                PayloadConfigPanel(
+                                  providerId: settings.activeProviderId,
+                                  modelName: settings.selectedModel ?? '',
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
                 ),
-                onPressed: () =>
-                    _showDesktopRequestConfigDialog(context, settings, l10n),
               ),
               const Spacer(),
               if (widget.isLoading)

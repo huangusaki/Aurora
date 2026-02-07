@@ -418,6 +418,66 @@
   "searchSafeSearchStrict": "Strict",
   "searchMaxResults": "Max Results",
   "searchTimeoutSeconds": "Timeout (seconds)",
+  "knowledgeBase": "Knowledge Base",
+  "knowledgeBases": "Knowledge Bases",
+  "general": "General",
+  "enableKnowledgeRetrieval": "Enable Knowledge Retrieval",
+  "knowledgeTopKChunks": "Top K Chunks",
+  "useEmbeddingRerank": "Use Embedding Re-rank",
+  "knowledgeLlmEnhancementMode": "LLM Enhancement Mode (Optional)",
+  "knowledgeModeOff": "off",
+  "knowledgeModeRewrite": "rewrite",
+  "embeddingProvider": "Embedding Provider",
+  "embeddingModel": "Embedding Model",
+  "noEmbeddingModelsInProvider": "No embedding model found in this provider",
+  "embeddingModelAutoDetectHint": "Only models whose names include \"embedding\" are listed.",
+  "createBase": "Create Base",
+  "importFiles": "Import Files",
+  "deleteBase": "Delete Base",
+  "noKnowledgeBaseYetCreateOne": "No knowledge base yet. Create one first.",
+  "knowledgeActive": "Active",
+  "knowledgeDocsAndChunks": "Docs: {docs}  Chunks: {chunks}",
+  "@knowledgeDocsAndChunks": {
+    "placeholders": {
+      "docs": {
+        "type": "int"
+      },
+      "chunks": {
+        "type": "int"
+      }
+    }
+  },
+  "createKnowledgeBase": "Create Knowledge Base",
+  "knowledgeBaseName": "Base Name",
+  "descriptionOptional": "Description (optional)",
+  "deleteKnowledgeBase": "Delete Knowledge Base",
+  "deleteKnowledgeBaseConfirm": "Delete this knowledge base and all indexed chunks? This cannot be undone.",
+  "knowledgeFiles": "Knowledge files",
+  "importFinished": "Import Finished",
+  "knowledgeImportSummary": "Success: {success}\nFailed: {failed}",
+  "@knowledgeImportSummary": {
+    "placeholders": {
+      "success": {
+        "type": "int"
+      },
+      "failed": {
+        "type": "int"
+      }
+    }
+  },
+  "knowledgeEnabledWithActiveCount": "Enabled • {count} active",
+  "@knowledgeEnabledWithActiveCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "knowledgeGlobalFallbackHint": "Global knowledge bases are used only when no assistant is selected.",
+  "knowledgeGlobalSelectionLabel": "Use in Global Mode",
+  "knowledgeGlobalSelectionHint": "Effective only when no assistant is selected.",
+  "knowledgeBaseEnabledLabel": "Knowledge Base Available",
+  "knowledgeBaseEnabledHint": "If disabled, this base is excluded from all retrieval.",
   
   "clearContext": "Clear Context",
   "clearContextConfirm": "Are you sure you want to clear the context? This cannot be undone.",
@@ -645,6 +705,7 @@
     }
   },
   "assistantLongTermMemory": "Long-term Memory",
+  "assistantKnowledgeBindingHint": "When this assistant is selected, only the knowledge bases checked here are used.",
   "assistantAvailableSkillsTitle": "Available Skills",
   "assistantNoSkillsAvailable": "No available skills",
   "assistantDeleteTitle": "Delete Assistant",

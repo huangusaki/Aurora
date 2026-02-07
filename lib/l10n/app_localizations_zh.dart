@@ -945,6 +945,111 @@ class AppLocalizationsZh extends AppLocalizations {
   String get searchTimeoutSeconds => '超时（秒）';
 
   @override
+  String get knowledgeBase => '知识库';
+
+  @override
+  String get knowledgeBases => '知识库列表';
+
+  @override
+  String get general => '通用';
+
+  @override
+  String get enableKnowledgeRetrieval => '启用知识库检索';
+
+  @override
+  String get knowledgeTopKChunks => 'Top K 片段数';
+
+  @override
+  String get useEmbeddingRerank => '启用 Embedding 重排';
+
+  @override
+  String get knowledgeLlmEnhancementMode => 'LLM 增强模式（可选）';
+
+  @override
+  String get knowledgeModeOff => '关闭';
+
+  @override
+  String get knowledgeModeRewrite => '查询改写';
+
+  @override
+  String get embeddingProvider => 'Embedding 提供商';
+
+  @override
+  String get embeddingModel => 'Embedding 模型';
+
+  @override
+  String get noEmbeddingModelsInProvider => '该提供商下没有可用的 embedding 模型';
+
+  @override
+  String get embeddingModelAutoDetectHint => '仅展示名称中包含 \"embedding\" 的模型。';
+
+  @override
+  String get createBase => '新建知识库';
+
+  @override
+  String get importFiles => '导入文件';
+
+  @override
+  String get deleteBase => '删除知识库';
+
+  @override
+  String get noKnowledgeBaseYetCreateOne => '暂无知识库，请先新建。';
+
+  @override
+  String get knowledgeActive => '启用';
+
+  @override
+  String knowledgeDocsAndChunks(int docs, int chunks) {
+    return '文档: $docs  片段: $chunks';
+  }
+
+  @override
+  String get createKnowledgeBase => '新建知识库';
+
+  @override
+  String get knowledgeBaseName => '知识库名称';
+
+  @override
+  String get descriptionOptional => '描述（可选）';
+
+  @override
+  String get deleteKnowledgeBase => '删除知识库';
+
+  @override
+  String get deleteKnowledgeBaseConfirm => '确定删除该知识库及其所有索引片段吗？此操作不可撤销。';
+
+  @override
+  String get knowledgeFiles => '知识库文件';
+
+  @override
+  String get importFinished => '导入完成';
+
+  @override
+  String knowledgeImportSummary(int success, int failed) {
+    return '成功: $success\n失败: $failed';
+  }
+
+  @override
+  String knowledgeEnabledWithActiveCount(int count) {
+    return '已启用 • $count 个激活';
+  }
+
+  @override
+  String get knowledgeGlobalFallbackHint => '全局知识库仅在未选择助理时生效。';
+
+  @override
+  String get knowledgeGlobalSelectionLabel => '全局模式使用';
+
+  @override
+  String get knowledgeGlobalSelectionHint => '仅在未选择助理时生效。';
+
+  @override
+  String get knowledgeBaseEnabledLabel => '知识库可用';
+
+  @override
+  String get knowledgeBaseEnabledHint => '关闭后该知识库将不参与任何检索。';
+
+  @override
   String get clearContext => '清空上下文';
 
   @override
@@ -1516,6 +1621,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get assistantLongTermMemory => '长期记忆';
+
+  @override
+  String get assistantKnowledgeBindingHint => '选择此助理时，仅使用这里勾选的知识库。';
 
   @override
   String get assistantAvailableSkillsTitle => '可用技能';

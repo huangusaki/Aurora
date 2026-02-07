@@ -8,6 +8,7 @@ import 'widgets/assistant_avatar.dart';
 import 'assistant_provider.dart';
 import '../../settings/presentation/widgets/mobile_settings_widgets.dart';
 import '../../skills/presentation/skill_provider.dart';
+import '../../knowledge/presentation/knowledge_provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
 
@@ -146,6 +147,15 @@ class _MobileAssistantDetailPageState
                 onTap: () => _showSkillPicker(context),
               ),
               MobileSettingsTile(
+                leading: const Icon(Icons.library_books_outlined),
+                title: l10n.knowledgeBase,
+                subtitle: _currentAssistant.knowledgeBaseIds.isEmpty
+                    ? l10n.disabled
+                    : l10n.knowledgeEnabledWithActiveCount(
+                        _currentAssistant.knowledgeBaseIds.length),
+                onTap: () => _showKnowledgeBasePicker(context),
+              ),
+              MobileSettingsTile(
                 leading: const Icon(Icons.memory_outlined),
                 title: l10n.assistantLongTermMemory,
                 subtitle: _currentAssistant.enableMemory
@@ -162,6 +172,17 @@ class _MobileAssistantDetailPageState
                   _updateAssistant(_currentAssistant.copyWith(
                       enableMemory: !_currentAssistant.enableMemory));
                 },
+              ),
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                child: Text(
+                  l10n.assistantKnowledgeBindingHint,
+                  style: TextStyle(
+                    color: Theme.of(context).textTheme.bodySmall?.color,
+                    fontSize: 12,
+                  ),
+                ),
               ),
             ],
           ),
@@ -314,6 +335,74 @@ class _MobileAssistantDetailPageState
                         _currentAssistant = updated;
                       });
                       // Update the bottom sheet state
+                      setSheetState(() {});
+                      ref
+                          .read(assistantProvider.notifier)
+                          .saveAssistant(updated);
+                    },
+                  );
+                }).toList(),
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+        );
+      }),
+    );
+  }
+
+  void _showKnowledgeBasePicker(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final bases =
+        ref.read(knowledgeProvider).bases.where((b) => b.isEnabled).toList();
+    if (bases.isEmpty) {
+      showAuroraNotice(
+        context,
+        l10n.noKnowledgeBaseYetCreateOne,
+        icon: Icons.info_outline_rounded,
+        top: MediaQuery.of(context).padding.top + 64 + 60,
+      );
+      return;
+    }
+
+    AuroraBottomSheet.show(
+      context: context,
+      builder: (ctx) => StatefulBuilder(builder: (context, setSheetState) {
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AuroraBottomSheet.buildTitle(context, l10n.knowledgeBase),
+            const Divider(height: 1),
+            ConstrainedBox(
+              constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.6),
+              child: ListView(
+                shrinkWrap: true,
+                children: bases.map((base) {
+                  final isSelected =
+                      _currentAssistant.knowledgeBaseIds.contains(base.baseId);
+                  return CheckboxListTile(
+                    title: Text(base.name),
+                    subtitle: Text(
+                      l10n.knowledgeDocsAndChunks(
+                          base.documentCount, base.chunkCount),
+                    ),
+                    value: isSelected,
+                    onChanged: (v) {
+                      final nextIds =
+                          List<String>.from(_currentAssistant.knowledgeBaseIds);
+                      if (v == true) {
+                        if (!nextIds.contains(base.baseId)) {
+                          nextIds.add(base.baseId);
+                        }
+                      } else {
+                        nextIds.remove(base.baseId);
+                      }
+                      final updated =
+                          _currentAssistant.copyWith(knowledgeBaseIds: nextIds);
+                      setState(() {
+                        _currentAssistant = updated;
+                      });
                       setSheetState(() {});
                       ref
                           .read(assistantProvider.notifier)

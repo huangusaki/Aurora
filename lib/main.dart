@@ -144,11 +144,21 @@ void main() async {
           themeMode: appSettings?.themeMode ?? 'system',
           isStreamEnabled: appSettings?.isStreamEnabled ?? true,
           isSearchEnabled: appSettings?.isSearchEnabled ?? false,
+          isKnowledgeEnabled: appSettings?.isKnowledgeEnabled ?? false,
           searchEngine: appSettings?.searchEngine ?? 'duckduckgo',
           searchRegion: appSettings?.searchRegion ?? 'us-en',
           searchSafeSearch: appSettings?.searchSafeSearch ?? 'moderate',
           searchMaxResults: appSettings?.searchMaxResults ?? 5,
           searchTimeoutSeconds: appSettings?.searchTimeoutSeconds ?? 15,
+          knowledgeTopK: appSettings?.knowledgeTopK ?? 5,
+          knowledgeUseEmbedding: appSettings?.knowledgeUseEmbedding ?? false,
+          knowledgeLlmEnhanceMode:
+              appSettings?.knowledgeLlmEnhanceMode ?? 'off',
+          knowledgeEmbeddingModel: appSettings?.knowledgeEmbeddingModel,
+          knowledgeEmbeddingProviderId:
+              appSettings?.knowledgeEmbeddingProviderId,
+          activeKnowledgeBaseIds:
+              appSettings?.activeKnowledgeBaseIds ?? const [],
           enableSmartTopic: appSettings?.enableSmartTopic ?? true,
           topicGenerationModel: appSettings?.topicGenerationModel,
           language: appSettings?.language ??

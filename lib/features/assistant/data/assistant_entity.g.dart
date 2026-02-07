@@ -37,33 +37,38 @@ const AssistantEntitySchema = CollectionSchema(
       name: r'enableMemory',
       type: IsarType.bool,
     ),
-    r'name': PropertySchema(
+    r'knowledgeBaseIds': PropertySchema(
       id: 4,
+      name: r'knowledgeBaseIds',
+      type: IsarType.stringList,
+    ),
+    r'name': PropertySchema(
+      id: 5,
       name: r'name',
       type: IsarType.string,
     ),
     r'preferredModel': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'preferredModel',
       type: IsarType.string,
     ),
     r'providerId': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'providerId',
       type: IsarType.string,
     ),
     r'skillIds': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'skillIds',
       type: IsarType.stringList,
     ),
     r'systemPrompt': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'systemPrompt',
       type: IsarType.string,
     ),
     r'updatedAt': PropertySchema(
-      id: 9,
+      id: 10,
       name: r'updatedAt',
       type: IsarType.dateTime,
     )
@@ -128,6 +133,13 @@ int _assistantEntityEstimateSize(
       bytesCount += 3 + value.length * 3;
     }
   }
+  bytesCount += 3 + object.knowledgeBaseIds.length * 3;
+  {
+    for (var i = 0; i < object.knowledgeBaseIds.length; i++) {
+      final value = object.knowledgeBaseIds[i];
+      bytesCount += value.length * 3;
+    }
+  }
   bytesCount += 3 + object.name.length * 3;
   {
     final value = object.preferredModel;
@@ -162,12 +174,13 @@ void _assistantEntitySerialize(
   writer.writeString(offsets[1], object.avatar);
   writer.writeString(offsets[2], object.description);
   writer.writeBool(offsets[3], object.enableMemory);
-  writer.writeString(offsets[4], object.name);
-  writer.writeString(offsets[5], object.preferredModel);
-  writer.writeString(offsets[6], object.providerId);
-  writer.writeStringList(offsets[7], object.skillIds);
-  writer.writeString(offsets[8], object.systemPrompt);
-  writer.writeDateTime(offsets[9], object.updatedAt);
+  writer.writeStringList(offsets[4], object.knowledgeBaseIds);
+  writer.writeString(offsets[5], object.name);
+  writer.writeString(offsets[6], object.preferredModel);
+  writer.writeString(offsets[7], object.providerId);
+  writer.writeStringList(offsets[8], object.skillIds);
+  writer.writeString(offsets[9], object.systemPrompt);
+  writer.writeDateTime(offsets[10], object.updatedAt);
 }
 
 AssistantEntity _assistantEntityDeserialize(
@@ -182,12 +195,13 @@ AssistantEntity _assistantEntityDeserialize(
   object.description = reader.readStringOrNull(offsets[2]);
   object.enableMemory = reader.readBool(offsets[3]);
   object.id = id;
-  object.name = reader.readString(offsets[4]);
-  object.preferredModel = reader.readStringOrNull(offsets[5]);
-  object.providerId = reader.readStringOrNull(offsets[6]);
-  object.skillIds = reader.readStringList(offsets[7]) ?? [];
-  object.systemPrompt = reader.readString(offsets[8]);
-  object.updatedAt = reader.readDateTimeOrNull(offsets[9]);
+  object.knowledgeBaseIds = reader.readStringList(offsets[4]) ?? [];
+  object.name = reader.readString(offsets[5]);
+  object.preferredModel = reader.readStringOrNull(offsets[6]);
+  object.providerId = reader.readStringOrNull(offsets[7]);
+  object.skillIds = reader.readStringList(offsets[8]) ?? [];
+  object.systemPrompt = reader.readString(offsets[9]);
+  object.updatedAt = reader.readDateTimeOrNull(offsets[10]);
   return object;
 }
 
@@ -207,16 +221,18 @@ P _assistantEntityDeserializeProp<P>(
     case 3:
       return (reader.readBool(offset)) as P;
     case 4:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringList(offset) ?? []) as P;
     case 5:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 6:
       return (reader.readStringOrNull(offset)) as P;
     case 7:
-      return (reader.readStringList(offset) ?? []) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 8:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringList(offset) ?? []) as P;
     case 9:
+      return (reader.readString(offset)) as P;
+    case 10:
       return (reader.readDateTimeOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -1050,6 +1066,233 @@ extension AssistantEntityQueryFilter
         upper: upper,
         includeUpper: includeUpper,
       ));
+    });
+  }
+
+  QueryBuilder<AssistantEntity, AssistantEntity, QAfterFilterCondition>
+      knowledgeBaseIdsElementEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'knowledgeBaseIds',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AssistantEntity, AssistantEntity, QAfterFilterCondition>
+      knowledgeBaseIdsElementGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'knowledgeBaseIds',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AssistantEntity, AssistantEntity, QAfterFilterCondition>
+      knowledgeBaseIdsElementLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'knowledgeBaseIds',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AssistantEntity, AssistantEntity, QAfterFilterCondition>
+      knowledgeBaseIdsElementBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'knowledgeBaseIds',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AssistantEntity, AssistantEntity, QAfterFilterCondition>
+      knowledgeBaseIdsElementStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'knowledgeBaseIds',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AssistantEntity, AssistantEntity, QAfterFilterCondition>
+      knowledgeBaseIdsElementEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'knowledgeBaseIds',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AssistantEntity, AssistantEntity, QAfterFilterCondition>
+      knowledgeBaseIdsElementContains(String value,
+          {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'knowledgeBaseIds',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AssistantEntity, AssistantEntity, QAfterFilterCondition>
+      knowledgeBaseIdsElementMatches(String pattern,
+          {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'knowledgeBaseIds',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AssistantEntity, AssistantEntity, QAfterFilterCondition>
+      knowledgeBaseIdsElementIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'knowledgeBaseIds',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<AssistantEntity, AssistantEntity, QAfterFilterCondition>
+      knowledgeBaseIdsElementIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'knowledgeBaseIds',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<AssistantEntity, AssistantEntity, QAfterFilterCondition>
+      knowledgeBaseIdsLengthEqualTo(int length) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'knowledgeBaseIds',
+        length,
+        true,
+        length,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<AssistantEntity, AssistantEntity, QAfterFilterCondition>
+      knowledgeBaseIdsIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'knowledgeBaseIds',
+        0,
+        true,
+        0,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<AssistantEntity, AssistantEntity, QAfterFilterCondition>
+      knowledgeBaseIdsIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'knowledgeBaseIds',
+        0,
+        false,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<AssistantEntity, AssistantEntity, QAfterFilterCondition>
+      knowledgeBaseIdsLengthLessThan(
+    int length, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'knowledgeBaseIds',
+        0,
+        true,
+        length,
+        include,
+      );
+    });
+  }
+
+  QueryBuilder<AssistantEntity, AssistantEntity, QAfterFilterCondition>
+      knowledgeBaseIdsLengthGreaterThan(
+    int length, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'knowledgeBaseIds',
+        length,
+        include,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<AssistantEntity, AssistantEntity, QAfterFilterCondition>
+      knowledgeBaseIdsLengthBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'knowledgeBaseIds',
+        lower,
+        includeLower,
+        upper,
+        includeUpper,
+      );
     });
   }
 
@@ -2235,6 +2478,13 @@ extension AssistantEntityQueryWhereDistinct
     });
   }
 
+  QueryBuilder<AssistantEntity, AssistantEntity, QDistinct>
+      distinctByKnowledgeBaseIds() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'knowledgeBaseIds');
+    });
+  }
+
   QueryBuilder<AssistantEntity, AssistantEntity, QDistinct> distinctByName(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -2310,6 +2560,13 @@ extension AssistantEntityQueryProperty
   QueryBuilder<AssistantEntity, bool, QQueryOperations> enableMemoryProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'enableMemory');
+    });
+  }
+
+  QueryBuilder<AssistantEntity, List<String>, QQueryOperations>
+      knowledgeBaseIdsProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'knowledgeBaseIds');
     });
   }
 

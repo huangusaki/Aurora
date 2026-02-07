@@ -12,6 +12,7 @@ import 'package:aurora/shared/utils/platform_utils.dart';
 import 'settings_provider.dart';
 import 'usage_stats_view.dart';
 import 'preset_settings_page.dart';
+import 'knowledge_settings_panel.dart';
 
 import '../../../shared/utils/avatar_cropper.dart';
 import 'model_config_dialog.dart';
@@ -103,6 +104,7 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
         (icon: AuroraIcons.model, label: l10n.modelProvider),
         (icon: AuroraIcons.translation, label: l10n.chatSettings),
         (icon: AuroraIcons.globe, label: l10n.searchSettings),
+        (icon: AuroraIcons.database, label: l10n.knowledgeBase),
         (icon: AuroraIcons.edit, label: l10n.promptPresets),
         (icon: AuroraIcons.image, label: l10n.displaySettings),
         (icon: AuroraIcons.backup, label: l10n.dataSettings),
@@ -196,6 +198,7 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
                       _buildProviderSettings(settingsState, viewingProvider),
                       _buildChatSettings(settingsState),
                       _buildSearchSettings(settingsState),
+                      const KnowledgeSettingsPanel(),
                       const PresetSettingsPage(),
                       _buildDisplaySettings(),
                       _buildDataSettings(),

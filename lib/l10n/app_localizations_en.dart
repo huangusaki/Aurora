@@ -962,6 +962,118 @@ class AppLocalizationsEn extends AppLocalizations {
   String get searchTimeoutSeconds => 'Timeout (seconds)';
 
   @override
+  String get knowledgeBase => 'Knowledge Base';
+
+  @override
+  String get knowledgeBases => 'Knowledge Bases';
+
+  @override
+  String get general => 'General';
+
+  @override
+  String get enableKnowledgeRetrieval => 'Enable Knowledge Retrieval';
+
+  @override
+  String get knowledgeTopKChunks => 'Top K Chunks';
+
+  @override
+  String get useEmbeddingRerank => 'Use Embedding Re-rank';
+
+  @override
+  String get knowledgeLlmEnhancementMode => 'LLM Enhancement Mode (Optional)';
+
+  @override
+  String get knowledgeModeOff => 'off';
+
+  @override
+  String get knowledgeModeRewrite => 'rewrite';
+
+  @override
+  String get embeddingProvider => 'Embedding Provider';
+
+  @override
+  String get embeddingModel => 'Embedding Model';
+
+  @override
+  String get noEmbeddingModelsInProvider =>
+      'No embedding model found in this provider';
+
+  @override
+  String get embeddingModelAutoDetectHint =>
+      'Only models whose names include \"embedding\" are listed.';
+
+  @override
+  String get createBase => 'Create Base';
+
+  @override
+  String get importFiles => 'Import Files';
+
+  @override
+  String get deleteBase => 'Delete Base';
+
+  @override
+  String get noKnowledgeBaseYetCreateOne =>
+      'No knowledge base yet. Create one first.';
+
+  @override
+  String get knowledgeActive => 'Active';
+
+  @override
+  String knowledgeDocsAndChunks(int docs, int chunks) {
+    return 'Docs: $docs  Chunks: $chunks';
+  }
+
+  @override
+  String get createKnowledgeBase => 'Create Knowledge Base';
+
+  @override
+  String get knowledgeBaseName => 'Base Name';
+
+  @override
+  String get descriptionOptional => 'Description (optional)';
+
+  @override
+  String get deleteKnowledgeBase => 'Delete Knowledge Base';
+
+  @override
+  String get deleteKnowledgeBaseConfirm =>
+      'Delete this knowledge base and all indexed chunks? This cannot be undone.';
+
+  @override
+  String get knowledgeFiles => 'Knowledge files';
+
+  @override
+  String get importFinished => 'Import Finished';
+
+  @override
+  String knowledgeImportSummary(int success, int failed) {
+    return 'Success: $success\nFailed: $failed';
+  }
+
+  @override
+  String knowledgeEnabledWithActiveCount(int count) {
+    return 'Enabled • $count active';
+  }
+
+  @override
+  String get knowledgeGlobalFallbackHint =>
+      'Global knowledge bases are used only when no assistant is selected.';
+
+  @override
+  String get knowledgeGlobalSelectionLabel => 'Use in Global Mode';
+
+  @override
+  String get knowledgeGlobalSelectionHint =>
+      'Effective only when no assistant is selected.';
+
+  @override
+  String get knowledgeBaseEnabledLabel => 'Knowledge Base Available';
+
+  @override
+  String get knowledgeBaseEnabledHint =>
+      'If disabled, this base is excluded from all retrieval.';
+
+  @override
   String get clearContext => 'Clear Context';
 
   @override
@@ -1546,6 +1658,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get assistantLongTermMemory => 'Long-term Memory';
+
+  @override
+  String get assistantKnowledgeBindingHint =>
+      'When this assistant is selected, only the knowledge bases checked here are used.';
 
   @override
   String get assistantAvailableSkillsTitle => 'Available Skills';

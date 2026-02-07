@@ -14,7 +14,7 @@ class AuroraMobilePageRoute<T> extends PageRouteBuilder<T> {
     super.reverseTransitionDuration = const Duration(milliseconds: 240),
   }) : super(
           pageBuilder: (context, animation, secondaryAnimation) =>
-              builder(context),
+              _AuroraRoutePage(child: builder(context)),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             final curve = CurvedAnimation(
               parent: animation,
@@ -59,6 +59,21 @@ class _AuroraRouteCover extends StatelessWidget {
         color: Theme.of(context).scaffoldBackgroundColor.withAlpha(255),
         child: const GlobalBackground(child: SizedBox.expand()),
       ),
+    );
+  }
+}
+
+class _AuroraRoutePage extends StatelessWidget {
+  final Widget child;
+
+  const _AuroraRoutePage({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return ColoredBox(
+      // Provide a concrete base color for transparent destination pages.
+      color: Theme.of(context).scaffoldBackgroundColor.withAlpha(255),
+      child: GlobalBackground(child: child),
     );
   }
 }

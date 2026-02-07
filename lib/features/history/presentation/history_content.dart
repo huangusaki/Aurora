@@ -724,6 +724,8 @@ class _SessionItemState extends ConsumerState<_SessionItem> {
                                 (widget.session.totalTokens > 0
                                     ? ' • ${formatTokenCount(widget.session.totalTokens)} tokens'
                                     : ''),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                                 fontSize: 10,
                                 color: theme.resources.textFillColorSecondary)),

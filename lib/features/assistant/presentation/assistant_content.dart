@@ -10,6 +10,7 @@ import 'package:aurora/features/assistant/presentation/assistant_provider.dart';
 import 'package:aurora/features/assistant/presentation/widgets/assistant_avatar.dart';
 import 'package:aurora/features/assistant/domain/assistant.dart';
 import 'package:aurora/features/assistant/presentation/mobile_assistant_page.dart';
+import 'package:aurora/features/knowledge/presentation/knowledge_provider.dart';
 import 'package:aurora/features/skills/presentation/skill_provider.dart';
 
 class AssistantContent extends ConsumerStatefulWidget {
@@ -80,7 +81,7 @@ class _AssistantContentState extends ConsumerState<AssistantContent> {
                     onPressed: () async {
                       final newAssistant = await ref
                           .read(assistantProvider.notifier)
-                          .createAssistant(name: '新助理');
+                          .createAssistant(name: l10n.newAssistant);
                       setState(() {
                         _selectedAssistantId = newAssistant.id;
                       });
@@ -242,16 +243,16 @@ class _AssistantContentState extends ConsumerState<AssistantContent> {
                       child: fluent.TextBox(
                         controller: _nameController,
                         onChanged: (_) => _saveCurrent(assistant),
-                        placeholder: '请输入助理名称',
+                        placeholder: l10n.assistantName,
                       ),
                     ),
                     const SizedBox(height: 16),
                     fluent.InfoLabel(
-                      label: '助理描述',
+                      label: l10n.assistantDescription,
                       child: fluent.TextBox(
                         controller: _descriptionController,
                         onChanged: (_) => _saveCurrent(assistant),
-                        placeholder: '一句话描述助理的定位',
+                        placeholder: l10n.assistantDescription,
                       ),
                     ),
                   ],
@@ -272,7 +273,9 @@ class _AssistantContentState extends ConsumerState<AssistantContent> {
           ),
           const SizedBox(height: 24),
           const SizedBox(height: 24),
-          _buildSkillSettings(assistant, theme),
+          _buildSkillSettings(assistant, l10n),
+          const SizedBox(height: 24),
+          _buildKnowledgeSettings(assistant, l10n),
           const SizedBox(height: 24),
           fluent.Expander(
             header: const Text('高级设置'),
@@ -287,7 +290,7 @@ class _AssistantContentState extends ConsumerState<AssistantContent> {
                           );
                     }
                   },
-                  content: const Text('启用长期记忆'),
+                  content: Text(l10n.assistantLongTermMemory),
                 ),
               ],
             ),
@@ -297,8 +300,7 @@ class _AssistantContentState extends ConsumerState<AssistantContent> {
     );
   }
 
-  Widget _buildSkillSettings(
-      Assistant assistant, fluent.FluentThemeData theme) {
+  Widget _buildSkillSettings(Assistant assistant, AppLocalizations l10n) {
     final skills = ref
         .watch(skillProvider)
         .skills
@@ -306,9 +308,12 @@ class _AssistantContentState extends ConsumerState<AssistantContent> {
         .toList();
 
     return fluent.Expander(
-      header: const Text('可用技能 (Skills)'),
+      header: Text(l10n.assistantAvailableSkillsTitle),
       content: skills.isEmpty
-          ? const Padding(padding: EdgeInsets.all(8.0), child: Text('暂无可用技能'))
+          ? Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Text(l10n.assistantNoSkillsAvailable),
+            )
           : Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: skills.map((skill) {
@@ -339,6 +344,82 @@ class _AssistantContentState extends ConsumerState<AssistantContent> {
     );
   }
 
+  Widget _buildKnowledgeSettings(Assistant assistant, AppLocalizations l10n) {
+    final knowledgeState = ref.watch(knowledgeProvider);
+    final bases = knowledgeState.bases.where((b) => b.isEnabled).toList();
+
+    return fluent.Expander(
+      header: Text(l10n.knowledgeBase),
+      content: knowledgeState.isLoading
+          ? const Padding(
+              padding: EdgeInsets.all(8.0),
+              child: SizedBox(
+                width: 16,
+                height: 16,
+                child: fluent.ProgressRing(strokeWidth: 2),
+              ),
+            )
+          : bases.isEmpty
+              ? Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Text(l10n.noKnowledgeBaseYetCreateOne),
+                )
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      l10n.assistantKnowledgeBindingHint,
+                      style: TextStyle(
+                        color: fluent.FluentTheme.of(context)
+                            .resources
+                            .textFillColorSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    ...bases.map((base) {
+                      final isChecked =
+                          assistant.knowledgeBaseIds.contains(base.baseId);
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: fluent.Checkbox(
+                          checked: isChecked,
+                          onChanged: (v) {
+                            final nextIds =
+                                List<String>.from(assistant.knowledgeBaseIds);
+                            if (v == true) {
+                              if (!nextIds.contains(base.baseId)) {
+                                nextIds.add(base.baseId);
+                              }
+                            } else {
+                              nextIds.remove(base.baseId);
+                            }
+                            ref.read(assistantProvider.notifier).saveAssistant(
+                                  assistant.copyWith(knowledgeBaseIds: nextIds),
+                                );
+                          },
+                          content: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(base.name),
+                              Text(
+                                l10n.knowledgeDocsAndChunks(
+                                    base.documentCount, base.chunkCount),
+                                style: TextStyle(
+                                  color: fluent.FluentTheme.of(context)
+                                      .resources
+                                      .textFillColorSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }),
+                  ],
+                ),
+    );
+  }
+
   Future<void> _pickAvatar(Assistant assistant) async {
     final ImagePicker picker = ImagePicker();
     final XFile? image = await picker.pickImage(source: ImageSource.gallery);
@@ -358,8 +439,8 @@ class _AssistantContentState extends ConsumerState<AssistantContent> {
     showDialog(
       context: context,
       builder: (context) => fluent.ContentDialog(
-        title: const Text('确认删除助理'),
-        content: Text('确认要删除助理 "${assistant.name}" 吗？此操作无法撤销。'),
+        title: Text(l10n.assistantDeleteTitle),
+        content: Text(l10n.assistantDeleteConfirm(assistant.name)),
         actions: [
           fluent.Button(
             onPressed: () => Navigator.pop(context),

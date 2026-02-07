@@ -7,6 +7,7 @@ class Assistant {
   final String? preferredModel;
   final String? providerId;
   final List<String> skillIds;
+  final List<String> knowledgeBaseIds;
   final bool enableMemory;
 
   const Assistant({
@@ -18,6 +19,7 @@ class Assistant {
     this.preferredModel,
     this.providerId,
     this.skillIds = const [],
+    this.knowledgeBaseIds = const [],
     this.enableMemory = false,
   });
 
@@ -29,6 +31,7 @@ class Assistant {
     String? preferredModel,
     String? providerId,
     List<String>? skillIds,
+    List<String>? knowledgeBaseIds,
     bool? enableMemory,
   }) {
     return Assistant(
@@ -40,6 +43,7 @@ class Assistant {
       preferredModel: preferredModel ?? this.preferredModel,
       providerId: providerId ?? this.providerId,
       skillIds: skillIds ?? this.skillIds,
+      knowledgeBaseIds: knowledgeBaseIds ?? this.knowledgeBaseIds,
       enableMemory: enableMemory ?? this.enableMemory,
     );
   }

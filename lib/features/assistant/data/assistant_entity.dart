@@ -17,6 +17,7 @@ class AssistantEntity {
   String? preferredModel;
   String? providerId;
   List<String> skillIds = [];
+  List<String> knowledgeBaseIds = [];
   bool enableMemory = false;
 
   @Index()

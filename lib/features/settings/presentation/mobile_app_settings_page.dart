@@ -12,6 +12,7 @@ import 'package:image_cropper/image_cropper.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:io';
 import 'mobile_search_settings_page.dart';
+import 'mobile_knowledge_settings_page.dart';
 import 'package:aurora/shared/widgets/aurora_page_route.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -168,6 +169,20 @@ class MobileAppSettingsPage extends ConsumerWidget {
                   context,
                   AuroraMobilePageRoute(
                     builder: (_) => const MobileSearchSettingsPage(),
+                  ),
+                ),
+              ),
+              MobileSettingsTile(
+                leading: const Icon(Icons.library_books_outlined),
+                title: l10n.knowledgeBase,
+                subtitle: settingsState.isKnowledgeEnabled
+                    ? l10n.knowledgeEnabledWithActiveCount(
+                        settingsState.activeKnowledgeBaseIds.length)
+                    : l10n.disabled,
+                onTap: () => Navigator.push(
+                  context,
+                  AuroraMobilePageRoute(
+                    builder: (_) => const MobileKnowledgeSettingsPage(),
                   ),
                 ),
               ),

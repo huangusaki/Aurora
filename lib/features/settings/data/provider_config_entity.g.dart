@@ -3344,163 +3344,198 @@ const AppSettingsEntitySchema = CollectionSchema(
   name: r'AppSettingsEntity',
   id: 5506238605616873742,
   properties: {
-    r'activeProviderId': PropertySchema(
+    r'activeKnowledgeBaseIds': PropertySchema(
       id: 0,
+      name: r'activeKnowledgeBaseIds',
+      type: IsarType.stringList,
+    ),
+    r'activeProviderId': PropertySchema(
+      id: 1,
       name: r'activeProviderId',
       type: IsarType.string,
     ),
     r'availableModels': PropertySchema(
-      id: 1,
+      id: 2,
       name: r'availableModels',
       type: IsarType.stringList,
     ),
     r'backgroundBlur': PropertySchema(
-      id: 2,
+      id: 3,
       name: r'backgroundBlur',
       type: IsarType.double,
     ),
     r'backgroundBrightness': PropertySchema(
-      id: 3,
+      id: 4,
       name: r'backgroundBrightness',
       type: IsarType.double,
     ),
     r'backgroundColor': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'backgroundColor',
       type: IsarType.string,
     ),
     r'backgroundImagePath': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'backgroundImagePath',
       type: IsarType.string,
     ),
     r'closeBehavior': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'closeBehavior',
       type: IsarType.long,
     ),
     r'enableSmartTopic': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'enableSmartTopic',
       type: IsarType.bool,
     ),
     r'executionModel': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'executionModel',
       type: IsarType.string,
     ),
     r'executionProviderId': PropertySchema(
-      id: 9,
+      id: 10,
       name: r'executionProviderId',
       type: IsarType.string,
     ),
     r'fontSize': PropertySchema(
-      id: 10,
+      id: 11,
       name: r'fontSize',
       type: IsarType.double,
     ),
+    r'isKnowledgeEnabled': PropertySchema(
+      id: 12,
+      name: r'isKnowledgeEnabled',
+      type: IsarType.bool,
+    ),
     r'isSearchEnabled': PropertySchema(
-      id: 11,
+      id: 13,
       name: r'isSearchEnabled',
       type: IsarType.bool,
     ),
     r'isStreamEnabled': PropertySchema(
-      id: 12,
+      id: 14,
       name: r'isStreamEnabled',
       type: IsarType.bool,
     ),
+    r'knowledgeEmbeddingModel': PropertySchema(
+      id: 15,
+      name: r'knowledgeEmbeddingModel',
+      type: IsarType.string,
+    ),
+    r'knowledgeEmbeddingProviderId': PropertySchema(
+      id: 16,
+      name: r'knowledgeEmbeddingProviderId',
+      type: IsarType.string,
+    ),
+    r'knowledgeLlmEnhanceMode': PropertySchema(
+      id: 17,
+      name: r'knowledgeLlmEnhanceMode',
+      type: IsarType.string,
+    ),
+    r'knowledgeTopK': PropertySchema(
+      id: 18,
+      name: r'knowledgeTopK',
+      type: IsarType.long,
+    ),
+    r'knowledgeUseEmbedding': PropertySchema(
+      id: 19,
+      name: r'knowledgeUseEmbedding',
+      type: IsarType.bool,
+    ),
     r'language': PropertySchema(
-      id: 13,
+      id: 20,
       name: r'language',
       type: IsarType.string,
     ),
     r'lastAssistantId': PropertySchema(
-      id: 14,
+      id: 21,
       name: r'lastAssistantId',
       type: IsarType.string,
     ),
     r'lastPresetId': PropertySchema(
-      id: 15,
+      id: 22,
       name: r'lastPresetId',
       type: IsarType.string,
     ),
     r'lastSessionId': PropertySchema(
-      id: 16,
+      id: 23,
       name: r'lastSessionId',
       type: IsarType.string,
     ),
     r'lastTopicId': PropertySchema(
-      id: 17,
+      id: 24,
       name: r'lastTopicId',
       type: IsarType.string,
     ),
     r'llmAvatar': PropertySchema(
-      id: 18,
+      id: 25,
       name: r'llmAvatar',
       type: IsarType.string,
     ),
     r'llmName': PropertySchema(
-      id: 19,
+      id: 26,
       name: r'llmName',
       type: IsarType.string,
     ),
     r'searchEngine': PropertySchema(
-      id: 20,
+      id: 27,
       name: r'searchEngine',
       type: IsarType.string,
     ),
     r'searchMaxResults': PropertySchema(
-      id: 21,
+      id: 28,
       name: r'searchMaxResults',
       type: IsarType.long,
     ),
     r'searchRegion': PropertySchema(
-      id: 22,
+      id: 29,
       name: r'searchRegion',
       type: IsarType.string,
     ),
     r'searchSafeSearch': PropertySchema(
-      id: 23,
+      id: 30,
       name: r'searchSafeSearch',
       type: IsarType.string,
     ),
     r'searchTimeoutSeconds': PropertySchema(
-      id: 24,
+      id: 31,
       name: r'searchTimeoutSeconds',
       type: IsarType.long,
     ),
     r'selectedModel': PropertySchema(
-      id: 25,
+      id: 32,
       name: r'selectedModel',
       type: IsarType.string,
     ),
     r'themeColor': PropertySchema(
-      id: 26,
+      id: 33,
       name: r'themeColor',
       type: IsarType.string,
     ),
     r'themeMode': PropertySchema(
-      id: 27,
+      id: 34,
       name: r'themeMode',
       type: IsarType.string,
     ),
     r'topicGenerationModel': PropertySchema(
-      id: 28,
+      id: 35,
       name: r'topicGenerationModel',
       type: IsarType.string,
     ),
     r'useCustomTheme': PropertySchema(
-      id: 29,
+      id: 36,
       name: r'useCustomTheme',
       type: IsarType.bool,
     ),
     r'userAvatar': PropertySchema(
-      id: 30,
+      id: 37,
       name: r'userAvatar',
       type: IsarType.string,
     ),
     r'userName': PropertySchema(
-      id: 31,
+      id: 38,
       name: r'userName',
       type: IsarType.string,
     )
@@ -3539,6 +3574,13 @@ int _appSettingsEntityEstimateSize(
   Map<Type, List<int>> allOffsets,
 ) {
   var bytesCount = offsets.last;
+  bytesCount += 3 + object.activeKnowledgeBaseIds.length * 3;
+  {
+    for (var i = 0; i < object.activeKnowledgeBaseIds.length; i++) {
+      final value = object.activeKnowledgeBaseIds[i];
+      bytesCount += value.length * 3;
+    }
+  }
   bytesCount += 3 + object.activeProviderId.length * 3;
   bytesCount += 3 + object.availableModels.length * 3;
   {
@@ -3571,6 +3613,19 @@ int _appSettingsEntityEstimateSize(
       bytesCount += 3 + value.length * 3;
     }
   }
+  {
+    final value = object.knowledgeEmbeddingModel;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.knowledgeEmbeddingProviderId;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  bytesCount += 3 + object.knowledgeLlmEnhanceMode.length * 3;
   bytesCount += 3 + object.language.length * 3;
   {
     final value = object.lastAssistantId;
@@ -3641,38 +3696,45 @@ void _appSettingsEntitySerialize(
   List<int> offsets,
   Map<Type, List<int>> allOffsets,
 ) {
-  writer.writeString(offsets[0], object.activeProviderId);
-  writer.writeStringList(offsets[1], object.availableModels);
-  writer.writeDouble(offsets[2], object.backgroundBlur);
-  writer.writeDouble(offsets[3], object.backgroundBrightness);
-  writer.writeString(offsets[4], object.backgroundColor);
-  writer.writeString(offsets[5], object.backgroundImagePath);
-  writer.writeLong(offsets[6], object.closeBehavior);
-  writer.writeBool(offsets[7], object.enableSmartTopic);
-  writer.writeString(offsets[8], object.executionModel);
-  writer.writeString(offsets[9], object.executionProviderId);
-  writer.writeDouble(offsets[10], object.fontSize);
-  writer.writeBool(offsets[11], object.isSearchEnabled);
-  writer.writeBool(offsets[12], object.isStreamEnabled);
-  writer.writeString(offsets[13], object.language);
-  writer.writeString(offsets[14], object.lastAssistantId);
-  writer.writeString(offsets[15], object.lastPresetId);
-  writer.writeString(offsets[16], object.lastSessionId);
-  writer.writeString(offsets[17], object.lastTopicId);
-  writer.writeString(offsets[18], object.llmAvatar);
-  writer.writeString(offsets[19], object.llmName);
-  writer.writeString(offsets[20], object.searchEngine);
-  writer.writeLong(offsets[21], object.searchMaxResults);
-  writer.writeString(offsets[22], object.searchRegion);
-  writer.writeString(offsets[23], object.searchSafeSearch);
-  writer.writeLong(offsets[24], object.searchTimeoutSeconds);
-  writer.writeString(offsets[25], object.selectedModel);
-  writer.writeString(offsets[26], object.themeColor);
-  writer.writeString(offsets[27], object.themeMode);
-  writer.writeString(offsets[28], object.topicGenerationModel);
-  writer.writeBool(offsets[29], object.useCustomTheme);
-  writer.writeString(offsets[30], object.userAvatar);
-  writer.writeString(offsets[31], object.userName);
+  writer.writeStringList(offsets[0], object.activeKnowledgeBaseIds);
+  writer.writeString(offsets[1], object.activeProviderId);
+  writer.writeStringList(offsets[2], object.availableModels);
+  writer.writeDouble(offsets[3], object.backgroundBlur);
+  writer.writeDouble(offsets[4], object.backgroundBrightness);
+  writer.writeString(offsets[5], object.backgroundColor);
+  writer.writeString(offsets[6], object.backgroundImagePath);
+  writer.writeLong(offsets[7], object.closeBehavior);
+  writer.writeBool(offsets[8], object.enableSmartTopic);
+  writer.writeString(offsets[9], object.executionModel);
+  writer.writeString(offsets[10], object.executionProviderId);
+  writer.writeDouble(offsets[11], object.fontSize);
+  writer.writeBool(offsets[12], object.isKnowledgeEnabled);
+  writer.writeBool(offsets[13], object.isSearchEnabled);
+  writer.writeBool(offsets[14], object.isStreamEnabled);
+  writer.writeString(offsets[15], object.knowledgeEmbeddingModel);
+  writer.writeString(offsets[16], object.knowledgeEmbeddingProviderId);
+  writer.writeString(offsets[17], object.knowledgeLlmEnhanceMode);
+  writer.writeLong(offsets[18], object.knowledgeTopK);
+  writer.writeBool(offsets[19], object.knowledgeUseEmbedding);
+  writer.writeString(offsets[20], object.language);
+  writer.writeString(offsets[21], object.lastAssistantId);
+  writer.writeString(offsets[22], object.lastPresetId);
+  writer.writeString(offsets[23], object.lastSessionId);
+  writer.writeString(offsets[24], object.lastTopicId);
+  writer.writeString(offsets[25], object.llmAvatar);
+  writer.writeString(offsets[26], object.llmName);
+  writer.writeString(offsets[27], object.searchEngine);
+  writer.writeLong(offsets[28], object.searchMaxResults);
+  writer.writeString(offsets[29], object.searchRegion);
+  writer.writeString(offsets[30], object.searchSafeSearch);
+  writer.writeLong(offsets[31], object.searchTimeoutSeconds);
+  writer.writeString(offsets[32], object.selectedModel);
+  writer.writeString(offsets[33], object.themeColor);
+  writer.writeString(offsets[34], object.themeMode);
+  writer.writeString(offsets[35], object.topicGenerationModel);
+  writer.writeBool(offsets[36], object.useCustomTheme);
+  writer.writeString(offsets[37], object.userAvatar);
+  writer.writeString(offsets[38], object.userName);
 }
 
 AppSettingsEntity _appSettingsEntityDeserialize(
@@ -3682,39 +3744,46 @@ AppSettingsEntity _appSettingsEntityDeserialize(
   Map<Type, List<int>> allOffsets,
 ) {
   final object = AppSettingsEntity();
-  object.activeProviderId = reader.readString(offsets[0]);
-  object.availableModels = reader.readStringList(offsets[1]) ?? [];
-  object.backgroundBlur = reader.readDouble(offsets[2]);
-  object.backgroundBrightness = reader.readDouble(offsets[3]);
-  object.backgroundColor = reader.readStringOrNull(offsets[4]);
-  object.backgroundImagePath = reader.readStringOrNull(offsets[5]);
-  object.closeBehavior = reader.readLong(offsets[6]);
-  object.enableSmartTopic = reader.readBool(offsets[7]);
-  object.executionModel = reader.readStringOrNull(offsets[8]);
-  object.executionProviderId = reader.readStringOrNull(offsets[9]);
-  object.fontSize = reader.readDouble(offsets[10]);
+  object.activeKnowledgeBaseIds = reader.readStringList(offsets[0]) ?? [];
+  object.activeProviderId = reader.readString(offsets[1]);
+  object.availableModels = reader.readStringList(offsets[2]) ?? [];
+  object.backgroundBlur = reader.readDouble(offsets[3]);
+  object.backgroundBrightness = reader.readDouble(offsets[4]);
+  object.backgroundColor = reader.readStringOrNull(offsets[5]);
+  object.backgroundImagePath = reader.readStringOrNull(offsets[6]);
+  object.closeBehavior = reader.readLong(offsets[7]);
+  object.enableSmartTopic = reader.readBool(offsets[8]);
+  object.executionModel = reader.readStringOrNull(offsets[9]);
+  object.executionProviderId = reader.readStringOrNull(offsets[10]);
+  object.fontSize = reader.readDouble(offsets[11]);
   object.id = id;
-  object.isSearchEnabled = reader.readBool(offsets[11]);
-  object.isStreamEnabled = reader.readBool(offsets[12]);
-  object.language = reader.readString(offsets[13]);
-  object.lastAssistantId = reader.readStringOrNull(offsets[14]);
-  object.lastPresetId = reader.readStringOrNull(offsets[15]);
-  object.lastSessionId = reader.readStringOrNull(offsets[16]);
-  object.lastTopicId = reader.readStringOrNull(offsets[17]);
-  object.llmAvatar = reader.readStringOrNull(offsets[18]);
-  object.llmName = reader.readString(offsets[19]);
-  object.searchEngine = reader.readString(offsets[20]);
-  object.searchMaxResults = reader.readLong(offsets[21]);
-  object.searchRegion = reader.readString(offsets[22]);
-  object.searchSafeSearch = reader.readString(offsets[23]);
-  object.searchTimeoutSeconds = reader.readLong(offsets[24]);
-  object.selectedModel = reader.readStringOrNull(offsets[25]);
-  object.themeColor = reader.readStringOrNull(offsets[26]);
-  object.themeMode = reader.readString(offsets[27]);
-  object.topicGenerationModel = reader.readStringOrNull(offsets[28]);
-  object.useCustomTheme = reader.readBool(offsets[29]);
-  object.userAvatar = reader.readStringOrNull(offsets[30]);
-  object.userName = reader.readString(offsets[31]);
+  object.isKnowledgeEnabled = reader.readBool(offsets[12]);
+  object.isSearchEnabled = reader.readBool(offsets[13]);
+  object.isStreamEnabled = reader.readBool(offsets[14]);
+  object.knowledgeEmbeddingModel = reader.readStringOrNull(offsets[15]);
+  object.knowledgeEmbeddingProviderId = reader.readStringOrNull(offsets[16]);
+  object.knowledgeLlmEnhanceMode = reader.readString(offsets[17]);
+  object.knowledgeTopK = reader.readLong(offsets[18]);
+  object.knowledgeUseEmbedding = reader.readBool(offsets[19]);
+  object.language = reader.readString(offsets[20]);
+  object.lastAssistantId = reader.readStringOrNull(offsets[21]);
+  object.lastPresetId = reader.readStringOrNull(offsets[22]);
+  object.lastSessionId = reader.readStringOrNull(offsets[23]);
+  object.lastTopicId = reader.readStringOrNull(offsets[24]);
+  object.llmAvatar = reader.readStringOrNull(offsets[25]);
+  object.llmName = reader.readString(offsets[26]);
+  object.searchEngine = reader.readString(offsets[27]);
+  object.searchMaxResults = reader.readLong(offsets[28]);
+  object.searchRegion = reader.readString(offsets[29]);
+  object.searchSafeSearch = reader.readString(offsets[30]);
+  object.searchTimeoutSeconds = reader.readLong(offsets[31]);
+  object.selectedModel = reader.readStringOrNull(offsets[32]);
+  object.themeColor = reader.readStringOrNull(offsets[33]);
+  object.themeMode = reader.readString(offsets[34]);
+  object.topicGenerationModel = reader.readStringOrNull(offsets[35]);
+  object.useCustomTheme = reader.readBool(offsets[36]);
+  object.userAvatar = reader.readStringOrNull(offsets[37]);
+  object.userName = reader.readString(offsets[38]);
   return object;
 }
 
@@ -3726,68 +3795,82 @@ P _appSettingsEntityDeserializeProp<P>(
 ) {
   switch (propertyId) {
     case 0:
-      return (reader.readString(offset)) as P;
-    case 1:
       return (reader.readStringList(offset) ?? []) as P;
+    case 1:
+      return (reader.readString(offset)) as P;
     case 2:
-      return (reader.readDouble(offset)) as P;
+      return (reader.readStringList(offset) ?? []) as P;
     case 3:
       return (reader.readDouble(offset)) as P;
     case 4:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDouble(offset)) as P;
     case 5:
       return (reader.readStringOrNull(offset)) as P;
     case 6:
-      return (reader.readLong(offset)) as P;
-    case 7:
-      return (reader.readBool(offset)) as P;
-    case 8:
       return (reader.readStringOrNull(offset)) as P;
+    case 7:
+      return (reader.readLong(offset)) as P;
+    case 8:
+      return (reader.readBool(offset)) as P;
     case 9:
       return (reader.readStringOrNull(offset)) as P;
     case 10:
-      return (reader.readDouble(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 11:
-      return (reader.readBool(offset)) as P;
+      return (reader.readDouble(offset)) as P;
     case 12:
       return (reader.readBool(offset)) as P;
     case 13:
-      return (reader.readString(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 14:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 15:
       return (reader.readStringOrNull(offset)) as P;
     case 16:
       return (reader.readStringOrNull(offset)) as P;
     case 17:
-      return (reader.readStringOrNull(offset)) as P;
-    case 18:
-      return (reader.readStringOrNull(offset)) as P;
-    case 19:
       return (reader.readString(offset)) as P;
+    case 18:
+      return (reader.readLong(offset)) as P;
+    case 19:
+      return (reader.readBool(offset)) as P;
     case 20:
       return (reader.readString(offset)) as P;
     case 21:
-      return (reader.readLong(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 22:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 23:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 24:
-      return (reader.readLong(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 25:
       return (reader.readStringOrNull(offset)) as P;
     case 26:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 27:
       return (reader.readString(offset)) as P;
     case 28:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readLong(offset)) as P;
     case 29:
-      return (reader.readBool(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 30:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 31:
+      return (reader.readLong(offset)) as P;
+    case 32:
+      return (reader.readStringOrNull(offset)) as P;
+    case 33:
+      return (reader.readStringOrNull(offset)) as P;
+    case 34:
+      return (reader.readString(offset)) as P;
+    case 35:
+      return (reader.readStringOrNull(offset)) as P;
+    case 36:
+      return (reader.readBool(offset)) as P;
+    case 37:
+      return (reader.readStringOrNull(offset)) as P;
+    case 38:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -3992,6 +4075,233 @@ extension AppSettingsEntityQueryWhere
 
 extension AppSettingsEntityQueryFilter
     on QueryBuilder<AppSettingsEntity, AppSettingsEntity, QFilterCondition> {
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      activeKnowledgeBaseIdsElementEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'activeKnowledgeBaseIds',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      activeKnowledgeBaseIdsElementGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'activeKnowledgeBaseIds',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      activeKnowledgeBaseIdsElementLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'activeKnowledgeBaseIds',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      activeKnowledgeBaseIdsElementBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'activeKnowledgeBaseIds',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      activeKnowledgeBaseIdsElementStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'activeKnowledgeBaseIds',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      activeKnowledgeBaseIdsElementEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'activeKnowledgeBaseIds',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      activeKnowledgeBaseIdsElementContains(String value,
+          {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'activeKnowledgeBaseIds',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      activeKnowledgeBaseIdsElementMatches(String pattern,
+          {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'activeKnowledgeBaseIds',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      activeKnowledgeBaseIdsElementIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'activeKnowledgeBaseIds',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      activeKnowledgeBaseIdsElementIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'activeKnowledgeBaseIds',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      activeKnowledgeBaseIdsLengthEqualTo(int length) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'activeKnowledgeBaseIds',
+        length,
+        true,
+        length,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      activeKnowledgeBaseIdsIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'activeKnowledgeBaseIds',
+        0,
+        true,
+        0,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      activeKnowledgeBaseIdsIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'activeKnowledgeBaseIds',
+        0,
+        false,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      activeKnowledgeBaseIdsLengthLessThan(
+    int length, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'activeKnowledgeBaseIds',
+        0,
+        true,
+        length,
+        include,
+      );
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      activeKnowledgeBaseIdsLengthGreaterThan(
+    int length, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'activeKnowledgeBaseIds',
+        length,
+        include,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      activeKnowledgeBaseIdsLengthBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'activeKnowledgeBaseIds',
+        lower,
+        includeLower,
+        upper,
+        includeUpper,
+      );
+    });
+  }
+
   QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
       activeProviderIdEqualTo(
     String value, {
@@ -5292,6 +5602,16 @@ extension AppSettingsEntityQueryFilter
   }
 
   QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      isKnowledgeEnabledEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'isKnowledgeEnabled',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
       isSearchEnabledEqualTo(bool value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -5306,6 +5626,522 @@ extension AppSettingsEntityQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'isStreamEnabled',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      knowledgeEmbeddingModelIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'knowledgeEmbeddingModel',
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      knowledgeEmbeddingModelIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'knowledgeEmbeddingModel',
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      knowledgeEmbeddingModelEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'knowledgeEmbeddingModel',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      knowledgeEmbeddingModelGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'knowledgeEmbeddingModel',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      knowledgeEmbeddingModelLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'knowledgeEmbeddingModel',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      knowledgeEmbeddingModelBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'knowledgeEmbeddingModel',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      knowledgeEmbeddingModelStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'knowledgeEmbeddingModel',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      knowledgeEmbeddingModelEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'knowledgeEmbeddingModel',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      knowledgeEmbeddingModelContains(String value,
+          {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'knowledgeEmbeddingModel',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      knowledgeEmbeddingModelMatches(String pattern,
+          {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'knowledgeEmbeddingModel',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      knowledgeEmbeddingModelIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'knowledgeEmbeddingModel',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      knowledgeEmbeddingModelIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'knowledgeEmbeddingModel',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      knowledgeEmbeddingProviderIdIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'knowledgeEmbeddingProviderId',
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      knowledgeEmbeddingProviderIdIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'knowledgeEmbeddingProviderId',
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      knowledgeEmbeddingProviderIdEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'knowledgeEmbeddingProviderId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      knowledgeEmbeddingProviderIdGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'knowledgeEmbeddingProviderId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      knowledgeEmbeddingProviderIdLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'knowledgeEmbeddingProviderId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      knowledgeEmbeddingProviderIdBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'knowledgeEmbeddingProviderId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      knowledgeEmbeddingProviderIdStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'knowledgeEmbeddingProviderId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      knowledgeEmbeddingProviderIdEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'knowledgeEmbeddingProviderId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      knowledgeEmbeddingProviderIdContains(String value,
+          {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'knowledgeEmbeddingProviderId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      knowledgeEmbeddingProviderIdMatches(String pattern,
+          {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'knowledgeEmbeddingProviderId',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      knowledgeEmbeddingProviderIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'knowledgeEmbeddingProviderId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      knowledgeEmbeddingProviderIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'knowledgeEmbeddingProviderId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      knowledgeLlmEnhanceModeEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'knowledgeLlmEnhanceMode',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      knowledgeLlmEnhanceModeGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'knowledgeLlmEnhanceMode',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      knowledgeLlmEnhanceModeLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'knowledgeLlmEnhanceMode',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      knowledgeLlmEnhanceModeBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'knowledgeLlmEnhanceMode',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      knowledgeLlmEnhanceModeStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'knowledgeLlmEnhanceMode',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      knowledgeLlmEnhanceModeEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'knowledgeLlmEnhanceMode',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      knowledgeLlmEnhanceModeContains(String value,
+          {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'knowledgeLlmEnhanceMode',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      knowledgeLlmEnhanceModeMatches(String pattern,
+          {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'knowledgeLlmEnhanceMode',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      knowledgeLlmEnhanceModeIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'knowledgeLlmEnhanceMode',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      knowledgeLlmEnhanceModeIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'knowledgeLlmEnhanceMode',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      knowledgeTopKEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'knowledgeTopK',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      knowledgeTopKGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'knowledgeTopK',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      knowledgeTopKLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'knowledgeTopK',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      knowledgeTopKBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'knowledgeTopK',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      knowledgeUseEmbeddingEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'knowledgeUseEmbedding',
         value: value,
       ));
     });
@@ -7921,6 +8757,20 @@ extension AppSettingsEntityQuerySortBy
   }
 
   QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      sortByIsKnowledgeEnabled() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isKnowledgeEnabled', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      sortByIsKnowledgeEnabledDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isKnowledgeEnabled', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
       sortByIsSearchEnabled() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isSearchEnabled', Sort.asc);
@@ -7945,6 +8795,76 @@ extension AppSettingsEntityQuerySortBy
       sortByIsStreamEnabledDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isStreamEnabled', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      sortByKnowledgeEmbeddingModel() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'knowledgeEmbeddingModel', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      sortByKnowledgeEmbeddingModelDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'knowledgeEmbeddingModel', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      sortByKnowledgeEmbeddingProviderId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'knowledgeEmbeddingProviderId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      sortByKnowledgeEmbeddingProviderIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'knowledgeEmbeddingProviderId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      sortByKnowledgeLlmEnhanceMode() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'knowledgeLlmEnhanceMode', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      sortByKnowledgeLlmEnhanceModeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'knowledgeLlmEnhanceMode', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      sortByKnowledgeTopK() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'knowledgeTopK', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      sortByKnowledgeTopKDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'knowledgeTopK', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      sortByKnowledgeUseEmbedding() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'knowledgeUseEmbedding', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      sortByKnowledgeUseEmbeddingDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'knowledgeUseEmbedding', Sort.desc);
     });
   }
 
@@ -8371,6 +9291,20 @@ extension AppSettingsEntityQuerySortThenBy
   }
 
   QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      thenByIsKnowledgeEnabled() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isKnowledgeEnabled', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      thenByIsKnowledgeEnabledDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isKnowledgeEnabled', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
       thenByIsSearchEnabled() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isSearchEnabled', Sort.asc);
@@ -8395,6 +9329,76 @@ extension AppSettingsEntityQuerySortThenBy
       thenByIsStreamEnabledDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isStreamEnabled', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      thenByKnowledgeEmbeddingModel() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'knowledgeEmbeddingModel', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      thenByKnowledgeEmbeddingModelDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'knowledgeEmbeddingModel', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      thenByKnowledgeEmbeddingProviderId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'knowledgeEmbeddingProviderId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      thenByKnowledgeEmbeddingProviderIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'knowledgeEmbeddingProviderId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      thenByKnowledgeLlmEnhanceMode() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'knowledgeLlmEnhanceMode', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      thenByKnowledgeLlmEnhanceModeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'knowledgeLlmEnhanceMode', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      thenByKnowledgeTopK() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'knowledgeTopK', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      thenByKnowledgeTopKDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'knowledgeTopK', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      thenByKnowledgeUseEmbedding() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'knowledgeUseEmbedding', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      thenByKnowledgeUseEmbeddingDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'knowledgeUseEmbedding', Sort.desc);
     });
   }
 
@@ -8668,6 +9672,13 @@ extension AppSettingsEntityQuerySortThenBy
 extension AppSettingsEntityQueryWhereDistinct
     on QueryBuilder<AppSettingsEntity, AppSettingsEntity, QDistinct> {
   QueryBuilder<AppSettingsEntity, AppSettingsEntity, QDistinct>
+      distinctByActiveKnowledgeBaseIds() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'activeKnowledgeBaseIds');
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QDistinct>
       distinctByActiveProviderId({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'activeProviderId',
@@ -8750,6 +9761,13 @@ extension AppSettingsEntityQueryWhereDistinct
   }
 
   QueryBuilder<AppSettingsEntity, AppSettingsEntity, QDistinct>
+      distinctByIsKnowledgeEnabled() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'isKnowledgeEnabled');
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QDistinct>
       distinctByIsSearchEnabled() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'isSearchEnabled');
@@ -8760,6 +9778,44 @@ extension AppSettingsEntityQueryWhereDistinct
       distinctByIsStreamEnabled() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'isStreamEnabled');
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QDistinct>
+      distinctByKnowledgeEmbeddingModel({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'knowledgeEmbeddingModel',
+          caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QDistinct>
+      distinctByKnowledgeEmbeddingProviderId({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'knowledgeEmbeddingProviderId',
+          caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QDistinct>
+      distinctByKnowledgeLlmEnhanceMode({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'knowledgeLlmEnhanceMode',
+          caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QDistinct>
+      distinctByKnowledgeTopK() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'knowledgeTopK');
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QDistinct>
+      distinctByKnowledgeUseEmbedding() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'knowledgeUseEmbedding');
     });
   }
 
@@ -8910,6 +9966,13 @@ extension AppSettingsEntityQueryProperty
     });
   }
 
+  QueryBuilder<AppSettingsEntity, List<String>, QQueryOperations>
+      activeKnowledgeBaseIdsProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'activeKnowledgeBaseIds');
+    });
+  }
+
   QueryBuilder<AppSettingsEntity, String, QQueryOperations>
       activeProviderIdProperty() {
     return QueryBuilder.apply(this, (query) {
@@ -8987,6 +10050,13 @@ extension AppSettingsEntityQueryProperty
   }
 
   QueryBuilder<AppSettingsEntity, bool, QQueryOperations>
+      isKnowledgeEnabledProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isKnowledgeEnabled');
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, bool, QQueryOperations>
       isSearchEnabledProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'isSearchEnabled');
@@ -8997,6 +10067,41 @@ extension AppSettingsEntityQueryProperty
       isStreamEnabledProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'isStreamEnabled');
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, String?, QQueryOperations>
+      knowledgeEmbeddingModelProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'knowledgeEmbeddingModel');
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, String?, QQueryOperations>
+      knowledgeEmbeddingProviderIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'knowledgeEmbeddingProviderId');
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, String, QQueryOperations>
+      knowledgeLlmEnhanceModeProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'knowledgeLlmEnhanceMode');
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, int, QQueryOperations>
+      knowledgeTopKProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'knowledgeTopK');
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, bool, QQueryOperations>
+      knowledgeUseEmbeddingProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'knowledgeUseEmbedding');
     });
   }
 

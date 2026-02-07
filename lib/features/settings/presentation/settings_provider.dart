@@ -119,11 +119,18 @@ class SettingsState {
   final String themeMode;
   final bool isStreamEnabled;
   final bool isSearchEnabled;
+  final bool isKnowledgeEnabled;
   final String searchEngine;
   final String searchRegion;
   final String searchSafeSearch;
   final int searchMaxResults;
   final int searchTimeoutSeconds;
+  final int knowledgeTopK;
+  final bool knowledgeUseEmbedding;
+  final String knowledgeLlmEnhanceMode;
+  final String? knowledgeEmbeddingModel;
+  final String? knowledgeEmbeddingProviderId;
+  final List<String> activeKnowledgeBaseIds;
   final bool enableSmartTopic;
   final String? topicGenerationModel;
   final String language;
@@ -152,11 +159,18 @@ class SettingsState {
     this.themeMode = 'system',
     this.isStreamEnabled = true,
     this.isSearchEnabled = false,
+    this.isKnowledgeEnabled = false,
     this.searchEngine = 'duckduckgo',
     this.searchRegion = 'us-en',
     this.searchSafeSearch = 'moderate',
     this.searchMaxResults = 5,
     this.searchTimeoutSeconds = 15,
+    this.knowledgeTopK = 5,
+    this.knowledgeUseEmbedding = false,
+    this.knowledgeLlmEnhanceMode = 'off',
+    this.knowledgeEmbeddingModel,
+    this.knowledgeEmbeddingProviderId,
+    this.activeKnowledgeBaseIds = const [],
     this.enableSmartTopic = true,
     this.topicGenerationModel,
     this.language = 'zh',
@@ -193,11 +207,18 @@ class SettingsState {
     String? themeMode,
     bool? isStreamEnabled,
     bool? isSearchEnabled,
+    bool? isKnowledgeEnabled,
     String? searchEngine,
     String? searchRegion,
     String? searchSafeSearch,
     int? searchMaxResults,
     int? searchTimeoutSeconds,
+    int? knowledgeTopK,
+    bool? knowledgeUseEmbedding,
+    String? knowledgeLlmEnhanceMode,
+    Object? knowledgeEmbeddingModel = _settingsSentinel,
+    Object? knowledgeEmbeddingProviderId = _settingsSentinel,
+    List<String>? activeKnowledgeBaseIds,
     bool? enableSmartTopic,
     String? topicGenerationModel,
     String? language,
@@ -227,6 +248,7 @@ class SettingsState {
       themeMode: themeMode ?? this.themeMode,
       isStreamEnabled: isStreamEnabled ?? this.isStreamEnabled,
       isSearchEnabled: isSearchEnabled ?? this.isSearchEnabled,
+      isKnowledgeEnabled: isKnowledgeEnabled ?? this.isKnowledgeEnabled,
       searchEngine: searchEngine ?? this.searchEngine,
       searchRegion: searchRegion ?? this.searchRegion,
       searchSafeSearch: searchSafeSearch ?? this.searchSafeSearch,
@@ -236,6 +258,22 @@ class SettingsState {
       searchTimeoutSeconds: searchTimeoutSeconds != null
           ? _clampInt(searchTimeoutSeconds, 5, 60)
           : this.searchTimeoutSeconds,
+      knowledgeTopK: knowledgeTopK != null
+          ? _clampInt(knowledgeTopK, 1, 12)
+          : this.knowledgeTopK,
+      knowledgeUseEmbedding:
+          knowledgeUseEmbedding ?? this.knowledgeUseEmbedding,
+      knowledgeLlmEnhanceMode:
+          knowledgeLlmEnhanceMode ?? this.knowledgeLlmEnhanceMode,
+      knowledgeEmbeddingModel: knowledgeEmbeddingModel == _settingsSentinel
+          ? this.knowledgeEmbeddingModel
+          : knowledgeEmbeddingModel as String?,
+      knowledgeEmbeddingProviderId:
+          knowledgeEmbeddingProviderId == _settingsSentinel
+              ? this.knowledgeEmbeddingProviderId
+              : knowledgeEmbeddingProviderId as String?,
+      activeKnowledgeBaseIds:
+          activeKnowledgeBaseIds ?? this.activeKnowledgeBaseIds,
       enableSmartTopic: enableSmartTopic ?? this.enableSmartTopic,
       topicGenerationModel: topicGenerationModel ?? this.topicGenerationModel,
       language: language ?? this.language,
@@ -303,11 +341,18 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     String themeMode = 'system',
     bool isStreamEnabled = true,
     bool isSearchEnabled = false,
+    bool isKnowledgeEnabled = false,
     String searchEngine = 'duckduckgo',
     String searchRegion = 'us-en',
     String searchSafeSearch = 'moderate',
     int searchMaxResults = 5,
     int searchTimeoutSeconds = 15,
+    int knowledgeTopK = 5,
+    bool knowledgeUseEmbedding = false,
+    String knowledgeLlmEnhanceMode = 'off',
+    String? knowledgeEmbeddingModel,
+    String? knowledgeEmbeddingProviderId,
+    List<String> activeKnowledgeBaseIds = const [],
     bool enableSmartTopic = true,
     String? topicGenerationModel,
     String language = 'zh',
@@ -333,11 +378,18 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
           themeMode: themeMode,
           isStreamEnabled: isStreamEnabled,
           isSearchEnabled: isSearchEnabled,
+          isKnowledgeEnabled: isKnowledgeEnabled,
           searchEngine: _normalizeSearchEngine(searchEngine),
           searchRegion: _normalizeSearchRegion(searchRegion),
           searchSafeSearch: _normalizeSafeSearch(searchSafeSearch),
           searchMaxResults: _clampInt(searchMaxResults, 1, 50),
           searchTimeoutSeconds: _clampInt(searchTimeoutSeconds, 5, 60),
+          knowledgeTopK: _clampInt(knowledgeTopK, 1, 12),
+          knowledgeUseEmbedding: knowledgeUseEmbedding,
+          knowledgeLlmEnhanceMode: knowledgeLlmEnhanceMode,
+          knowledgeEmbeddingModel: knowledgeEmbeddingModel,
+          knowledgeEmbeddingProviderId: knowledgeEmbeddingProviderId,
+          activeKnowledgeBaseIds: activeKnowledgeBaseIds,
           enableSmartTopic: enableSmartTopic,
           topicGenerationModel: topicGenerationModel,
           language: language,
@@ -439,14 +491,22 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
       themeMode: appSettings?.themeMode ?? 'system',
       isStreamEnabled: appSettings?.isStreamEnabled ?? true,
       isSearchEnabled: appSettings?.isSearchEnabled ?? false,
-      searchEngine: _normalizeSearchEngine(
-          appSettings?.searchEngine ?? 'duckduckgo'),
-      searchRegion: _normalizeSearchRegion(appSettings?.searchRegion ?? 'us-en'),
+      isKnowledgeEnabled: appSettings?.isKnowledgeEnabled ?? false,
+      searchEngine:
+          _normalizeSearchEngine(appSettings?.searchEngine ?? 'duckduckgo'),
+      searchRegion:
+          _normalizeSearchRegion(appSettings?.searchRegion ?? 'us-en'),
       searchSafeSearch:
           _normalizeSafeSearch(appSettings?.searchSafeSearch ?? 'moderate'),
       searchMaxResults: _clampInt(appSettings?.searchMaxResults ?? 5, 1, 50),
       searchTimeoutSeconds:
           _clampInt(appSettings?.searchTimeoutSeconds ?? 15, 5, 60),
+      knowledgeTopK: _clampInt(appSettings?.knowledgeTopK ?? 5, 1, 12),
+      knowledgeUseEmbedding: appSettings?.knowledgeUseEmbedding ?? false,
+      knowledgeLlmEnhanceMode: appSettings?.knowledgeLlmEnhanceMode ?? 'off',
+      knowledgeEmbeddingModel: appSettings?.knowledgeEmbeddingModel,
+      knowledgeEmbeddingProviderId: appSettings?.knowledgeEmbeddingProviderId,
+      activeKnowledgeBaseIds: appSettings?.activeKnowledgeBaseIds ?? const [],
       enableSmartTopic: appSettings?.enableSmartTopic ?? true,
       topicGenerationModel: appSettings?.topicGenerationModel,
       language: appSettings?.language ?? 'zh',
@@ -854,6 +914,77 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
 
   Future<void> toggleSearchEnabled() async {
     await setSearchEnabled(!state.isSearchEnabled);
+  }
+
+  Future<void> setKnowledgeEnabled(bool enabled) async {
+    if (state.isKnowledgeEnabled == enabled) return;
+    state = state.copyWith(isKnowledgeEnabled: enabled);
+    await _storage.saveAppSettings(
+      activeProviderId: state.activeProviderId,
+      isKnowledgeEnabled: enabled,
+    );
+  }
+
+  Future<void> setKnowledgeTopK(int topK) async {
+    final clamped = topK.clamp(1, 12);
+    state = state.copyWith(knowledgeTopK: clamped);
+    await _storage.saveAppSettings(
+      activeProviderId: state.activeProviderId,
+      knowledgeTopK: clamped,
+    );
+  }
+
+  Future<void> setKnowledgeUseEmbedding(bool enabled) async {
+    state = state.copyWith(knowledgeUseEmbedding: enabled);
+    await _storage.saveAppSettings(
+      activeProviderId: state.activeProviderId,
+      knowledgeUseEmbedding: enabled,
+    );
+  }
+
+  Future<void> setKnowledgeLlmEnhanceMode(String mode) async {
+    final normalized = mode.trim().toLowerCase();
+    final allowed = {'off', 'rewrite'};
+    final selected = allowed.contains(normalized) ? normalized : 'off';
+    state = state.copyWith(knowledgeLlmEnhanceMode: selected);
+    await _storage.saveAppSettings(
+      activeProviderId: state.activeProviderId,
+      knowledgeLlmEnhanceMode: selected,
+    );
+  }
+
+  Future<void> setKnowledgeEmbeddingModel(String? model) async {
+    final normalized = (model ?? '').trim();
+    final next = normalized.isEmpty ? null : normalized;
+    state = state.copyWith(knowledgeEmbeddingModel: next);
+    await _storage.saveAppSettings(
+      activeProviderId: state.activeProviderId,
+      knowledgeEmbeddingModel: next,
+    );
+  }
+
+  Future<void> setKnowledgeEmbeddingProviderId(String? providerId) async {
+    final normalized = (providerId ?? '').trim();
+    final next = normalized.isEmpty ? null : normalized;
+    state = state.copyWith(knowledgeEmbeddingProviderId: next);
+    await _storage.saveAppSettings(
+      activeProviderId: state.activeProviderId,
+      knowledgeEmbeddingProviderId: next,
+    );
+  }
+
+  Future<void> setActiveKnowledgeBaseIds(List<String> baseIds) async {
+    final deduped = baseIds
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .toSet()
+        .toList()
+      ..sort();
+    state = state.copyWith(activeKnowledgeBaseIds: deduped);
+    await _storage.saveAppSettings(
+      activeProviderId: state.activeProviderId,
+      activeKnowledgeBaseIds: deduped,
+    );
   }
 
   Future<void> setSearchEngine(String engine) async {

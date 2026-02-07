@@ -19,6 +19,7 @@ import 'package:aurora/shared/services/openai_llm_service.dart';
 import 'package:aurora/shared/services/llm_service.dart';
 import 'package:aurora/shared/services/tool_manager.dart';
 import 'package:aurora/shared/services/worker_service.dart';
+import 'package:aurora/features/knowledge/presentation/knowledge_provider.dart';
 import 'package:fluent_ui/fluent_ui.dart'
     hide Colors, Padding, StateSetter, ListBody;
 import 'package:uuid/uuid.dart';
@@ -425,6 +426,108 @@ To invoke a skill, output a skill tag in this exact format:
 
         // Tools are now primarily tag-based for Search and Skills Routing.
         // Physical tools are only used if explicitly provided or by sub-agents.
+      }
+
+      // Inject local knowledge base context before generation.
+      if (settings.isKnowledgeEnabled) {
+        try {
+          // Bind retrieval scope to the selected assistant first.
+          // Global active bases are only used when no assistant is selected.
+          final selectedKnowledgeBaseIds = assistant != null
+              ? assistant.knowledgeBaseIds
+              : settings.activeKnowledgeBaseIds;
+
+          final fallbackQuery = messagesForApi.reversed
+              .where((m) => m.role == 'user')
+              .map((m) => m.content)
+              .firstOrNull;
+          final retrievalQuery =
+              (apiContent ?? text ?? fallbackQuery ?? '').trim();
+
+          if (selectedKnowledgeBaseIds.isNotEmpty &&
+              retrievalQuery.isNotEmpty) {
+            final enhancementMode =
+                settings.knowledgeLlmEnhanceMode.trim().toLowerCase();
+            var effectiveRetrievalQuery = retrievalQuery;
+            if (enhancementMode == 'rewrite') {
+              try {
+                final rewriteResponse = await llmService.getResponse(
+                  [
+                    Message(
+                      id: const Uuid().v4(),
+                      role: 'system',
+                      content: '''
+You rewrite user questions for knowledge retrieval.
+Rules:
+1. Keep the original language.
+2. Output a compact query with core entities, constraints, and keywords.
+3. Output plain text only.''',
+                      timestamp: DateTime.now(),
+                      isUser: false,
+                    ),
+                    Message.user(retrievalQuery),
+                  ],
+                  model: settings.executionModel ?? currentModel,
+                  providerId:
+                      settings.executionProviderId ?? settings.activeProviderId,
+                  cancelToken: _currentCancelToken,
+                );
+                final rewritten = rewriteResponse.content?.trim() ?? '';
+                if (rewritten.isNotEmpty) {
+                  effectiveRetrievalQuery = rewritten;
+                }
+              } catch (_) {
+                // Fall back to original user query if rewrite fails.
+              }
+            }
+
+            final knowledgeStorage = _ref.read(knowledgeStorageProvider);
+
+            ProviderConfig? embeddingProvider;
+            if (settings.knowledgeUseEmbedding) {
+              final embeddingProviderId =
+                  settings.knowledgeEmbeddingProviderId ??
+                      settings.activeProviderId;
+              embeddingProvider = settings.providers
+                  .where((p) => p.id == embeddingProviderId)
+                  .firstOrNull;
+            }
+
+            final kbResult = await knowledgeStorage.retrieveContext(
+              query: effectiveRetrievalQuery,
+              baseIds: selectedKnowledgeBaseIds,
+              topK: settings.knowledgeTopK,
+              useEmbedding: settings.knowledgeUseEmbedding,
+              embeddingModel: settings.knowledgeEmbeddingModel,
+              embeddingProvider: embeddingProvider,
+            );
+
+            if (kbResult.hasContext) {
+              final contextPrompt = kbResult.toPromptContext();
+              final sysMsg =
+                  messagesForApi.where((m) => m.role == 'system').firstOrNull;
+              if (sysMsg != null) {
+                final idx = messagesForApi.indexOf(sysMsg);
+                final old = sysMsg.content;
+                messagesForApi[idx] =
+                    sysMsg.copyWith(content: '$old\n\n$contextPrompt');
+              } else {
+                messagesForApi.insert(
+                  0,
+                  Message(
+                    id: const Uuid().v4(),
+                    role: 'system',
+                    content: contextPrompt,
+                    timestamp: DateTime.now(),
+                    isUser: false,
+                  ),
+                );
+              }
+            }
+          }
+        } catch (e) {
+          debugPrint('Knowledge retrieval skipped due to error: $e');
+        }
       }
       bool continueGeneration = true;
       int turns = 0;

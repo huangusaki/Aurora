@@ -12,6 +12,7 @@ import 'usage_stats_entity.dart';
 import '../../chat/data/message_entity.dart';
 import '../../chat/data/session_entity.dart';
 import '../../chat/data/topic_entity.dart';
+import '../../knowledge/data/knowledge_entities.dart';
 
 import '../../assistant/data/assistant_entity.dart';
 
@@ -37,6 +38,9 @@ class SettingsStorage {
         TopicEntitySchema,
         ChatPresetEntitySchema,
         AssistantEntitySchema,
+        KnowledgeBaseEntitySchema,
+        KnowledgeDocumentEntitySchema,
+        KnowledgeChunkEntitySchema,
       ],
       directory: supportDir.path,
     );
@@ -186,11 +190,18 @@ class SettingsStorage {
     String? themeMode,
     bool? isStreamEnabled,
     bool? isSearchEnabled,
+    bool? isKnowledgeEnabled,
     String? searchEngine,
     String? searchRegion,
     String? searchSafeSearch,
     int? searchMaxResults,
     int? searchTimeoutSeconds,
+    int? knowledgeTopK,
+    bool? knowledgeUseEmbedding,
+    String? knowledgeLlmEnhanceMode,
+    String? knowledgeEmbeddingModel,
+    String? knowledgeEmbeddingProviderId,
+    List<String>? activeKnowledgeBaseIds,
     bool? enableSmartTopic,
     String? topicGenerationModel,
     String? lastSessionId,
@@ -220,6 +231,8 @@ class SettingsStorage {
       ..themeMode = themeMode ?? existing?.themeMode ?? 'system'
       ..isStreamEnabled = isStreamEnabled ?? existing?.isStreamEnabled ?? true
       ..isSearchEnabled = isSearchEnabled ?? existing?.isSearchEnabled ?? false
+      ..isKnowledgeEnabled =
+          isKnowledgeEnabled ?? existing?.isKnowledgeEnabled ?? false
       ..searchEngine = searchEngine ?? existing?.searchEngine ?? 'duckduckgo'
       ..searchRegion = searchRegion ?? existing?.searchRegion ?? 'us-en'
       ..searchSafeSearch =
@@ -227,6 +240,17 @@ class SettingsStorage {
       ..searchMaxResults = searchMaxResults ?? existing?.searchMaxResults ?? 5
       ..searchTimeoutSeconds =
           searchTimeoutSeconds ?? existing?.searchTimeoutSeconds ?? 15
+      ..knowledgeTopK = knowledgeTopK ?? existing?.knowledgeTopK ?? 5
+      ..knowledgeUseEmbedding =
+          knowledgeUseEmbedding ?? existing?.knowledgeUseEmbedding ?? false
+      ..knowledgeLlmEnhanceMode =
+          knowledgeLlmEnhanceMode ?? existing?.knowledgeLlmEnhanceMode ?? 'off'
+      ..knowledgeEmbeddingModel =
+          knowledgeEmbeddingModel ?? existing?.knowledgeEmbeddingModel
+      ..knowledgeEmbeddingProviderId =
+          knowledgeEmbeddingProviderId ?? existing?.knowledgeEmbeddingProviderId
+      ..activeKnowledgeBaseIds =
+          activeKnowledgeBaseIds ?? existing?.activeKnowledgeBaseIds ?? []
       ..enableSmartTopic =
           enableSmartTopic ?? existing?.enableSmartTopic ?? true
       ..topicGenerationModel =
@@ -594,11 +618,19 @@ class SettingsStorage {
       ..themeMode = source.themeMode
       ..isStreamEnabled = source.isStreamEnabled
       ..isSearchEnabled = source.isSearchEnabled
+      ..isKnowledgeEnabled = source.isKnowledgeEnabled
       ..searchEngine = source.searchEngine
       ..searchRegion = source.searchRegion
       ..searchSafeSearch = source.searchSafeSearch
       ..searchMaxResults = source.searchMaxResults
       ..searchTimeoutSeconds = source.searchTimeoutSeconds
+      ..knowledgeTopK = source.knowledgeTopK
+      ..knowledgeUseEmbedding = source.knowledgeUseEmbedding
+      ..knowledgeLlmEnhanceMode = source.knowledgeLlmEnhanceMode
+      ..knowledgeEmbeddingModel = source.knowledgeEmbeddingModel
+      ..knowledgeEmbeddingProviderId = source.knowledgeEmbeddingProviderId
+      ..activeKnowledgeBaseIds =
+          List<String>.from(source.activeKnowledgeBaseIds)
       ..enableSmartTopic = source.enableSmartTopic
       ..topicGenerationModel = source.topicGenerationModel
       ..lastSessionId = source.lastSessionId

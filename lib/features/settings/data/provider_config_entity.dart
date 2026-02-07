@@ -38,11 +38,18 @@ class AppSettingsEntity {
   String themeMode = 'system';
   bool isStreamEnabled = true;
   bool isSearchEnabled = false;
+  bool isKnowledgeEnabled = false;
   String searchEngine = 'duckduckgo';
   String searchRegion = 'us-en';
   String searchSafeSearch = 'moderate';
   int searchMaxResults = 5;
   int searchTimeoutSeconds = 15;
+  int knowledgeTopK = 5;
+  bool knowledgeUseEmbedding = false;
+  String knowledgeLlmEnhanceMode = 'off';
+  String? knowledgeEmbeddingModel;
+  String? knowledgeEmbeddingProviderId;
+  List<String> activeKnowledgeBaseIds = [];
   bool enableSmartTopic = true;
   String? topicGenerationModel;
   String? lastSessionId;

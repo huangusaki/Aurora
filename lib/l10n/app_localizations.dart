@@ -1910,6 +1910,204 @@ abstract class AppLocalizations {
   /// **'超时（秒）'**
   String get searchTimeoutSeconds;
 
+  /// No description provided for @knowledgeBase.
+  ///
+  /// In zh, this message translates to:
+  /// **'知识库'**
+  String get knowledgeBase;
+
+  /// No description provided for @knowledgeBases.
+  ///
+  /// In zh, this message translates to:
+  /// **'知识库列表'**
+  String get knowledgeBases;
+
+  /// No description provided for @general.
+  ///
+  /// In zh, this message translates to:
+  /// **'通用'**
+  String get general;
+
+  /// No description provided for @enableKnowledgeRetrieval.
+  ///
+  /// In zh, this message translates to:
+  /// **'启用知识库检索'**
+  String get enableKnowledgeRetrieval;
+
+  /// No description provided for @knowledgeTopKChunks.
+  ///
+  /// In zh, this message translates to:
+  /// **'Top K 片段数'**
+  String get knowledgeTopKChunks;
+
+  /// No description provided for @useEmbeddingRerank.
+  ///
+  /// In zh, this message translates to:
+  /// **'启用 Embedding 重排'**
+  String get useEmbeddingRerank;
+
+  /// No description provided for @knowledgeLlmEnhancementMode.
+  ///
+  /// In zh, this message translates to:
+  /// **'LLM 增强模式（可选）'**
+  String get knowledgeLlmEnhancementMode;
+
+  /// No description provided for @knowledgeModeOff.
+  ///
+  /// In zh, this message translates to:
+  /// **'关闭'**
+  String get knowledgeModeOff;
+
+  /// No description provided for @knowledgeModeRewrite.
+  ///
+  /// In zh, this message translates to:
+  /// **'查询改写'**
+  String get knowledgeModeRewrite;
+
+  /// No description provided for @embeddingProvider.
+  ///
+  /// In zh, this message translates to:
+  /// **'Embedding 提供商'**
+  String get embeddingProvider;
+
+  /// No description provided for @embeddingModel.
+  ///
+  /// In zh, this message translates to:
+  /// **'Embedding 模型'**
+  String get embeddingModel;
+
+  /// No description provided for @noEmbeddingModelsInProvider.
+  ///
+  /// In zh, this message translates to:
+  /// **'该提供商下没有可用的 embedding 模型'**
+  String get noEmbeddingModelsInProvider;
+
+  /// No description provided for @embeddingModelAutoDetectHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'仅展示名称中包含 \"embedding\" 的模型。'**
+  String get embeddingModelAutoDetectHint;
+
+  /// No description provided for @createBase.
+  ///
+  /// In zh, this message translates to:
+  /// **'新建知识库'**
+  String get createBase;
+
+  /// No description provided for @importFiles.
+  ///
+  /// In zh, this message translates to:
+  /// **'导入文件'**
+  String get importFiles;
+
+  /// No description provided for @deleteBase.
+  ///
+  /// In zh, this message translates to:
+  /// **'删除知识库'**
+  String get deleteBase;
+
+  /// No description provided for @noKnowledgeBaseYetCreateOne.
+  ///
+  /// In zh, this message translates to:
+  /// **'暂无知识库，请先新建。'**
+  String get noKnowledgeBaseYetCreateOne;
+
+  /// No description provided for @knowledgeActive.
+  ///
+  /// In zh, this message translates to:
+  /// **'启用'**
+  String get knowledgeActive;
+
+  /// No description provided for @knowledgeDocsAndChunks.
+  ///
+  /// In zh, this message translates to:
+  /// **'文档: {docs}  片段: {chunks}'**
+  String knowledgeDocsAndChunks(int docs, int chunks);
+
+  /// No description provided for @createKnowledgeBase.
+  ///
+  /// In zh, this message translates to:
+  /// **'新建知识库'**
+  String get createKnowledgeBase;
+
+  /// No description provided for @knowledgeBaseName.
+  ///
+  /// In zh, this message translates to:
+  /// **'知识库名称'**
+  String get knowledgeBaseName;
+
+  /// No description provided for @descriptionOptional.
+  ///
+  /// In zh, this message translates to:
+  /// **'描述（可选）'**
+  String get descriptionOptional;
+
+  /// No description provided for @deleteKnowledgeBase.
+  ///
+  /// In zh, this message translates to:
+  /// **'删除知识库'**
+  String get deleteKnowledgeBase;
+
+  /// No description provided for @deleteKnowledgeBaseConfirm.
+  ///
+  /// In zh, this message translates to:
+  /// **'确定删除该知识库及其所有索引片段吗？此操作不可撤销。'**
+  String get deleteKnowledgeBaseConfirm;
+
+  /// No description provided for @knowledgeFiles.
+  ///
+  /// In zh, this message translates to:
+  /// **'知识库文件'**
+  String get knowledgeFiles;
+
+  /// No description provided for @importFinished.
+  ///
+  /// In zh, this message translates to:
+  /// **'导入完成'**
+  String get importFinished;
+
+  /// No description provided for @knowledgeImportSummary.
+  ///
+  /// In zh, this message translates to:
+  /// **'成功: {success}\n失败: {failed}'**
+  String knowledgeImportSummary(int success, int failed);
+
+  /// No description provided for @knowledgeEnabledWithActiveCount.
+  ///
+  /// In zh, this message translates to:
+  /// **'已启用 • {count} 个激活'**
+  String knowledgeEnabledWithActiveCount(int count);
+
+  /// No description provided for @knowledgeGlobalFallbackHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'全局知识库仅在未选择助理时生效。'**
+  String get knowledgeGlobalFallbackHint;
+
+  /// No description provided for @knowledgeGlobalSelectionLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'全局模式使用'**
+  String get knowledgeGlobalSelectionLabel;
+
+  /// No description provided for @knowledgeGlobalSelectionHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'仅在未选择助理时生效。'**
+  String get knowledgeGlobalSelectionHint;
+
+  /// No description provided for @knowledgeBaseEnabledLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'知识库可用'**
+  String get knowledgeBaseEnabledLabel;
+
+  /// No description provided for @knowledgeBaseEnabledHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'关闭后该知识库将不参与任何检索。'**
+  String get knowledgeBaseEnabledHint;
+
   /// No description provided for @clearContext.
   ///
   /// In zh, this message translates to:
@@ -3037,6 +3235,12 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'长期记忆'**
   String get assistantLongTermMemory;
+
+  /// No description provided for @assistantKnowledgeBindingHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'选择此助理时，仅使用这里勾选的知识库。'**
+  String get assistantKnowledgeBindingHint;
 
   /// No description provided for @assistantAvailableSkillsTitle.
   ///

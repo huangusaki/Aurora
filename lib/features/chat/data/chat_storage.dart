@@ -27,6 +27,37 @@ class ChatStorage {
   final SettingsStorage _settingsStorage;
   final Map<String, List<Message>> _messagesCache = {};
   ChatStorage(this._settingsStorage) : _isar = _settingsStorage.isar;
+
+  Future<List<String>> _findUnreferencedAttachments(
+    Iterable<String> candidatePaths, {
+    Set<int> excludedMessageIds = const {},
+    Set<String> excludedSessionIds = const {},
+  }) async {
+    final targets = candidatePaths
+        .map((path) => path.trim())
+        .where((path) => path.isNotEmpty)
+        .toSet();
+    if (targets.isEmpty) return const [];
+
+    final referenced = <String>{};
+    final messages = await _isar.messageEntitys.where().findAll();
+    for (final msg in messages) {
+      if (excludedMessageIds.contains(msg.id)) continue;
+      final sid = msg.sessionId;
+      if (sid != null && excludedSessionIds.contains(sid)) continue;
+      if (msg.attachments.isEmpty) continue;
+      for (final path in msg.attachments) {
+        if (!targets.contains(path)) continue;
+        referenced.add(path);
+        if (referenced.length == targets.length) {
+          return const [];
+        }
+      }
+    }
+
+    return targets.where((path) => !referenced.contains(path)).toList();
+  }
+
   Future<void> preloadAllSessions() async {
     final sw = Stopwatch()..start();
     final sessions = await loadSessions();
@@ -220,9 +251,6 @@ class ChatStorage {
     if (intId == null) return;
     final entity = await _isar.messageEntitys.get(intId);
     if (entity != null) {
-      if (entity.attachments.isNotEmpty) {
-        await _deleteAttachmentFiles(entity.attachments);
-      }
       final targetSessionId = sessionId ?? entity.sessionId;
       if (targetSessionId != null &&
           _messagesCache.containsKey(targetSessionId)) {
@@ -265,26 +293,31 @@ class ChatStorage {
         await _isar.sessionEntitys.put(session);
       }
     });
+
+    if (entity != null && entity.attachments.isNotEmpty) {
+      final deletable = await _findUnreferencedAttachments(
+        entity.attachments,
+        excludedMessageIds: {entity.id},
+      );
+      if (deletable.isNotEmpty) {
+        await _deleteAttachmentFiles(deletable);
+      }
+    }
   }
 
   Future<void> updateMessage(Message message) async {
     final intId = int.tryParse(message.id);
     if (intId == null) return;
 
+    var removedAttachments = <String>[];
     // Get existing message to compare attachments before transaction
     final existing = await _isar.messageEntitys.get(intId);
     if (existing != null) {
-      // Find attachments that were removed
       final oldAttachments = existing.attachments;
       final newAttachments = message.attachments;
-      final removedAttachments = oldAttachments
+      removedAttachments = oldAttachments
           .where((path) => !newAttachments.contains(path))
           .toList();
-
-      // Delete removed attachment files
-      if (removedAttachments.isNotEmpty) {
-        await _deleteAttachmentFiles(removedAttachments);
-      }
     }
 
     await _isar.writeTxn(() async {
@@ -365,9 +398,28 @@ class ChatStorage {
         }
       }
     });
+
+    if (removedAttachments.isNotEmpty) {
+      final deletable = await _findUnreferencedAttachments(
+        removedAttachments,
+        excludedMessageIds: {intId},
+      );
+      if (deletable.isNotEmpty) {
+        await _deleteAttachmentFiles(deletable);
+      }
+    }
   }
 
   Future<void> clearSessionMessages(String sessionId) async {
+    final messages = await _isar.messageEntitys
+        .filter()
+        .sessionIdEqualTo(sessionId)
+        .findAll();
+    final candidateAttachments = <String>[];
+    for (final message in messages) {
+      candidateAttachments.addAll(message.attachments);
+    }
+
     await _isar.writeTxn(() async {
       await _isar.messageEntitys
           .filter()
@@ -383,6 +435,14 @@ class ChatStorage {
       }
     });
     invalidateCache(sessionId);
+
+    if (candidateAttachments.isNotEmpty) {
+      final deletable =
+          await _findUnreferencedAttachments(candidateAttachments);
+      if (deletable.isNotEmpty) {
+        await _deleteAttachmentFiles(deletable);
+      }
+    }
   }
 
   Future<String> createSession({
@@ -495,9 +555,6 @@ class ChatStorage {
         allAttachments.addAll(msg.attachments);
       }
     }
-    if (allAttachments.isNotEmpty) {
-      await _deleteAttachmentFiles(allAttachments);
-    }
 
     await _isar.writeTxn(() async {
       for (final id in sessionIds) {
@@ -509,6 +566,14 @@ class ChatStorage {
     for (final id in sessionIds) {
       invalidateCache(id);
     }
+
+    if (allAttachments.isNotEmpty) {
+      final deletable = await _findUnreferencedAttachments(allAttachments);
+      if (deletable.isNotEmpty) {
+        await _deleteAttachmentFiles(deletable);
+      }
+    }
+
     return sessionIds;
   }
 
