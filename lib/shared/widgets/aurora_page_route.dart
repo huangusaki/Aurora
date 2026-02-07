@@ -47,6 +47,25 @@ class AuroraMobilePageRoute<T> extends PageRouteBuilder<T> {
         );
 }
 
+/// A shared fade route for full-screen viewers and special pages.
+/// Keeps transition behavior centralized instead of scattering
+/// ad-hoc PageRouteBuilder implementations across features.
+class AuroraFadePageRoute<T> extends PageRouteBuilder<T> {
+  AuroraFadePageRoute({
+    required WidgetBuilder builder,
+    super.settings,
+    super.opaque = true,
+    super.transitionDuration = const Duration(milliseconds: 220),
+    super.reverseTransitionDuration = const Duration(milliseconds: 180),
+  }) : super(
+          pageBuilder: (context, animation, secondaryAnimation) =>
+              builder(context),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+        );
+}
+
 class _AuroraRouteCover extends StatelessWidget {
   const _AuroraRouteCover();
 

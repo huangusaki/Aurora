@@ -6,6 +6,7 @@ import '../domain/assistant.dart';
 import 'widgets/assistant_avatar.dart';
 import 'mobile_assistant_detail_page.dart';
 import '../../settings/presentation/widgets/mobile_settings_widgets.dart';
+import 'package:aurora/shared/widgets/aurora_page_route.dart';
 
 class MobileAssistantPage extends ConsumerWidget {
   final VoidCallback? onBack;
@@ -97,16 +98,9 @@ class MobileAssistantPage extends ConsumerWidget {
                     onTap: () {
                       Navigator.push(
                         context,
-                        PageRouteBuilder(
-                          opaque: false,
-                          pageBuilder: (context, animation,
-                                  secondaryAnimation) =>
+                        AuroraMobilePageRoute(
+                          builder: (context) =>
                               MobileAssistantDetailPage(assistant: assistant),
-                          transitionsBuilder:
-                              (context, animation, secondaryAnimation, child) {
-                            return FadeTransition(
-                                opacity: animation, child: child);
-                          },
                         ),
                       );
                     },
@@ -126,14 +120,9 @@ class MobileAssistantPage extends ConsumerWidget {
           if (context.mounted) {
             Navigator.push(
               context,
-              PageRouteBuilder(
-                opaque: false,
-                pageBuilder: (context, animation, secondaryAnimation) =>
+              AuroraMobilePageRoute(
+                builder: (context) =>
                     MobileAssistantDetailPage(assistant: newAssistant),
-                transitionsBuilder:
-                    (context, animation, secondaryAnimation, child) {
-                  return FadeTransition(opacity: animation, child: child);
-                },
               ),
             );
           }

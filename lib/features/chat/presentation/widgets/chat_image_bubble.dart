@@ -6,6 +6,7 @@ import 'package:flutter/material.dart' as material
     show CircularProgressIndicator;
 import 'package:super_clipboard/super_clipboard.dart';
 import 'package:flutter/foundation.dart';
+import 'package:aurora/shared/widgets/aurora_page_route.dart';
 import 'windows_image_viewer.dart';
 import 'mobile_image_viewer.dart';
 
@@ -200,32 +201,21 @@ class _ChatImageBubbleState extends State<ChatImageBubble> {
     if (!context.mounted) return;
     if (Platform.isWindows) {
       Navigator.of(context).push(
-        PageRouteBuilder(
+        AuroraFadePageRoute(
           opaque: false,
-          pageBuilder: (context, animation, secondaryAnimation) {
-            return WindowsImageViewer(
-              imageBytes: bytes!,
-              onClose: () => Navigator.pop(context),
-            );
-          },
-          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            return FadeTransition(opacity: animation, child: child);
-          },
+          builder: (context) => WindowsImageViewer(
+            imageBytes: bytes!,
+            onClose: () => Navigator.pop(context),
+          ),
         ),
       );
     } else {
       Navigator.of(context).push(
-        PageRouteBuilder(
-          opaque: true,
-          pageBuilder: (context, animation, secondaryAnimation) {
-            return MobileImageViewer(
-              imageBytes: bytes!,
-              onClose: () => Navigator.pop(context),
-            );
-          },
-          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            return FadeTransition(opacity: animation, child: child);
-          },
+        AuroraFadePageRoute(
+          builder: (context) => MobileImageViewer(
+            imageBytes: bytes!,
+            onClose: () => Navigator.pop(context),
+          ),
         ),
       );
     }

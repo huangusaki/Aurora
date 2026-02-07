@@ -191,6 +191,9 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
             ),
           Scaffold(
             key: _scaffoldKey,
+            // Keep the underlying page stable when keyboard is opened from drawer fields.
+            // Inner pages use their own Scaffold and still handle keyboard insets normally.
+            resizeToAvoidBottomInset: false,
             onDrawerChanged: (isOpened) {
               if (_isDrawerOpen != isOpened) {
                 setState(() => _isDrawerOpen = isOpened);
@@ -216,37 +219,59 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
                 backgroundColor:
                     fluent.FluentTheme.of(context).scaffoldBackgroundColor,
               ),
-              child: CachedPageStack(
-                selectedKey: _currentViewKey,
-                cacheSize: 10,
-                itemBuilder: (context, key) {
-                  if (key == keySettings) {
-                    return MobileSettingsPage(onBack: _navigateBackToSession);
-                  } else if (key == keyAppSettings) {
-                    return MobileAppSettingsPage(
-                        onBack: _navigateBackToSession);
-                  } else if (key == keyTranslation) {
-                    return MobileTranslationPage(
-                        onBack: _navigateBackToSession);
-                  } else if (key == keyUser) {
-                    return MobileUserPage(onBack: _navigateBackToSession);
-                  } else if (key == keyStudio) {
-                    return MobileStudioPage(onBack: _navigateBackToSession);
-                  } else if (key == keyBackup) {
-                    return MobileSyncSettingsPage(
-                        onBack: _navigateBackToSession);
-                  } else if (key == keyAssistant) {
-                    return MobileAssistantPage(onBack: _navigateBackToSession);
-                  } else {
-                    return _buildSessionPage(
-                        context,
-                        key,
-                        sessionTitle,
-                        settingsState,
-                        sessionsState,
-                        selectedSessionId,
-                        isDark);
-                  }
+              child: Builder(
+                builder: (context) {
+                  final mediaQuery = MediaQuery.of(context);
+                  final viewInsets = mediaQuery.viewInsets;
+                  final frozenViewInsets = _isDrawerOpen
+                      ? EdgeInsets.fromLTRB(
+                          viewInsets.left,
+                          viewInsets.top,
+                          viewInsets.right,
+                          0,
+                        )
+                      : viewInsets;
+                  return MediaQuery(
+                    data: mediaQuery.copyWith(viewInsets: frozenViewInsets),
+                    child: CachedPageStack(
+                      selectedKey: _currentViewKey,
+                      cacheSize: 10,
+                      itemBuilder: (context, key) {
+                        if (key == keySettings) {
+                          return MobileSettingsPage(
+                              onBack: _navigateBackToSession);
+                        } else if (key == keyAppSettings) {
+                          return MobileAppSettingsPage(
+                              onBack: _navigateBackToSession);
+                        } else if (key == keyTranslation) {
+                          return MobileTranslationPage(
+                              onBack: _navigateBackToSession);
+                        } else if (key == keyUser) {
+                          return MobileUserPage(onBack: _navigateBackToSession);
+                        } else if (key == keyStudio) {
+                          return MobileStudioPage(
+                              onBack: _navigateBackToSession);
+                        } else if (key == keyBackup) {
+                          return MobileSyncSettingsPage(
+                              onBack: _navigateBackToSession);
+                        } else if (key == keyAssistant) {
+                          return MobileAssistantPage(
+                              onBack: _navigateBackToSession);
+                        } else {
+                          return _buildSessionPage(
+                            context,
+                            key,
+                            sessionTitle,
+                            settingsState,
+                            sessionsState,
+                            selectedSessionId,
+                            isDark,
+                            freezeKeyboardInsets: _isDrawerOpen,
+                          );
+                        }
+                      },
+                    ),
+                  );
                 },
               ),
             ),
@@ -257,14 +282,17 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
   }
 
   Widget _buildSessionPage(
-      BuildContext context,
-      String sessionId,
-      String sessionTitle,
-      SettingsState settingsState,
-      SessionsState sessionsState,
-      String? selectedSessionId,
-      bool isDark) {
+    BuildContext context,
+    String sessionId,
+    String sessionTitle,
+    SettingsState settingsState,
+    SessionsState sessionsState,
+    String? selectedSessionId,
+    bool isDark, {
+    bool freezeKeyboardInsets = false,
+  }) {
     return Scaffold(
+      resizeToAvoidBottomInset: !freezeKeyboardInsets,
       extendBodyBehindAppBar: !isDark,
       backgroundColor: Colors.transparent,
       appBar: AppBar(

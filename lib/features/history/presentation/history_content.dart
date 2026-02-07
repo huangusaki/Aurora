@@ -26,6 +26,64 @@ class _SessionTreeItem {
   });
 }
 
+const double _desktopTreeIndent = 12;
+const double _mobileTreeIndent = 8;
+const double _treeToggleHitSize = 30;
+
+Color? _resolveSessionStatusColor(ChatState? sessionState) {
+  if (sessionState == null) {
+    return null;
+  } else if (sessionState.error != null) {
+    return Colors.red;
+  } else if (sessionState.isLoading) {
+    return Colors.orange;
+  } else if (sessionState.hasUnreadResponse) {
+    return Colors.green;
+  }
+  return null;
+}
+
+Widget _buildTreeToggleControl({
+  required bool hasChildren,
+  required bool isCollapsed,
+  required VoidCallback? onTap,
+  required bool showLeafIndicator,
+  required Color leafColor,
+  bool reserveSpaceWhenHidden = false,
+}) {
+  if (hasChildren) {
+    return SizedBox(
+      width: _treeToggleHitSize,
+      height: _treeToggleHitSize,
+      child: Material(
+        color: Colors.transparent,
+        child: InkResponse(
+          onTap: onTap,
+          radius: 18,
+          child: Center(
+            child: Icon(
+              isCollapsed ? AuroraIcons.chevronRight : AuroraIcons.chevronDown,
+              size: 14,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+  if (!showLeafIndicator) {
+    return reserveSpaceWhenHidden
+        ? const SizedBox(width: _treeToggleHitSize, height: _treeToggleHitSize)
+        : const SizedBox.shrink();
+  }
+  return SizedBox(
+    width: _treeToggleHitSize,
+    height: _treeToggleHitSize,
+    child: Center(
+      child: Icon(AuroraIcons.branch, size: 12, color: leafColor),
+    ),
+  );
+}
+
 List<_SessionTreeItem> _buildSessionTreeItems(
   List<SessionEntity> sessions, {
   required int? selectedTopicId,
@@ -469,18 +527,8 @@ class _SessionListState extends ConsumerState<_SessionList> {
                     final isSelected =
                         session.sessionId == widget.selectedSessionId;
                     final sessionState = manager.getState(session.sessionId);
-                    final Color? statusColor;
-                    if (sessionState == null) {
-                      statusColor = null;
-                    } else if (sessionState.error != null) {
-                      statusColor = Colors.red;
-                    } else if (sessionState.isLoading) {
-                      statusColor = Colors.orange;
-                    } else if (sessionState.hasUnreadResponse) {
-                      statusColor = Colors.green;
-                    } else {
-                      statusColor = null;
-                    }
+                    final statusColor =
+                        _resolveSessionStatusColor(sessionState);
                     return ReorderableDragStartListener(
                       key: Key(session.sessionId),
                       index: index,
@@ -629,6 +677,7 @@ class _SessionItemState extends ConsumerState<_SessionItem> {
   @override
   Widget build(BuildContext context) {
     final theme = fluent.FluentTheme.of(context);
+    final treeIndent = widget.isMobile ? _mobileTreeIndent : _desktopTreeIndent;
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovering = true),
       onExit: (_) => setState(() => _isHovering = false),
@@ -650,27 +699,14 @@ class _SessionItemState extends ConsumerState<_SessionItem> {
             child: Row(
               children: [
                 if (widget.depth > 0)
-                  SizedBox(width: (widget.depth * 12).toDouble()),
-                SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: widget.hasChildren
-                      ? fluent.IconButton(
-                          icon: Icon(
-                            widget.isCollapsed
-                                ? AuroraIcons.chevronRight
-                                : AuroraIcons.chevronDown,
-                            size: 14,
-                          ),
-                          onPressed: widget.onToggleCollapse,
-                        )
-                      : widget.depth > 0
-                          ? Icon(
-                              AuroraIcons.branch,
-                              size: 12,
-                              color: theme.resources.textFillColorSecondary,
-                            )
-                          : const SizedBox.shrink(),
+                  SizedBox(width: (widget.depth * treeIndent).toDouble()),
+                _buildTreeToggleControl(
+                  hasChildren: widget.hasChildren,
+                  isCollapsed: widget.isCollapsed,
+                  onTap: widget.onToggleCollapse,
+                  showLeafIndicator: widget.depth > 0,
+                  leafColor: theme.resources.textFillColorSecondary,
+                  reserveSpaceWhenHidden: !widget.isMobile,
                 ),
                 const SizedBox(width: 4),
                 if (widget.statusColor != null)
@@ -769,6 +805,8 @@ class SessionListWidget extends ConsumerWidget {
     if (sessionsState.isLoading && sessionsState.sessions.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
+    final manager = ref.watch(chatSessionManagerProvider);
+    ref.watch(chatStateUpdateTriggerProvider);
     final searchQuery = ref.watch(sessionSearchQueryProvider);
     final selectedTopicId = ref.watch(selectedTopicIdProvider);
     final collapsedSessionIds = ref.watch(collapsedHistorySessionIdsProvider);
@@ -804,6 +842,8 @@ class SessionListWidget extends ConsumerWidget {
         final treeItem = visibleSessionItems[index];
         final session = treeItem.session;
         final isSelected = session.sessionId == selectedSessionId;
+        final sessionState = manager.getState(session.sessionId);
+        final statusColor = _resolveSessionStatusColor(sessionState);
         return ReorderableDelayedDragStartListener(
           key: Key(session.sessionId),
           index: index,
@@ -820,59 +860,46 @@ class SessionListWidget extends ConsumerWidget {
                   .colorScheme
                   .primaryContainer
                   .withValues(alpha: 0.5),
-              leading: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  const SizedBox(width: 28, height: 28),
-                  Positioned(
-                    top: -1,
-                    right: -1,
-                    child:
-                        _SessionStatusIndicator(sessionId: session.sessionId),
-                  ),
-                ],
-              ),
               title: Row(
                 children: [
                   if (treeItem.depth > 0)
-                    SizedBox(width: (treeItem.depth * 12).toDouble()),
-                  SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: treeItem.hasChildren
-                        ? IconButton(
-                            visualDensity: VisualDensity.compact,
-                            splashRadius: 14,
-                            padding: EdgeInsets.zero,
-                            icon: Icon(
-                              treeItem.isCollapsed
-                                  ? AuroraIcons.chevronRight
-                                  : AuroraIcons.chevronDown,
-                              size: 14,
-                            ),
-                            onPressed: () {
-                              final nextCollapsed = Set<String>.from(
-                                  ref.read(collapsedHistorySessionIdsProvider));
-                              if (treeItem.isCollapsed) {
-                                nextCollapsed.remove(session.sessionId);
-                              } else {
-                                nextCollapsed.add(session.sessionId);
-                              }
-                              ref
-                                  .read(collapsedHistorySessionIdsProvider
-                                      .notifier)
-                                  .state = nextCollapsed;
-                            },
-                          )
-                        : treeItem.depth > 0
-                            ? Icon(
-                                AuroraIcons.branch,
-                                size: 12,
-                                color: Theme.of(context).hintColor,
-                              )
-                            : const SizedBox.shrink(),
+                    SizedBox(
+                        width: (treeItem.depth * _mobileTreeIndent).toDouble()),
+                  _buildTreeToggleControl(
+                    hasChildren: treeItem.hasChildren,
+                    isCollapsed: treeItem.isCollapsed,
+                    onTap: treeItem.hasChildren
+                        ? () {
+                            final nextCollapsed = Set<String>.from(
+                                ref.read(collapsedHistorySessionIdsProvider));
+                            if (treeItem.isCollapsed) {
+                              nextCollapsed.remove(session.sessionId);
+                            } else {
+                              nextCollapsed.add(session.sessionId);
+                            }
+                            ref
+                                .read(
+                                    collapsedHistorySessionIdsProvider.notifier)
+                                .state = nextCollapsed;
+                          }
+                        : null,
+                    showLeafIndicator: treeItem.depth > 0,
+                    leafColor: Theme.of(context).hintColor,
                   ),
-                  const SizedBox(width: 4),
+                  if (statusColor != null)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 6),
+                      child: Container(
+                        width: 6,
+                        height: 6,
+                        decoration: BoxDecoration(
+                          color: statusColor,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                  if (statusColor == null) const SizedBox(width: 2),
+                  const SizedBox(width: 2),
                   Expanded(
                     child: Text(
                       session.title,
@@ -897,37 +924,6 @@ class SessionListWidget extends ConsumerWidget {
           ),
         );
       },
-    );
-  }
-}
-
-class _SessionStatusIndicator extends ConsumerWidget {
-  final String sessionId;
-  const _SessionStatusIndicator({required this.sessionId});
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final manager = ref.read(chatSessionManagerProvider);
-    final sessionState = manager.getState(sessionId);
-    final Color? statusColor;
-    if (sessionState == null) {
-      statusColor = null;
-    } else if (sessionState.error != null) {
-      statusColor = Colors.red;
-    } else if (sessionState.isLoading) {
-      statusColor = Colors.orange;
-    } else if (sessionState.hasUnreadResponse) {
-      statusColor = Colors.green;
-    } else {
-      statusColor = null;
-    }
-    if (statusColor == null) return const SizedBox.shrink();
-    return Container(
-      width: 8,
-      height: 8,
-      decoration: BoxDecoration(
-        color: statusColor,
-        shape: BoxShape.circle,
-      ),
     );
   }
 }
