@@ -27,17 +27,29 @@ final novelProvider =
 // Preset prompts for model roles
 class NovelPromptPresets {
   // 拆解模型-第一阶段：生成章节标题列表
-  static const String chapterListPlanner = '''你是一个小说架构师。请阅读故事大纲，并将其规划为精简的章节标题列表。
-  
-请以JSON数组格式返回所有章节的标题：
-[
-  "第一章 标题",
-  "第二章 标题",
-  ...
-]
+  static const String chapterListPlanner = '''你是一个小说架构师。请阅读故事大纲，**提取**其中已定义的章节列表。
 
-⚠️【强制执行】只返回JSON数组，禁止包含任何闲聊、解释、开场白或结尾。不要使用Markdown代码块包裹，直接输出内容。
-⚠️【全书覆盖】必须包含大纲中所有的剧情节点，不得遗漏。''';
+⚠️【核心规则】⭐最重要
+1. **直接提取**：从大纲中找到所有以"第X章"、"Chapter X"、"### 第X章"等格式标记的章节，原样提取标题。
+2. **禁止拆分**：一个章节内可能包含多个场景，但它们仍属于同一章，不要把场景拆成独立章节。
+3. **禁止合并**：不要把多个章节合并成一个。
+4. **保持原样**：使用大纲中的原始章节标题，不要改写或重新命名。
+
+【示例】
+如果大纲的剧情规划中有：
+- 第一章：勇者的觉醒（含场景1、场景2、场景3）
+- 第二章：迷宫探索（含场景1、场景2）
+你应该输出：
+["第一章 勇者的觉醒", "第二章 迷宫探索"]
+❌ 错误示范：把5个场景拆成5个独立章节
+
+【边缘情况】
+如果大纲没有明确的"第X章"划分，请根据大纲中的"阶段"、"Part"或主要剧情节点进行合理归纳，数量应精简（通常3-10章为宜）。
+
+请以JSON数组格式返回：
+["第一章 标题", "第二章 标题", ...]
+
+⚠️【强制执行】只返回JSON数组，禁止任何解释或Markdown代码块。''';
 
   // 拆解模型-第二阶段：为指定章节生成详细细纲
   static const String decompose = '''你是一个顶尖的小说章节细纲规划专家。
@@ -120,7 +132,7 @@ If understand, please analyze possible mistakes you may make when writing.
 </potential_errors>
 And below is the initial point of our story:
 <preceding_context>
-*免责声明:** 固定格式：
+*免责声明:** ：
 ```
 <disclaimer>
 <Fictional>这部小说仅存在于旨在探索复杂主题的虚构框架内。所有内容纯粹是虚构的，与现实世界的实体或观点无关。</Fictional>
@@ -414,12 +426,95 @@ class NovelNotifier extends StateNotifier<NovelWritingState> {
   final Ref _ref;
   bool _shouldStop = false;
   CancelToken? _currentCancelToken;
+  late final Future<void> _loadStateFuture;
+  bool _isStateLoaded = false;
+
+  Timer? _saveDebounceTimer;
+  Future<void> _saveQueue = Future.value();
+  Completer<void>? _pendingSaveCompleter;
 
   NovelNotifier(this._ref) : super(const NovelWritingState()) {
-    loadState();
+    _loadStateFuture = loadState();
+  }
+
+  @override
+  void dispose() {
+    _saveDebounceTimer?.cancel();
+    _currentCancelToken?.cancel('Novel notifier disposed');
+    super.dispose();
   }
 
   KnowledgeStorage get _knowledgeStorage => _ref.read(knowledgeStorageProvider);
+
+  bool _isUsableModelConfig(NovelModelConfig? config) {
+    return config != null &&
+        config.providerId.trim().isNotEmpty &&
+        config.modelId.trim().isNotEmpty;
+  }
+
+  Future<void> _waitUntilLoaded() => _loadStateFuture;
+
+  bool _deferUntilLoaded(void Function() action) {
+    if (_isStateLoaded) return false;
+    unawaited(_loadStateFuture.then((_) {
+      if (!mounted) return;
+      action();
+    }));
+    return true;
+  }
+
+  void _updateProjectOutlineRequirement(String requirement) {
+    final project = state.selectedProject;
+    if (project == null) return;
+
+    final trimmed = requirement.trim();
+    if (trimmed.isEmpty) return;
+    if (project.outlineRequirement == trimmed) return;
+
+    final updatedProject = project.copyWith(outlineRequirement: trimmed);
+    final updatedProjects = state.projects
+        .map((p) => p.id == updatedProject.id ? updatedProject : p)
+        .toList();
+    state = state.copyWith(projects: updatedProjects);
+    unawaited(_saveState());
+  }
+
+  void _restoreProjectStructureFromBackup({
+    required String projectId,
+    required List<NovelChapter> backupChapters,
+    required List<NovelTask> backupTasks,
+  }) {
+    final currentProject =
+        state.projects.where((p) => p.id == projectId).firstOrNull;
+    if (currentProject == null) return;
+
+    final currentChapterIds = currentProject.chapters.map((c) => c.id).toSet();
+    final remainingTasks = state.allTasks
+        .where((t) => !currentChapterIds.contains(t.chapterId))
+        .toList();
+    final restoredTasks = [...remainingTasks, ...backupTasks];
+
+    final updatedProjects = state.projects
+        .map(
+            (p) => p.id == projectId ? p.copyWith(chapters: backupChapters) : p)
+        .toList();
+
+    final isTargetSelected = state.selectedProjectId == projectId;
+    final currentSelectedChapterId = state.selectedChapterId;
+    final restoredSelectedChapterId = isTargetSelected
+        ? (currentSelectedChapterId != null &&
+                backupChapters.any((c) => c.id == currentSelectedChapterId)
+            ? currentSelectedChapterId
+            : (backupChapters.isNotEmpty ? backupChapters.first.id : null))
+        : state.selectedChapterId;
+
+    state = state.copyWith(
+      projects: updatedProjects,
+      allTasks: restoredTasks,
+      selectedChapterId: restoredSelectedChapterId,
+      selectedTaskId: isTargetSelected ? null : state.selectedTaskId,
+    );
+  }
 
   ProviderConfig? _resolveEmbeddingProvider(SettingsState settings) {
     final providerId =
@@ -489,6 +584,7 @@ class NovelNotifier extends StateNotifier<NovelWritingState> {
   }
 
   Future<KnowledgeBaseSummary?> getSelectedProjectKnowledgeBaseSummary() async {
+    await _waitUntilLoaded();
     final project = state.selectedProject;
     if (project == null) return null;
 
@@ -501,6 +597,7 @@ class NovelNotifier extends StateNotifier<NovelWritingState> {
   Future<KnowledgeIngestReport?> importKnowledgeFilesForSelectedProject(
     List<String> filePaths,
   ) async {
+    await _waitUntilLoaded();
     final project = state.selectedProject;
     if (project == null) return null;
 
@@ -546,38 +643,78 @@ class NovelNotifier extends StateNotifier<NovelWritingState> {
         }).toList();
 
         if (state.allTasks.any((t) =>
-            t.status == TaskStatus.running ||
-            t.status == TaskStatus.reviewing ||
-            t.status == TaskStatus.needsRevision)) {
+                t.status == TaskStatus.running ||
+                t.status == TaskStatus.reviewing ||
+                t.status == TaskStatus.needsRevision) ||
+            state.isDecomposing) {
           state = state.copyWith(
             allTasks: fixedTasks,
             isRunning: false,
             isPaused: false,
+            isDecomposing: false,
+            decomposeStatus: null,
+            decomposeCurrentBatch: 0,
+            decomposeTotalBatches: 0,
           );
-          _saveState();
+          unawaited(_saveState(immediate: true));
         }
       }
 
       await _ensureKnowledgeBaseBindingsForAllProjects();
     } catch (e) {
       // Ignore load errors, start with empty state
+    } finally {
+      _isStateLoaded = true;
     }
   }
 
-  Future<void> _saveState() async {
-    try {
-      final file = await _stateFile;
-      final json = state.toJson();
-      await file.writeAsString(jsonEncode(json));
-    } catch (e) {
-      // Ignore save errors
+  Future<void> _enqueueSaveWrite(String payload) {
+    _saveQueue = _saveQueue.then((_) async {
+      try {
+        final file = await _stateFile;
+        await file.writeAsString(payload);
+      } catch (_) {
+        // Ignore save errors
+      }
+    });
+    return _saveQueue;
+  }
+
+  Future<void> _flushPendingSave() async {
+    final completer = _pendingSaveCompleter;
+    _pendingSaveCompleter = null;
+    final payload = jsonEncode(state.toJson());
+    await _enqueueSaveWrite(payload);
+    if (completer != null && !completer.isCompleted) {
+      completer.complete();
     }
+  }
+
+  Future<void> _saveState({bool immediate = false}) {
+    if (immediate) {
+      _saveDebounceTimer?.cancel();
+      return _flushPendingSave();
+    }
+
+    if (_pendingSaveCompleter == null || _pendingSaveCompleter!.isCompleted) {
+      _pendingSaveCompleter = Completer<void>();
+    }
+
+    _saveDebounceTimer?.cancel();
+    _saveDebounceTimer = Timer(const Duration(milliseconds: 250), () {
+      unawaited(_flushPendingSave());
+    });
+    return _pendingSaveCompleter!.future;
   }
 
   // ========== LLM Call Helper ==========
   Future<String> _callLLM(
       NovelModelConfig config, String systemPrompt, String userMessage,
       {CancelToken? cancelToken}) async {
+    if (!_isUsableModelConfig(config)) {
+      throw Exception('Model not configured');
+    }
+
     final settings = _ref.read(settingsProvider);
 
     // Find the provider config
@@ -683,10 +820,14 @@ class NovelNotifier extends StateNotifier<NovelWritingState> {
 
   // ========== Workflow Engine ==========
   Future<void> runWorkflow() async {
+    await _waitUntilLoaded();
     if (state.isRunning) return;
+
+    _currentCancelToken?.cancel('Starting new workflow');
+    _currentCancelToken = CancelToken();
     _shouldStop = false;
     state = state.copyWith(isRunning: true, isPaused: false);
-    _saveState();
+    unawaited(_saveState());
 
     await _processTaskQueue();
   }
@@ -708,7 +849,8 @@ class NovelNotifier extends StateNotifier<NovelWritingState> {
         // No more pending tasks
         debugPrint('✅ No more pending tasks found, stopping loop.');
         state = state.copyWith(isRunning: false);
-        _saveState();
+        _currentCancelToken = null;
+        unawaited(_saveState());
         return;
       }
 
@@ -730,12 +872,20 @@ class NovelNotifier extends StateNotifier<NovelWritingState> {
     }
 
     state = state.copyWith(isRunning: false);
-    _saveState();
+    _currentCancelToken = null;
+    unawaited(_saveState());
   }
 
   bool _isTaskInCurrentProject(NovelTask task) {
-    if (state.selectedProject == null) return false;
-    return state.selectedProject!.chapters.any((c) => c.id == task.chapterId);
+    final selectedProjectId = state.selectedProjectId;
+    if (selectedProjectId == null) return false;
+    return _isTaskInProject(task, selectedProjectId);
+  }
+
+  bool _isTaskInProject(NovelTask task, String projectId) {
+    final project = state.projects.where((p) => p.id == projectId).firstOrNull;
+    if (project == null) return false;
+    return project.chapters.any((c) => c.id == task.chapterId);
   }
 
   Future<void> _executeTask(String taskId) async {
@@ -757,12 +907,13 @@ class NovelNotifier extends StateNotifier<NovelWritingState> {
     try {
       // Use writer model to execute the task
       final writerConfig = state.writerModel;
-      if (writerConfig == null) {
+      if (!_isUsableModelConfig(writerConfig)) {
         throw Exception('Writer model not configured');
       }
+      final activeWriterConfig = writerConfig!;
 
-      final systemPrompt = writerConfig.systemPrompt.isNotEmpty
-          ? writerConfig.systemPrompt
+      final systemPrompt = activeWriterConfig.systemPrompt.isNotEmpty
+          ? activeWriterConfig.systemPrompt
           : NovelPromptPresets.writer;
 
       // Build context from all chapters in the project (outlines only, not full content)
@@ -780,7 +931,9 @@ class NovelNotifier extends StateNotifier<NovelWritingState> {
 
       // ========== Step 1: Context Agent - 智能筛选上下文 ==========
       // 使用大纲模型（或降级到写作模型）进行上下文筛选
-      final contextModel = state.outlineModel ?? writerConfig;
+      final contextModel = _isUsableModelConfig(state.outlineModel)
+          ? state.outlineModel!
+          : activeWriterConfig;
       final filteredContextStr = await _buildFilteredContext(
         contextModel,
         task.description,
@@ -852,7 +1005,8 @@ class NovelNotifier extends StateNotifier<NovelWritingState> {
       final String fullPrompt = contextBuffer.toString();
 
       // ========== Step 2: Writer - 写作 ==========
-      final result = await _callLLM(writerConfig, systemPrompt, fullPrompt,
+      final result = await _callLLM(
+          activeWriterConfig, systemPrompt, fullPrompt,
           cancelToken: _currentCancelToken);
 
       if (_shouldStop) return; // Stop if requested
@@ -1204,7 +1358,7 @@ ${availableKeys.toString()}
   Future<void> _reviewTask(String taskId, String content,
       {String writingContext = ''}) async {
     final reviewerConfig = state.reviewerModel;
-    if (reviewerConfig == null) {
+    if (!_isUsableModelConfig(reviewerConfig)) {
       // No reviewer configured, auto-approve and reset retry count
       final updatedTasks = state.allTasks.map((t) {
         if (t.id == taskId) {
@@ -1213,15 +1367,17 @@ ${availableKeys.toString()}
         return t;
       }).toList();
       state = state.copyWith(allTasks: updatedTasks);
-      _saveState();
+      unawaited(_saveState());
+      await _extractContextUpdates(content);
       return;
     }
 
     final task = state.allTasks.firstWhere((t) => t.id == taskId);
 
     try {
-      final systemPrompt = reviewerConfig.systemPrompt.isNotEmpty
-          ? reviewerConfig.systemPrompt
+      final activeReviewerConfig = reviewerConfig!;
+      final systemPrompt = activeReviewerConfig.systemPrompt.isNotEmpty
+          ? activeReviewerConfig.systemPrompt
           : NovelPromptPresets.reviewer;
 
       final actualWordCount = StringUtils.countWords(content);
@@ -1236,7 +1392,7 @@ $content
 请审查以上内容。''';
 
       final reviewResult = await _callLLM(
-          reviewerConfig, systemPrompt, reviewPrompt,
+          activeReviewerConfig, systemPrompt, reviewPrompt,
           cancelToken: _currentCancelToken);
 
       if (_shouldStop) return; // Stop if requested
@@ -1388,9 +1544,10 @@ $content
     CancelToken? cancelToken,
   }) async {
     final writerConfig = state.writerModel;
-    if (writerConfig == null) {
+    if (!_isUsableModelConfig(writerConfig)) {
       return originalContent; // 无法修订，返回原内容
     }
+    final activeWriterConfig = writerConfig!;
 
     // 构建问题列表
     final issuesList = StringBuffer();
@@ -1424,7 +1581,7 @@ $suggestions
 
     try {
       final revisedContent = await _callLLM(
-          writerConfig, NovelPromptPresets.reviser, revisionPrompt,
+          activeWriterConfig, NovelPromptPresets.reviser, revisionPrompt,
           cancelToken: cancelToken);
       return revisedContent;
     } catch (e) {
@@ -1433,15 +1590,20 @@ $suggestions
   }
 
   void _updateTaskStatus(String taskId, TaskStatus status) {
+    if (_deferUntilLoaded(() => _updateTaskStatus(taskId, status))) return;
     final updatedTasks = state.allTasks.map((t) {
       return t.id == taskId ? t.copyWith(status: status) : t;
     }).toList();
     state = state.copyWith(allTasks: updatedTasks);
-    _saveState();
+    unawaited(_saveState());
   }
 
   // ========== Project Management ==========
   void createProject(String name, {WorldContext? worldContext}) {
+    if (_deferUntilLoaded(
+        () => createProject(name, worldContext: worldContext))) {
+      return;
+    }
     final project = NovelProject.create(name, worldContext: worldContext);
     state = state.copyWith(
       projects: [...state.projects, project],
@@ -1449,11 +1611,12 @@ $suggestions
       selectedChapterId:
           project.chapters.isNotEmpty ? project.chapters.first.id : null,
     );
-    _saveState();
+    unawaited(_saveState());
     unawaited(_ensureProjectKnowledgeBase(project.id));
   }
 
   void selectProject(String projectId) {
+    if (_deferUntilLoaded(() => selectProject(projectId))) return;
     final project = state.projects.firstWhere((p) => p.id == projectId);
     state = state.copyWith(
       selectedProjectId: projectId,
@@ -1461,11 +1624,12 @@ $suggestions
           project.chapters.isNotEmpty ? project.chapters.first.id : null,
       selectedTaskId: null,
     );
-    _saveState();
+    unawaited(_saveState());
     unawaited(_ensureProjectKnowledgeBase(projectId));
   }
 
   void deleteProject(String projectId) {
+    if (_deferUntilLoaded(() => deleteProject(projectId))) return;
     final updatedProjects =
         state.projects.where((p) => p.id != projectId).toList();
     final project = state.projects.firstWhere((p) => p.id == projectId);
@@ -1481,22 +1645,27 @@ $suggestions
       selectedChapterId: null,
       selectedTaskId: null,
     );
-    _saveState();
+    unawaited(_saveState());
     unawaited(_knowledgeStorage.deleteProjectBase(projectId));
   }
 
   // ========== Outline Management ==========
   Future<void> generateOutline(String requirement) async {
+    await _waitUntilLoaded();
     if (state.selectedProject == null) return;
+    final trimmedRequirement = requirement.trim();
+    if (trimmedRequirement.isEmpty) return;
+
+    _updateProjectOutlineRequirement(trimmedRequirement);
 
     // 开始生成大纲，设置 loading 状态
     state = state.copyWith(isGeneratingOutline: true);
 
     final outlineConfig = state.outlineModel;
 
-    if (outlineConfig == null) {
+    if (!_isUsableModelConfig(outlineConfig)) {
       // Fallback: use requirement as outline directly
-      _updateProjectOutline('【故事需求】\n$requirement\n\n（请编辑此大纲后点击"生成章节"）');
+      _updateProjectOutline('【故事需求】\n$trimmedRequirement\n\n（请编辑此大纲后点击"生成章节"）');
       state = state.copyWith(isGeneratingOutline: false);
       return;
     }
@@ -1506,22 +1675,33 @@ $suggestions
     _currentCancelToken = CancelToken();
 
     try {
-      final systemPrompt = outlineConfig.systemPrompt.isNotEmpty
-          ? outlineConfig.systemPrompt
+      final activeOutlineConfig = outlineConfig!;
+      final systemPrompt = activeOutlineConfig.systemPrompt.isNotEmpty
+          ? activeOutlineConfig.systemPrompt
           : NovelPromptPresets.outline;
 
-      final result = await _callLLM(outlineConfig, systemPrompt, requirement,
+      final result = await _callLLM(
+          activeOutlineConfig, systemPrompt, trimmedRequirement,
           cancelToken: _currentCancelToken);
       _updateProjectOutline(result);
     } catch (e) {
-      _updateProjectOutline('生成大纲失败：$e\n\n原始需求：\n$requirement');
+      _updateProjectOutline('生成大纲失败：$e\n\n原始需求：\n$trimmedRequirement');
     }
 
     // 生成完成，清除 loading 状态
     state = state.copyWith(isGeneratingOutline: false);
+    _currentCancelToken = null;
+  }
+
+  Future<void> rerunOutline() async {
+    await _waitUntilLoaded();
+    final requirement = state.selectedProject?.outlineRequirement?.trim() ?? '';
+    if (requirement.isEmpty) return;
+    await generateOutline(requirement);
   }
 
   void _updateProjectOutline(String outline) {
+    if (_deferUntilLoaded(() => _updateProjectOutline(outline))) return;
     if (state.selectedProject == null) return;
 
     final updatedProject = state.selectedProject!.copyWith(outline: outline);
@@ -1530,7 +1710,7 @@ $suggestions
         .toList();
 
     state = state.copyWith(projects: updatedProjects);
-    _saveState();
+    unawaited(_saveState());
   }
 
   void updateProjectOutline(String outline) {
@@ -1538,6 +1718,7 @@ $suggestions
   }
 
   void clearChaptersAndTasks() {
+    if (_deferUntilLoaded(() => clearChaptersAndTasks())) return;
     if (state.selectedProject == null) return;
 
     final updatedProject = state.selectedProject!.copyWith(chapters: []);
@@ -1558,11 +1739,12 @@ $suggestions
       selectedChapterId: null,
       selectedTaskId: null,
     );
-    _saveState();
+    unawaited(_saveState());
   }
 
   /// 重新执行所有任务：重置所有任务状态，清空已生成内容，从头开始
   void restartAllTasks() {
+    if (_deferUntilLoaded(() => restartAllTasks())) return;
     if (state.selectedProject == null) return;
 
     final projectChapterIds =
@@ -1586,11 +1768,12 @@ $suggestions
       isRunning: false,
       isPaused: false,
     );
-    _saveState();
+    unawaited(_saveState());
   }
 
   // ========== World Context Management ==========
   void updateWorldContext(WorldContext context) {
+    if (_deferUntilLoaded(() => updateWorldContext(context))) return;
     if (state.selectedProject == null) return;
 
     final updatedProject =
@@ -1600,11 +1783,12 @@ $suggestions
         .toList();
 
     state = state.copyWith(projects: updatedProjects);
-    _saveState();
+    unawaited(_saveState());
   }
 
   /// 清空世界设定数据，但保留开关状态
   void clearWorldContext() {
+    if (_deferUntilLoaded(() => clearWorldContext())) return;
     if (state.selectedProject == null) return;
 
     final ctx = state.selectedProject!.worldContext;
@@ -1625,6 +1809,9 @@ $suggestions
   }
 
   void toggleContextCategory(String category, bool enabled) {
+    if (_deferUntilLoaded(() => toggleContextCategory(category, enabled))) {
+      return;
+    }
     if (state.selectedProject == null) return;
 
     final ctx = state.selectedProject!.worldContext;
@@ -1656,7 +1843,9 @@ $suggestions
     if (state.selectedProject == null) return;
 
     // 使用大纲模型（或降级到写作模型）进行数据提取
-    final extractorModel = state.outlineModel ?? state.writerModel;
+    final extractorModel = _isUsableModelConfig(state.outlineModel)
+        ? state.outlineModel
+        : (_isUsableModelConfig(state.writerModel) ? state.writerModel : null);
     if (extractorModel == null) return;
 
     try {
@@ -1761,6 +1950,7 @@ $suggestions
 
   // ========== Chapter Management ==========
   void addChapter(String title) {
+    if (_deferUntilLoaded(() => addChapter(title))) return;
     if (state.selectedProject == null) return;
 
     final newChapter = NovelChapter(
@@ -1781,15 +1971,17 @@ $suggestions
       projects: updatedProjects,
       selectedChapterId: newChapter.id,
     );
-    _saveState();
+    unawaited(_saveState());
   }
 
   void selectChapter(String chapterId) {
+    if (_deferUntilLoaded(() => selectChapter(chapterId))) return;
     state = state.copyWith(selectedChapterId: chapterId, selectedTaskId: null);
-    _saveState();
+    unawaited(_saveState());
   }
 
   void deleteChapter(String chapterId) {
+    if (_deferUntilLoaded(() => deleteChapter(chapterId))) return;
     if (state.selectedProject == null) return;
 
     final updatedChapters = state.selectedProject!.chapters
@@ -1809,11 +2001,12 @@ $suggestions
       selectedChapterId:
           updatedChapters.isNotEmpty ? updatedChapters.first.id : null,
     );
-    _saveState();
+    unawaited(_saveState());
   }
 
   // ========== Task Management ==========
   void addTask(String description) {
+    if (_deferUntilLoaded(() => addTask(description))) return;
     if (state.selectedChapterId == null) return;
 
     final task = NovelTask(
@@ -1823,30 +2016,54 @@ $suggestions
       status: TaskStatus.pending,
     );
     state = state.copyWith(allTasks: [...state.allTasks, task]);
-    _saveState();
+    unawaited(_saveState());
   }
 
   void selectTask(String taskId) {
+    if (_deferUntilLoaded(() => selectTask(taskId))) return;
     state = state.copyWith(selectedTaskId: taskId);
   }
 
   /// Decompose the project's outline into chapters (Multi-stage Batch Processing)
   Future<void> decomposeFromOutline() async {
-    if (state.selectedProject == null) return;
+    await _waitUntilLoaded();
+    final selectedProject = state.selectedProject;
+    if (selectedProject == null) return;
 
-    final outline = state.selectedProject!.outline;
+    final projectId = selectedProject.id;
+    final outline = selectedProject.outline;
     if (outline == null || outline.isEmpty) return;
 
+    final backupChapters = List<NovelChapter>.from(selectedProject.chapters);
+    final backupChapterIds = backupChapters.map((c) => c.id).toSet();
+    final backupTasks = state.allTasks
+        .where((t) => backupChapterIds.contains(t.chapterId))
+        .toList();
+
     // 开始拆解，设置 loading 状态
-    state = state.copyWith(isDecomposing: true);
+    state = state.copyWith(
+      isDecomposing: true,
+      decomposeStatus: '阶段 1/2：正在规划章节列表…',
+      decomposeCurrentBatch: 0,
+      decomposeTotalBatches: 0,
+    );
 
     final decomposeConfig = state.decomposeModel;
-    if (decomposeConfig == null) {
-      state = state.copyWith(isDecomposing: false);
+    if (!_isUsableModelConfig(decomposeConfig)) {
+      state = state.copyWith(
+        isDecomposing: false,
+        decomposeStatus: '细纲模型未配置，无法执行拆解。',
+        decomposeCurrentBatch: 0,
+        decomposeTotalBatches: 0,
+      );
       return;
     }
 
+    var completedSuccessfully = false;
+    String? rollbackReason;
+
     try {
+      final activeDecomposeConfig = decomposeConfig!;
       _shouldStop = false;
       _currentCancelToken?.cancel();
       _currentCancelToken = CancelToken();
@@ -1854,7 +2071,7 @@ $suggestions
       // --- 第一阶段：获取完整的章节标题列表 ---
       debugPrint('🚀 Phase 1: Planning chapter list...');
       final listResult = await _callLLM(
-        decomposeConfig,
+        activeDecomposeConfig,
         NovelPromptPresets.chapterListPlanner,
         '大纲内容如下：\n$outline',
         cancelToken: _currentCancelToken,
@@ -1867,22 +2084,39 @@ $suggestions
       debugPrint(
           '✅ Planned ${allTitles.length} chapters. Starting batch detailing...');
 
-      // 清空当前项目的现有章节和任务（因为是重新生成）
-      // 注意：这里建议用户手动清空，或者我们在这里帮他清空
-      // 为了安全，我们这里采用“渐进式添加”，但如果用户点击了重新生成，通常期望是覆盖。
-      // 先记录已有的任务（如果想保留可以不清空，这里我们选择清空当前项目关联的任务）
-
       // --- 第二阶段：分批次填充详细细纲 ---
       const int batchSize = 10; // 每批处理10章，提高效率的同时保持足够的描述细节
+      final totalBatches = (allTitles.length / batchSize).ceil();
+      state = state.copyWith(
+        decomposeStatus: '阶段 2/2：共 $totalBatches 批，开始生成细纲…',
+        decomposeCurrentBatch: 0,
+        decomposeTotalBatches: totalBatches,
+      );
+
       final List<NovelChapter> allNewChapters = [];
       final List<NovelTask> allNewTasks = [];
       String runningContext = '书籍初始状态：一切尚待开始。';
+      var autoFilledChapters = 0;
 
       for (int i = 0; i < allTitles.length; i += batchSize) {
-        if (_shouldStop) break;
+        if (_shouldStop) {
+          rollbackReason = '拆解已停止，已恢复到拆解前内容。';
+          break;
+        }
 
         const int maxRetries = 2;
         bool batchSuccess = false;
+        final batchNo = (i ~/ batchSize) + 1;
+        final end = (i + batchSize < allTitles.length)
+            ? i + batchSize
+            : allTitles.length;
+        final batchTitles = allTitles.sublist(i, end);
+
+        state = state.copyWith(
+          decomposeCurrentBatch: batchNo,
+          decomposeStatus:
+              '阶段 2/2：正在处理第 $batchNo/$totalBatches 批（第 ${i + 1}-$end 章）…',
+        );
 
         for (int retry = 0; retry <= maxRetries; retry++) {
           try {
@@ -1892,11 +2126,6 @@ $suggestions
               await Future.delayed(const Duration(seconds: 1));
             }
 
-            final end = (i + batchSize < allTitles.length)
-                ? i + batchSize
-                : allTitles.length;
-            final batchTitles = allTitles.sublist(i, end);
-
             debugPrint(
                 '📦 Processing batch: ${i + 1} - $end / ${allTitles.length}');
 
@@ -1904,34 +2133,66 @@ $suggestions
                 '【前文进度总结】：\n$runningContext\n\n'
                 '请针对以下章节列表生成剧本级细纲：\n${batchTitles.join('\n')}';
 
-            final systemPrompt = decomposeConfig.systemPrompt.isNotEmpty
-                ? decomposeConfig.systemPrompt
+            final systemPrompt = activeDecomposeConfig.systemPrompt.isNotEmpty
+                ? activeDecomposeConfig.systemPrompt
                 : NovelPromptPresets.decompose;
 
             final detailResult = await _callLLM(
-                decomposeConfig, systemPrompt, detailPrompt,
+                activeDecomposeConfig, systemPrompt, detailPrompt,
                 cancelToken: _currentCancelToken);
             final dynamic decodedData = jsonDecode(_cleanJson(detailResult));
 
-            List<dynamic> detailedChapters = [];
+            List<dynamic> detailedChaptersRaw = [];
             if (decodedData is List) {
-              detailedChapters = decodedData;
+              detailedChaptersRaw = decodedData;
             } else if (decodedData is Map &&
                 decodedData.containsKey('chapters')) {
-              detailedChapters = decodedData['chapters'] as List<dynamic>;
+              detailedChaptersRaw = decodedData['chapters'] as List<dynamic>;
+            }
+
+            final detailedEntries = <Map<String, String>>[];
+            for (final item in detailedChaptersRaw) {
+              if (item is! Map) continue;
+              final map = item.cast<dynamic, dynamic>();
+              final title = (map['title'] ?? '').toString().trim();
+              final description = (map['description'] ?? '').toString().trim();
+              if (title.isEmpty && description.isEmpty) continue;
+              detailedEntries.add({
+                'title': title,
+                'description': description,
+              });
+            }
+
+            if (detailedEntries.isEmpty) {
+              throw Exception('Batch returned empty chapter details.');
             }
 
             String batchContentForSummary = '';
-            for (var chapterData in detailedChapters) {
+            for (int chapterIndex = 0;
+                chapterIndex < batchTitles.length;
+                chapterIndex++) {
               final chapterId = const Uuid().v4();
-              final title = chapterData['title'] as String;
-              final description = chapterData['description'] as String;
+              final expectedTitle = batchTitles[chapterIndex];
 
-              batchContentForSummary += '标题：$title\n内容概要：$description\n---\n';
+              String description;
+              if (chapterIndex < detailedEntries.length &&
+                  detailedEntries[chapterIndex]['description'] != null &&
+                  detailedEntries[chapterIndex]['description']!
+                      .trim()
+                      .isNotEmpty) {
+                description =
+                    detailedEntries[chapterIndex]['description']!.trim();
+              } else {
+                autoFilledChapters++;
+                description = '【自动补位】该章节细纲在拆解过程中丢失。请先补充本章细纲，再执行写作任务。';
+              }
+
+              batchContentForSummary +=
+                  '标题：$expectedTitle\n内容概要：$description\n---\n';
 
               final chapter = NovelChapter(
                 id: chapterId,
-                title: title,
+                title: expectedTitle,
                 order: allNewChapters.length,
               );
 
@@ -1951,7 +2212,7 @@ $suggestions
               debugPrint('📝 Summarizing batch for next context...');
               final summaryInput =
                   '【本批次细纲内容】：\n$batchContentForSummary\n\n【旧进度总结】：\n$runningContext';
-              final summaryResult = await _callLLM(decomposeConfig,
+              final summaryResult = await _callLLM(activeDecomposeConfig,
                   NovelPromptPresets.batchSummarizer, summaryInput);
               runningContext = _cleanJson(summaryResult);
             } catch (e) {
@@ -1972,32 +2233,60 @@ $suggestions
             state = state.copyWith(
               projects: updatedProjects,
               allTasks: [
-                ...state.allTasks.where((t) => !_isTaskInCurrentProject(t)),
+                ...state.allTasks.where((t) => !_isTaskInProject(t, projectId)),
                 ...allNewTasks
               ],
+              decomposeStatus:
+                  '阶段 2/2：已完成第 $batchNo/$totalBatches 批（累计 ${allNewChapters.length}/${allTitles.length} 章）',
             );
-            _saveState();
+            unawaited(_saveState());
 
             batchSuccess = true;
             break; // 成功则跳出重试循环
           } catch (e) {
             debugPrint('⚠️ Batch attempt ${retry + 1} failed: $e');
             if (retry == maxRetries) {
-              debugPrint(
-                  '❌ Max retries reached for batch starting at index $i. Pausing decomposition.');
-              state = state.copyWith(isDecomposing: false);
-              _shouldStop = true;
-              return;
+              throw Exception(
+                  'Batch $batchNo/$totalBatches failed after retries: $e');
             }
           }
         }
 
         if (!batchSuccess) break;
       }
+
+      if (!_shouldStop && allNewChapters.length == allTitles.length) {
+        completedSuccessfully = true;
+        state = state.copyWith(
+          decomposeStatus: autoFilledChapters > 0
+              ? '细纲生成完成：$autoFilledChapters 章已自动补位，请重点检查这些章节。'
+              : '细纲生成完成：全部章节细纲已生成。',
+        );
+      } else if (!_shouldStop) {
+        rollbackReason = '细纲生成不完整，已恢复到拆解前内容。';
+      }
     } catch (e) {
       debugPrint('❌ Decomposition failed: $e');
+      rollbackReason = '细纲生成异常，已恢复到拆解前内容：$e';
     } finally {
-      state = state.copyWith(isDecomposing: false);
+      if (!completedSuccessfully) {
+        _restoreProjectStructureFromBackup(
+          projectId: projectId,
+          backupChapters: backupChapters,
+          backupTasks: backupTasks,
+        );
+        state = state.copyWith(
+          decomposeStatus: rollbackReason ?? '细纲生成未完成，已恢复到拆解前内容。',
+        );
+      }
+
+      state = state.copyWith(
+        isDecomposing: false,
+        decomposeCurrentBatch: 0,
+        decomposeTotalBatches: 0,
+      );
+      _currentCancelToken = null;
+      unawaited(_saveState(immediate: true));
     }
   }
 
@@ -2116,6 +2405,9 @@ $suggestions
 
   /// Execute a single task (called when user clicks "Run Task" button)
   Future<void> runSingleTask(String taskId) async {
+    await _waitUntilLoaded();
+    if (state.isRunning) return;
+
     final task = state.allTasks.firstWhere(
       (t) => t.id == taskId,
       orElse: () => NovelTask(
@@ -2138,10 +2430,24 @@ $suggestions
     }).toList();
     state = state.copyWith(allTasks: updatedTasks);
 
-    await _executeTask(taskId);
+    _shouldStop = false;
+    _currentCancelToken?.cancel('Starting single task');
+    _currentCancelToken = CancelToken();
+
+    try {
+      await _executeTask(taskId);
+    } finally {
+      if (!state.isRunning) {
+        _currentCancelToken = null;
+      }
+    }
   }
 
   void updateTaskDescription(String taskId, String newDescription) {
+    if (_deferUntilLoaded(
+        () => updateTaskDescription(taskId, newDescription))) {
+      return;
+    }
     final updatedTasks = state.allTasks.map((t) {
       if (t.id == taskId) {
         return t.copyWith(description: newDescription);
@@ -2149,34 +2455,48 @@ $suggestions
       return t;
     }).toList();
     state = state.copyWith(allTasks: updatedTasks);
-    _saveState();
+    unawaited(_saveState());
   }
 
   void deleteTask(String taskId) {
+    if (_deferUntilLoaded(() => deleteTask(taskId))) return;
     state = state.copyWith(
       allTasks: state.allTasks.where((t) => t.id != taskId).toList(),
       selectedTaskId:
           state.selectedTaskId == taskId ? null : state.selectedTaskId,
     );
-    _saveState();
+    unawaited(_saveState());
   }
 
   // ========== Controls ==========
+  bool hasRunnableTasksInSelectedProject() {
+    final project = state.selectedProject;
+    if (project == null) return false;
+    final chapterIds = project.chapters.map((c) => c.id).toSet();
+    return state.allTasks.any((t) =>
+        chapterIds.contains(t.chapterId) &&
+        (t.status == TaskStatus.pending || t.status == TaskStatus.failed));
+  }
+
   void togglePause() {
+    if (_deferUntilLoaded(() => togglePause())) return;
     state = state.copyWith(isPaused: !state.isPaused);
-    _saveState();
+    unawaited(_saveState());
   }
 
   void toggleReviewMode(bool enabled) {
+    if (_deferUntilLoaded(() => toggleReviewMode(enabled))) return;
     state = state.copyWith(isReviewEnabled: enabled);
-    _saveState();
+    unawaited(_saveState());
   }
 
   void startQueue() {
-    runWorkflow();
+    if (_deferUntilLoaded(startQueue)) return;
+    unawaited(runWorkflow());
   }
 
   void stopQueue() {
+    if (_deferUntilLoaded(stopQueue)) return;
     _shouldStop = true;
     _currentCancelToken?.cancel('User stopped queue');
     _currentCancelToken = null;
@@ -2193,18 +2513,23 @@ $suggestions
       isRunning: false,
       isPaused: false,
       isDecomposing: false, // 也重置拆解状态
+      decomposeStatus: '任务已停止。',
+      decomposeCurrentBatch: 0,
+      decomposeTotalBatches: 0,
       allTasks: updatedTasks,
     );
-    _saveState();
+    unawaited(_saveState(immediate: true));
   }
 
   // ========== Model Configuration ==========
   void setOutlineModel(NovelModelConfig? config) {
+    if (_deferUntilLoaded(() => setOutlineModel(config))) return;
     state = state.copyWith(outlineModel: config);
-    _saveState();
+    unawaited(_saveState());
   }
 
   void setOutlinePrompt(String prompt) {
+    if (_deferUntilLoaded(() => setOutlinePrompt(prompt))) return;
     if (state.outlineModel != null) {
       state = state.copyWith(
           outlineModel: state.outlineModel!.copyWith(systemPrompt: prompt));
@@ -2214,15 +2539,17 @@ $suggestions
           outlineModel: NovelModelConfig(
               providerId: '', modelId: '', systemPrompt: prompt));
     }
-    _saveState();
+    unawaited(_saveState());
   }
 
   void setDecomposeModel(NovelModelConfig? config) {
+    if (_deferUntilLoaded(() => setDecomposeModel(config))) return;
     state = state.copyWith(decomposeModel: config);
-    _saveState();
+    unawaited(_saveState());
   }
 
   void setDecomposePrompt(String prompt) {
+    if (_deferUntilLoaded(() => setDecomposePrompt(prompt))) return;
     if (state.decomposeModel != null) {
       state = state.copyWith(
           decomposeModel: state.decomposeModel!.copyWith(systemPrompt: prompt));
@@ -2231,15 +2558,17 @@ $suggestions
           decomposeModel: NovelModelConfig(
               providerId: '', modelId: '', systemPrompt: prompt));
     }
-    _saveState();
+    unawaited(_saveState());
   }
 
   void setWriterModel(NovelModelConfig? config) {
+    if (_deferUntilLoaded(() => setWriterModel(config))) return;
     state = state.copyWith(writerModel: config);
-    _saveState();
+    unawaited(_saveState());
   }
 
   void setWriterPrompt(String prompt) {
+    if (_deferUntilLoaded(() => setWriterPrompt(prompt))) return;
     if (state.writerModel != null) {
       state = state.copyWith(
           writerModel: state.writerModel!.copyWith(systemPrompt: prompt));
@@ -2248,15 +2577,17 @@ $suggestions
           writerModel: NovelModelConfig(
               providerId: '', modelId: '', systemPrompt: prompt));
     }
-    _saveState();
+    unawaited(_saveState());
   }
 
   void setReviewerModel(NovelModelConfig? config) {
+    if (_deferUntilLoaded(() => setReviewerModel(config))) return;
     state = state.copyWith(reviewerModel: config);
-    _saveState();
+    unawaited(_saveState());
   }
 
   void setReviewerPrompt(String prompt) {
+    if (_deferUntilLoaded(() => setReviewerPrompt(prompt))) return;
     if (state.reviewerModel != null) {
       state = state.copyWith(
           reviewerModel: state.reviewerModel!.copyWith(systemPrompt: prompt));
@@ -2265,34 +2596,38 @@ $suggestions
           reviewerModel: NovelModelConfig(
               providerId: '', modelId: '', systemPrompt: prompt));
     }
-    _saveState();
+    unawaited(_saveState());
   }
 
   // ========== Novel Prompt Presets ==========
   void setActivePromptPresetId(String? id) {
+    if (_deferUntilLoaded(() => setActivePromptPresetId(id))) return;
     state = state.copyWith(activePromptPresetId: id);
-    _saveState();
+    unawaited(_saveState());
   }
 
   void addPromptPreset(NovelPromptPreset preset) {
+    if (_deferUntilLoaded(() => addPromptPreset(preset))) return;
     state = state.copyWith(
       promptPresets: [...state.promptPresets, preset],
       activePromptPresetId: preset.id,
     );
-    _saveState();
+    unawaited(_saveState());
   }
 
   void updatePromptPreset(NovelPromptPreset preset) {
+    if (_deferUntilLoaded(() => updatePromptPreset(preset))) return;
     final updatedPresets =
         state.promptPresets.map((p) => p.id == preset.id ? preset : p).toList();
     state = state.copyWith(
       promptPresets: updatedPresets,
       activePromptPresetId: preset.id,
     );
-    _saveState();
+    unawaited(_saveState());
   }
 
   void deletePromptPreset(String presetId) {
+    if (_deferUntilLoaded(() => deletePromptPreset(presetId))) return;
     state = state.copyWith(
       promptPresets:
           state.promptPresets.where((p) => p.id != presetId).toList(),
@@ -2300,6 +2635,6 @@ $suggestions
           ? null
           : state.activePromptPresetId,
     );
-    _saveState();
+    unawaited(_saveState());
   }
 }

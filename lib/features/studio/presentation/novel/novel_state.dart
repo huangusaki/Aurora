@@ -349,6 +349,7 @@ class NovelProject {
   final String id;
   final String name;
   final String? outline; // Generated outline text (user-editable)
+  final String? outlineRequirement; // Last prompt used to generate outline
   final String? knowledgeBaseId; // Project-dedicated KB (not used by chat)
   final WorldContext worldContext; // Dynamic context that evolves with story
   final List<NovelChapter> chapters;
@@ -358,6 +359,7 @@ class NovelProject {
     required this.id,
     required this.name,
     this.outline,
+    this.outlineRequirement,
     this.knowledgeBaseId,
     this.worldContext = const WorldContext(),
     this.chapters = const [],
@@ -368,6 +370,7 @@ class NovelProject {
     String? id,
     String? name,
     String? outline,
+    Object? outlineRequirement = _sentinel,
     String? knowledgeBaseId,
     WorldContext? worldContext,
     List<NovelChapter>? chapters,
@@ -377,6 +380,9 @@ class NovelProject {
       id: id ?? this.id,
       name: name ?? this.name,
       outline: outline ?? this.outline,
+      outlineRequirement: outlineRequirement == _sentinel
+          ? this.outlineRequirement
+          : outlineRequirement as String?,
       knowledgeBaseId: knowledgeBaseId ?? this.knowledgeBaseId,
       worldContext: worldContext ?? this.worldContext,
       chapters: chapters ?? this.chapters,
@@ -397,6 +403,7 @@ class NovelProject {
         'id': id,
         'name': name,
         'outline': outline,
+        'outlineRequirement': outlineRequirement,
         'knowledgeBaseId': knowledgeBaseId,
         'worldContext': worldContext.toJson(),
         'chapters': chapters.map((c) => c.toJson()).toList(),
@@ -407,6 +414,7 @@ class NovelProject {
         id: json['id'] as String,
         name: json['name'] as String,
         outline: json['outline'] as String?,
+        outlineRequirement: json['outlineRequirement'] as String?,
         knowledgeBaseId: json['knowledgeBaseId'] as String?,
         worldContext: json['worldContext'] != null
             ? WorldContext.fromJson(
@@ -432,6 +440,9 @@ class NovelWritingState {
   final bool isReviewEnabled;
   final bool isDecomposing; // 新增：拆解中状态
   final bool isGeneratingOutline; // 新增：生成大纲中状态
+  final String? decomposeStatus; // 当前拆解阶段说明
+  final int decomposeCurrentBatch; // 从 0 开始，展示时 +1
+  final int decomposeTotalBatches; // 总批次数
 
   // Model Configurations
   final NovelModelConfig? outlineModel;
@@ -454,6 +465,9 @@ class NovelWritingState {
     this.isReviewEnabled = false,
     this.isDecomposing = false,
     this.isGeneratingOutline = false,
+    this.decomposeStatus,
+    this.decomposeCurrentBatch = 0,
+    this.decomposeTotalBatches = 0,
     this.outlineModel,
     this.decomposeModel,
     this.writerModel,
@@ -477,37 +491,61 @@ class NovelWritingState {
 
   NovelWritingState copyWith({
     List<NovelProject>? projects,
-    String? selectedProjectId,
-    String? selectedChapterId,
-    String? selectedTaskId,
+    Object? selectedProjectId = _sentinel,
+    Object? selectedChapterId = _sentinel,
+    Object? selectedTaskId = _sentinel,
     List<NovelTask>? allTasks,
     bool? isRunning,
     bool? isPaused,
     bool? isReviewEnabled,
     bool? isDecomposing,
     bool? isGeneratingOutline,
-    NovelModelConfig? outlineModel,
-    NovelModelConfig? decomposeModel,
-    NovelModelConfig? writerModel,
-    NovelModelConfig? reviewerModel,
+    Object? decomposeStatus = _sentinel,
+    int? decomposeCurrentBatch,
+    int? decomposeTotalBatches,
+    Object? outlineModel = _sentinel,
+    Object? decomposeModel = _sentinel,
+    Object? writerModel = _sentinel,
+    Object? reviewerModel = _sentinel,
     List<NovelPromptPreset>? promptPresets,
     Object? activePromptPresetId = _sentinel,
   }) {
     return NovelWritingState(
       projects: projects ?? this.projects,
-      selectedProjectId: selectedProjectId ?? this.selectedProjectId,
-      selectedChapterId: selectedChapterId ?? this.selectedChapterId,
-      selectedTaskId: selectedTaskId ?? this.selectedTaskId,
+      selectedProjectId: selectedProjectId == _sentinel
+          ? this.selectedProjectId
+          : selectedProjectId as String?,
+      selectedChapterId: selectedChapterId == _sentinel
+          ? this.selectedChapterId
+          : selectedChapterId as String?,
+      selectedTaskId: selectedTaskId == _sentinel
+          ? this.selectedTaskId
+          : selectedTaskId as String?,
       allTasks: allTasks ?? this.allTasks,
       isRunning: isRunning ?? this.isRunning,
       isPaused: isPaused ?? this.isPaused,
       isReviewEnabled: isReviewEnabled ?? this.isReviewEnabled,
       isDecomposing: isDecomposing ?? this.isDecomposing,
       isGeneratingOutline: isGeneratingOutline ?? this.isGeneratingOutline,
-      outlineModel: outlineModel ?? this.outlineModel,
-      decomposeModel: decomposeModel ?? this.decomposeModel,
-      writerModel: writerModel ?? this.writerModel,
-      reviewerModel: reviewerModel ?? this.reviewerModel,
+      decomposeStatus: decomposeStatus == _sentinel
+          ? this.decomposeStatus
+          : decomposeStatus as String?,
+      decomposeCurrentBatch:
+          decomposeCurrentBatch ?? this.decomposeCurrentBatch,
+      decomposeTotalBatches:
+          decomposeTotalBatches ?? this.decomposeTotalBatches,
+      outlineModel: outlineModel == _sentinel
+          ? this.outlineModel
+          : outlineModel as NovelModelConfig?,
+      decomposeModel: decomposeModel == _sentinel
+          ? this.decomposeModel
+          : decomposeModel as NovelModelConfig?,
+      writerModel: writerModel == _sentinel
+          ? this.writerModel
+          : writerModel as NovelModelConfig?,
+      reviewerModel: reviewerModel == _sentinel
+          ? this.reviewerModel
+          : reviewerModel as NovelModelConfig?,
       promptPresets: promptPresets ?? this.promptPresets,
       activePromptPresetId: activePromptPresetId == _sentinel
           ? this.activePromptPresetId
@@ -522,6 +560,9 @@ class NovelWritingState {
         'selectedTaskId': selectedTaskId,
         'allTasks': allTasks.map((t) => t.toJson()).toList(),
         'isReviewEnabled': isReviewEnabled,
+        'decomposeStatus': decomposeStatus,
+        'decomposeCurrentBatch': decomposeCurrentBatch,
+        'decomposeTotalBatches': decomposeTotalBatches,
         'outlineModel': outlineModel?.toJson(),
         'decomposeModel': decomposeModel?.toJson(),
         'writerModel': writerModel?.toJson(),
@@ -544,6 +585,9 @@ class NovelWritingState {
                 .toList() ??
             [],
         isReviewEnabled: json['isReviewEnabled'] as bool? ?? false,
+        decomposeStatus: json['decomposeStatus'] as String?,
+        decomposeCurrentBatch: json['decomposeCurrentBatch'] as int? ?? 0,
+        decomposeTotalBatches: json['decomposeTotalBatches'] as int? ?? 0,
         outlineModel: json['outlineModel'] != null
             ? NovelModelConfig.fromJson(
                 json['outlineModel'] as Map<String, dynamic>)

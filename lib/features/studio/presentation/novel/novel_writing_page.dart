@@ -25,16 +25,24 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
   final _taskInputController = TextEditingController();
   final _newChapterController = TextEditingController();
   final _projectFlyoutController = FlyoutController();
+  final _outlineController = TextEditingController();
+  final _taskDescriptionController = TextEditingController();
 
   int _selectedNavIndex = 0; // 0: Writing, 1: Context, 2: Preview
   bool _isProjectKnowledgeBusy = false;
   int _projectKnowledgeRefreshToken = 0;
+  String? _boundOutlineProjectId;
+  String? _boundTaskId;
+  bool _isSyncingOutlineText = false;
+  bool _isSyncingTaskText = false;
 
   @override
   void dispose() {
     _taskInputController.dispose();
     _newChapterController.dispose();
     _projectFlyoutController.dispose();
+    _outlineController.dispose();
+    _taskDescriptionController.dispose();
     super.dispose();
   }
 
@@ -44,6 +52,8 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
     final theme = FluentTheme.of(context);
     final state = ref.watch(novelProvider);
     final notifier = ref.read(novelProvider.notifier);
+    _syncOutlineController(state);
+    _syncTaskDescriptionController(state.selectedTask);
 
     return Container(
       color: Colors.transparent,
@@ -62,8 +72,43 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
     );
   }
 
+  void _syncOutlineController(NovelWritingState state) {
+    final projectId = state.selectedProjectId;
+    final outline = state.selectedProject?.outline ?? '';
+    if (_boundOutlineProjectId == projectId &&
+        _outlineController.text == outline) {
+      return;
+    }
+
+    _boundOutlineProjectId = projectId;
+    _isSyncingOutlineText = true;
+    _outlineController.value = TextEditingValue(
+      text: outline,
+      selection: TextSelection.collapsed(offset: outline.length),
+    );
+    _isSyncingOutlineText = false;
+  }
+
+  void _syncTaskDescriptionController(NovelTask? task) {
+    final taskId = task?.id;
+    final description = task?.description ?? '';
+    if (_boundTaskId == taskId &&
+        _taskDescriptionController.text == description) {
+      return;
+    }
+
+    _boundTaskId = taskId;
+    _isSyncingTaskText = true;
+    _taskDescriptionController.value = TextEditingValue(
+      text: description,
+      selection: TextSelection.collapsed(offset: description.length),
+    );
+    _isSyncingTaskText = false;
+  }
+
   Widget _buildCustomHeader(BuildContext context, AppLocalizations l10n,
       FluentThemeData theme, NovelWritingState state, NovelNotifier notifier) {
+    final hasRunnableTasks = notifier.hasRunnableTasksInSelectedProject();
     return Container(
       height: 50,
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -126,14 +171,10 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
             ),
           ] else ...[
             Tooltip(
-              message: state.allTasks.any((t) => t.status == TaskStatus.pending)
-                  ? '按顺序执行所有待办任务'
-                  : '没有可执行的待办任务',
+              message: hasRunnableTasks ? '按顺序执行所有待办任务' : '没有可执行的待办任务',
               child: FilledButton(
                 onPressed:
-                    state.allTasks.any((t) => t.status == TaskStatus.pending)
-                        ? () => notifier.startQueue()
-                        : null,
+                    hasRunnableTasks ? () => notifier.startQueue() : null,
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -260,8 +301,6 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   child: Row(
                     children: [
-                      const Icon(AuroraIcons.file, size: 14),
-                      const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           projectName,
@@ -502,6 +541,9 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
       FluentThemeData theme, NovelWritingState state, NovelNotifier notifier) {
     final outline = state.selectedProject?.outline ?? '';
     final hasOutline = outline.isNotEmpty;
+    final hasStoredRequirement =
+        state.selectedProject?.outlineRequirement?.trim().isNotEmpty ?? false;
+    final decomposeStatus = state.decomposeStatus?.trim() ?? '';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -515,15 +557,6 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
                   const Icon(AuroraIcons.file, size: 16),
                   const SizedBox(width: 8),
                   Text(l10n.outlineSettings, style: theme.typography.subtitle),
-                  const Spacer(),
-                  if (hasOutline)
-                    Tooltip(
-                      message: l10n.clearOutline,
-                      child: IconButton(
-                        icon: const Icon(AuroraIcons.delete, size: 14),
-                        onPressed: () => notifier.updateProjectOutline(''),
-                      ),
-                    ),
                 ],
               ),
               const SizedBox(height: 12),
@@ -544,7 +577,7 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
             padding: const EdgeInsets.all(12),
             child: !hasOutline
                 ? _buildOutlineEmptyState(theme, l10n, notifier, state)
-                : _buildOutlineEditor(theme, l10n, notifier, outline),
+                : _buildOutlineEditor(theme, l10n, notifier),
           ),
         ),
         if (hasOutline)
@@ -556,42 +589,115 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
                   top: BorderSide(
                       color: theme.resources.dividerStrokeColorDefault)),
             ),
-            child: Row(
+            child: Column(
               children: [
-                Expanded(
-                  child: FilledButton(
-                    onPressed: state.isDecomposing
-                        ? null
-                        : () =>
-                            _handleDecompose(context, l10n, state, notifier),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 6),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          if (state.isDecomposing)
-                            const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: ProgressRing(strokeWidth: 2),
-                            )
-                          else
-                            Icon(
-                                state.selectedProject!.chapters.isEmpty
-                                    ? AuroraIcons.add
-                                    : AuroraIcons.refresh,
-                                size: 16),
-                          const SizedBox(width: 8),
-                          Text(state.isDecomposing
-                              ? l10n.generating
-                              : (state.selectedProject!.chapters.isEmpty
-                                  ? l10n.generateChapters
-                                  : l10n.regenerateChapters)),
-                        ],
+                SizedBox(
+                  height: 32,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Tooltip(
+                        message: hasStoredRequirement
+                            ? '基于上次需求词重新生成大纲'
+                            : '暂无可重跑的大纲需求词',
+                        child: Button(
+                          onPressed: (state.isGeneratingOutline ||
+                                  state.isDecomposing ||
+                                  !hasStoredRequirement)
+                              ? null
+                              : () => notifier.rerunOutline(),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (state.isGeneratingOutline)
+                                const SizedBox(
+                                  width: 14,
+                                  height: 14,
+                                  child: ProgressRing(strokeWidth: 2),
+                                )
+                              else
+                                const Icon(AuroraIcons.refresh, size: 14),
+                              const SizedBox(width: 6),
+                              Text(state.isGeneratingOutline
+                                  ? l10n.generating
+                                  : '重跑大纲'),
+                            ],
+                          ),
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: FilledButton(
+                          onPressed:
+                              (state.isDecomposing || state.isGeneratingOutline)
+                                  ? null
+                                  : () => _handleDecompose(
+                                      context, l10n, state, notifier),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              if (state.isDecomposing)
+                                const SizedBox(
+                                  width: 14,
+                                  height: 14,
+                                  child: ProgressRing(
+                                      strokeWidth: 2,
+                                      activeColor: Colors.white),
+                                )
+                              else
+                                Icon(
+                                    state.selectedProject!.chapters.isEmpty
+                                        ? AuroraIcons.add
+                                        : AuroraIcons.refresh,
+                                    size: 14),
+                              const SizedBox(width: 6),
+                              Text(state.isDecomposing
+                                  ? l10n.generating
+                                  : (state.selectedProject!.chapters.isEmpty
+                                      ? l10n.generateChapters
+                                      : l10n.regenerateChapters)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
+                if (decomposeStatus.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  Container(
+                    width: double.infinity,
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: theme.resources.cardBackgroundFillColorSecondary,
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                          color: theme.resources.dividerStrokeColorDefault),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          state.isDecomposing
+                              ? AuroraIcons.autoAwesome
+                              : AuroraIcons.view,
+                          size: 14,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            state.decomposeTotalBatches > 0 &&
+                                    state.isDecomposing
+                                ? '$decomposeStatus\n批次进度：${state.decomposeCurrentBatch}/${state.decomposeTotalBatches}'
+                                : decomposeStatus,
+                            style: theme.typography.caption,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -653,17 +759,20 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
     );
   }
 
-  Widget _buildOutlineEditor(FluentThemeData theme, AppLocalizations l10n,
-      NovelNotifier notifier, String outline) {
+  Widget _buildOutlineEditor(
+      FluentThemeData theme, AppLocalizations l10n, NovelNotifier notifier) {
     return TextBox(
-      controller: TextEditingController(text: outline),
+      controller: _outlineController,
       expands: true,
       maxLines: null,
       decoration: WidgetStateProperty.all(
           const BoxDecoration(color: Colors.transparent)),
       placeholder: l10n.editOutlinePlaceholder,
       style: const TextStyle(fontSize: 14, height: 1.5),
-      onChanged: (value) => notifier.updateProjectOutline(value),
+      onChanged: (value) {
+        if (_isSyncingOutlineText) return;
+        notifier.updateProjectOutline(value);
+      },
     );
   }
 
@@ -673,8 +782,8 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
       showDialog(
         context: context,
         builder: (context) => ContentDialog(
-          title: Text(l10n.clearAndRegenerate),
-          content: Text(l10n.clearChaptersWarning),
+          title: const Text('重新生成细纲'),
+          content: const Text('将按最新大纲重新生成章节细纲。\n若中途出现异常，系统会自动回滚到当前章节内容。'),
           actions: [
             Button(
               child: Text(l10n.cancel),
@@ -682,10 +791,9 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
             ),
             FilledButton(
               style: ButtonStyle(
-                  backgroundColor: WidgetStateProperty.all(Colors.red)),
-              child: Text(l10n.clearAndRegenerate),
+                  backgroundColor: WidgetStateProperty.all(Colors.orange)),
+              child: const Text('继续生成'),
               onPressed: () {
-                notifier.clearChaptersAndTasks();
                 notifier.decomposeFromOutline();
                 Navigator.pop(context);
               },
@@ -1316,7 +1424,9 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
                   if (task.status == TaskStatus.success)
                     IconButton(
                       icon: const Icon(AuroraIcons.refresh, size: 12),
-                      onPressed: () => notifier.runSingleTask(task.id),
+                      onPressed: state.isRunning
+                          ? null
+                          : () => notifier.runSingleTask(task.id),
                     ),
                   IconButton(
                     icon: Icon(AuroraIcons.delete,
@@ -1386,12 +1496,16 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
               else if (task.status == TaskStatus.pending ||
                   task.status == TaskStatus.failed)
                 FilledButton(
-                  onPressed: () => notifier.runSingleTask(task.id),
+                  onPressed: state.isRunning
+                      ? null
+                      : () => notifier.runSingleTask(task.id),
                   child: Text(l10n.executeTask),
                 )
               else if (task.status == TaskStatus.success)
                 Button(
-                  onPressed: () => notifier.runSingleTask(task.id),
+                  onPressed: state.isRunning
+                      ? null
+                      : () => notifier.runSingleTask(task.id),
                   child: Text(l10n.regenerate),
                 ),
             ],
@@ -1407,10 +1521,12 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
                 Text(l10n.taskRequirement, style: theme.typography.bodyStrong),
                 const SizedBox(height: 8),
                 TextBox(
-                  controller: TextEditingController(text: task.description),
+                  controller: _taskDescriptionController,
                   maxLines: null,
-                  onChanged: (value) =>
-                      notifier.updateTaskDescription(task.id, value),
+                  onChanged: (value) {
+                    if (_isSyncingTaskText) return;
+                    notifier.updateTaskDescription(task.id, value);
+                  },
                   decoration: WidgetStateProperty.all(BoxDecoration(
                     color: theme.resources.layerFillColorAlt,
                     borderRadius: BorderRadius.circular(4),
@@ -1451,14 +1567,17 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
                     ),
                   )
                 else
-                  TextBox(
-                    controller: TextEditingController(text: task.content),
-                    maxLines: null,
-                    readOnly: true,
-                    decoration: WidgetStateProperty.all(BoxDecoration(
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
                       color: theme.resources.layerFillColorAlt,
                       borderRadius: BorderRadius.circular(4),
-                    )),
+                    ),
+                    child: SelectableText(
+                      task.content ?? '',
+                      style: theme.typography.body,
+                    ),
                   ),
                 if (task.reviewFeedback != null &&
                     task.reviewFeedback!.isNotEmpty) ...[
@@ -1483,14 +1602,18 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       Button(
-                        onPressed: () => notifier.runSingleTask(task.id),
+                        onPressed: state.isRunning
+                            ? null
+                            : () => notifier.runSingleTask(task.id),
                         child: Text('${l10n.reject} (${l10n.regenerate})',
                             style: TextStyle(color: Colors.red.light)),
                       ),
                       const SizedBox(width: 8),
                       FilledButton(
-                        onPressed: () => notifier.updateTaskStatus(
-                            task.id, TaskStatus.success),
+                        onPressed: state.isRunning
+                            ? null
+                            : () => notifier.updateTaskStatus(
+                                task.id, TaskStatus.success),
                         child: Text(l10n.approve),
                       ),
                     ],

@@ -26,8 +26,11 @@ class _MobileNovelWritingPageState extends ConsumerState<MobileNovelWritingPage>
   final _taskInputController = TextEditingController();
   final _newProjectController = TextEditingController();
   final _newChapterController = TextEditingController();
+  final _outlineController = TextEditingController();
   bool _isProjectKnowledgeBusy = false;
   int _projectKnowledgeRefreshToken = 0;
+  String? _boundOutlineProjectId;
+  bool _isSyncingOutlineText = false;
 
   @override
   void initState() {
@@ -41,6 +44,7 @@ class _MobileNovelWritingPageState extends ConsumerState<MobileNovelWritingPage>
     _taskInputController.dispose();
     _newProjectController.dispose();
     _newChapterController.dispose();
+    _outlineController.dispose();
     super.dispose();
   }
 
@@ -50,6 +54,7 @@ class _MobileNovelWritingPageState extends ConsumerState<MobileNovelWritingPage>
     final theme = Theme.of(context);
     final state = ref.watch(novelProvider);
     final notifier = ref.read(novelProvider.notifier);
+    _syncOutlineController(state);
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -152,7 +157,7 @@ class _MobileNovelWritingPageState extends ConsumerState<MobileNovelWritingPage>
         backgroundColor: Colors.red,
         child: const Icon(AuroraIcons.stop),
       );
-    } else if (state.allTasks.any((t) => t.status == TaskStatus.pending)) {
+    } else if (notifier.hasRunnableTasksInSelectedProject()) {
       return FloatingActionButton(
         onPressed: () => notifier.startQueue(),
         child: const Icon(AuroraIcons.play),
@@ -180,6 +185,23 @@ class _MobileNovelWritingPageState extends ConsumerState<MobileNovelWritingPage>
         ],
       ),
     );
+  }
+
+  void _syncOutlineController(NovelWritingState state) {
+    final projectId = state.selectedProjectId;
+    final outline = state.selectedProject?.outline ?? '';
+    if (_boundOutlineProjectId == projectId &&
+        _outlineController.text == outline) {
+      return;
+    }
+
+    _boundOutlineProjectId = projectId;
+    _isSyncingOutlineText = true;
+    _outlineController.value = TextEditingValue(
+      text: outline,
+      selection: TextSelection.collapsed(offset: outline.length),
+    );
+    _isSyncingOutlineText = false;
   }
 
   void _showProjectPicker(BuildContext context, AppLocalizations l10n,
@@ -316,7 +338,14 @@ class _MobileNovelWritingPageState extends ConsumerState<MobileNovelWritingPage>
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                   child: _buildChapterItem(
-                      context, chapter, tasks, l10n, theme, notifier),
+                    context,
+                    chapter,
+                    tasks,
+                    l10n,
+                    theme,
+                    notifier,
+                    state.isRunning,
+                  ),
                 );
               },
               childCount: state.selectedProject!.chapters.length,
@@ -332,6 +361,9 @@ class _MobileNovelWritingPageState extends ConsumerState<MobileNovelWritingPage>
       ThemeData theme, NovelWritingState state, NovelNotifier notifier) {
     final outline = state.selectedProject?.outline ?? '';
     final hasOutline = outline.isNotEmpty;
+    final hasStoredRequirement =
+        state.selectedProject?.outlineRequirement?.trim().isNotEmpty ?? false;
+    final decomposeStatus = state.decomposeStatus?.trim() ?? '';
 
     return Container(
       decoration: BoxDecoration(
@@ -371,41 +403,98 @@ class _MobileNovelWritingPageState extends ConsumerState<MobileNovelWritingPage>
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: TextField(
-                          controller: TextEditingController(text: outline),
+                          controller: _outlineController,
                           maxLines: null,
                           decoration: const InputDecoration(
                             border: InputBorder.none,
                             contentPadding: EdgeInsets.all(12),
                           ),
                           style: const TextStyle(fontSize: 14),
-                          onChanged: (v) => notifier.updateProjectOutline(v),
+                          onChanged: (v) {
+                            if (_isSyncingOutlineText) return;
+                            notifier.updateProjectOutline(v);
+                          },
                         ),
                       ),
                       const SizedBox(height: 16),
-                      SizedBox(
-                        width: double.infinity,
-                        child: FilledButton.icon(
-                          onPressed: state.isDecomposing
-                              ? null
-                              : () => _handleDecompose(
-                                  context, l10n, state, notifier),
-                          icon: state.isDecomposing
-                              ? const SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(
-                                      strokeWidth: 2, color: Colors.white))
-                              : const Icon(AuroraIcons.autoAwesome, size: 18),
-                          label: Text(state.isDecomposing
-                              ? l10n.generating
-                              : l10n.generateChapters),
-                          style: FilledButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8)),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: (state.isGeneratingOutline ||
+                                      state.isDecomposing ||
+                                      !hasStoredRequirement)
+                                  ? null
+                                  : () => notifier.rerunOutline(),
+                              icon: state.isGeneratingOutline
+                                  ? const SizedBox(
+                                      width: 14,
+                                      height: 14,
+                                      child: CircularProgressIndicator(
+                                          strokeWidth: 2),
+                                    )
+                                  : const Icon(AuroraIcons.refresh, size: 16),
+                              label: Text(state.isGeneratingOutline
+                                  ? l10n.generating
+                                  : '重跑大纲'),
+                              style: OutlinedButton.styleFrom(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8)),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: FilledButton.icon(
+                              onPressed: (state.isDecomposing ||
+                                      state.isGeneratingOutline)
+                                  ? null
+                                  : () => _handleDecompose(
+                                      context, l10n, state, notifier),
+                              icon: state.isDecomposing
+                                  ? const SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(
+                                          strokeWidth: 2, color: Colors.white))
+                                  : const Icon(AuroraIcons.autoAwesome,
+                                      size: 18),
+                              label: Text(state.isDecomposing
+                                  ? l10n.generating
+                                  : l10n.generateChapters),
+                              style: FilledButton.styleFrom(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8)),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (decomposeStatus.isNotEmpty) ...[
+                        const SizedBox(height: 10),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: theme.cardColor.withValues(alpha: 0.6),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: theme.dividerColor.withValues(alpha: 0.2),
+                            ),
+                          ),
+                          child: Text(
+                            state.decomposeTotalBatches > 0 &&
+                                    state.isDecomposing
+                                ? '$decomposeStatus\n批次进度：${state.decomposeCurrentBatch}/${state.decomposeTotalBatches}'
+                                : decomposeStatus,
+                            style: theme.textTheme.bodySmall,
                           ),
                         ),
-                      ),
+                      ],
                     ],
                   )
                 : _buildOutlineEmptyState(theme, l10n, notifier, state),
@@ -467,13 +556,12 @@ class _MobileNovelWritingPageState extends ConsumerState<MobileNovelWritingPage>
     if (state.selectedProject?.chapters.isNotEmpty ?? false) {
       final confirmed = await AuroraBottomSheet.showConfirm(
         context: context,
-        title: l10n.confirm,
-        content: l10n.clearChaptersWarning,
-        confirmText: l10n.confirm,
-        isDestructive: true,
+        title: '重新生成细纲',
+        content: '将按最新大纲重新生成章节细纲。\n若中途出现异常，系统会自动回滚到当前章节内容。',
+        confirmText: '继续生成',
+        isDestructive: false,
       );
       if (confirmed == true) {
-        notifier.clearChaptersAndTasks();
         notifier.decomposeFromOutline();
       }
     } else {
@@ -489,7 +577,8 @@ class _MobileNovelWritingPageState extends ConsumerState<MobileNovelWritingPage>
       List<NovelTask> tasks,
       AppLocalizations l10n,
       ThemeData theme,
-      NovelNotifier notifier) {
+      NovelNotifier notifier,
+      bool isQueueRunning) {
     final status = tasks.isEmpty ? TaskStatus.pending : tasks.first.status;
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -567,8 +656,9 @@ class _MobileNovelWritingPageState extends ConsumerState<MobileNovelWritingPage>
                     children: [
                       if (tasks.first.status == TaskStatus.reviewing) ...[
                         TextButton.icon(
-                          onPressed: () =>
-                              notifier.runSingleTask(tasks.first.id),
+                          onPressed: isQueueRunning
+                              ? null
+                              : () => notifier.runSingleTask(tasks.first.id),
                           icon: const Icon(AuroraIcons.close,
                               size: 16, color: Colors.red),
                           label: Text(l10n.reject,
@@ -577,8 +667,10 @@ class _MobileNovelWritingPageState extends ConsumerState<MobileNovelWritingPage>
                         ),
                         const SizedBox(width: 8),
                         ElevatedButton.icon(
-                          onPressed: () => notifier.updateTaskStatus(
-                              tasks.first.id, TaskStatus.success),
+                          onPressed: isQueueRunning
+                              ? null
+                              : () => notifier.updateTaskStatus(
+                                  tasks.first.id, TaskStatus.success),
                           icon: const Icon(AuroraIcons.check, size: 16),
                           label: Text(l10n.approve,
                               style: const TextStyle(fontSize: 13)),
@@ -586,16 +678,18 @@ class _MobileNovelWritingPageState extends ConsumerState<MobileNovelWritingPage>
                       ] else if (tasks.first.status == TaskStatus.pending ||
                           tasks.first.status == TaskStatus.failed) ...[
                         ElevatedButton.icon(
-                          onPressed: () =>
-                              notifier.runSingleTask(tasks.first.id),
+                          onPressed: isQueueRunning
+                              ? null
+                              : () => notifier.runSingleTask(tasks.first.id),
                           icon: const Icon(AuroraIcons.play, size: 16),
                           label: Text(l10n.executeTask,
                               style: const TextStyle(fontSize: 13)),
                         ),
                       ] else if (tasks.first.status == TaskStatus.success) ...[
                         TextButton.icon(
-                          onPressed: () =>
-                              notifier.runSingleTask(tasks.first.id),
+                          onPressed: isQueueRunning
+                              ? null
+                              : () => notifier.runSingleTask(tasks.first.id),
                           icon: const Icon(AuroraIcons.retry, size: 16),
                           label: Text(l10n.regenerate,
                               style: const TextStyle(fontSize: 13)),
