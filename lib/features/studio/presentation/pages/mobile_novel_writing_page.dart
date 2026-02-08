@@ -669,8 +669,7 @@ class _MobileNovelWritingPageState extends ConsumerState<MobileNovelWritingPage>
                         ElevatedButton.icon(
                           onPressed: isQueueRunning
                               ? null
-                              : () => notifier.updateTaskStatus(
-                                  tasks.first.id, TaskStatus.success),
+                              : () => notifier.approveTask(tasks.first.id),
                           icon: const Icon(AuroraIcons.check, size: 16),
                           label: Text(l10n.approve,
                               style: const TextStyle(fontSize: 13)),

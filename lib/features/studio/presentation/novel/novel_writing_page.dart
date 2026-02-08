@@ -1612,8 +1612,7 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
                       FilledButton(
                         onPressed: state.isRunning
                             ? null
-                            : () => notifier.updateTaskStatus(
-                                task.id, TaskStatus.success),
+                            : () => notifier.approveTask(task.id),
                         child: Text(l10n.approve),
                       ),
                     ],

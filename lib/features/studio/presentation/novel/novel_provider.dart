@@ -1842,23 +1842,59 @@ $suggestions
   Future<void> _extractContextUpdates(String content) async {
     if (state.selectedProject == null) return;
 
-    // 使用大纲模型（或降级到写作模型）进行数据提取
-    final extractorModel = _isUsableModelConfig(state.outlineModel)
-        ? state.outlineModel
-        : (_isUsableModelConfig(state.writerModel) ? state.writerModel : null);
-    if (extractorModel == null) return;
+    // 优先用大纲模型提取；失败时降级到写作模型，避免单模型抖动导致全量丢失
+    final extractorCandidates = <NovelModelConfig>[];
+    if (_isUsableModelConfig(state.outlineModel)) {
+      extractorCandidates.add(state.outlineModel!);
+    }
+    if (_isUsableModelConfig(state.writerModel)) {
+      final writer = state.writerModel!;
+      final duplicate = extractorCandidates.any(
+        (m) => m.providerId == writer.providerId && m.modelId == writer.modelId,
+      );
+      if (!duplicate) {
+        extractorCandidates.add(writer);
+      }
+    }
+    if (extractorCandidates.isEmpty) return;
 
     try {
-      final result = await _callLLM(
-        extractorModel,
-        NovelPromptPresets.contextExtractor,
-        content,
-        cancelToken: _currentCancelToken,
-      );
+      Map<String, dynamic>? updates;
+      Object? lastError;
 
-      if (_shouldStop) return;
+      for (final extractorModel in extractorCandidates) {
+        try {
+          final result = await _callLLM(
+            extractorModel,
+            NovelPromptPresets.contextExtractor,
+            content,
+            cancelToken: _currentCancelToken,
+          );
 
-      final updates = jsonDecode(result) as Map<String, dynamic>;
+          if (_shouldStop) return;
+
+          final decoded = jsonDecode(_cleanJson(result));
+          if (decoded is Map<String, dynamic>) {
+            updates = decoded;
+            break;
+          }
+          if (decoded is Map) {
+            updates = decoded.map(
+              (key, value) => MapEntry(key.toString(), value),
+            );
+            break;
+          }
+          lastError = 'Context extractor returned non-object JSON.';
+        } catch (e) {
+          lastError = e;
+        }
+      }
+
+      if (updates == null) {
+        debugPrint('⚠️ Context extraction skipped: $lastError');
+        return;
+      }
+
       final ctx = state.selectedProject!.worldContext;
 
       // Merge updates into existing context
@@ -1869,72 +1905,52 @@ $suggestions
       final newForeshadowing = List<String>.from(ctx.foreshadowing);
 
       // 处理新角色
-      if (updates['newCharacters'] != null) {
-        newCharacters
-            .addAll(Map<String, String>.from(updates['newCharacters'] as Map));
-      }
+      newCharacters.addAll(_toStringMap(updates['newCharacters']));
 
       // 处理角色状态更新（Data Agent 核心功能）
       // 当角色发生变化时（如升级、获得物品），更新其描述
-      if (updates['characterUpdates'] != null) {
-        final charUpdates =
-            Map<String, String>.from(updates['characterUpdates'] as Map);
-        for (final entry in charUpdates.entries) {
-          final charName = entry.key;
-          final updateDesc = entry.value;
-          if (newCharacters.containsKey(charName)) {
-            // 追加状态变化到现有描述
-            final existing = newCharacters[charName]!;
-            newCharacters[charName] = '$existing【最新】$updateDesc';
-          } else {
-            // 如果角色不存在，作为新角色添加
-            newCharacters[charName] = updateDesc;
-          }
+      final charUpdates = _toStringMap(updates['characterUpdates']);
+      for (final entry in charUpdates.entries) {
+        final charName = entry.key;
+        final updateDesc = entry.value;
+        if (newCharacters.containsKey(charName)) {
+          // 追加状态变化到现有描述
+          final existing = newCharacters[charName]!;
+          newCharacters[charName] = '$existing【最新】$updateDesc';
+        } else {
+          // 如果角色不存在，作为新角色添加
+          newCharacters[charName] = updateDesc;
         }
       }
 
       // 处理新规则
-      if (updates['newRules'] != null) {
-        newRules.addAll(Map<String, String>.from(updates['newRules'] as Map));
-      }
+      newRules.addAll(_toStringMap(updates['newRules']));
 
       // 处理规则状态更新
-      if (updates['ruleUpdates'] != null) {
-        final ruleUpdates =
-            Map<String, String>.from(updates['ruleUpdates'] as Map);
-        for (final entry in ruleUpdates.entries) {
-          final ruleName = entry.key;
-          final updateDesc = entry.value;
-          if (newRules.containsKey(ruleName)) {
-            final existing = newRules[ruleName]!;
-            newRules[ruleName] = '$existing【最新】$updateDesc';
-          } else {
-            newRules[ruleName] = updateDesc;
-          }
+      final ruleUpdates = _toStringMap(updates['ruleUpdates']);
+      for (final entry in ruleUpdates.entries) {
+        final ruleName = entry.key;
+        final updateDesc = entry.value;
+        if (newRules.containsKey(ruleName)) {
+          final existing = newRules[ruleName]!;
+          newRules[ruleName] = '$existing【最新】$updateDesc';
+        } else {
+          newRules[ruleName] = updateDesc;
         }
       }
 
-      if (updates['updatedRelationships'] != null) {
-        newRelationships.addAll(
-            Map<String, String>.from(updates['updatedRelationships'] as Map));
-      }
-      if (updates['newLocations'] != null) {
-        newLocations
-            .addAll(Map<String, String>.from(updates['newLocations'] as Map));
-      }
-      if (updates['newForeshadowing'] != null) {
-        final newItems = List<String>.from(updates['newForeshadowing'] as List);
-        for (final item in newItems) {
-          if (!newForeshadowing.contains(item)) {
-            newForeshadowing.add(item);
-          }
+      newRelationships.addAll(_toStringMap(updates['updatedRelationships']));
+      newLocations.addAll(_toStringMap(updates['newLocations']));
+
+      final newItems = _toStringList(updates['newForeshadowing']);
+      for (final item in newItems) {
+        if (!newForeshadowing.contains(item)) {
+          newForeshadowing.add(item);
         }
       }
-      if (updates['resolvedForeshadowing'] != null) {
-        final resolved =
-            List<String>.from(updates['resolvedForeshadowing'] as List);
-        newForeshadowing.removeWhere((f) => resolved.contains(f));
-      }
+
+      final resolved = _toStringList(updates['resolvedForeshadowing']);
+      newForeshadowing.removeWhere((f) => resolved.contains(f));
 
       updateWorldContext(ctx.copyWith(
         characters: newCharacters,
@@ -1944,8 +1960,33 @@ $suggestions
         foreshadowing: newForeshadowing,
       ));
     } catch (e) {
-      // Silently ignore extraction errors
+      debugPrint('⚠️ Context extraction failed: $e');
     }
+  }
+
+  Map<String, String> _toStringMap(dynamic raw) {
+    if (raw is! Map) return const {};
+    final result = <String, String>{};
+    raw.forEach((key, value) {
+      final k = key.toString().trim();
+      final v = value?.toString().trim() ?? '';
+      if (k.isNotEmpty && v.isNotEmpty) {
+        result[k] = v;
+      }
+    });
+    return result;
+  }
+
+  List<String> _toStringList(dynamic raw) {
+    if (raw is! List) return const [];
+    final result = <String>[];
+    for (final item in raw) {
+      final text = item?.toString().trim() ?? '';
+      if (text.isNotEmpty) {
+        result.add(text);
+      }
+    }
+    return result;
   }
 
   // ========== Chapter Management ==========
@@ -2401,6 +2442,22 @@ $suggestions
 
   void updateTaskStatus(String taskId, TaskStatus status) {
     _updateTaskStatus(taskId, status);
+  }
+
+  Future<void> approveTask(String taskId) async {
+    await _waitUntilLoaded();
+    final task = state.allTasks.firstWhere(
+      (t) => t.id == taskId,
+      orElse: () => const NovelTask(id: '', chapterId: '', description: ''),
+    );
+    if (task.id.isEmpty) return;
+
+    _updateTaskStatus(taskId, TaskStatus.success);
+
+    final content = task.content?.trim() ?? '';
+    if (content.isNotEmpty) {
+      await _extractContextUpdates(content);
+    }
   }
 
   /// Execute a single task (called when user clicks "Run Task" button)
