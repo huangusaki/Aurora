@@ -7,6 +7,7 @@ import '../domain/assistant.dart';
 import 'widgets/assistant_avatar.dart';
 import 'assistant_provider.dart';
 import '../../settings/presentation/widgets/mobile_settings_widgets.dart';
+import '../../settings/presentation/settings_provider.dart';
 import '../../skills/presentation/skill_provider.dart';
 import '../../knowledge/presentation/knowledge_provider.dart';
 import 'package:image_picker/image_picker.dart';
@@ -173,6 +174,14 @@ class _MobileAssistantDetailPageState
                       enableMemory: !_currentAssistant.enableMemory));
                 },
               ),
+              MobileSettingsTile(
+                leading: const Icon(Icons.tune_outlined),
+                title: l10n.assistantMemoryConsolidationModel,
+                subtitle: _memoryModelSubtitle(),
+                onTap: _currentAssistant.enableMemory
+                    ? () => _showMemoryModelPicker(context)
+                    : null,
+              ),
               Padding(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -247,6 +256,22 @@ class _MobileAssistantDetailPageState
       _currentAssistant = updated;
     });
     ref.read(assistantProvider.notifier).saveAssistant(updated);
+  }
+
+  String _memoryModelSubtitle() {
+    final l10n = AppLocalizations.of(context)!;
+    final providerId = _currentAssistant.memoryProviderId;
+    final model = _currentAssistant.memoryModel;
+    if (providerId == null ||
+        providerId.isEmpty ||
+        model == null ||
+        model.isEmpty) {
+      return l10n.assistantMemoryFollowCurrentChatModel;
+    }
+    final providers = ref.read(settingsProvider).providers;
+    final provider = providers.where((p) => p.id == providerId).firstOrNull;
+    if (provider == null) return '$providerId - $model';
+    return '${provider.name} - $model';
   }
 
   Future<void> _pickAvatar() async {
@@ -441,6 +466,71 @@ class _MobileAssistantDetailPageState
             },
             child: Text(l10n.delete, style: const TextStyle(color: Colors.red)),
           ),
+        ],
+      ),
+    );
+  }
+
+  void _showMemoryModelPicker(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final settings = ref.read(settingsProvider);
+    final options = <(String value, String label)>[
+      ('__follow__', l10n.assistantMemoryFollowCurrentChatModel),
+    ];
+    for (final provider in settings.providers) {
+      if (!provider.isEnabled) continue;
+      for (final model in provider.models) {
+        if (!provider.isModelEnabled(model)) continue;
+        options.add(('${provider.id}@$model', '${provider.name} - $model'));
+      }
+    }
+
+    AuroraBottomSheet.show(
+      context: context,
+      builder: (ctx) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AuroraBottomSheet.buildTitle(
+            context,
+            l10n.assistantMemoryConsolidationModel,
+          ),
+          const Divider(height: 1),
+          ...options.map((option) {
+            final selectedValue = _currentAssistant.memoryProviderId != null &&
+                    _currentAssistant.memoryModel != null
+                ? '${_currentAssistant.memoryProviderId}@${_currentAssistant.memoryModel}'
+                : '__follow__';
+            final isSelected = option.$1 == selectedValue;
+            return AuroraBottomSheet.buildListItem(
+              context: context,
+              leading: Icon(
+                isSelected ? Icons.check_circle : Icons.circle_outlined,
+                color: isSelected ? Theme.of(context).primaryColor : null,
+              ),
+              title: Text(option.$2),
+              onTap: () {
+                Navigator.pop(ctx);
+                if (option.$1 == '__follow__') {
+                  _updateAssistant(
+                    _currentAssistant.copyWith(
+                      memoryProviderId: null,
+                      memoryModel: null,
+                    ),
+                  );
+                  return;
+                }
+                final split = option.$1.split('@');
+                if (split.length != 2) return;
+                _updateAssistant(
+                  _currentAssistant.copyWith(
+                    memoryProviderId: split[0],
+                    memoryModel: split[1],
+                  ),
+                );
+              },
+            );
+          }),
+          const SizedBox(height: 16),
         ],
       ),
     );

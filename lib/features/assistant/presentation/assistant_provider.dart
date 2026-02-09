@@ -65,6 +65,11 @@ class AssistantNotifier extends StateNotifier<AssistantState> {
               skillIds: e.skillIds,
               knowledgeBaseIds: e.knowledgeBaseIds,
               enableMemory: e.enableMemory,
+              memoryProviderId: (e.memoryProviderId?.isEmpty ?? true)
+                  ? null
+                  : e.memoryProviderId,
+              memoryModel:
+                  (e.memoryModel?.isEmpty ?? true) ? null : e.memoryModel,
             ))
         .toList();
 
@@ -97,6 +102,8 @@ class AssistantNotifier extends StateNotifier<AssistantState> {
       ..skillIds = assistant.skillIds
       ..knowledgeBaseIds = assistant.knowledgeBaseIds
       ..enableMemory = assistant.enableMemory
+      ..memoryProviderId = assistant.memoryProviderId
+      ..memoryModel = assistant.memoryModel
       ..updatedAt = DateTime.now();
 
     await storage.saveAssistant(entity);

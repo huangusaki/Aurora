@@ -15,6 +15,9 @@ import '../../chat/data/topic_entity.dart';
 import '../../knowledge/data/knowledge_entities.dart';
 
 import '../../assistant/data/assistant_entity.dart';
+import '../../assistant/data/assistant_memory_item_entity.dart';
+import '../../assistant/data/assistant_memory_job_entity.dart';
+import '../../assistant/data/assistant_memory_state_entity.dart';
 
 class SettingsStorage {
   late Isar _isar;
@@ -38,6 +41,9 @@ class SettingsStorage {
         TopicEntitySchema,
         ChatPresetEntitySchema,
         AssistantEntitySchema,
+        AssistantMemoryItemEntitySchema,
+        AssistantMemoryStateEntitySchema,
+        AssistantMemoryJobEntitySchema,
         KnowledgeBaseEntitySchema,
         KnowledgeDocumentEntitySchema,
         KnowledgeChunkEntitySchema,
@@ -212,6 +218,11 @@ class SettingsStorage {
     int? closeBehavior,
     String? executionModel,
     String? executionProviderId,
+    int? memoryMinNewUserMessages,
+    int? memoryIdleSeconds,
+    int? memoryMaxBufferedMessages,
+    int? memoryMaxRunsPerDay,
+    int? memoryContextWindowSize,
     double? fontSize,
     String? backgroundImagePath,
     double? backgroundBrightness,
@@ -266,6 +277,17 @@ class SettingsStorage {
       ..executionModel = executionModel ?? existing?.executionModel
       ..executionProviderId =
           executionProviderId ?? existing?.executionProviderId
+      ..memoryMinNewUserMessages =
+          memoryMinNewUserMessages ?? existing?.memoryMinNewUserMessages ?? 20
+      ..memoryIdleSeconds =
+          memoryIdleSeconds ?? existing?.memoryIdleSeconds ?? 600
+      ..memoryMaxBufferedMessages = memoryMaxBufferedMessages ??
+          existing?.memoryMaxBufferedMessages ??
+          120
+      ..memoryMaxRunsPerDay =
+          memoryMaxRunsPerDay ?? existing?.memoryMaxRunsPerDay ?? 2
+      ..memoryContextWindowSize =
+          memoryContextWindowSize ?? existing?.memoryContextWindowSize ?? 80
       ..fontSize = fontSize ?? existing?.fontSize ?? 14.0
       ..backgroundImagePath = clearBackgroundImage
           ? null
@@ -647,6 +669,11 @@ class SettingsStorage {
       ..closeBehavior = source.closeBehavior
       ..executionModel = source.executionModel
       ..executionProviderId = source.executionProviderId
+      ..memoryMinNewUserMessages = source.memoryMinNewUserMessages
+      ..memoryIdleSeconds = source.memoryIdleSeconds
+      ..memoryMaxBufferedMessages = source.memoryMaxBufferedMessages
+      ..memoryMaxRunsPerDay = source.memoryMaxRunsPerDay
+      ..memoryContextWindowSize = source.memoryContextWindowSize
       ..fontSize = source.fontSize
       ..backgroundImagePath = source.backgroundImagePath
       ..backgroundBrightness = source.backgroundBrightness

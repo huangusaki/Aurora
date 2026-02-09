@@ -42,33 +42,43 @@ const AssistantEntitySchema = CollectionSchema(
       name: r'knowledgeBaseIds',
       type: IsarType.stringList,
     ),
-    r'name': PropertySchema(
+    r'memoryModel': PropertySchema(
       id: 5,
+      name: r'memoryModel',
+      type: IsarType.string,
+    ),
+    r'memoryProviderId': PropertySchema(
+      id: 6,
+      name: r'memoryProviderId',
+      type: IsarType.string,
+    ),
+    r'name': PropertySchema(
+      id: 7,
       name: r'name',
       type: IsarType.string,
     ),
     r'preferredModel': PropertySchema(
-      id: 6,
+      id: 8,
       name: r'preferredModel',
       type: IsarType.string,
     ),
     r'providerId': PropertySchema(
-      id: 7,
+      id: 9,
       name: r'providerId',
       type: IsarType.string,
     ),
     r'skillIds': PropertySchema(
-      id: 8,
+      id: 10,
       name: r'skillIds',
       type: IsarType.stringList,
     ),
     r'systemPrompt': PropertySchema(
-      id: 9,
+      id: 11,
       name: r'systemPrompt',
       type: IsarType.string,
     ),
     r'updatedAt': PropertySchema(
-      id: 10,
+      id: 12,
       name: r'updatedAt',
       type: IsarType.dateTime,
     )
@@ -140,6 +150,18 @@ int _assistantEntityEstimateSize(
       bytesCount += value.length * 3;
     }
   }
+  {
+    final value = object.memoryModel;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.memoryProviderId;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   bytesCount += 3 + object.name.length * 3;
   {
     final value = object.preferredModel;
@@ -175,12 +197,14 @@ void _assistantEntitySerialize(
   writer.writeString(offsets[2], object.description);
   writer.writeBool(offsets[3], object.enableMemory);
   writer.writeStringList(offsets[4], object.knowledgeBaseIds);
-  writer.writeString(offsets[5], object.name);
-  writer.writeString(offsets[6], object.preferredModel);
-  writer.writeString(offsets[7], object.providerId);
-  writer.writeStringList(offsets[8], object.skillIds);
-  writer.writeString(offsets[9], object.systemPrompt);
-  writer.writeDateTime(offsets[10], object.updatedAt);
+  writer.writeString(offsets[5], object.memoryModel);
+  writer.writeString(offsets[6], object.memoryProviderId);
+  writer.writeString(offsets[7], object.name);
+  writer.writeString(offsets[8], object.preferredModel);
+  writer.writeString(offsets[9], object.providerId);
+  writer.writeStringList(offsets[10], object.skillIds);
+  writer.writeString(offsets[11], object.systemPrompt);
+  writer.writeDateTime(offsets[12], object.updatedAt);
 }
 
 AssistantEntity _assistantEntityDeserialize(
@@ -196,12 +220,14 @@ AssistantEntity _assistantEntityDeserialize(
   object.enableMemory = reader.readBool(offsets[3]);
   object.id = id;
   object.knowledgeBaseIds = reader.readStringList(offsets[4]) ?? [];
-  object.name = reader.readString(offsets[5]);
-  object.preferredModel = reader.readStringOrNull(offsets[6]);
-  object.providerId = reader.readStringOrNull(offsets[7]);
-  object.skillIds = reader.readStringList(offsets[8]) ?? [];
-  object.systemPrompt = reader.readString(offsets[9]);
-  object.updatedAt = reader.readDateTimeOrNull(offsets[10]);
+  object.memoryModel = reader.readStringOrNull(offsets[5]);
+  object.memoryProviderId = reader.readStringOrNull(offsets[6]);
+  object.name = reader.readString(offsets[7]);
+  object.preferredModel = reader.readStringOrNull(offsets[8]);
+  object.providerId = reader.readStringOrNull(offsets[9]);
+  object.skillIds = reader.readStringList(offsets[10]) ?? [];
+  object.systemPrompt = reader.readString(offsets[11]);
+  object.updatedAt = reader.readDateTimeOrNull(offsets[12]);
   return object;
 }
 
@@ -223,16 +249,20 @@ P _assistantEntityDeserializeProp<P>(
     case 4:
       return (reader.readStringList(offset) ?? []) as P;
     case 5:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 6:
       return (reader.readStringOrNull(offset)) as P;
     case 7:
-      return (reader.readStringOrNull(offset)) as P;
-    case 8:
-      return (reader.readStringList(offset) ?? []) as P;
-    case 9:
       return (reader.readString(offset)) as P;
+    case 8:
+      return (reader.readStringOrNull(offset)) as P;
+    case 9:
+      return (reader.readStringOrNull(offset)) as P;
     case 10:
+      return (reader.readStringList(offset) ?? []) as P;
+    case 11:
+      return (reader.readString(offset)) as P;
+    case 12:
       return (reader.readDateTimeOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -1297,6 +1327,314 @@ extension AssistantEntityQueryFilter
   }
 
   QueryBuilder<AssistantEntity, AssistantEntity, QAfterFilterCondition>
+      memoryModelIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'memoryModel',
+      ));
+    });
+  }
+
+  QueryBuilder<AssistantEntity, AssistantEntity, QAfterFilterCondition>
+      memoryModelIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'memoryModel',
+      ));
+    });
+  }
+
+  QueryBuilder<AssistantEntity, AssistantEntity, QAfterFilterCondition>
+      memoryModelEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'memoryModel',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AssistantEntity, AssistantEntity, QAfterFilterCondition>
+      memoryModelGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'memoryModel',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AssistantEntity, AssistantEntity, QAfterFilterCondition>
+      memoryModelLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'memoryModel',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AssistantEntity, AssistantEntity, QAfterFilterCondition>
+      memoryModelBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'memoryModel',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AssistantEntity, AssistantEntity, QAfterFilterCondition>
+      memoryModelStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'memoryModel',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AssistantEntity, AssistantEntity, QAfterFilterCondition>
+      memoryModelEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'memoryModel',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AssistantEntity, AssistantEntity, QAfterFilterCondition>
+      memoryModelContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'memoryModel',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AssistantEntity, AssistantEntity, QAfterFilterCondition>
+      memoryModelMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'memoryModel',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AssistantEntity, AssistantEntity, QAfterFilterCondition>
+      memoryModelIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'memoryModel',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<AssistantEntity, AssistantEntity, QAfterFilterCondition>
+      memoryModelIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'memoryModel',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<AssistantEntity, AssistantEntity, QAfterFilterCondition>
+      memoryProviderIdIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'memoryProviderId',
+      ));
+    });
+  }
+
+  QueryBuilder<AssistantEntity, AssistantEntity, QAfterFilterCondition>
+      memoryProviderIdIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'memoryProviderId',
+      ));
+    });
+  }
+
+  QueryBuilder<AssistantEntity, AssistantEntity, QAfterFilterCondition>
+      memoryProviderIdEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'memoryProviderId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AssistantEntity, AssistantEntity, QAfterFilterCondition>
+      memoryProviderIdGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'memoryProviderId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AssistantEntity, AssistantEntity, QAfterFilterCondition>
+      memoryProviderIdLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'memoryProviderId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AssistantEntity, AssistantEntity, QAfterFilterCondition>
+      memoryProviderIdBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'memoryProviderId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AssistantEntity, AssistantEntity, QAfterFilterCondition>
+      memoryProviderIdStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'memoryProviderId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AssistantEntity, AssistantEntity, QAfterFilterCondition>
+      memoryProviderIdEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'memoryProviderId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AssistantEntity, AssistantEntity, QAfterFilterCondition>
+      memoryProviderIdContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'memoryProviderId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AssistantEntity, AssistantEntity, QAfterFilterCondition>
+      memoryProviderIdMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'memoryProviderId',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AssistantEntity, AssistantEntity, QAfterFilterCondition>
+      memoryProviderIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'memoryProviderId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<AssistantEntity, AssistantEntity, QAfterFilterCondition>
+      memoryProviderIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'memoryProviderId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<AssistantEntity, AssistantEntity, QAfterFilterCondition>
       nameEqualTo(
     String value, {
     bool caseSensitive = true,
@@ -2239,6 +2577,34 @@ extension AssistantEntityQuerySortBy
     });
   }
 
+  QueryBuilder<AssistantEntity, AssistantEntity, QAfterSortBy>
+      sortByMemoryModel() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'memoryModel', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AssistantEntity, AssistantEntity, QAfterSortBy>
+      sortByMemoryModelDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'memoryModel', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AssistantEntity, AssistantEntity, QAfterSortBy>
+      sortByMemoryProviderId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'memoryProviderId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AssistantEntity, AssistantEntity, QAfterSortBy>
+      sortByMemoryProviderIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'memoryProviderId', Sort.desc);
+    });
+  }
+
   QueryBuilder<AssistantEntity, AssistantEntity, QAfterSortBy> sortByName() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'name', Sort.asc);
@@ -2378,6 +2744,34 @@ extension AssistantEntityQuerySortThenBy
     });
   }
 
+  QueryBuilder<AssistantEntity, AssistantEntity, QAfterSortBy>
+      thenByMemoryModel() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'memoryModel', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AssistantEntity, AssistantEntity, QAfterSortBy>
+      thenByMemoryModelDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'memoryModel', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AssistantEntity, AssistantEntity, QAfterSortBy>
+      thenByMemoryProviderId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'memoryProviderId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AssistantEntity, AssistantEntity, QAfterSortBy>
+      thenByMemoryProviderIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'memoryProviderId', Sort.desc);
+    });
+  }
+
   QueryBuilder<AssistantEntity, AssistantEntity, QAfterSortBy> thenByName() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'name', Sort.asc);
@@ -2485,6 +2879,21 @@ extension AssistantEntityQueryWhereDistinct
     });
   }
 
+  QueryBuilder<AssistantEntity, AssistantEntity, QDistinct>
+      distinctByMemoryModel({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'memoryModel', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<AssistantEntity, AssistantEntity, QDistinct>
+      distinctByMemoryProviderId({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'memoryProviderId',
+          caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<AssistantEntity, AssistantEntity, QDistinct> distinctByName(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -2567,6 +2976,20 @@ extension AssistantEntityQueryProperty
       knowledgeBaseIdsProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'knowledgeBaseIds');
+    });
+  }
+
+  QueryBuilder<AssistantEntity, String?, QQueryOperations>
+      memoryModelProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'memoryModel');
+    });
+  }
+
+  QueryBuilder<AssistantEntity, String?, QQueryOperations>
+      memoryProviderIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'memoryProviderId');
     });
   }
 

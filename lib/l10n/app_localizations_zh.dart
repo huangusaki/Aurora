@@ -1622,6 +1622,36 @@ class AppLocalizationsZh extends AppLocalizations {
   String get assistantLongTermMemory => '长期记忆';
 
   @override
+  String get assistantMemoryConsolidationModel => '记忆整理模型';
+
+  @override
+  String get assistantMemoryFollowCurrentChatModel => '跟随当前对话模型';
+
+  @override
+  String get assistantMemoryGlobalDefaults => '记忆配置';
+
+  @override
+  String get assistantMemoryMinNewUserTurns => '触发整理前最少新增用户轮次';
+
+  @override
+  String get assistantMemoryIdleSecondsBeforeConsolidation => '触发整理前空闲秒数';
+
+  @override
+  String get assistantMemoryMaxBufferedMessages => '触发整理前最大缓冲消息数';
+
+  @override
+  String get assistantMemoryMaxRunsPerDay => '每日最多整理次数';
+
+  @override
+  String get assistantMemoryContextWindowSize => '上下文窗口大小（K 条消息）';
+
+  @override
+  String get assistantAdvancedSettings => '高级设置';
+
+  @override
+  String get assistantSelectOrCreateHint => '选择或创建一个助理开始配置';
+
+  @override
   String get assistantKnowledgeBindingHint => '选择此助理时，仅使用这里勾选的知识库。';
 
   @override

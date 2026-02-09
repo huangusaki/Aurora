@@ -3479,63 +3479,88 @@ const AppSettingsEntitySchema = CollectionSchema(
       name: r'llmName',
       type: IsarType.string,
     ),
-    r'searchEngine': PropertySchema(
+    r'memoryContextWindowSize': PropertySchema(
       id: 27,
+      name: r'memoryContextWindowSize',
+      type: IsarType.long,
+    ),
+    r'memoryIdleSeconds': PropertySchema(
+      id: 28,
+      name: r'memoryIdleSeconds',
+      type: IsarType.long,
+    ),
+    r'memoryMaxBufferedMessages': PropertySchema(
+      id: 29,
+      name: r'memoryMaxBufferedMessages',
+      type: IsarType.long,
+    ),
+    r'memoryMaxRunsPerDay': PropertySchema(
+      id: 30,
+      name: r'memoryMaxRunsPerDay',
+      type: IsarType.long,
+    ),
+    r'memoryMinNewUserMessages': PropertySchema(
+      id: 31,
+      name: r'memoryMinNewUserMessages',
+      type: IsarType.long,
+    ),
+    r'searchEngine': PropertySchema(
+      id: 32,
       name: r'searchEngine',
       type: IsarType.string,
     ),
     r'searchMaxResults': PropertySchema(
-      id: 28,
+      id: 33,
       name: r'searchMaxResults',
       type: IsarType.long,
     ),
     r'searchRegion': PropertySchema(
-      id: 29,
+      id: 34,
       name: r'searchRegion',
       type: IsarType.string,
     ),
     r'searchSafeSearch': PropertySchema(
-      id: 30,
+      id: 35,
       name: r'searchSafeSearch',
       type: IsarType.string,
     ),
     r'searchTimeoutSeconds': PropertySchema(
-      id: 31,
+      id: 36,
       name: r'searchTimeoutSeconds',
       type: IsarType.long,
     ),
     r'selectedModel': PropertySchema(
-      id: 32,
+      id: 37,
       name: r'selectedModel',
       type: IsarType.string,
     ),
     r'themeColor': PropertySchema(
-      id: 33,
+      id: 38,
       name: r'themeColor',
       type: IsarType.string,
     ),
     r'themeMode': PropertySchema(
-      id: 34,
+      id: 39,
       name: r'themeMode',
       type: IsarType.string,
     ),
     r'topicGenerationModel': PropertySchema(
-      id: 35,
+      id: 40,
       name: r'topicGenerationModel',
       type: IsarType.string,
     ),
     r'useCustomTheme': PropertySchema(
-      id: 36,
+      id: 41,
       name: r'useCustomTheme',
       type: IsarType.bool,
     ),
     r'userAvatar': PropertySchema(
-      id: 37,
+      id: 42,
       name: r'userAvatar',
       type: IsarType.string,
     ),
     r'userName': PropertySchema(
-      id: 38,
+      id: 43,
       name: r'userName',
       type: IsarType.string,
     )
@@ -3723,18 +3748,23 @@ void _appSettingsEntitySerialize(
   writer.writeString(offsets[24], object.lastTopicId);
   writer.writeString(offsets[25], object.llmAvatar);
   writer.writeString(offsets[26], object.llmName);
-  writer.writeString(offsets[27], object.searchEngine);
-  writer.writeLong(offsets[28], object.searchMaxResults);
-  writer.writeString(offsets[29], object.searchRegion);
-  writer.writeString(offsets[30], object.searchSafeSearch);
-  writer.writeLong(offsets[31], object.searchTimeoutSeconds);
-  writer.writeString(offsets[32], object.selectedModel);
-  writer.writeString(offsets[33], object.themeColor);
-  writer.writeString(offsets[34], object.themeMode);
-  writer.writeString(offsets[35], object.topicGenerationModel);
-  writer.writeBool(offsets[36], object.useCustomTheme);
-  writer.writeString(offsets[37], object.userAvatar);
-  writer.writeString(offsets[38], object.userName);
+  writer.writeLong(offsets[27], object.memoryContextWindowSize);
+  writer.writeLong(offsets[28], object.memoryIdleSeconds);
+  writer.writeLong(offsets[29], object.memoryMaxBufferedMessages);
+  writer.writeLong(offsets[30], object.memoryMaxRunsPerDay);
+  writer.writeLong(offsets[31], object.memoryMinNewUserMessages);
+  writer.writeString(offsets[32], object.searchEngine);
+  writer.writeLong(offsets[33], object.searchMaxResults);
+  writer.writeString(offsets[34], object.searchRegion);
+  writer.writeString(offsets[35], object.searchSafeSearch);
+  writer.writeLong(offsets[36], object.searchTimeoutSeconds);
+  writer.writeString(offsets[37], object.selectedModel);
+  writer.writeString(offsets[38], object.themeColor);
+  writer.writeString(offsets[39], object.themeMode);
+  writer.writeString(offsets[40], object.topicGenerationModel);
+  writer.writeBool(offsets[41], object.useCustomTheme);
+  writer.writeString(offsets[42], object.userAvatar);
+  writer.writeString(offsets[43], object.userName);
 }
 
 AppSettingsEntity _appSettingsEntityDeserialize(
@@ -3772,18 +3802,23 @@ AppSettingsEntity _appSettingsEntityDeserialize(
   object.lastTopicId = reader.readStringOrNull(offsets[24]);
   object.llmAvatar = reader.readStringOrNull(offsets[25]);
   object.llmName = reader.readString(offsets[26]);
-  object.searchEngine = reader.readString(offsets[27]);
-  object.searchMaxResults = reader.readLong(offsets[28]);
-  object.searchRegion = reader.readString(offsets[29]);
-  object.searchSafeSearch = reader.readString(offsets[30]);
-  object.searchTimeoutSeconds = reader.readLong(offsets[31]);
-  object.selectedModel = reader.readStringOrNull(offsets[32]);
-  object.themeColor = reader.readStringOrNull(offsets[33]);
-  object.themeMode = reader.readString(offsets[34]);
-  object.topicGenerationModel = reader.readStringOrNull(offsets[35]);
-  object.useCustomTheme = reader.readBool(offsets[36]);
-  object.userAvatar = reader.readStringOrNull(offsets[37]);
-  object.userName = reader.readString(offsets[38]);
+  object.memoryContextWindowSize = reader.readLong(offsets[27]);
+  object.memoryIdleSeconds = reader.readLong(offsets[28]);
+  object.memoryMaxBufferedMessages = reader.readLong(offsets[29]);
+  object.memoryMaxRunsPerDay = reader.readLong(offsets[30]);
+  object.memoryMinNewUserMessages = reader.readLong(offsets[31]);
+  object.searchEngine = reader.readString(offsets[32]);
+  object.searchMaxResults = reader.readLong(offsets[33]);
+  object.searchRegion = reader.readString(offsets[34]);
+  object.searchSafeSearch = reader.readString(offsets[35]);
+  object.searchTimeoutSeconds = reader.readLong(offsets[36]);
+  object.selectedModel = reader.readStringOrNull(offsets[37]);
+  object.themeColor = reader.readStringOrNull(offsets[38]);
+  object.themeMode = reader.readString(offsets[39]);
+  object.topicGenerationModel = reader.readStringOrNull(offsets[40]);
+  object.useCustomTheme = reader.readBool(offsets[41]);
+  object.userAvatar = reader.readStringOrNull(offsets[42]);
+  object.userName = reader.readString(offsets[43]);
   return object;
 }
 
@@ -3849,28 +3884,38 @@ P _appSettingsEntityDeserializeProp<P>(
     case 26:
       return (reader.readString(offset)) as P;
     case 27:
-      return (reader.readString(offset)) as P;
+      return (reader.readLong(offset)) as P;
     case 28:
       return (reader.readLong(offset)) as P;
     case 29:
-      return (reader.readString(offset)) as P;
+      return (reader.readLong(offset)) as P;
     case 30:
-      return (reader.readString(offset)) as P;
+      return (reader.readLong(offset)) as P;
     case 31:
       return (reader.readLong(offset)) as P;
     case 32:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 33:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readLong(offset)) as P;
     case 34:
       return (reader.readString(offset)) as P;
     case 35:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 36:
-      return (reader.readBool(offset)) as P;
+      return (reader.readLong(offset)) as P;
     case 37:
       return (reader.readStringOrNull(offset)) as P;
     case 38:
+      return (reader.readStringOrNull(offset)) as P;
+    case 39:
+      return (reader.readString(offset)) as P;
+    case 40:
+      return (reader.readStringOrNull(offset)) as P;
+    case 41:
+      return (reader.readBool(offset)) as P;
+    case 42:
+      return (reader.readStringOrNull(offset)) as P;
+    case 43:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -7190,6 +7235,286 @@ extension AppSettingsEntityQueryFilter
   }
 
   QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      memoryContextWindowSizeEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'memoryContextWindowSize',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      memoryContextWindowSizeGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'memoryContextWindowSize',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      memoryContextWindowSizeLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'memoryContextWindowSize',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      memoryContextWindowSizeBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'memoryContextWindowSize',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      memoryIdleSecondsEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'memoryIdleSeconds',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      memoryIdleSecondsGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'memoryIdleSeconds',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      memoryIdleSecondsLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'memoryIdleSeconds',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      memoryIdleSecondsBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'memoryIdleSeconds',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      memoryMaxBufferedMessagesEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'memoryMaxBufferedMessages',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      memoryMaxBufferedMessagesGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'memoryMaxBufferedMessages',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      memoryMaxBufferedMessagesLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'memoryMaxBufferedMessages',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      memoryMaxBufferedMessagesBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'memoryMaxBufferedMessages',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      memoryMaxRunsPerDayEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'memoryMaxRunsPerDay',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      memoryMaxRunsPerDayGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'memoryMaxRunsPerDay',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      memoryMaxRunsPerDayLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'memoryMaxRunsPerDay',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      memoryMaxRunsPerDayBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'memoryMaxRunsPerDay',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      memoryMinNewUserMessagesEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'memoryMinNewUserMessages',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      memoryMinNewUserMessagesGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'memoryMinNewUserMessages',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      memoryMinNewUserMessagesLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'memoryMinNewUserMessages',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      memoryMinNewUserMessagesBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'memoryMinNewUserMessages',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
       searchEngineEqualTo(
     String value, {
     bool caseSensitive = true,
@@ -8967,6 +9292,76 @@ extension AppSettingsEntityQuerySortBy
   }
 
   QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      sortByMemoryContextWindowSize() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'memoryContextWindowSize', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      sortByMemoryContextWindowSizeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'memoryContextWindowSize', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      sortByMemoryIdleSeconds() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'memoryIdleSeconds', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      sortByMemoryIdleSecondsDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'memoryIdleSeconds', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      sortByMemoryMaxBufferedMessages() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'memoryMaxBufferedMessages', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      sortByMemoryMaxBufferedMessagesDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'memoryMaxBufferedMessages', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      sortByMemoryMaxRunsPerDay() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'memoryMaxRunsPerDay', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      sortByMemoryMaxRunsPerDayDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'memoryMaxRunsPerDay', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      sortByMemoryMinNewUserMessages() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'memoryMinNewUserMessages', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      sortByMemoryMinNewUserMessagesDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'memoryMinNewUserMessages', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
       sortBySearchEngine() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'searchEngine', Sort.asc);
@@ -9501,6 +9896,76 @@ extension AppSettingsEntityQuerySortThenBy
   }
 
   QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      thenByMemoryContextWindowSize() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'memoryContextWindowSize', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      thenByMemoryContextWindowSizeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'memoryContextWindowSize', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      thenByMemoryIdleSeconds() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'memoryIdleSeconds', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      thenByMemoryIdleSecondsDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'memoryIdleSeconds', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      thenByMemoryMaxBufferedMessages() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'memoryMaxBufferedMessages', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      thenByMemoryMaxBufferedMessagesDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'memoryMaxBufferedMessages', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      thenByMemoryMaxRunsPerDay() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'memoryMaxRunsPerDay', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      thenByMemoryMaxRunsPerDayDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'memoryMaxRunsPerDay', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      thenByMemoryMinNewUserMessages() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'memoryMinNewUserMessages', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      thenByMemoryMinNewUserMessagesDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'memoryMinNewUserMessages', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
       thenBySearchEngine() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'searchEngine', Sort.asc);
@@ -9871,6 +10336,41 @@ extension AppSettingsEntityQueryWhereDistinct
   }
 
   QueryBuilder<AppSettingsEntity, AppSettingsEntity, QDistinct>
+      distinctByMemoryContextWindowSize() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'memoryContextWindowSize');
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QDistinct>
+      distinctByMemoryIdleSeconds() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'memoryIdleSeconds');
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QDistinct>
+      distinctByMemoryMaxBufferedMessages() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'memoryMaxBufferedMessages');
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QDistinct>
+      distinctByMemoryMaxRunsPerDay() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'memoryMaxRunsPerDay');
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QDistinct>
+      distinctByMemoryMinNewUserMessages() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'memoryMinNewUserMessages');
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QDistinct>
       distinctBySearchEngine({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'searchEngine', caseSensitive: caseSensitive);
@@ -10149,6 +10649,41 @@ extension AppSettingsEntityQueryProperty
   QueryBuilder<AppSettingsEntity, String, QQueryOperations> llmNameProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'llmName');
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, int, QQueryOperations>
+      memoryContextWindowSizeProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'memoryContextWindowSize');
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, int, QQueryOperations>
+      memoryIdleSecondsProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'memoryIdleSeconds');
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, int, QQueryOperations>
+      memoryMaxBufferedMessagesProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'memoryMaxBufferedMessages');
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, int, QQueryOperations>
+      memoryMaxRunsPerDayProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'memoryMaxRunsPerDay');
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, int, QQueryOperations>
+      memoryMinNewUserMessagesProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'memoryMinNewUserMessages');
     });
   }
 

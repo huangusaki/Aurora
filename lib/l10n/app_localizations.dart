@@ -3236,6 +3236,66 @@ abstract class AppLocalizations {
   /// **'长期记忆'**
   String get assistantLongTermMemory;
 
+  /// No description provided for @assistantMemoryConsolidationModel.
+  ///
+  /// In zh, this message translates to:
+  /// **'记忆整理模型'**
+  String get assistantMemoryConsolidationModel;
+
+  /// No description provided for @assistantMemoryFollowCurrentChatModel.
+  ///
+  /// In zh, this message translates to:
+  /// **'跟随当前对话模型'**
+  String get assistantMemoryFollowCurrentChatModel;
+
+  /// No description provided for @assistantMemoryGlobalDefaults.
+  ///
+  /// In zh, this message translates to:
+  /// **'记忆配置'**
+  String get assistantMemoryGlobalDefaults;
+
+  /// No description provided for @assistantMemoryMinNewUserTurns.
+  ///
+  /// In zh, this message translates to:
+  /// **'触发整理前最少新增用户轮次'**
+  String get assistantMemoryMinNewUserTurns;
+
+  /// No description provided for @assistantMemoryIdleSecondsBeforeConsolidation.
+  ///
+  /// In zh, this message translates to:
+  /// **'触发整理前空闲秒数'**
+  String get assistantMemoryIdleSecondsBeforeConsolidation;
+
+  /// No description provided for @assistantMemoryMaxBufferedMessages.
+  ///
+  /// In zh, this message translates to:
+  /// **'触发整理前最大缓冲消息数'**
+  String get assistantMemoryMaxBufferedMessages;
+
+  /// No description provided for @assistantMemoryMaxRunsPerDay.
+  ///
+  /// In zh, this message translates to:
+  /// **'每日最多整理次数'**
+  String get assistantMemoryMaxRunsPerDay;
+
+  /// No description provided for @assistantMemoryContextWindowSize.
+  ///
+  /// In zh, this message translates to:
+  /// **'上下文窗口大小（K 条消息）'**
+  String get assistantMemoryContextWindowSize;
+
+  /// No description provided for @assistantAdvancedSettings.
+  ///
+  /// In zh, this message translates to:
+  /// **'高级设置'**
+  String get assistantAdvancedSettings;
+
+  /// No description provided for @assistantSelectOrCreateHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'选择或创建一个助理开始配置'**
+  String get assistantSelectOrCreateHint;
+
   /// No description provided for @assistantKnowledgeBindingHint.
   ///
   /// In zh, this message translates to:

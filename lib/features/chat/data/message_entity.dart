@@ -13,6 +13,10 @@ class MessageEntity {
   List<String> images = [];
   @Index()
   String? sessionId;
+  @Index()
+  String? assistantId;
+  @Index()
+  String? requestId;
   String? model;
   String? provider;
   double? reasoningDurationSeconds;

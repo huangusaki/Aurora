@@ -63,6 +63,11 @@ class AppSettingsEntity {
   int closeBehavior = 0; // 0: ask, 1: minimize, 2: exit
   String? executionModel;
   String? executionProviderId;
+  int memoryMinNewUserMessages = 20;
+  int memoryIdleSeconds = 600;
+  int memoryMaxBufferedMessages = 120;
+  int memoryMaxRunsPerDay = 2;
+  int memoryContextWindowSize = 80;
   double fontSize = 14.0;
   String? backgroundImagePath;
   double backgroundBrightness = 0.5;

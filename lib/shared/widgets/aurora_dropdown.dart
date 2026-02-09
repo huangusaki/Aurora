@@ -54,9 +54,12 @@ class _AuroraDropdownState<T> extends State<AuroraDropdown<T>> {
 
   Future<void> _open() async {
     if (!_isEnabled || _flyoutController.isOpen) return;
+    final placementMode = widget.placement == fluent.FlyoutPlacementMode.auto
+        ? widget.placement
+        : widget.placement.resolve(Directionality.of(context));
     await _flyoutController.showFlyout<void>(
       barrierColor: Colors.transparent,
-      placementMode: widget.placement.resolve(Directionality.of(context)),
+      placementMode: placementMode,
       // Keep the menu pinned under the trigger even in constrained windows.
       forceAvailableSpace: true,
       shouldConstrainToRootBounds: true,

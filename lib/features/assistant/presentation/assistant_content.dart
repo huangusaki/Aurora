@@ -5,6 +5,7 @@ import 'package:aurora/l10n/app_localizations.dart';
 import 'package:aurora/shared/utils/platform_utils.dart';
 import 'package:aurora/shared/theme/aurora_icons.dart';
 import 'package:aurora/shared/utils/avatar_cropper.dart';
+import 'package:aurora/shared/widgets/aurora_dropdown.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:aurora/features/assistant/presentation/assistant_provider.dart';
 import 'package:aurora/features/assistant/presentation/widgets/assistant_avatar.dart';
@@ -12,6 +13,8 @@ import 'package:aurora/features/assistant/domain/assistant.dart';
 import 'package:aurora/features/assistant/presentation/mobile_assistant_page.dart';
 import 'package:aurora/features/knowledge/presentation/knowledge_provider.dart';
 import 'package:aurora/features/skills/presentation/skill_provider.dart';
+import 'package:aurora/features/chat/presentation/chat_provider.dart';
+import '../../settings/presentation/settings_provider.dart';
 
 class AssistantContent extends ConsumerStatefulWidget {
   const AssistantContent({super.key});
@@ -178,7 +181,7 @@ class _AssistantContentState extends ConsumerState<AssistantContent> {
                             style: theme.typography.title
                                 ?.copyWith(color: Colors.grey)),
                         const SizedBox(height: 8),
-                        const Text('选择或创建一个助理开始配置',
+                        Text(l10n.assistantSelectOrCreateHint,
                             style: TextStyle(color: Colors.grey)),
                       ],
                     ),
@@ -205,6 +208,10 @@ class _AssistantContentState extends ConsumerState<AssistantContent> {
 
   Widget _buildDetailView(Assistant assistant, AppLocalizations l10n,
       fluent.FluentThemeData theme) {
+    final settingsState = ref.watch(settingsProvider);
+    final memoryModelOptions = _buildMemoryModelOptions(settingsState);
+    final selectedMemoryValue = _buildMemoryModelValue(assistant);
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -277,10 +284,27 @@ class _AssistantContentState extends ConsumerState<AssistantContent> {
           const SizedBox(height: 24),
           _buildKnowledgeSettings(assistant, l10n),
           const SizedBox(height: 24),
-          fluent.Expander(
-            header: const Text('高级设置'),
-            content: Column(
+          Container(
+            decoration: BoxDecoration(
+              border: Border.all(color: theme.resources.dividerStrokeColorDefault),
+              borderRadius: BorderRadius.circular(8),
+              color: theme.resources.cardBackgroundFillColorDefault,
+            ),
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Row(
+                  children: [
+                    const Icon(fluent.FluentIcons.settings, size: 16),
+                    const SizedBox(width: 8),
+                    Text(
+                      l10n.assistantAdvancedSettings,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
                 fluent.Checkbox(
                   checked: assistant.enableMemory,
                   onChanged: (v) {
@@ -292,11 +316,155 @@ class _AssistantContentState extends ConsumerState<AssistantContent> {
                   },
                   content: Text(l10n.assistantLongTermMemory),
                 ),
+                const SizedBox(height: 16),
+                Text(
+                  l10n.assistantMemoryConsolidationModel,
+                  style: TextStyle(
+                    color: theme.resources.textFillColorSecondary,
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: AuroraDropdown<String>(
+                    value: selectedMemoryValue,
+                    placeholder: l10n.assistantMemoryFollowCurrentChatModel,
+                    placement: fluent.FlyoutPlacementMode.auto,
+                    options: [
+                      AuroraDropdownOption<String>(
+                        value: '__follow__',
+                        label: l10n.assistantMemoryFollowCurrentChatModel,
+                      ),
+                      ...memoryModelOptions,
+                    ],
+                    onChanged: assistant.enableMemory
+                        ? (value) {
+                            if (value == '__follow__') {
+                              ref
+                                  .read(assistantProvider.notifier)
+                                  .saveAssistant(
+                                    assistant.copyWith(
+                                      memoryProviderId: null,
+                                      memoryModel: null,
+                                    ),
+                                  );
+                              return;
+                            }
+                            final split = value.split('@');
+                            if (split.length != 2) return;
+                            ref.read(assistantProvider.notifier).saveAssistant(
+                                  assistant.copyWith(
+                                    memoryProviderId: split[0],
+                                    memoryModel: split[1],
+                                  ),
+                                );
+                          }
+                        : (_) {},
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: theme.resources.subtleFillColorSecondary,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: theme.resources.controlStrokeColorSecondary,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        l10n.assistantMemoryGlobalDefaults,
+                        style: TextStyle(
+                          color: theme.resources.textFillColorPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      _buildMemoryStatRow(
+                        context,
+                        theme,
+                        l10n.assistantMemoryMinNewUserTurns,
+                        settingsState.memoryMinNewUserMessages.toString(),
+                      ),
+                      const SizedBox(height: 8),
+                      _buildMemoryStatRow(
+                        context,
+                        theme,
+                        l10n.assistantMemoryIdleSecondsBeforeConsolidation,
+                        '${settingsState.memoryIdleSeconds}s',
+                      ),
+                      const SizedBox(height: 8),
+                      _buildMemoryStatRow(
+                        context,
+                        theme,
+                        l10n.assistantMemoryMaxBufferedMessages,
+                        settingsState.memoryMaxBufferedMessages.toString(),
+                      ),
+                      const SizedBox(height: 8),
+                      _buildMemoryStatRow(
+                        context,
+                        theme,
+                        l10n.assistantMemoryMaxRunsPerDay,
+                        settingsState.memoryMaxRunsPerDay.toString(),
+                      ),
+                      const SizedBox(height: 8),
+                      _buildMemoryStatRow(
+                        context,
+                        theme,
+                        l10n.assistantMemoryContextWindowSize,
+                        settingsState.memoryContextWindowSize.toString(),
+                      ),
+                      const SizedBox(height: 12),
+                      fluent.HyperlinkButton(
+                        onPressed: () {
+                          ref.read(desktopActiveTabProvider.notifier).state = 4;
+                          ref.read(settingsPageIndexProvider.notifier).state = 1;
+                        },
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(l10n.goToSettings),
+                            const SizedBox(width: 4),
+                            const Icon(fluent.FluentIcons.chevron_right, size: 10),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildMemoryStatRow(BuildContext context, fluent.FluentThemeData theme,
+      String label, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            color: theme.resources.textFillColorSecondary,
+            fontSize: 13,
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            color: theme.resources.textFillColorPrimary,
+            fontWeight: FontWeight.w500,
+            fontFamily: 'Segoe UI Variable', // Ensure number readability
+          ),
+        ),
+      ],
     );
   }
 
@@ -418,6 +586,36 @@ class _AssistantContentState extends ConsumerState<AssistantContent> {
                   ],
                 ),
     );
+  }
+
+  List<AuroraDropdownOption<String>> _buildMemoryModelOptions(
+      SettingsState settingsState) {
+    final options = <AuroraDropdownOption<String>>[];
+    for (final provider in settingsState.providers) {
+      if (!provider.isEnabled) continue;
+      for (final model in provider.models) {
+        if (!provider.isModelEnabled(model)) continue;
+        options.add(
+          AuroraDropdownOption<String>(
+            value: '${provider.id}@$model',
+            label: '${provider.name} - $model',
+          ),
+        );
+      }
+    }
+    return options;
+  }
+
+  String _buildMemoryModelValue(Assistant assistant) {
+    final providerId = assistant.memoryProviderId;
+    final model = assistant.memoryModel;
+    if (providerId == null ||
+        providerId.isEmpty ||
+        model == null ||
+        model.isEmpty) {
+      return '__follow__';
+    }
+    return '$providerId@$model';
   }
 
   Future<void> _pickAvatar(Assistant assistant) async {

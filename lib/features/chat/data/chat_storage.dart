@@ -111,6 +111,8 @@ class ChatStorage {
       ..provider = message.provider
       ..reasoningDurationSeconds = message.reasoningDurationSeconds
       ..sessionId = sessionId
+      ..assistantId = message.assistantId
+      ..requestId = message.requestId
       ..role = message.role
       ..toolCallId = message.toolCallId
       ..tokenCount = message.tokenCount
@@ -167,6 +169,8 @@ class ChatStorage {
           ..provider = m.provider
           ..reasoningDurationSeconds = m.reasoningDurationSeconds
           ..sessionId = sessionId
+          ..assistantId = m.assistantId
+          ..requestId = m.requestId
           ..role = m.role
           ..toolCallId = m.toolCallId
           ..tokenCount = m.tokenCount
@@ -248,6 +252,8 @@ class ChatStorage {
         provider: e.provider,
         reasoningDurationSeconds: e.reasoningDurationSeconds,
         role: e.role,
+        assistantId: e.assistantId,
+        requestId: e.requestId,
         toolCallId: e.toolCallId,
         toolCalls: toolCalls,
         tokenCount: e.tokenCount,
@@ -355,6 +361,8 @@ class ChatStorage {
         existing.model = message.model;
         existing.provider = message.provider;
         existing.reasoningDurationSeconds = message.reasoningDurationSeconds;
+        existing.assistantId = message.assistantId;
+        existing.requestId = message.requestId;
         existing.role = message.role;
         existing.toolCallId = message.toolCallId;
         existing.tokenCount = message.tokenCount;

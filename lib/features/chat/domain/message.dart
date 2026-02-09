@@ -45,6 +45,8 @@ class Message {
   final String content;
   final String? reasoningContent;
   final bool isUser;
+  final String? assistantId;
+  final String? requestId;
   final DateTime timestamp;
   final List<String> attachments;
   final List<String> images;
@@ -65,6 +67,8 @@ class Message {
     required this.content,
     required this.isUser,
     required this.timestamp,
+    this.assistantId,
+    this.requestId,
     this.reasoningContent,
     this.attachments = const [],
     this.images = const [],
@@ -136,6 +140,8 @@ class Message {
     String? content,
     String? reasoningContent,
     bool? isUser,
+    String? assistantId,
+    String? requestId,
     DateTime? timestamp,
     List<String>? attachments,
     List<String>? images,
@@ -157,6 +163,8 @@ class Message {
       content: content ?? this.content,
       reasoningContent: reasoningContent ?? this.reasoningContent,
       isUser: isUser ?? this.isUser,
+      assistantId: assistantId ?? this.assistantId,
+      requestId: requestId ?? this.requestId,
       timestamp: timestamp ?? this.timestamp,
       attachments: attachments ?? this.attachments,
       images: images ?? this.images,

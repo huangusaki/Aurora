@@ -141,6 +141,11 @@ class SettingsState {
   final int closeBehavior;
   final String? executionModel;
   final String? executionProviderId;
+  final int memoryMinNewUserMessages;
+  final int memoryIdleSeconds;
+  final int memoryMaxBufferedMessages;
+  final int memoryMaxRunsPerDay;
+  final int memoryContextWindowSize;
   final double fontSize;
   final String? backgroundImagePath;
   final double backgroundBrightness;
@@ -181,6 +186,11 @@ class SettingsState {
     this.closeBehavior = 0,
     this.executionModel,
     this.executionProviderId,
+    this.memoryMinNewUserMessages = 20,
+    this.memoryIdleSeconds = 600,
+    this.memoryMaxBufferedMessages = 120,
+    this.memoryMaxRunsPerDay = 2,
+    this.memoryContextWindowSize = 80,
     this.fontSize = 14.0,
     this.backgroundImagePath,
     this.backgroundBrightness = 0.5,
@@ -229,6 +239,11 @@ class SettingsState {
     int? closeBehavior,
     String? executionModel,
     String? executionProviderId,
+    int? memoryMinNewUserMessages,
+    int? memoryIdleSeconds,
+    int? memoryMaxBufferedMessages,
+    int? memoryMaxRunsPerDay,
+    int? memoryContextWindowSize,
     double? fontSize,
     Object? backgroundImagePath = _settingsSentinel,
     double? backgroundBrightness,
@@ -286,6 +301,21 @@ class SettingsState {
       closeBehavior: closeBehavior ?? this.closeBehavior,
       executionModel: executionModel ?? this.executionModel,
       executionProviderId: executionProviderId ?? this.executionProviderId,
+      memoryMinNewUserMessages: memoryMinNewUserMessages != null
+          ? _clampInt(memoryMinNewUserMessages, 1, 200)
+          : this.memoryMinNewUserMessages,
+      memoryIdleSeconds: memoryIdleSeconds != null
+          ? _clampInt(memoryIdleSeconds, 30, 7200)
+          : this.memoryIdleSeconds,
+      memoryMaxBufferedMessages: memoryMaxBufferedMessages != null
+          ? _clampInt(memoryMaxBufferedMessages, 20, 500)
+          : this.memoryMaxBufferedMessages,
+      memoryMaxRunsPerDay: memoryMaxRunsPerDay != null
+          ? _clampInt(memoryMaxRunsPerDay, 1, 30)
+          : this.memoryMaxRunsPerDay,
+      memoryContextWindowSize: memoryContextWindowSize != null
+          ? _clampInt(memoryContextWindowSize, 20, 240)
+          : this.memoryContextWindowSize,
       fontSize: fontSize ?? this.fontSize,
       backgroundImagePath: backgroundImagePath == _settingsSentinel
           ? this.backgroundImagePath
@@ -361,6 +391,11 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     int closeBehavior = 0,
     String? executionModel,
     String? executionProviderId,
+    int memoryMinNewUserMessages = 20,
+    int memoryIdleSeconds = 600,
+    int memoryMaxBufferedMessages = 120,
+    int memoryMaxRunsPerDay = 2,
+    int memoryContextWindowSize = 80,
     double fontSize = 14.0,
     String? backgroundImagePath,
     double backgroundBrightness = 0.5,
@@ -399,6 +434,12 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
           closeBehavior: closeBehavior,
           executionModel: executionModel,
           executionProviderId: executionProviderId,
+          memoryMinNewUserMessages: _clampInt(memoryMinNewUserMessages, 1, 200),
+          memoryIdleSeconds: _clampInt(memoryIdleSeconds, 30, 7200),
+          memoryMaxBufferedMessages:
+              _clampInt(memoryMaxBufferedMessages, 20, 500),
+          memoryMaxRunsPerDay: _clampInt(memoryMaxRunsPerDay, 1, 30),
+          memoryContextWindowSize: _clampInt(memoryContextWindowSize, 20, 240),
           fontSize: fontSize,
           backgroundImagePath: backgroundImagePath,
           backgroundBrightness: backgroundBrightness,
@@ -515,6 +556,16 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
       closeBehavior: appSettings?.closeBehavior ?? 0,
       executionModel: appSettings?.executionModel,
       executionProviderId: appSettings?.executionProviderId,
+      memoryMinNewUserMessages:
+          _clampInt(appSettings?.memoryMinNewUserMessages ?? 20, 1, 200),
+      memoryIdleSeconds:
+          _clampInt(appSettings?.memoryIdleSeconds ?? 600, 30, 7200),
+      memoryMaxBufferedMessages:
+          _clampInt(appSettings?.memoryMaxBufferedMessages ?? 120, 20, 500),
+      memoryMaxRunsPerDay:
+          _clampInt(appSettings?.memoryMaxRunsPerDay ?? 2, 1, 30),
+      memoryContextWindowSize:
+          _clampInt(appSettings?.memoryContextWindowSize ?? 80, 20, 240),
       fontSize: appSettings?.fontSize ?? 14.0,
       backgroundImagePath: appSettings?.backgroundImagePath,
       backgroundBrightness: appSettings?.backgroundBrightness ?? 0.5,
@@ -1062,6 +1113,51 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     await _storage.saveAppSettings(
       activeProviderId: state.activeProviderId,
       topicGenerationModel: normalized,
+    );
+  }
+
+  Future<void> setMemoryMinNewUserMessages(int value) async {
+    final clamped = _clampInt(value, 1, 200);
+    state = state.copyWith(memoryMinNewUserMessages: clamped);
+    await _storage.saveAppSettings(
+      activeProviderId: state.activeProviderId,
+      memoryMinNewUserMessages: clamped,
+    );
+  }
+
+  Future<void> setMemoryIdleSeconds(int value) async {
+    final clamped = _clampInt(value, 30, 7200);
+    state = state.copyWith(memoryIdleSeconds: clamped);
+    await _storage.saveAppSettings(
+      activeProviderId: state.activeProviderId,
+      memoryIdleSeconds: clamped,
+    );
+  }
+
+  Future<void> setMemoryMaxBufferedMessages(int value) async {
+    final clamped = _clampInt(value, 20, 500);
+    state = state.copyWith(memoryMaxBufferedMessages: clamped);
+    await _storage.saveAppSettings(
+      activeProviderId: state.activeProviderId,
+      memoryMaxBufferedMessages: clamped,
+    );
+  }
+
+  Future<void> setMemoryMaxRunsPerDay(int value) async {
+    final clamped = _clampInt(value, 1, 30);
+    state = state.copyWith(memoryMaxRunsPerDay: clamped);
+    await _storage.saveAppSettings(
+      activeProviderId: state.activeProviderId,
+      memoryMaxRunsPerDay: clamped,
+    );
+  }
+
+  Future<void> setMemoryContextWindowSize(int value) async {
+    final clamped = _clampInt(value, 20, 240);
+    state = state.copyWith(memoryContextWindowSize: clamped);
+    await _storage.saveAppSettings(
+      activeProviderId: state.activeProviderId,
+      memoryContextWindowSize: clamped,
     );
   }
 

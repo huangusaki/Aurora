@@ -1660,6 +1660,42 @@ class AppLocalizationsEn extends AppLocalizations {
   String get assistantLongTermMemory => 'Long-term Memory';
 
   @override
+  String get assistantMemoryConsolidationModel => 'Memory Consolidation Model';
+
+  @override
+  String get assistantMemoryFollowCurrentChatModel =>
+      'Follow current chat model';
+
+  @override
+  String get assistantMemoryGlobalDefaults => 'Memory Configuration';
+
+  @override
+  String get assistantMemoryMinNewUserTurns =>
+      'Min new user turns before consolidation';
+
+  @override
+  String get assistantMemoryIdleSecondsBeforeConsolidation =>
+      'Idle seconds before consolidation';
+
+  @override
+  String get assistantMemoryMaxBufferedMessages =>
+      'Max buffered messages before consolidation';
+
+  @override
+  String get assistantMemoryMaxRunsPerDay => 'Max consolidation runs per day';
+
+  @override
+  String get assistantMemoryContextWindowSize =>
+      'Context window size (K messages)';
+
+  @override
+  String get assistantAdvancedSettings => 'Advanced Settings';
+
+  @override
+  String get assistantSelectOrCreateHint =>
+      'Select or create an assistant to start configuring';
+
+  @override
   String get assistantKnowledgeBindingHint =>
       'When this assistant is selected, only the knowledge bases checked here are used.';
 

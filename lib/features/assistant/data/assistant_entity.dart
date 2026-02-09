@@ -19,6 +19,8 @@ class AssistantEntity {
   List<String> skillIds = [];
   List<String> knowledgeBaseIds = [];
   bool enableMemory = false;
+  String? memoryProviderId;
+  String? memoryModel;
 
   @Index()
   DateTime? updatedAt;

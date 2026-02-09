@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'dart:convert';
 import 'dart:io';
@@ -6,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:aurora/shared/utils/platform_utils.dart';
+import 'package:aurora/features/assistant/data/assistant_memory_service.dart';
 import 'package:aurora/features/assistant/presentation/assistant_provider.dart';
 import 'package:aurora/features/settings/presentation/settings_provider.dart';
 import 'package:aurora/features/settings/presentation/usage_stats_provider.dart';
@@ -32,6 +34,15 @@ enum SearchEngine { duckduckgo, google, bing }
 final llmServiceProvider = Provider<LLMService>((ref) {
   final settings = ref.watch(settingsProvider);
   return OpenAILLMService(settings);
+});
+
+final assistantMemoryServiceProvider = Provider<AssistantMemoryService>((ref) {
+  final settingsStorage = ref.watch(settingsStorageProvider);
+  final llmService = ref.watch(llmServiceProvider);
+  final service = AssistantMemoryService(
+      isar: settingsStorage.isar, llmService: llmService);
+  ref.onDispose(service.dispose);
+  return service;
 });
 
 class ChatState {
@@ -279,9 +290,20 @@ class ChatNotifier extends StateNotifier<ChatState> {
       });
     }
 
+    final assistantState = _ref.read(assistantProvider);
+    final assistant = assistantState.selectedAssistantId != null
+        ? assistantState.assistants
+            .where((a) => a.id == assistantState.selectedAssistantId)
+            .firstOrNull
+        : null;
+    final assistantIdForRequest = assistant?.id;
+
     if (text != null) {
       if (!mounted) return _sessionId;
-      final userMessage = Message.user(text, attachments: attachments);
+      final userMessage = Message.user(text, attachments: attachments).copyWith(
+        assistantId: assistantIdForRequest,
+        requestId: myGenerationId,
+      );
       final dbId = await _storage.saveMessage(userMessage, _sessionId);
 
       if (!mounted) return _sessionId;
@@ -316,13 +338,6 @@ class ChatNotifier extends StateNotifier<ChatState> {
         }
       }
       final settings = _ref.read(settingsProvider);
-      final assistantState = _ref.read(assistantProvider);
-      // Use global assistant selection, not local state
-      final assistant = assistantState.selectedAssistantId != null
-          ? assistantState.assistants
-              .where((a) => a.id == assistantState.selectedAssistantId)
-              .firstOrNull
-          : null;
 
       final llmService = _ref.read(llmServiceProvider);
       final toolManager = ToolManager(
@@ -361,7 +376,11 @@ class ChatNotifier extends StateNotifier<ChatState> {
       }
 
       var aiMsg =
-          Message.ai('', model: currentModel, provider: currentProviderName);
+          Message.ai('', model: currentModel, provider: currentProviderName)
+              .copyWith(
+        assistantId: assistantIdForRequest,
+        requestId: myGenerationId,
+      );
       state = state.copyWith(messages: [...state.messages, aiMsg]);
 
       // Inject Assistant System Prompt
@@ -386,6 +405,33 @@ class ChatNotifier extends StateNotifier<ChatState> {
               isUser: false,
             ),
           );
+        }
+      }
+      if (assistant != null && assistant.enableMemory) {
+        final memoryPrompt = await _ref
+            .read(assistantMemoryServiceProvider)
+            .buildMemorySystemPrompt(assistant.id);
+        if (memoryPrompt.isNotEmpty) {
+          final systemMsg =
+              messagesForApi.where((m) => m.role == 'system').firstOrNull;
+          if (systemMsg != null) {
+            final index = messagesForApi.indexOf(systemMsg);
+            final combinedPrompt = systemMsg.content.isEmpty
+                ? memoryPrompt
+                : '${systemMsg.content}\n\n$memoryPrompt';
+            messagesForApi[index] = systemMsg.copyWith(content: combinedPrompt);
+          } else {
+            messagesForApi.insert(
+              0,
+              Message(
+                id: const Uuid().v4(),
+                role: 'system',
+                content: memoryPrompt,
+                timestamp: DateTime.now(),
+                isUser: false,
+              ),
+            );
+          }
         }
       }
       final currentPlatform = Platform.operatingSystem;
@@ -1393,6 +1439,13 @@ Rules:
               break;
             }
             var m = unsaved[i];
+            if ((m.requestId ?? '').isEmpty) {
+              m = m.copyWith(requestId: myGenerationId);
+            }
+            if (assistantIdForRequest != null &&
+                (m.assistantId ?? '').isEmpty) {
+              m = m.copyWith(assistantId: assistantIdForRequest);
+            }
             if (!m.isUser && m.role != 'tool' && i == unsaved.length - 1) {
               m = m.copyWith(
                 promptTokens: promptTokens,
@@ -1428,6 +1481,17 @@ Rules:
           if (mounted) {
             state = state.copyWith(isLoading: false, hasUnreadResponse: true);
           }
+        }
+        if (assistant != null &&
+            assistant.enableMemory &&
+            aiMsg.content.trim().isNotEmpty) {
+          unawaited(
+            _ref.read(assistantMemoryServiceProvider).onRequestCompleted(
+                  assistant: assistant,
+                  settings: settings,
+                  requestId: myGenerationId,
+                ),
+          );
         }
         // Auto-rotate API key after successful request if enabled
         final activeProvider = settings.activeProvider;
