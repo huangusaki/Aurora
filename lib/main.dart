@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:convert';
 import 'package:fluent_ui/fluent_ui.dart' as fluent;
@@ -23,161 +24,237 @@ import 'features/chat/presentation/widgets/chat_image_bubble.dart'
 
 import 'shared/utils/platform_utils.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  if (PlatformUtils.isDesktop) {
-    await windowManager.ensureInitialized();
-    WindowOptions windowOptions = const WindowOptions(
-      size: Size(1080, 640),
-      center: true,
-      backgroundColor: null,
-      skipTaskbar: false,
-      titleBarStyle: TitleBarStyle.hidden,
+void _bootLog(String message) {
+  final timestamp = DateTime.now().toIso8601String();
+  debugPrint('[AURORA_BOOT][$timestamp] $message');
+}
+
+void _bootError(String stage, Object error, StackTrace stackTrace) {
+  final timestamp = DateTime.now().toIso8601String();
+  debugPrint('[AURORA_BOOT][$timestamp][ERROR][$stage] $error');
+  debugPrint(stackTrace.toString());
+}
+
+class StartupErrorApp extends StatelessWidget {
+  final String title;
+  final String detail;
+  const StartupErrorApp({super.key, required this.title, required this.detail});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      home: Scaffold(
+        backgroundColor: const Color(0xFF121212),
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: SingleChildScrollView(
+              child: SelectableText(
+                '$title\n\n$detail',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  height: 1.4,
+                  fontFamily: 'monospace',
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
-    windowManager.waitUntilReadyToShow(windowOptions, () async {
-      await windowManager.show();
-      await windowManager.focus();
-      await windowManager.setMinimumSize(const Size(1080, 640));
-    });
-    if (PlatformUtils.isWindows) {
-      WindowsInjector.instance.injectKeyData();
-    }
-  } else if (PlatformUtils.isAndroid) {
-    try {
-      await FlutterDisplayMode.setHighRefreshRate();
-    } catch (_) {}
   }
-  final storage = SettingsStorage();
-  await storage.init();
-  final providerEntities = await storage.loadProviders();
-  final appSettings = await storage.loadAppSettings();
-  final List<ProviderConfig> initialProviders;
-  if (providerEntities.isEmpty) {
-    initialProviders = [
-      ProviderConfig(id: 'openai', name: 'OpenAI', isCustom: false),
-      ProviderConfig(id: 'custom', name: 'Custom', isCustom: true),
-    ];
-  } else {
-    initialProviders = providerEntities.map((e) {
-      Map<String, dynamic> customParams = {};
-      Map<String, Map<String, dynamic>> modelSettings = {};
-      Map<String, dynamic> globalSettings = {};
+}
 
-      if (e.customParametersJson != null &&
-          e.customParametersJson!.isNotEmpty) {
-        try {
-          customParams =
-              jsonDecode(e.customParametersJson!) as Map<String, dynamic>;
-        } catch (_) {}
-      }
-      if (e.modelSettingsJson != null && e.modelSettingsJson!.isNotEmpty) {
-        try {
-          final decoded = jsonDecode(e.modelSettingsJson!);
-          if (decoded is Map) {
-            modelSettings = decoded.map((key, value) =>
-                MapEntry(key.toString(), value as Map<String, dynamic>));
-          }
-        } catch (_) {}
-      }
-      if (e.globalSettingsJson != null && e.globalSettingsJson!.isNotEmpty) {
-        try {
-          globalSettings =
-              jsonDecode(e.globalSettingsJson!) as Map<String, dynamic>;
-        } catch (_) {}
-      }
-      // Migrate from legacy apiKey to apiKeys if needed
-      List<String> apiKeys = e.apiKeys;
-      // ignore: deprecated_member_use_from_same_package
-      if (apiKeys.isEmpty && e.apiKey.isNotEmpty) {
-        // ignore: deprecated_member_use_from_same_package
-        apiKeys = [e.apiKey];
-      }
-      return ProviderConfig(
-        id: e.providerId,
-        name: e.name,
-        color: e.color,
-        apiKeys: apiKeys,
-        currentKeyIndex: e.currentKeyIndex,
-        autoRotateKeys: e.autoRotateKeys,
-        baseUrl: e.baseUrl,
-        isCustom: e.isCustom,
-        customParameters: customParams,
-        modelSettings: modelSettings,
-        globalSettings: globalSettings,
-        globalExcludeModels: e.globalExcludeModels,
-        models: e.savedModels,
-        selectedModel: e.lastSelectedModel,
-        isEnabled: e.isEnabled,
+void main() async {
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.presentError(details);
+    _bootError(
+        'flutter_error', details.exception, details.stack ?? StackTrace.empty);
+  };
+
+  runZonedGuarded(() async {
+    _bootLog('main start');
+    WidgetsFlutterBinding.ensureInitialized();
+    _bootLog('binding initialized');
+
+    if (PlatformUtils.isDesktop) {
+      _bootLog('desktop initialization start');
+      await windowManager.ensureInitialized();
+      WindowOptions windowOptions = const WindowOptions(
+        size: Size(1080, 640),
+        center: true,
+        backgroundColor: null,
+        skipTaskbar: false,
+        titleBarStyle: TitleBarStyle.hidden,
       );
-    }).toList();
-    if (!initialProviders.any((p) => p.id == 'custom')) {
-      initialProviders
-          .add(ProviderConfig(id: 'custom', name: 'Custom', isCustom: true));
+      windowManager.waitUntilReadyToShow(windowOptions, () async {
+        await windowManager.show();
+        await windowManager.focus();
+        await windowManager.setMinimumSize(const Size(1080, 640));
+      });
+      if (PlatformUtils.isWindows) {
+        WindowsInjector.instance.injectKeyData();
+      }
+      _bootLog('desktop initialization done');
+    } else if (PlatformUtils.isAndroid) {
+      _bootLog('android initialization start');
+      try {
+        await FlutterDisplayMode.setHighRefreshRate();
+      } catch (e, st) {
+        _bootError('set_high_refresh_rate', e, st);
+      }
+      _bootLog('android initialization done');
     }
-  }
-  final initialActiveId = appSettings?.activeProviderId ?? 'custom';
-  runApp(ProviderScope(
-    overrides: [
-      settingsStorageProvider.overrideWithValue(storage),
-      settingsProvider.overrideWith((ref) {
-        // Load skills from a default directory (Desktop only)
-        if (PlatformUtils.isDesktop) {
-          Future.microtask(() {
-            final skillsDir =
-                '${Directory.current.path}${Platform.pathSeparator}skills';
-            final language = appSettings?.language ??
-                (Platform.localeName.startsWith('zh') ? 'zh' : 'en');
-            ref
-                .read(skillProvider.notifier)
-                .loadSkills(skillsDir, language: language);
-          });
-        }
 
-        return SettingsNotifier(
-          storage: storage,
-          initialProviders: initialProviders,
-          initialActiveId: initialActiveId,
-          userName: appSettings?.userName ?? 'User',
-          userAvatar: appSettings?.userAvatar,
-          llmName: appSettings?.llmName ?? 'Assistant',
-          llmAvatar: appSettings?.llmAvatar,
-          themeMode: appSettings?.themeMode ?? 'system',
-          isStreamEnabled: appSettings?.isStreamEnabled ?? true,
-          isSearchEnabled: appSettings?.isSearchEnabled ?? false,
-          isKnowledgeEnabled: appSettings?.isKnowledgeEnabled ?? false,
-          searchEngine: appSettings?.searchEngine ?? 'duckduckgo',
-          searchRegion: appSettings?.searchRegion ?? 'us-en',
-          searchSafeSearch: appSettings?.searchSafeSearch ?? 'moderate',
-          searchMaxResults: appSettings?.searchMaxResults ?? 5,
-          searchTimeoutSeconds: appSettings?.searchTimeoutSeconds ?? 15,
-          knowledgeTopK: appSettings?.knowledgeTopK ?? 5,
-          knowledgeUseEmbedding: appSettings?.knowledgeUseEmbedding ?? false,
-          knowledgeLlmEnhanceMode:
-              appSettings?.knowledgeLlmEnhanceMode ?? 'off',
-          knowledgeEmbeddingModel: appSettings?.knowledgeEmbeddingModel,
-          knowledgeEmbeddingProviderId:
-              appSettings?.knowledgeEmbeddingProviderId,
-          activeKnowledgeBaseIds:
-              appSettings?.activeKnowledgeBaseIds ?? const [],
-          enableSmartTopic: appSettings?.enableSmartTopic ?? true,
-          topicGenerationModel: appSettings?.topicGenerationModel,
-          language: appSettings?.language ??
-              (Platform.localeName.startsWith('zh') ? 'zh' : 'en'),
-          themeColor: appSettings?.themeColor ?? 'teal',
-          backgroundColor: appSettings?.backgroundColor ?? 'default',
-          closeBehavior: appSettings?.closeBehavior ?? 0,
-          executionModel: appSettings?.executionModel,
-          executionProviderId: appSettings?.executionProviderId,
-          fontSize: appSettings?.fontSize ?? 14.0,
-          backgroundImagePath: appSettings?.backgroundImagePath,
-          backgroundBrightness: appSettings?.backgroundBrightness ?? 0.5,
-          backgroundBlur: appSettings?.backgroundBlur ?? 0.0,
-          useCustomTheme: appSettings?.useCustomTheme ?? false,
+    _bootLog('storage initialization start');
+    final storage = SettingsStorage();
+    await storage.init();
+    _bootLog('storage initialization done');
+
+    _bootLog('loading providers and settings');
+    final providerEntities = await storage.loadProviders();
+    final appSettings = await storage.loadAppSettings();
+    _bootLog(
+        'providers=${providerEntities.length}, hasAppSettings=${appSettings != null}');
+
+    final List<ProviderConfig> initialProviders;
+    if (providerEntities.isEmpty) {
+      initialProviders = [
+        ProviderConfig(id: 'openai', name: 'OpenAI', isCustom: false),
+        ProviderConfig(id: 'custom', name: 'Custom', isCustom: true),
+      ];
+    } else {
+      initialProviders = providerEntities.map((e) {
+        Map<String, dynamic> customParams = {};
+        Map<String, Map<String, dynamic>> modelSettings = {};
+        Map<String, dynamic> globalSettings = {};
+
+        if (e.customParametersJson != null &&
+            e.customParametersJson!.isNotEmpty) {
+          try {
+            customParams =
+                jsonDecode(e.customParametersJson!) as Map<String, dynamic>;
+          } catch (_) {}
+        }
+        if (e.modelSettingsJson != null && e.modelSettingsJson!.isNotEmpty) {
+          try {
+            final decoded = jsonDecode(e.modelSettingsJson!);
+            if (decoded is Map) {
+              modelSettings = decoded.map((key, value) =>
+                  MapEntry(key.toString(), value as Map<String, dynamic>));
+            }
+          } catch (_) {}
+        }
+        if (e.globalSettingsJson != null && e.globalSettingsJson!.isNotEmpty) {
+          try {
+            globalSettings =
+                jsonDecode(e.globalSettingsJson!) as Map<String, dynamic>;
+          } catch (_) {}
+        }
+        // Migrate from legacy apiKey to apiKeys if needed
+        List<String> apiKeys = e.apiKeys;
+        // ignore: deprecated_member_use_from_same_package
+        if (apiKeys.isEmpty && e.apiKey.isNotEmpty) {
+          // ignore: deprecated_member_use_from_same_package
+          apiKeys = [e.apiKey];
+        }
+        return ProviderConfig(
+          id: e.providerId,
+          name: e.name,
+          color: e.color,
+          apiKeys: apiKeys,
+          currentKeyIndex: e.currentKeyIndex,
+          autoRotateKeys: e.autoRotateKeys,
+          baseUrl: e.baseUrl,
+          isCustom: e.isCustom,
+          customParameters: customParams,
+          modelSettings: modelSettings,
+          globalSettings: globalSettings,
+          globalExcludeModels: e.globalExcludeModels,
+          models: e.savedModels,
+          selectedModel: e.lastSelectedModel,
+          isEnabled: e.isEnabled,
         );
-      }),
-    ],
-    child: const MyApp(),
-  ));
+      }).toList();
+      if (!initialProviders.any((p) => p.id == 'custom')) {
+        initialProviders
+            .add(ProviderConfig(id: 'custom', name: 'Custom', isCustom: true));
+      }
+    }
+    final initialActiveId = appSettings?.activeProviderId ?? 'custom';
+
+    _bootLog('runApp start');
+    runApp(ProviderScope(
+      overrides: [
+        settingsStorageProvider.overrideWithValue(storage),
+        settingsProvider.overrideWith((ref) {
+          // Load skills from a default directory (Desktop only)
+          if (PlatformUtils.isDesktop) {
+            Future.microtask(() {
+              final skillsDir =
+                  '${Directory.current.path}${Platform.pathSeparator}skills';
+              final language = appSettings?.language ??
+                  (Platform.localeName.startsWith('zh') ? 'zh' : 'en');
+              ref
+                  .read(skillProvider.notifier)
+                  .loadSkills(skillsDir, language: language);
+            });
+          }
+
+          return SettingsNotifier(
+            storage: storage,
+            initialProviders: initialProviders,
+            initialActiveId: initialActiveId,
+            userName: appSettings?.userName ?? 'User',
+            userAvatar: appSettings?.userAvatar,
+            llmName: appSettings?.llmName ?? 'Assistant',
+            llmAvatar: appSettings?.llmAvatar,
+            themeMode: appSettings?.themeMode ?? 'system',
+            isStreamEnabled: appSettings?.isStreamEnabled ?? true,
+            isSearchEnabled: appSettings?.isSearchEnabled ?? false,
+            isKnowledgeEnabled: appSettings?.isKnowledgeEnabled ?? false,
+            searchEngine: appSettings?.searchEngine ?? 'duckduckgo',
+            searchRegion: appSettings?.searchRegion ?? 'us-en',
+            searchSafeSearch: appSettings?.searchSafeSearch ?? 'moderate',
+            searchMaxResults: appSettings?.searchMaxResults ?? 5,
+            searchTimeoutSeconds: appSettings?.searchTimeoutSeconds ?? 15,
+            knowledgeTopK: appSettings?.knowledgeTopK ?? 5,
+            knowledgeUseEmbedding: appSettings?.knowledgeUseEmbedding ?? false,
+            knowledgeLlmEnhanceMode:
+                appSettings?.knowledgeLlmEnhanceMode ?? 'off',
+            knowledgeEmbeddingModel: appSettings?.knowledgeEmbeddingModel,
+            knowledgeEmbeddingProviderId:
+                appSettings?.knowledgeEmbeddingProviderId,
+            activeKnowledgeBaseIds:
+                appSettings?.activeKnowledgeBaseIds ?? const [],
+            enableSmartTopic: appSettings?.enableSmartTopic ?? true,
+            topicGenerationModel: appSettings?.topicGenerationModel,
+            language: appSettings?.language ??
+                (Platform.localeName.startsWith('zh') ? 'zh' : 'en'),
+            themeColor: appSettings?.themeColor ?? 'teal',
+            backgroundColor: appSettings?.backgroundColor ?? 'default',
+            closeBehavior: appSettings?.closeBehavior ?? 0,
+            executionModel: appSettings?.executionModel,
+            executionProviderId: appSettings?.executionProviderId,
+            fontSize: appSettings?.fontSize ?? 14.0,
+            backgroundImagePath: appSettings?.backgroundImagePath,
+            backgroundBrightness: appSettings?.backgroundBrightness ?? 0.5,
+            backgroundBlur: appSettings?.backgroundBlur ?? 0.0,
+            useCustomTheme: appSettings?.useCustomTheme ?? false,
+          );
+        }),
+      ],
+      child: const MyApp(),
+    ));
+    _bootLog('runApp done');
+  }, (error, stackTrace) {
+    _bootError('uncaught_zone', error, stackTrace);
+    runApp(StartupErrorApp(
+      title: 'Aurora startup failed',
+      detail: '$error\n\n$stackTrace',
+    ));
+  });
 }
 
 class MyApp extends ConsumerWidget {
