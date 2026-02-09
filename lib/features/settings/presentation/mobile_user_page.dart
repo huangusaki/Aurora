@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:path_provider/path_provider.dart';
 import '../../../shared/utils/avatar_cropper.dart';
+import '../../../shared/utils/avatar_storage.dart';
 import 'settings_provider.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 import 'package:aurora/shared/widgets/aurora_bottom_sheet.dart';
@@ -210,17 +210,10 @@ class _MobileUserPageState extends ConsumerState<MobileUserPage> {
         if (!mounted) return;
         final croppedPath = await AvatarCropper.cropImage(context, image.path);
         if (croppedPath != null) {
-          final appDir = await getApplicationDocumentsDirectory();
-          final avatarDir =
-              Directory('${appDir.path}${Platform.pathSeparator}avatars');
-          if (!await avatarDir.exists()) {
-            await avatarDir.create(recursive: true);
-          }
-          final fileName =
-              'avatar_${isUser ? "user" : "llm"}_${DateTime.now().millisecondsSinceEpoch}.png';
-          final persistentPath =
-              '${avatarDir.path}${Platform.pathSeparator}$fileName';
-          await File(croppedPath).copy(persistentPath);
+          final persistentPath = await AvatarStorage.persistAvatar(
+            sourcePath: croppedPath,
+            owner: isUser ? AvatarOwner.user : AvatarOwner.llm,
+          );
 
           if (isUser) {
             ref

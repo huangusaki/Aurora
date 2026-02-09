@@ -12,6 +12,7 @@ import '../../skills/presentation/skill_provider.dart';
 import '../../knowledge/presentation/knowledge_provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
+import 'package:aurora/shared/utils/avatar_storage.dart';
 
 class MobileAssistantDetailPage extends ConsumerStatefulWidget {
   final Assistant assistant;
@@ -298,7 +299,14 @@ class _MobileAssistantDetailPageState
       );
 
       if (croppedFile != null) {
-        _updateAssistant(_currentAssistant.copyWith(avatar: croppedFile.path));
+        var avatarPath = croppedFile.path;
+        try {
+          avatarPath = await AvatarStorage.persistAvatar(
+            sourcePath: croppedFile.path,
+            owner: AvatarOwner.assistant,
+          );
+        } catch (_) {}
+        _updateAssistant(_currentAssistant.copyWith(avatar: avatarPath));
       }
     }
   }

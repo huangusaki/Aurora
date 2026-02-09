@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:fluent_ui/fluent_ui.dart' as fluent;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_selector/file_selector.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 import 'package:aurora_search/aurora_search.dart';
 import 'package:aurora/shared/theme/wallpaper_tint.dart';
@@ -16,6 +15,7 @@ import 'preset_settings_page.dart';
 import 'knowledge_settings_panel.dart';
 
 import '../../../shared/utils/avatar_cropper.dart';
+import '../../../shared/utils/avatar_storage.dart';
 import 'model_config_dialog.dart';
 import 'global_config_dialog.dart';
 import '../../sync/presentation/sync_settings_section.dart';
@@ -227,8 +227,7 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
                     style:
                         TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
-                Text(l10n.mobileSettingsHint,
-                    textAlign: TextAlign.center),
+                Text(l10n.mobileSettingsHint, textAlign: TextAlign.center),
               ],
             ),
           ),
@@ -1215,17 +1214,11 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
                       final croppedPath =
                           await AvatarCropper.cropImage(context, result.path);
                       if (croppedPath != null) {
-                        final appDir = await getApplicationDocumentsDirectory();
-                        final avatarDir = Directory(
-                            '${appDir.path}${Platform.pathSeparator}avatars');
-                        if (!await avatarDir.exists()) {
-                          await avatarDir.create(recursive: true);
-                        }
-                        final fileName =
-                            'avatar_user_${DateTime.now().millisecondsSinceEpoch}.png';
                         final persistentPath =
-                            '${avatarDir.path}${Platform.pathSeparator}$fileName';
-                        await File(croppedPath).copy(persistentPath);
+                            await AvatarStorage.persistAvatar(
+                          sourcePath: croppedPath,
+                          owner: AvatarOwner.user,
+                        );
                         ref
                             .read(settingsProvider.notifier)
                             .setChatDisplaySettings(userAvatar: persistentPath);
@@ -1302,17 +1295,11 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
                       final croppedPath =
                           await AvatarCropper.cropImage(context, result.path);
                       if (croppedPath != null) {
-                        final appDir = await getApplicationDocumentsDirectory();
-                        final avatarDir = Directory(
-                            '${appDir.path}${Platform.pathSeparator}avatars');
-                        if (!await avatarDir.exists()) {
-                          await avatarDir.create(recursive: true);
-                        }
-                        final fileName =
-                            'avatar_llm_${DateTime.now().millisecondsSinceEpoch}.png';
                         final persistentPath =
-                            '${avatarDir.path}${Platform.pathSeparator}$fileName';
-                        await File(croppedPath).copy(persistentPath);
+                            await AvatarStorage.persistAvatar(
+                          sourcePath: croppedPath,
+                          owner: AvatarOwner.llm,
+                        );
                         ref
                             .read(settingsProvider.notifier)
                             .setChatDisplaySettings(llmAvatar: persistentPath);

@@ -5,6 +5,7 @@ import 'package:aurora/l10n/app_localizations.dart';
 import 'package:aurora/shared/utils/platform_utils.dart';
 import 'package:aurora/shared/theme/aurora_icons.dart';
 import 'package:aurora/shared/utils/avatar_cropper.dart';
+import 'package:aurora/shared/utils/avatar_storage.dart';
 import 'package:aurora/shared/widgets/aurora_dropdown.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:aurora/features/assistant/presentation/assistant_provider.dart';
@@ -286,7 +287,8 @@ class _AssistantContentState extends ConsumerState<AssistantContent> {
           const SizedBox(height: 24),
           Container(
             decoration: BoxDecoration(
-              border: Border.all(color: theme.resources.dividerStrokeColorDefault),
+              border:
+                  Border.all(color: theme.resources.dividerStrokeColorDefault),
               borderRadius: BorderRadius.circular(8),
               color: theme.resources.cardBackgroundFillColorDefault,
             ),
@@ -422,14 +424,16 @@ class _AssistantContentState extends ConsumerState<AssistantContent> {
                       fluent.HyperlinkButton(
                         onPressed: () {
                           ref.read(desktopActiveTabProvider.notifier).state = 4;
-                          ref.read(settingsPageIndexProvider.notifier).state = 1;
+                          ref.read(settingsPageIndexProvider.notifier).state =
+                              1;
                         },
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(l10n.goToSettings),
                             const SizedBox(width: 4),
-                            const Icon(fluent.FluentIcons.chevron_right, size: 10),
+                            const Icon(fluent.FluentIcons.chevron_right,
+                                size: 10),
                           ],
                         ),
                       ),
@@ -625,8 +629,15 @@ class _AssistantContentState extends ConsumerState<AssistantContent> {
       if (!mounted) return;
       final croppedPath = await AvatarCropper.cropImage(context, image.path);
       if (croppedPath != null) {
+        var avatarPath = croppedPath;
+        try {
+          avatarPath = await AvatarStorage.persistAvatar(
+            sourcePath: croppedPath,
+            owner: AvatarOwner.assistant,
+          );
+        } catch (_) {}
         ref.read(assistantProvider.notifier).saveAssistant(
-              assistant.copyWith(avatar: croppedPath),
+              assistant.copyWith(avatar: avatarPath),
             );
       }
     }
