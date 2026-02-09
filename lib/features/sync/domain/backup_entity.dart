@@ -115,6 +115,8 @@ class MessageBackup {
   final List<String> attachments;
   final List<String> images;
   final String? sessionId;
+  final String? assistantId;
+  final String? requestId;
   final String? model;
   final String? provider;
   final double? reasoningDurationSeconds;
@@ -122,6 +124,9 @@ class MessageBackup {
   final String? toolCallId;
   final String? toolCallsJson;
   final int? tokenCount;
+  final int? promptTokens;
+  final int? completionTokens;
+  final int? reasoningTokens;
   final int? firstTokenMs;
   final int? durationMs;
 
@@ -133,6 +138,8 @@ class MessageBackup {
     this.attachments = const [],
     this.images = const [],
     this.sessionId,
+    this.assistantId,
+    this.requestId,
     this.model,
     this.provider,
     this.reasoningDurationSeconds,
@@ -140,6 +147,9 @@ class MessageBackup {
     this.toolCallId,
     this.toolCallsJson,
     this.tokenCount,
+    this.promptTokens,
+    this.completionTokens,
+    this.reasoningTokens,
     this.firstTokenMs,
     this.durationMs,
   });
@@ -152,6 +162,8 @@ class MessageBackup {
         'attachments': attachments,
         'images': images,
         'sessionId': sessionId,
+        'assistantId': assistantId,
+        'requestId': requestId,
         'model': model,
         'provider': provider,
         'reasoningDurationSeconds': reasoningDurationSeconds,
@@ -159,6 +171,9 @@ class MessageBackup {
         'toolCallId': toolCallId,
         'toolCallsJson': toolCallsJson,
         'tokenCount': tokenCount,
+        'promptTokens': promptTokens,
+        'completionTokens': completionTokens,
+        'reasoningTokens': reasoningTokens,
         'firstTokenMs': firstTokenMs,
         'durationMs': durationMs,
       };
@@ -172,6 +187,8 @@ class MessageBackup {
             (json['attachments'] as List<dynamic>?)?.cast<String>() ?? [],
         images: (json['images'] as List<dynamic>?)?.cast<String>() ?? [],
         sessionId: json['sessionId'] as String?,
+        assistantId: json['assistantId'] as String?,
+        requestId: json['requestId'] as String?,
         model: json['model'] as String?,
         provider: json['provider'] as String?,
         reasoningDurationSeconds:
@@ -180,6 +197,9 @@ class MessageBackup {
         toolCallId: json['toolCallId'] as String?,
         toolCallsJson: json['toolCallsJson'] as String?,
         tokenCount: json['tokenCount'] as int?,
+        promptTokens: json['promptTokens'] as int?,
+        completionTokens: json['completionTokens'] as int?,
+        reasoningTokens: json['reasoningTokens'] as int?,
         firstTokenMs: json['firstTokenMs'] as int?,
         durationMs: json['durationMs'] as int?,
       );

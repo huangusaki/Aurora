@@ -3,12 +3,20 @@ class BackupOptions {
   final bool includeChatPresets;
   final bool includeProviderConfigs;
   final bool includeStudioContent;
+  final bool includeAppSettings;
+  final bool includeAssistants;
+  final bool includeKnowledgeBases;
+  final bool includeUsageStats;
 
   const BackupOptions({
     this.includeChatHistory = true,
     this.includeChatPresets = true,
     this.includeProviderConfigs = true,
     this.includeStudioContent = true,
+    this.includeAppSettings = true,
+    this.includeAssistants = true,
+    this.includeKnowledgeBases = true,
+    this.includeUsageStats = true,
   });
 
   BackupOptions copyWith({
@@ -16,6 +24,10 @@ class BackupOptions {
     bool? includeChatPresets,
     bool? includeProviderConfigs,
     bool? includeStudioContent,
+    bool? includeAppSettings,
+    bool? includeAssistants,
+    bool? includeKnowledgeBases,
+    bool? includeUsageStats,
   }) {
     return BackupOptions(
       includeChatHistory: includeChatHistory ?? this.includeChatHistory,
@@ -23,6 +35,11 @@ class BackupOptions {
       includeProviderConfigs:
           includeProviderConfigs ?? this.includeProviderConfigs,
       includeStudioContent: includeStudioContent ?? this.includeStudioContent,
+      includeAppSettings: includeAppSettings ?? this.includeAppSettings,
+      includeAssistants: includeAssistants ?? this.includeAssistants,
+      includeKnowledgeBases:
+          includeKnowledgeBases ?? this.includeKnowledgeBases,
+      includeUsageStats: includeUsageStats ?? this.includeUsageStats,
     );
   }
 
@@ -30,5 +47,9 @@ class BackupOptions {
       !includeChatHistory &&
       !includeChatPresets &&
       !includeProviderConfigs &&
-      !includeStudioContent;
+      !includeStudioContent &&
+      !includeAppSettings &&
+      !includeAssistants &&
+      !includeKnowledgeBases &&
+      !includeUsageStats;
 }

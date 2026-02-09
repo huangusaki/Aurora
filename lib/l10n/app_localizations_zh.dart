@@ -1751,6 +1751,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get backupStudioContent => 'Studio 内容';
 
   @override
+  String get backupAppSettings => '应用设置';
+
+  @override
+  String get backupAssistants => '助手与记忆';
+
+  @override
+  String get backupKnowledgeBases => '知识库';
+
+  @override
+  String get backupUsageStats => '使用统计';
+
+  @override
   String get noOptionsSelected => '请至少选择一项进行备份';
 
   @override

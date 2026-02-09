@@ -3470,6 +3470,30 @@ abstract class AppLocalizations {
   /// **'Studio 内容'**
   String get backupStudioContent;
 
+  /// No description provided for @backupAppSettings.
+  ///
+  /// In zh, this message translates to:
+  /// **'应用设置'**
+  String get backupAppSettings;
+
+  /// No description provided for @backupAssistants.
+  ///
+  /// In zh, this message translates to:
+  /// **'助手与记忆'**
+  String get backupAssistants;
+
+  /// No description provided for @backupKnowledgeBases.
+  ///
+  /// In zh, this message translates to:
+  /// **'知识库'**
+  String get backupKnowledgeBases;
+
+  /// No description provided for @backupUsageStats.
+  ///
+  /// In zh, this message translates to:
+  /// **'使用统计'**
+  String get backupUsageStats;
+
   /// No description provided for @noOptionsSelected.
   ///
   /// In zh, this message translates to:

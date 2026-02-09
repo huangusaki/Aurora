@@ -51,6 +51,32 @@ class BackupOptionsSelector extends StatelessWidget {
                 onChanged(options.copyWith(includeStudioContent: v)),
             content: Text(l10n.backupStudioContent),
           ),
+          const SizedBox(height: 12),
+          fluent.Checkbox(
+            checked: options.includeAppSettings,
+            onChanged: (v) =>
+                onChanged(options.copyWith(includeAppSettings: v)),
+            content: Text(l10n.backupAppSettings),
+          ),
+          const SizedBox(height: 12),
+          fluent.Checkbox(
+            checked: options.includeAssistants,
+            onChanged: (v) => onChanged(options.copyWith(includeAssistants: v)),
+            content: Text(l10n.backupAssistants),
+          ),
+          const SizedBox(height: 12),
+          fluent.Checkbox(
+            checked: options.includeKnowledgeBases,
+            onChanged: (v) =>
+                onChanged(options.copyWith(includeKnowledgeBases: v)),
+            content: Text(l10n.backupKnowledgeBases),
+          ),
+          const SizedBox(height: 12),
+          fluent.Checkbox(
+            checked: options.includeUsageStats,
+            onChanged: (v) => onChanged(options.copyWith(includeUsageStats: v)),
+            content: Text(l10n.backupUsageStats),
+          ),
         ],
       );
     }
@@ -81,6 +107,30 @@ class BackupOptionsSelector extends StatelessWidget {
           value: options.includeStudioContent,
           onChanged: (v) =>
               onChanged(options.copyWith(includeStudioContent: v ?? false)),
+        ),
+        CheckboxListTile(
+          title: Text(l10n.backupAppSettings),
+          value: options.includeAppSettings,
+          onChanged: (v) =>
+              onChanged(options.copyWith(includeAppSettings: v ?? false)),
+        ),
+        CheckboxListTile(
+          title: Text(l10n.backupAssistants),
+          value: options.includeAssistants,
+          onChanged: (v) =>
+              onChanged(options.copyWith(includeAssistants: v ?? false)),
+        ),
+        CheckboxListTile(
+          title: Text(l10n.backupKnowledgeBases),
+          value: options.includeKnowledgeBases,
+          onChanged: (v) =>
+              onChanged(options.copyWith(includeKnowledgeBases: v ?? false)),
+        ),
+        CheckboxListTile(
+          title: Text(l10n.backupUsageStats),
+          value: options.includeUsageStats,
+          onChanged: (v) =>
+              onChanged(options.copyWith(includeUsageStats: v ?? false)),
         ),
       ],
     );

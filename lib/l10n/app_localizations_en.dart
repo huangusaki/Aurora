@@ -1802,6 +1802,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get backupStudioContent => 'Studio Content';
 
   @override
+  String get backupAppSettings => 'App Settings';
+
+  @override
+  String get backupAssistants => 'Assistants & Memory';
+
+  @override
+  String get backupKnowledgeBases => 'Knowledge Bases';
+
+  @override
+  String get backupUsageStats => 'Usage Statistics';
+
+  @override
   String get noOptionsSelected => 'Please select at least one option to backup';
 
   @override
