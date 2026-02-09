@@ -4,6 +4,7 @@ import 'package:aurora/l10n/app_localizations.dart';
 import 'novel/novel_writing_page.dart';
 import 'package:aurora/shared/theme/aurora_icons.dart';
 import '../../settings/presentation/settings_provider.dart';
+import 'pages/storage_cleaning_page.dart';
 
 class StudioContent extends ConsumerStatefulWidget {
   const StudioContent({super.key});
@@ -13,7 +14,7 @@ class StudioContent extends ConsumerStatefulWidget {
 }
 
 class _StudioContentState extends ConsumerState<StudioContent> {
-  // 0: Dashboard, 1: Novel Writing
+  // 0: Dashboard, 1: Novel Writing, 2: Storage Cleaning
   int _viewIndex = 0;
 
   @override
@@ -27,9 +28,20 @@ class _StudioContentState extends ConsumerState<StudioContent> {
         },
       );
     }
+    if (_viewIndex == 2) {
+      return StudioStorageCleaningPage(
+        onBack: () {
+          setState(() {
+            _viewIndex = 0;
+          });
+        },
+      );
+    }
 
     final theme = FluentTheme.of(context);
     final l10n = AppLocalizations.of(context)!;
+    final isZh =
+        Localizations.localeOf(context).languageCode.toLowerCase() == 'zh';
     final settings = ref.watch(settingsProvider);
     final hasBackground = settings.useCustomTheme &&
         settings.backgroundImagePath != null &&
@@ -78,12 +90,17 @@ class _StudioContentState extends ConsumerState<StudioContent> {
                   ),
                   _buildFeatureCard(
                     context,
-                    icon: AuroraIcons.calendar,
-                    title: l10n.schedulePlanning,
-                    description: l10n.schedulePlanningDescription,
-                    comingSoon: true,
+                    icon: AuroraIcons.broom,
+                    title: isZh ? '智能清理' : 'AI Cleanup',
+                    description: isZh
+                        ? '扫描可访问目录并给出 AI 删除建议'
+                        : 'Scan accessible files and get AI cleanup advice',
                     hasBackground: hasBackground,
-                    onTap: null,
+                    onTap: () {
+                      setState(() {
+                        _viewIndex = 2;
+                      });
+                    },
                   ),
                   _buildFeatureCard(
                     context,

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 import 'mobile_novel_writing_page.dart';
 import 'package:aurora/shared/widgets/aurora_page_route.dart';
+import 'mobile_storage_cleaning_page.dart';
 
 class MobileStudioPage extends StatefulWidget {
   final VoidCallback? onBack;
@@ -17,6 +18,8 @@ class _MobileStudioPageState extends State<MobileStudioPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
+    final isZh =
+        Localizations.localeOf(context).languageCode.toLowerCase() == 'zh';
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -82,9 +85,18 @@ class _MobileStudioPageState extends State<MobileStudioPage> {
                 ),
                 _buildFeatureCard(
                   context,
-                  icon: AuroraIcons.calendar,
-                  title: l10n.schedulePlanning,
-                  comingSoon: true,
+                  icon: AuroraIcons.broom,
+                  title: isZh ? '智能清理' : 'AI Cleanup',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      AuroraMobilePageRoute(
+                        builder: (context) => MobileStorageCleaningPage(
+                          onBack: () => Navigator.pop(context),
+                        ),
+                      ),
+                    );
+                  },
                 ),
                 _buildFeatureCard(
                   context,
