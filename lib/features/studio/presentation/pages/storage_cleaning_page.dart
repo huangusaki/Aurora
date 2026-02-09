@@ -2,7 +2,8 @@ import 'package:aurora/features/cleaner/domain/cleaner_models.dart';
 import 'package:aurora/features/cleaner/presentation/cleaner_provider.dart';
 import 'package:aurora/features/settings/presentation/settings_provider.dart';
 import 'package:aurora/shared/theme/aurora_icons.dart';
-import 'package:aurora/shared/widgets/aurora_fluent_components.dart';
+import 'package:aurora/features/studio/presentation/widgets/studio_cleanup_components.dart';
+import 'package:aurora/features/studio/presentation/widgets/studio_surface_components.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -298,7 +299,7 @@ class _StudioStorageCleaningPageState
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-      child: AuroraPanel(
+      child: StudioPanel(
         hasBackground: hasBackground,
         padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
         child: Column(
@@ -330,7 +331,7 @@ class _StudioStorageCleaningPageState
                     ],
                   ),
                 ),
-                AuroraStatusChip(
+                StudioStatusChip(
                   label: statusText,
                   color: statusColor,
                 ),
@@ -341,25 +342,25 @@ class _StudioStorageCleaningPageState
               spacing: 8,
               runSpacing: 8,
               children: [
-                AuroraKpiChip(
+                StudioKpiChip(
                   icon: AuroraIcons.database,
                   label: _t('候选', 'Candidates'),
                   value: summary?.totalCandidates.toString() ?? '-',
                   hasBackground: hasBackground,
                 ),
-                AuroraKpiChip(
+                StudioKpiChip(
                   icon: AuroraIcons.broom,
                   label: _t('建议删除', 'Delete'),
                   value: summary?.deleteRecommendedCount.toString() ?? '-',
                   hasBackground: hasBackground,
                 ),
-                AuroraKpiChip(
+                StudioKpiChip(
                   icon: AuroraIcons.warning,
                   label: _t('需复核', 'Review'),
                   value: summary?.reviewRequiredCount.toString() ?? '-',
                   hasBackground: hasBackground,
                 ),
-                AuroraKpiChip(
+                StudioKpiChip(
                   icon: AuroraIcons.download,
                   label: _t('预计释放', 'Est. Reclaim'),
                   value: summary == null
@@ -385,12 +386,12 @@ class _StudioStorageCleaningPageState
         ? 0.0
         : state.processedCandidates / state.totalCandidates;
 
-    return AuroraPanel(
+    return StudioPanel(
       hasBackground: hasBackground,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AuroraSectionHeader(
+          StudioSectionHeader(
             icon: AuroraIcons.folderOpen,
             title: _t('扫描配置', 'Scan Setup'),
             subtitle: _t(
@@ -443,7 +444,7 @@ class _StudioStorageCleaningPageState
             },
           ),
           const SizedBox(height: 10),
-          AuroraSectionHeader(
+          StudioSectionHeader(
             icon: AuroraIcons.zap,
             title: _t('执行操作', 'Actions'),
             subtitle: _t(
@@ -585,7 +586,7 @@ class _StudioStorageCleaningPageState
     required bool hasBackground,
   }) {
     if (summary == null) {
-      return AuroraPanel(
+      return StudioPanel(
         hasBackground: hasBackground,
         child: SizedBox(
           height: 116,
@@ -610,12 +611,12 @@ class _StudioStorageCleaningPageState
       );
     }
 
-    return AuroraPanel(
+    return StudioPanel(
       hasBackground: hasBackground,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AuroraSectionHeader(
+          StudioSectionHeader(
             icon: AuroraIcons.stats,
             title: _t('分析总览', 'Analysis Overview'),
             subtitle:
@@ -626,71 +627,71 @@ class _StudioStorageCleaningPageState
             spacing: 10,
             runSpacing: 10,
             children: [
-              AuroraStatTile(
+              StudioStatTile(
                 label: _t('候选', 'Candidates'),
                 value: summary.totalCandidates.toString(),
                 color: Colors.blue,
                 hasBackground: hasBackground,
               ),
-              AuroraStatTile(
+              StudioStatTile(
                 label: _t('建议删除', 'Delete'),
                 value: summary.deleteRecommendedCount.toString(),
                 color: Colors.green,
                 hasBackground: hasBackground,
               ),
-              AuroraStatTile(
+              StudioStatTile(
                 label: _t('需复核', 'Review'),
                 value: summary.reviewRequiredCount.toString(),
                 color: Colors.orange,
                 hasBackground: hasBackground,
               ),
-              AuroraStatTile(
+              StudioStatTile(
                 label: _t('保留', 'Keep'),
                 value: summary.keepCount.toString(),
                 color: Colors.grey,
                 hasBackground: hasBackground,
               ),
-              AuroraStatTile(
+              StudioStatTile(
                 label: _t('预计释放', 'Est. Reclaim'),
                 value: _formatBytes(summary.estimatedReclaimBytes),
                 color: Colors.teal,
                 wide: true,
                 hasBackground: hasBackground,
               ),
-              AuroraStatTile(
+              StudioStatTile(
                 label: '1-10MB',
                 value:
                     (sizeCounts[_DesktopSizeFilter.oneToTenMb] ?? 0).toString(),
                 color: Colors.purple,
                 hasBackground: hasBackground,
               ),
-              AuroraStatTile(
+              StudioStatTile(
                 label: '10-100MB',
                 value: (sizeCounts[_DesktopSizeFilter.tenToHundredMb] ?? 0)
                     .toString(),
                 color: Colors.blue,
                 hasBackground: hasBackground,
               ),
-              AuroraStatTile(
+              StudioStatTile(
                 label: '>=100MB',
                 value: (sizeCounts[_DesktopSizeFilter.overHundredMb] ?? 0)
                     .toString(),
                 color: Colors.magenta,
                 hasBackground: hasBackground,
               ),
-              AuroraStatTile(
+              StudioStatTile(
                 label: _t('低风险', 'Low Risk'),
                 value: (riskCounts[CleanerRiskLevel.low] ?? 0).toString(),
                 color: Colors.green,
                 hasBackground: hasBackground,
               ),
-              AuroraStatTile(
+              StudioStatTile(
                 label: _t('中风险', 'Medium Risk'),
                 value: (riskCounts[CleanerRiskLevel.medium] ?? 0).toString(),
                 color: Colors.orange,
                 hasBackground: hasBackground,
               ),
-              AuroraStatTile(
+              StudioStatTile(
                 label: _t('高风险', 'High Risk'),
                 value: (riskCounts[CleanerRiskLevel.high] ?? 0).toString(),
                 color: Colors.red,
@@ -711,7 +712,7 @@ class _StudioStorageCleaningPageState
     required VoidCallback onClearSelection,
     required bool hasBackground,
   }) {
-    return AuroraPanel(
+    return StudioPanel(
       hasBackground: hasBackground,
       child: Row(
         children: [
@@ -821,7 +822,7 @@ class _StudioStorageCleaningPageState
     required List<CleanerReviewItem> visibleItems,
     required bool hasBackground,
   }) {
-    return AuroraPanel(
+    return StudioPanel(
       hasBackground: hasBackground,
       child: _buildResultList(
         theme: theme,
@@ -849,7 +850,7 @@ class _StudioStorageCleaningPageState
             : Color.lerp(theme.cardColor, Colors.white, 0.30)!);
 
     if (state.isAnalyzing && result == null) {
-      return AuroraEmptyState(
+      return StudioEmptyState(
         icon: AuroraIcons.search,
         title: _t('正在扫描与分析', 'Scanning and Analyzing'),
         subtitle:
@@ -859,7 +860,7 @@ class _StudioStorageCleaningPageState
     }
 
     if (result == null || result.items.isEmpty) {
-      return AuroraEmptyState(
+      return StudioEmptyState(
         icon: AuroraIcons.database,
         title: _t('准备就绪', 'Ready'),
         subtitle: _t('点击“开始分析”启动扫描', 'Click "Start Analyze" to begin'),
@@ -867,7 +868,7 @@ class _StudioStorageCleaningPageState
     }
 
     if (visibleItems.isEmpty) {
-      return AuroraEmptyState(
+      return StudioEmptyState(
         icon: AuroraIcons.parameter,
         title: _t('筛选后无结果', 'No Results'),
         subtitle: _t('调整大小或风险筛选条件。', 'Adjust size/risk filters.'),
@@ -931,30 +932,30 @@ class _StudioStorageCleaningPageState
                           spacing: 6,
                           runSpacing: 4,
                           children: [
-                            AuroraTag(
+                            StudioTag(
                               text: _decisionText(item.finalDecision),
                               color: _decisionColor(item.finalDecision),
                               hasBackground: hasBackground,
                             ),
-                            AuroraTag(
+                            StudioTag(
                               text: _riskText(item.finalRiskLevel),
                               color: _riskColor(item.finalRiskLevel),
                               hasBackground: hasBackground,
                             ),
-                            AuroraTag(
+                            StudioTag(
                               text:
                                   '${_formatBytes(item.candidate.sizeBytes)} · ${_sizeBucketLabel(item.candidate.sizeBytes)}',
                               color: Colors.grey,
                               hasBackground: hasBackground,
                             ),
-                            AuroraTag(
+                            StudioTag(
                               text:
                                   '${_t('置信度', 'Confidence')} ${(item.aiSuggestion.confidence * 100).toStringAsFixed(0)}%',
                               color: Colors.blue,
                               hasBackground: hasBackground,
                             ),
                             if (windowsGroup != null)
-                              AuroraTag(
+                              StudioTag(
                                 text: _t(
                                     '规则:$windowsGroup', 'Rule:$windowsGroup'),
                                 color: Colors.teal,

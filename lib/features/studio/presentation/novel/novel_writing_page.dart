@@ -6,7 +6,9 @@ import 'package:flutter/services.dart';
 import 'package:super_clipboard/super_clipboard.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:aurora/l10n/app_localizations.dart';
+import 'package:aurora/features/settings/presentation/settings_provider.dart';
 import 'package:aurora/shared/widgets/aurora_bottom_sheet.dart';
+import 'package:aurora/features/studio/presentation/widgets/studio_surface_components.dart';
 import 'widgets/model_config_dialog.dart';
 import 'widgets/create_project_dialog.dart';
 import 'novel_provider.dart';
@@ -52,6 +54,14 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
     final theme = FluentTheme.of(context);
     final state = ref.watch(novelProvider);
     final notifier = ref.read(novelProvider.notifier);
+    final hasBackground = ref.watch(
+      settingsProvider.select(
+        (s) =>
+            (s.useCustomTheme || s.themeMode == 'custom') &&
+            s.backgroundImagePath != null &&
+            s.backgroundImagePath!.isNotEmpty,
+      ),
+    );
     _syncOutlineController(state);
     _syncTaskDescriptionController(state.selectedTask);
 
@@ -65,7 +75,14 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
 
           // Content Body
           Expanded(
-            child: _buildBodyContent(context, l10n, theme, state, notifier),
+            child: _buildBodyContent(
+              context,
+              l10n,
+              theme,
+              state,
+              notifier,
+              hasBackground: hasBackground,
+            ),
           ),
         ],
       ),
@@ -199,8 +216,7 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
                       context: context,
                       builder: (ctx) => ContentDialog(
                         title: Text(l10n.restartAllTasksTitle),
-                        content:
-                            Text(l10n.restartAllTasksConfirm),
+                        content: Text(l10n.restartAllTasksConfirm),
                         actions: [
                           Button(
                             child: Text(l10n.cancel),
@@ -469,41 +485,68 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
     );
   }
 
-  Widget _buildBodyContent(BuildContext context, AppLocalizations l10n,
-      FluentThemeData theme, NovelWritingState state, NovelNotifier notifier) {
+  Widget _buildBodyContent(
+    BuildContext context,
+    AppLocalizations l10n,
+    FluentThemeData theme,
+    NovelWritingState state,
+    NovelNotifier notifier, {
+    required bool hasBackground,
+  }) {
     switch (_selectedNavIndex) {
       case 0:
-        return _buildWritingView(context, l10n, theme, state, notifier);
+        return _buildWritingView(
+          context,
+          l10n,
+          theme,
+          state,
+          notifier,
+          hasBackground: hasBackground,
+        );
       case 1:
-        return _buildContextView(context, l10n, theme, state, notifier);
+        return _buildContextView(
+          context,
+          l10n,
+          theme,
+          state,
+          notifier,
+          hasBackground: hasBackground,
+        );
       case 2:
-        return _buildExportView(context, l10n, theme, state, notifier);
+        return _buildExportView(
+          context,
+          l10n,
+          theme,
+          state,
+          notifier,
+          hasBackground: hasBackground,
+        );
       default:
         return const SizedBox.shrink();
     }
   }
 
-  Widget _buildCard(FluentThemeData theme, Widget child) {
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.cardColor,
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            offset: const Offset(0, 2),
-            blurRadius: 4,
-          ),
-        ],
-        border: Border.all(color: theme.resources.surfaceStrokeColorDefault),
-      ),
+  Widget _buildCard(
+    Widget child, {
+    required bool hasBackground,
+  }) {
+    return StudioPanel(
+      hasBackground: hasBackground,
+      borderRadius: 8,
+      padding: EdgeInsets.zero,
       clipBehavior: Clip.antiAlias,
       child: child,
     );
   }
 
-  Widget _buildWritingView(BuildContext context, AppLocalizations l10n,
-      FluentThemeData theme, NovelWritingState state, NovelNotifier notifier) {
+  Widget _buildWritingView(
+    BuildContext context,
+    AppLocalizations l10n,
+    FluentThemeData theme,
+    NovelWritingState state,
+    NovelNotifier notifier, {
+    required bool hasBackground,
+  }) {
     return Container(
       color: Colors.transparent,
       padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
@@ -513,24 +556,24 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
           Expanded(
             flex: 3,
             child: _buildCard(
-              theme,
               _buildOutlinePanel(context, l10n, theme, state, notifier),
+              hasBackground: hasBackground,
             ),
           ),
           const SizedBox(width: 12),
           Expanded(
             flex: 3,
             child: _buildCard(
-              theme,
               _buildChapterTaskTree(context, l10n, theme, state, notifier),
+              hasBackground: hasBackground,
             ),
           ),
           const SizedBox(width: 12),
           Expanded(
             flex: 4,
             child: _buildCard(
-              theme,
               _buildTaskDetailPanel(context, l10n, theme, state, notifier),
+              hasBackground: hasBackground,
             ),
           ),
         ],
@@ -807,8 +850,14 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
     }
   }
 
-  Widget _buildContextView(BuildContext context, AppLocalizations l10n,
-      FluentThemeData theme, NovelWritingState state, NovelNotifier notifier) {
+  Widget _buildContextView(
+    BuildContext context,
+    AppLocalizations l10n,
+    FluentThemeData theme,
+    NovelWritingState state,
+    NovelNotifier notifier, {
+    required bool hasBackground,
+  }) {
     if (state.selectedProject == null) {
       return Center(child: Text(l10n.selectProject));
     }
@@ -818,7 +867,6 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
     return Container(
       padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
       child: _buildCard(
-        theme,
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -928,6 +976,7 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
             ),
           ],
         ),
+        hasBackground: hasBackground,
       ),
     );
   }
@@ -1180,8 +1229,14 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
     );
   }
 
-  Widget _buildExportView(BuildContext context, AppLocalizations l10n,
-      FluentThemeData theme, NovelWritingState state, NovelNotifier notifier) {
+  Widget _buildExportView(
+    BuildContext context,
+    AppLocalizations l10n,
+    FluentThemeData theme,
+    NovelWritingState state,
+    NovelNotifier notifier, {
+    required bool hasBackground,
+  }) {
     if (state.selectedProject == null) {
       return Center(child: Text(l10n.selectProject));
     }
@@ -1196,7 +1251,6 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
     return Container(
       padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
       child: _buildCard(
-        theme,
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1251,6 +1305,7 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
             ),
           ],
         ),
+        hasBackground: hasBackground,
       ),
     );
   }
