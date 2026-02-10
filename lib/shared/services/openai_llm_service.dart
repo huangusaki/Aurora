@@ -474,11 +474,9 @@ void _ensureReasoningEffortCompatibleMaxTokens({
     return;
   }
 
-  // Upstream defaults are often around 32000; only patch when budget is likely
-  // to exceed an implicit default. This avoids capping low-budget requests.
-  if (budgetTokens >= 32000) {
-    requestData['max_tokens'] = budgetTokens + 1;
-  }
+  // Some Claude-compatible backends apply a low implicit max_tokens default.
+  // Always set an explicit compatible value when thinking budget is enabled.
+  requestData['max_tokens'] = budgetTokens + 1;
 }
 
 int? _budgetTokensFromThinkingInput(_ThinkingInput input) {

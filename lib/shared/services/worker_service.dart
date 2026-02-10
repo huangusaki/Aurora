@@ -535,8 +535,10 @@ $skillSpecificRules
     }
 
     final normalized = command.trimLeft().replaceAll('\\', '/');
-    final referencesWorkspaceSkillsPath =
-        normalized.contains('/skills/') || normalized.startsWith('skills/');
+    final referencesWorkspaceSkillsPath = RegExp(
+      r'''(^|[\s"'`=>(/])(?:\./)?skills/''',
+      caseSensitive: false,
+    ).hasMatch(normalized);
 
     if (referencesWorkspaceSkillsPath) {
       return null;
