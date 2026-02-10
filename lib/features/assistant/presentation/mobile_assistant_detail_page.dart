@@ -70,7 +70,7 @@ class _MobileAssistantDetailPageState
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor.withValues(alpha: 0.82),
+      backgroundColor: theme.scaffoldBackgroundColor.withValues(alpha: 0.65),
       appBar: AppBar(
         title: const Text(''),
         centerTitle: true,

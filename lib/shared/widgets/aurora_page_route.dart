@@ -1,17 +1,17 @@
 import 'package:aurora/shared/widgets/global_background.dart';
 import 'package:flutter/material.dart';
 
-/// A mobile-friendly push route that avoids "previous page bleeding through"
-/// when the destination page uses transparent / glass backgrounds.
+/// A mobile-friendly push route using fade + subtle scale for smooth,
+/// consistent transitions that match the main navigation style.
 ///
-/// It briefly renders an opaque global background *above* the previous route
-/// during the push transition, so the old page won't overlap with the new page.
+/// The destination page is wrapped in [_AuroraRoutePage] to provide an opaque
+/// base, preventing transparent scaffold backgrounds from "bleeding through".
 class AuroraMobilePageRoute<T> extends PageRouteBuilder<T> {
   AuroraMobilePageRoute({
     required WidgetBuilder builder,
     super.settings,
-    super.transitionDuration = const Duration(milliseconds: 280),
-    super.reverseTransitionDuration = const Duration(milliseconds: 240),
+    super.transitionDuration = const Duration(milliseconds: 260),
+    super.reverseTransitionDuration = const Duration(milliseconds: 200),
   }) : super(
           pageBuilder: (context, animation, secondaryAnimation) =>
               _AuroraRoutePage(child: builder(context)),
@@ -22,26 +22,12 @@ class AuroraMobilePageRoute<T> extends PageRouteBuilder<T> {
               reverseCurve: Curves.easeInCubic,
             );
 
-            final slide = Tween<Offset>(
-              begin: const Offset(1, 0),
-              end: Offset.zero,
-            ).animate(curve);
-
             final fade = Tween<double>(begin: 0, end: 1).animate(curve);
+            final scale = Tween<double>(begin: 0.96, end: 1.0).animate(curve);
 
-            final bool showCover =
-                animation.status == AnimationStatus.forward ||
-                    animation.status == AnimationStatus.dismissed;
-
-            return Stack(
-              fit: StackFit.expand,
-              children: [
-                if (showCover) const _AuroraRouteCover(),
-                SlideTransition(
-                  position: slide,
-                  child: FadeTransition(opacity: fade, child: child),
-                ),
-              ],
+            return FadeTransition(
+              opacity: fade,
+              child: ScaleTransition(scale: scale, child: child),
             );
           },
         );
@@ -64,22 +50,6 @@ class AuroraFadePageRoute<T> extends PageRouteBuilder<T> {
             return FadeTransition(opacity: animation, child: child);
           },
         );
-}
-
-class _AuroraRouteCover extends StatelessWidget {
-  const _AuroraRouteCover();
-
-  @override
-  Widget build(BuildContext context) {
-    return IgnorePointer(
-      child: ColoredBox(
-        // Ensures we always cover the previous route even if the theme uses
-        // translucent scaffold backgrounds (custom wallpaper mode).
-        color: Theme.of(context).scaffoldBackgroundColor.withAlpha(255),
-        child: const GlobalBackground(child: SizedBox.expand()),
-      ),
-    );
-  }
 }
 
 class _AuroraRoutePage extends StatelessWidget {

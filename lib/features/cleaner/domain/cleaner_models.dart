@@ -102,9 +102,25 @@ class CleanerAiProgress {
 class CleanerScanOptions {
   final bool includeAppCache;
   final bool includeTemporary;
+  final bool includeCommonUserRoots;
   final bool includeUserSelectedRoots;
   final bool includeUnknownInUserSelectedRoots;
   final bool includeWindowsRuleRoots;
+  final bool enableTwoPhaseDirectoryScan;
+  final bool enableLlmDirectoryPlanning;
+  final int llmDirectoryPlanningMaxInputDirectories;
+  final int profileMaxDepth;
+  final int profileMaxDirectories;
+  final int profileSuspiciousDirCount;
+  final int profileSuspiciousMinBytes;
+  final int profileLargeDirectoryThresholdBytes;
+  final int maxDirectoryDepth;
+  final int maxEntriesPerDirectory;
+  final bool skipShallowDirectories;
+  final List<String> shallowDirectoryNames;
+  final bool useDefaultPathPolicy;
+  final List<String> excludedPathPrefixes;
+  final List<String> allowedPathPrefixes;
   final List<String> additionalRootPaths;
   final int largeFileThresholdBytes;
   final Duration staleThreshold;
@@ -116,9 +132,39 @@ class CleanerScanOptions {
   const CleanerScanOptions({
     this.includeAppCache = true,
     this.includeTemporary = true,
+    this.includeCommonUserRoots = true,
     this.includeUserSelectedRoots = true,
     this.includeUnknownInUserSelectedRoots = false,
     this.includeWindowsRuleRoots = true,
+    this.enableTwoPhaseDirectoryScan = true,
+    this.enableLlmDirectoryPlanning = true,
+    this.llmDirectoryPlanningMaxInputDirectories = 240,
+    this.profileMaxDepth = 3,
+    this.profileMaxDirectories = 1200,
+    this.profileSuspiciousDirCount = 24,
+    this.profileSuspiciousMinBytes = 64 * 1024 * 1024,
+    this.profileLargeDirectoryThresholdBytes = 512 * 1024 * 1024,
+    this.maxDirectoryDepth = 12,
+    this.maxEntriesPerDirectory = 1000,
+    this.skipShallowDirectories = true,
+    this.shallowDirectoryNames = const [
+      'node_modules',
+      '.git',
+      '.github',
+      '.venv',
+      'venv',
+      '__pycache__',
+      'target',
+      'vendor',
+      '.npm',
+      '.yarn',
+      '.pnpm',
+      'bower_components',
+      'jspm_packages',
+    ],
+    this.useDefaultPathPolicy = true,
+    this.excludedPathPrefixes = const [],
+    this.allowedPathPrefixes = const [],
     this.additionalRootPaths = const [],
     this.largeFileThresholdBytes = 120 * 1024 * 1024,
     this.staleThreshold = const Duration(days: 90),
@@ -181,9 +227,13 @@ class CleanerCandidate {
   }
 
   Map<String, dynamic> toAiInput({required bool redactPath}) {
+    final fileName = _fileName(path);
+    final extension = _extension(fileName);
     return {
       'candidate_id': id,
       'path': redactPath ? _redactPath(path) : path,
+      'file_name': fileName,
+      'extension': extension,
       'size_bytes': sizeBytes,
       'modified_at': modifiedAt.toUtc().toIso8601String(),
       'accessed_at': accessedAt?.toUtc().toIso8601String(),
@@ -203,6 +253,26 @@ class CleanerCandidate {
     final last = segments[segments.length - 1];
     final parent = segments[segments.length - 2];
     return '[REDACTED]/$parent/$last';
+  }
+
+  static String _fileName(String rawPath) {
+    final normalized = rawPath.replaceAll('\\', '/');
+    final segments = normalized.split('/');
+    for (var i = segments.length - 1; i >= 0; i--) {
+      final value = segments[i].trim();
+      if (value.isNotEmpty) {
+        return value;
+      }
+    }
+    return rawPath.trim();
+  }
+
+  static String _extension(String fileName) {
+    final index = fileName.lastIndexOf('.');
+    if (index <= 0 || index >= fileName.length - 1) {
+      return '';
+    }
+    return fileName.substring(index).toLowerCase();
   }
 }
 

@@ -25,8 +25,8 @@ class StudioPanel extends StatelessWidget {
         : Colors.black.withValues(alpha: hasBackground ? 0.12 : 0.08);
     final surface = hasBackground
         ? (isDark
-            ? theme.cardColor.withValues(alpha: 0.58)
-            : Colors.white.withValues(alpha: 0.82))
+            ? theme.cardColor.withValues(alpha: 0.46)
+            : Colors.white.withValues(alpha: 0.72))
         : (isDark
             ? Color.lerp(theme.cardColor, Colors.black, 0.10)!
             : Color.lerp(theme.cardColor, Colors.white, 0.45)!);

@@ -1,24 +1,19 @@
+import 'package:aurora/l10n/app_localizations.dart';
+import 'package:flutter/widgets.dart';
+
 import '../domain/cleaner_models.dart';
 
 class CleanerPolicyConfig {
   final double minConfidenceForDelete;
   final int largeFileReviewThresholdBytes;
   final bool requireRecoverableForDelete;
-  final List<String> protectedPathKeywords;
+  final bool executableRequiresReview;
 
   const CleanerPolicyConfig({
     this.minConfidenceForDelete = 0.65,
     this.largeFileReviewThresholdBytes = 512 * 1024 * 1024,
     this.requireRecoverableForDelete = true,
-    this.protectedPathKeywords = const [
-      '/windows/system32/',
-      '/system/',
-      '/usr/',
-      '/bin/',
-      '/sbin/',
-      '/android/data/',
-      '/android/obb/',
-    ],
+    this.executableRequiresReview = true,
   });
 }
 
@@ -30,12 +25,14 @@ class CleanerPolicyEngine {
   List<CleanerReviewItem> evaluateAll({
     required List<CleanerCandidate> candidates,
     required List<CleanerAiSuggestion> suggestions,
+    String languageCode = 'en',
   }) {
     final byId = {
       for (final suggestion in suggestions) suggestion.candidateId: suggestion,
     };
     return candidates.map((candidate) {
-      final suggestion = byId[candidate.id] ?? _defaultSuggestion(candidate.id);
+      final suggestion =
+          byId[candidate.id] ?? _defaultSuggestion(candidate.id, languageCode);
       return evaluate(candidate: candidate, suggestion: suggestion);
     }).toList();
   }
@@ -48,13 +45,10 @@ class CleanerPolicyEngine {
     var finalRisk = suggestion.riskLevel;
     final policyReasons = <String>[];
 
-    final protectedByPath = _matchesProtectedPath(candidate.path);
-    if (candidate.isProtected || protectedByPath) {
+    if (candidate.isProtected) {
       finalDecision = CleanerDecision.keep;
       finalRisk = CleanerRiskLevel.high;
-      policyReasons.add(candidate.isProtected
-          ? 'candidate_marked_protected'
-          : 'path_protected');
+      policyReasons.add('candidate_marked_protected');
     }
 
     if (finalDecision == CleanerDecision.deleteRecommend &&
@@ -79,6 +73,14 @@ class CleanerPolicyEngine {
       policyReasons.add('large_file_requires_review');
     }
 
+    if (finalDecision == CleanerDecision.deleteRecommend &&
+        config.executableRequiresReview &&
+        _isExecutablePath(candidate.path)) {
+      finalDecision = CleanerDecision.reviewRequired;
+      finalRisk = maxCleanerRiskLevel(finalRisk, CleanerRiskLevel.high);
+      policyReasons.add('executable_requires_review');
+    }
+
     return CleanerReviewItem(
       candidate: candidate,
       aiSuggestion: suggestion,
@@ -88,25 +90,58 @@ class CleanerPolicyEngine {
     );
   }
 
-  CleanerAiSuggestion _defaultSuggestion(String candidateId) {
+  CleanerAiSuggestion _defaultSuggestion(
+    String candidateId,
+    String languageCode,
+  ) {
+    final l10n = _lookupCleanerLocalizations(languageCode);
     return CleanerAiSuggestion(
       candidateId: candidateId,
       decision: CleanerDecision.reviewRequired,
       riskLevel: CleanerRiskLevel.medium,
       confidence: 0.5,
       reasonCodes: const ['missing_ai_suggestion'],
-      humanReason: 'AI suggestion unavailable.',
+      humanReason: l10n.cleanerPolicyDefaultAiUnavailable,
       source: 'policy-default',
     );
   }
 
-  bool _matchesProtectedPath(String path) {
-    final normalized = path.toLowerCase().replaceAll('\\', '/');
-    for (final keyword in config.protectedPathKeywords) {
-      final k = keyword.toLowerCase().replaceAll('\\', '/');
-      if (k.isEmpty) continue;
-      if (normalized.contains(k)) return true;
+  AppLocalizations _lookupCleanerLocalizations(String languageCode) {
+    final normalized = languageCode.toLowerCase();
+    final locale = Locale(normalized.startsWith('zh') ? 'zh' : 'en');
+    return lookupAppLocalizations(locale);
+  }
+
+  bool _isExecutablePath(String rawPath) {
+    final normalized = rawPath.trim().toLowerCase().replaceAll('\\', '/');
+    final fileName = normalized.split('/').last;
+    final dotIndex = fileName.lastIndexOf('.');
+    if (dotIndex <= 0 || dotIndex >= fileName.length - 1) {
+      return false;
     }
-    return false;
+    final extension = fileName.substring(dotIndex);
+    return _executableExtensions.contains(extension);
   }
 }
+
+const Set<String> _executableExtensions = <String>{
+  '.exe',
+  '.msi',
+  '.bat',
+  '.cmd',
+  '.ps1',
+  '.vbs',
+  '.js',
+  '.jar',
+  '.com',
+  '.scr',
+  '.pif',
+  '.lnk',
+  '.sh',
+  '.bash',
+  '.zsh',
+  '.fish',
+  '.appimage',
+  '.apk',
+  '.ipa',
+};

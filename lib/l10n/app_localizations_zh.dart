@@ -1924,4 +1924,262 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get translationPromptSourceText => '原文内容：';
+
+  @override
+  String get cleanerStatusAnalyzing => '分析中';
+
+  @override
+  String get cleanerStatusPaused => '已暂停';
+
+  @override
+  String get cleanerStatusReady => '待命';
+
+  @override
+  String get cleanerTitle => '智能清理';
+
+  @override
+  String get cleanerHeaderSubtitle => '规则扫描 + AI 建议 + 策略护栏（全程可中止与继续）';
+
+  @override
+  String get cleanerRuleAiPolicyTitle => '规则扫描 + AI 建议 + 策略护栏';
+
+  @override
+  String get cleanerRuleAiPolicySubtitle => '先做目录画像，再由 AI 选择需要深度扫描的目录；可额外添加目录。';
+
+  @override
+  String get cleanerScanSetupTitle => '扫描配置';
+
+  @override
+  String get cleanerExecutionModelDefaultChat => '默认（跟随聊天模型）';
+
+  @override
+  String get cleanerDefaultUseChatModel => '默认会使用聊天当前模型。';
+
+  @override
+  String get cleanerAddExtraFolder => '添加额外目录';
+
+  @override
+  String get cleanerClearFolders => '清空目录';
+
+  @override
+  String get cleanerDetectDuplicates => '启用重复文件检测';
+
+  @override
+  String get cleanerIncludeReviewOnDelete => '按建议删除时包含“需复核”';
+
+  @override
+  String get cleanerActionsTitle => '执行操作';
+
+  @override
+  String get cleanerActionsSubtitle => '分析支持中止与继续；删除需手动触发。';
+
+  @override
+  String get cleanerStartAnalyze => '开始分析';
+
+  @override
+  String get cleanerStopping => '中止中…';
+
+  @override
+  String get cleanerStop => '中止';
+
+  @override
+  String get cleanerContinue => '继续';
+
+  @override
+  String cleanerDeleteSelectedCount(int count) {
+    return '删除已选($count)';
+  }
+
+  @override
+  String get cleanerDeleteRecommended => '按建议删除';
+
+  @override
+  String cleanerProgressLine(
+      int processed, int total, int batchesProcessed, String batchesTotal) {
+    return '进度 $processed/$total · 批次 $batchesProcessed/$batchesTotal';
+  }
+
+  @override
+  String get cleanerDeleteResultTitle => '删除结果';
+
+  @override
+  String cleanerDeleteResultSummary(String freed, int success, int total) {
+    return '释放 $freed · 成功 $success/$total';
+  }
+
+  @override
+  String get cleanerNoAnalysisYetStartScan => '尚未分析，先开始扫描。';
+
+  @override
+  String get cleanerAnalysisOverviewTitle => '分析总览';
+
+  @override
+  String get cleanerAnalysisOverviewSubtitle => '按结果、体积、风险三组汇总。';
+
+  @override
+  String get cleanerCandidates => '候选';
+
+  @override
+  String get cleanerDelete => '建议删除';
+
+  @override
+  String get cleanerReview => '需复核';
+
+  @override
+  String get cleanerKeep => '保留';
+
+  @override
+  String get cleanerEstimatedReclaim => '预计释放';
+
+  @override
+  String get cleanerRiskLow => '低风险';
+
+  @override
+  String get cleanerRiskMedium => '中风险';
+
+  @override
+  String get cleanerRiskHigh => '高风险';
+
+  @override
+  String get cleanerSizeFilter => '大小筛选';
+
+  @override
+  String get cleanerRiskFilter => '风险筛选';
+
+  @override
+  String get cleanerAllRisk => '全部风险';
+
+  @override
+  String cleanerShowingCount(int shown, int total) {
+    return '当前显示 $shown/$total';
+  }
+
+  @override
+  String get cleanerSelectDeletable => '选中可删项';
+
+  @override
+  String get cleanerClearSelection => '清空选择';
+
+  @override
+  String get cleanerScanningAndAnalyzing => '正在扫描与分析';
+
+  @override
+  String get cleanerScanningHint => '稍候，候选项会实时出现。';
+
+  @override
+  String get cleanerReadyTitle => '准备就绪';
+
+  @override
+  String get cleanerReadyHint => '点击“开始分析”启动扫描';
+
+  @override
+  String get cleanerNoResultsTitle => '筛选后无结果';
+
+  @override
+  String get cleanerNoResultsHint => '调整大小或风险筛选条件。';
+
+  @override
+  String get cleanerConfidence => '置信度';
+
+  @override
+  String cleanerRuleTag(String group) {
+    return '规则:$group';
+  }
+
+  @override
+  String get cleanerPolicyGuard => '策略护栏';
+
+  @override
+  String get cleanerAutoModeHint => '当前自动模式：先做目录画像，再由 AI 筛选目录进行深度扫描。';
+
+  @override
+  String get cleanerAllSize => '全部大小';
+
+  @override
+  String get cleanerClassificationFilter => '分类筛选';
+
+  @override
+  String get cleanerNoCandidatesYet => '暂无候选项';
+
+  @override
+  String get cleanerNoItemsUnderFilters => '当前筛选下无结果';
+
+  @override
+  String get cleanerAndroidStorageRestriction =>
+      'Android 受系统存储策略限制，部分目录（如 Android/data）可能无法选择或访问。';
+
+  @override
+  String get cleanerIncludeReviewRequiredItems => '包含“需复核”项';
+
+  @override
+  String cleanerFreedBytesOnly(String freed) {
+    return '已释放 $freed';
+  }
+
+  @override
+  String cleanerErrorAnalyzeFailed(String message) {
+    return '清理分析失败: $message';
+  }
+
+  @override
+  String cleanerErrorContinueFailed(String message) {
+    return '清理继续分析失败: $message';
+  }
+
+  @override
+  String cleanerErrorDeleteFailed(String message) {
+    return '清理删除失败: $message';
+  }
+
+  @override
+  String get cleanerPolicyDefaultAiUnavailable => 'AI 建议不可用。';
+
+  @override
+  String get cleanerHeuristicNoExtension => '无扩展名';
+
+  @override
+  String get cleanerHeuristicProtected => '命中保护规则，默认保留。';
+
+  @override
+  String cleanerHeuristicExecutableReview(String extLabel) {
+    return '检测到可执行/脚本文件（$extLabel），不自动建议删除。';
+  }
+
+  @override
+  String cleanerHeuristicValuableKeep(String extLabel) {
+    return '文件类型看起来是内容型数据（$extLabel），默认保留。';
+  }
+
+  @override
+  String cleanerHeuristicDisposableDelete(String extLabel) {
+    return '文件名/后缀显示为临时或日志产物（$extLabel），通常可清理。';
+  }
+
+  @override
+  String cleanerHeuristicCachePathDelete(String extLabel) {
+    return '该文件位于缓存/临时路径（$extLabel），通常可清理。';
+  }
+
+  @override
+  String cleanerHeuristicDuplicateReview(String extLabel) {
+    return '疑似重复文件（$extLabel），建议先确认保留哪一份。';
+  }
+
+  @override
+  String cleanerHeuristicLargeFileReview(String extLabel) {
+    return '大文件（$extLabel），价值未知，建议先人工复核。';
+  }
+
+  @override
+  String cleanerHeuristicStaleFileReview(String extLabel) {
+    return '长期未修改（$extLabel），可能可清理，建议确认后执行。';
+  }
+
+  @override
+  String cleanerHeuristicInsufficientSignal(String extLabel) {
+    return '信号不足（$extLabel），默认保留。';
+  }
+
+  @override
+  String get cleanerLlmSuggestionFallback => 'LLM 建议';
 }

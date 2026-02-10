@@ -9,6 +9,7 @@ import 'package:aurora/shared/theme/wallpaper_tint.dart';
 import 'package:aurora/shared/theme/wallpaper_tint_provider.dart';
 import 'package:aurora/shared/utils/platform_utils.dart';
 import 'package:aurora/shared/widgets/aurora_dropdown.dart';
+import 'package:aurora/shared/widgets/aurora_notice.dart';
 import 'settings_provider.dart';
 import 'usage_stats_view.dart';
 import 'preset_settings_page.dart';
@@ -38,6 +39,31 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
   // Inline renaming state
   String? _editingProviderId;
   String? _currentProviderId;
+
+  Future<void> _refreshModelsWithNotice(AppLocalizations l10n) async {
+    final success = await ref.read(settingsProvider.notifier).fetchModels();
+    if (!mounted) return;
+
+    if (success) {
+      showAuroraNotice(
+        context,
+        '${l10n.fetchModelList} ${l10n.success}',
+        icon: AuroraIcons.success,
+      );
+      return;
+    }
+
+    final errorMessage = ref.read(settingsProvider).error;
+    final message = (errorMessage?.isNotEmpty ?? false)
+        ? '${l10n.fetchModelList} ${l10n.failed}: $errorMessage'
+        : '${l10n.fetchModelList} ${l10n.failed}';
+    showAuroraNotice(
+      context,
+      message,
+      icon: AuroraIcons.error,
+    );
+  }
+
   final TextEditingController _renameListController = TextEditingController();
 
   // Local state for API key visibility
@@ -795,9 +821,9 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
                           ),
                           onPressed: settingsState.isLoadingModels
                               ? null
-                              : () => ref
-                                  .read(settingsProvider.notifier)
-                                  .fetchModels(),
+                              : () async {
+                                  await _refreshModelsWithNotice(l10n);
+                                },
                           child: settingsState.isLoadingModels
                               ? const SizedBox(
                                   width: 16,

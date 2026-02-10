@@ -845,5 +845,216 @@
   "translationPromptRequirement1": "1. Ensure translation is accurate, natural, and idiomatic in the target language.",
   "translationPromptRequirement2": "2. Preserve all line breaks and paragraph structure exactly as in the source.",
   "translationPromptRequirement3": "3. Output only the translated text, without explanations, introductions, or suffixes.",
-  "translationPromptSourceText": "Source text:"
+  "translationPromptSourceText": "Source text:",
+  "cleanerStatusAnalyzing": "Analyzing",
+  "cleanerStatusPaused": "Paused",
+  "cleanerStatusReady": "Ready",
+  "cleanerTitle": "AI Cleanup",
+  "cleanerHeaderSubtitle": "Rule scan + AI advice + policy guardrails (stop/continue supported)",
+  "cleanerRuleAiPolicyTitle": "Rule scan + AI advice + policy guardrails",
+  "cleanerRuleAiPolicySubtitle": "Builds a directory profile first, then AI selects directories for deep scan. Optional folders can be added.",
+  "cleanerScanSetupTitle": "Scan Setup",
+  "cleanerExecutionModelDefaultChat": "Default (Use Chat Model)",
+  "cleanerDefaultUseChatModel": "Defaults to the current chat model.",
+  "cleanerAddExtraFolder": "Add Extra Folder",
+  "cleanerClearFolders": "Clear Folders",
+  "cleanerDetectDuplicates": "Detect Duplicates",
+  "cleanerIncludeReviewOnDelete": "Include Review On Delete",
+  "cleanerActionsTitle": "Actions",
+  "cleanerActionsSubtitle": "Analysis supports stop/continue; deletion is always manual.",
+  "cleanerStartAnalyze": "Start Analyze",
+  "cleanerStopping": "Stopping...",
+  "cleanerStop": "Stop",
+  "cleanerContinue": "Continue",
+  "cleanerDeleteSelectedCount": "Delete Selected({count})",
+  "@cleanerDeleteSelectedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "cleanerDeleteRecommended": "Delete Recommended",
+  "cleanerProgressLine": "Progress {processed}/{total} · Batches {batchesProcessed}/{batchesTotal}",
+  "@cleanerProgressLine": {
+    "placeholders": {
+      "processed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "batchesProcessed": {
+        "type": "int"
+      },
+      "batchesTotal": {
+        "type": "String"
+      }
+    }
+  },
+  "cleanerDeleteResultTitle": "Delete Result",
+  "cleanerDeleteResultSummary": "Freed {freed} · Success {success}/{total}",
+  "@cleanerDeleteResultSummary": {
+    "placeholders": {
+      "freed": {
+        "type": "String"
+      },
+      "success": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "cleanerNoAnalysisYetStartScan": "No results yet. Start analysis first.",
+  "cleanerAnalysisOverviewTitle": "Analysis Overview",
+  "cleanerAnalysisOverviewSubtitle": "Summarized by decision, size, and risk.",
+  "cleanerCandidates": "Candidates",
+  "cleanerDelete": "Delete",
+  "cleanerReview": "Review",
+  "cleanerKeep": "Keep",
+  "cleanerEstimatedReclaim": "Est. Reclaim",
+  "cleanerRiskLow": "Low Risk",
+  "cleanerRiskMedium": "Medium Risk",
+  "cleanerRiskHigh": "High Risk",
+  "cleanerSizeFilter": "Size Filter",
+  "cleanerRiskFilter": "Risk Filter",
+  "cleanerAllRisk": "All Risk",
+  "cleanerShowingCount": "Showing {shown}/{total}",
+  "@cleanerShowingCount": {
+    "placeholders": {
+      "shown": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "cleanerSelectDeletable": "Select Deletable",
+  "cleanerClearSelection": "Clear Selection",
+  "cleanerScanningAndAnalyzing": "Scanning and Analyzing",
+  "cleanerScanningHint": "Please wait; candidates appear in real time.",
+  "cleanerReadyTitle": "Ready",
+  "cleanerReadyHint": "Click \"Start Analyze\" to begin",
+  "cleanerNoResultsTitle": "No Results",
+  "cleanerNoResultsHint": "Adjust size/risk filters.",
+  "cleanerConfidence": "Confidence",
+  "cleanerRuleTag": "Rule:{group}",
+  "@cleanerRuleTag": {
+    "placeholders": {
+      "group": {
+        "type": "String"
+      }
+    }
+  },
+  "cleanerPolicyGuard": "Policy Guard",
+  "cleanerAutoModeHint": "Auto mode: profile directories first, then AI selects paths for deep scan.",
+  "cleanerAllSize": "All Size",
+  "cleanerClassificationFilter": "Classification Filter",
+  "cleanerNoCandidatesYet": "No candidates yet",
+  "cleanerNoItemsUnderFilters": "No items under current filters.",
+  "cleanerAndroidStorageRestriction": "Android storage policy may block selecting/accessing some folders (for example Android/data).",
+  "cleanerIncludeReviewRequiredItems": "Include review-required",
+  "cleanerFreedBytesOnly": "Freed {freed}",
+  "@cleanerFreedBytesOnly": {
+    "placeholders": {
+      "freed": {
+        "type": "String"
+      }
+    }
+  },
+  "cleanerErrorAnalyzeFailed": "Cleaner analyze failed: {message}",
+  "@cleanerErrorAnalyzeFailed": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "cleanerErrorContinueFailed": "Cleaner continue failed: {message}",
+  "@cleanerErrorContinueFailed": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "cleanerErrorDeleteFailed": "Cleaner delete failed: {message}",
+  "@cleanerErrorDeleteFailed": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "cleanerPolicyDefaultAiUnavailable": "AI suggestion unavailable.",
+  "cleanerHeuristicNoExtension": "no extension",
+  "cleanerHeuristicProtected": "Protected by safety policy.",
+  "cleanerHeuristicExecutableReview": "Executable/script file detected ({extLabel}); do not auto-delete.",
+  "@cleanerHeuristicExecutableReview": {
+    "placeholders": {
+      "extLabel": {
+        "type": "String"
+      }
+    }
+  },
+  "cleanerHeuristicValuableKeep": "Content-like file type detected ({extLabel}); keep by default.",
+  "@cleanerHeuristicValuableKeep": {
+    "placeholders": {
+      "extLabel": {
+        "type": "String"
+      }
+    }
+  },
+  "cleanerHeuristicDisposableDelete": "Filename/extension indicates temp/log artifact ({extLabel}), usually safe to clean.",
+  "@cleanerHeuristicDisposableDelete": {
+    "placeholders": {
+      "extLabel": {
+        "type": "String"
+      }
+    }
+  },
+  "cleanerHeuristicCachePathDelete": "This file is in a cache/temp path ({extLabel}) and is usually safe to clean.",
+  "@cleanerHeuristicCachePathDelete": {
+    "placeholders": {
+      "extLabel": {
+        "type": "String"
+      }
+    }
+  },
+  "cleanerHeuristicDuplicateReview": "Possible duplicate ({extLabel}); confirm which copy to keep first.",
+  "@cleanerHeuristicDuplicateReview": {
+    "placeholders": {
+      "extLabel": {
+        "type": "String"
+      }
+    }
+  },
+  "cleanerHeuristicLargeFileReview": "Large file ({extLabel}) with unknown value; manual review is safer.",
+  "@cleanerHeuristicLargeFileReview": {
+    "placeholders": {
+      "extLabel": {
+        "type": "String"
+      }
+    }
+  },
+  "cleanerHeuristicStaleFileReview": "Long-unmodified file ({extLabel}) may be removable, but confirm first.",
+  "@cleanerHeuristicStaleFileReview": {
+    "placeholders": {
+      "extLabel": {
+        "type": "String"
+      }
+    }
+  },
+  "cleanerHeuristicInsufficientSignal": "Not enough evidence ({extLabel}); keep by default.",
+  "@cleanerHeuristicInsufficientSignal": {
+    "placeholders": {
+      "extLabel": {
+        "type": "String"
+      }
+    }
+  },
+  "cleanerLlmSuggestionFallback": "LLM suggestion"
 }

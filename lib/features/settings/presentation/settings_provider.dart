@@ -864,11 +864,11 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     await updateProvider(id: providerId, modelSettings: newModelSettings);
   }
 
-  Future<void> fetchModels() async {
+  Future<bool> fetchModels() async {
     final provider = state.viewingProvider;
     if (provider.apiKey.isEmpty) {
       state = state.copyWith(error: 'Please enter API Key');
-      return;
+      return false;
     }
     state = state.copyWith(isLoadingModels: true, error: null);
     try {
@@ -900,12 +900,15 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
           selectedModel: newSelectedModel,
           availableModels: models,
         );
+        return true;
       } else {
         state = state.copyWith(
             isLoadingModels: false, error: 'Failed: ${response.statusCode}');
+        return false;
       }
     } catch (e) {
       state = state.copyWith(isLoadingModels: false, error: 'Error: $e');
+      return false;
     }
   }
 

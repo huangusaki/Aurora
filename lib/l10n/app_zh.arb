@@ -845,5 +845,216 @@
   "translationPromptRequirement1": "1. 翻译准确、地道，符合目标语言的表达习惯。",
   "translationPromptRequirement2": "2. 严格保留原文的换行格式和段落结构，不要合并段落。",
   "translationPromptRequirement3": "3. 只输出翻译后的内容，不要包含任何解释、前言或后缀。",
-  "translationPromptSourceText": "原文内容："
+  "translationPromptSourceText": "原文内容：",
+  "cleanerStatusAnalyzing": "分析中",
+  "cleanerStatusPaused": "已暂停",
+  "cleanerStatusReady": "待命",
+  "cleanerTitle": "智能清理",
+  "cleanerHeaderSubtitle": "规则扫描 + AI 建议 + 策略护栏（全程可中止与继续）",
+  "cleanerRuleAiPolicyTitle": "规则扫描 + AI 建议 + 策略护栏",
+  "cleanerRuleAiPolicySubtitle": "先做目录画像，再由 AI 选择需要深度扫描的目录；可额外添加目录。",
+  "cleanerScanSetupTitle": "扫描配置",
+  "cleanerExecutionModelDefaultChat": "默认（跟随聊天模型）",
+  "cleanerDefaultUseChatModel": "默认会使用聊天当前模型。",
+  "cleanerAddExtraFolder": "添加额外目录",
+  "cleanerClearFolders": "清空目录",
+  "cleanerDetectDuplicates": "启用重复文件检测",
+  "cleanerIncludeReviewOnDelete": "按建议删除时包含“需复核”",
+  "cleanerActionsTitle": "执行操作",
+  "cleanerActionsSubtitle": "分析支持中止与继续；删除需手动触发。",
+  "cleanerStartAnalyze": "开始分析",
+  "cleanerStopping": "中止中…",
+  "cleanerStop": "中止",
+  "cleanerContinue": "继续",
+  "cleanerDeleteSelectedCount": "删除已选({count})",
+  "@cleanerDeleteSelectedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "cleanerDeleteRecommended": "按建议删除",
+  "cleanerProgressLine": "进度 {processed}/{total} · 批次 {batchesProcessed}/{batchesTotal}",
+  "@cleanerProgressLine": {
+    "placeholders": {
+      "processed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "batchesProcessed": {
+        "type": "int"
+      },
+      "batchesTotal": {
+        "type": "String"
+      }
+    }
+  },
+  "cleanerDeleteResultTitle": "删除结果",
+  "cleanerDeleteResultSummary": "释放 {freed} · 成功 {success}/{total}",
+  "@cleanerDeleteResultSummary": {
+    "placeholders": {
+      "freed": {
+        "type": "String"
+      },
+      "success": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "cleanerNoAnalysisYetStartScan": "尚未分析，先开始扫描。",
+  "cleanerAnalysisOverviewTitle": "分析总览",
+  "cleanerAnalysisOverviewSubtitle": "按结果、体积、风险三组汇总。",
+  "cleanerCandidates": "候选",
+  "cleanerDelete": "建议删除",
+  "cleanerReview": "需复核",
+  "cleanerKeep": "保留",
+  "cleanerEstimatedReclaim": "预计释放",
+  "cleanerRiskLow": "低风险",
+  "cleanerRiskMedium": "中风险",
+  "cleanerRiskHigh": "高风险",
+  "cleanerSizeFilter": "大小筛选",
+  "cleanerRiskFilter": "风险筛选",
+  "cleanerAllRisk": "全部风险",
+  "cleanerShowingCount": "当前显示 {shown}/{total}",
+  "@cleanerShowingCount": {
+    "placeholders": {
+      "shown": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "cleanerSelectDeletable": "选中可删项",
+  "cleanerClearSelection": "清空选择",
+  "cleanerScanningAndAnalyzing": "正在扫描与分析",
+  "cleanerScanningHint": "稍候，候选项会实时出现。",
+  "cleanerReadyTitle": "准备就绪",
+  "cleanerReadyHint": "点击“开始分析”启动扫描",
+  "cleanerNoResultsTitle": "筛选后无结果",
+  "cleanerNoResultsHint": "调整大小或风险筛选条件。",
+  "cleanerConfidence": "置信度",
+  "cleanerRuleTag": "规则:{group}",
+  "@cleanerRuleTag": {
+    "placeholders": {
+      "group": {
+        "type": "String"
+      }
+    }
+  },
+  "cleanerPolicyGuard": "策略护栏",
+  "cleanerAutoModeHint": "当前自动模式：先做目录画像，再由 AI 筛选目录进行深度扫描。",
+  "cleanerAllSize": "全部大小",
+  "cleanerClassificationFilter": "分类筛选",
+  "cleanerNoCandidatesYet": "暂无候选项",
+  "cleanerNoItemsUnderFilters": "当前筛选下无结果",
+  "cleanerAndroidStorageRestriction": "Android 受系统存储策略限制，部分目录（如 Android/data）可能无法选择或访问。",
+  "cleanerIncludeReviewRequiredItems": "包含“需复核”项",
+  "cleanerFreedBytesOnly": "已释放 {freed}",
+  "@cleanerFreedBytesOnly": {
+    "placeholders": {
+      "freed": {
+        "type": "String"
+      }
+    }
+  },
+  "cleanerErrorAnalyzeFailed": "清理分析失败: {message}",
+  "@cleanerErrorAnalyzeFailed": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "cleanerErrorContinueFailed": "清理继续分析失败: {message}",
+  "@cleanerErrorContinueFailed": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "cleanerErrorDeleteFailed": "清理删除失败: {message}",
+  "@cleanerErrorDeleteFailed": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "cleanerPolicyDefaultAiUnavailable": "AI 建议不可用。",
+  "cleanerHeuristicNoExtension": "无扩展名",
+  "cleanerHeuristicProtected": "命中保护规则，默认保留。",
+  "cleanerHeuristicExecutableReview": "检测到可执行/脚本文件（{extLabel}），不自动建议删除。",
+  "@cleanerHeuristicExecutableReview": {
+    "placeholders": {
+      "extLabel": {
+        "type": "String"
+      }
+    }
+  },
+  "cleanerHeuristicValuableKeep": "文件类型看起来是内容型数据（{extLabel}），默认保留。",
+  "@cleanerHeuristicValuableKeep": {
+    "placeholders": {
+      "extLabel": {
+        "type": "String"
+      }
+    }
+  },
+  "cleanerHeuristicDisposableDelete": "文件名/后缀显示为临时或日志产物（{extLabel}），通常可清理。",
+  "@cleanerHeuristicDisposableDelete": {
+    "placeholders": {
+      "extLabel": {
+        "type": "String"
+      }
+    }
+  },
+  "cleanerHeuristicCachePathDelete": "该文件位于缓存/临时路径（{extLabel}），通常可清理。",
+  "@cleanerHeuristicCachePathDelete": {
+    "placeholders": {
+      "extLabel": {
+        "type": "String"
+      }
+    }
+  },
+  "cleanerHeuristicDuplicateReview": "疑似重复文件（{extLabel}），建议先确认保留哪一份。",
+  "@cleanerHeuristicDuplicateReview": {
+    "placeholders": {
+      "extLabel": {
+        "type": "String"
+      }
+    }
+  },
+  "cleanerHeuristicLargeFileReview": "大文件（{extLabel}），价值未知，建议先人工复核。",
+  "@cleanerHeuristicLargeFileReview": {
+    "placeholders": {
+      "extLabel": {
+        "type": "String"
+      }
+    }
+  },
+  "cleanerHeuristicStaleFileReview": "长期未修改（{extLabel}），可能可清理，建议确认后执行。",
+  "@cleanerHeuristicStaleFileReview": {
+    "placeholders": {
+      "extLabel": {
+        "type": "String"
+      }
+    }
+  },
+  "cleanerHeuristicInsufficientSignal": "信号不足（{extLabel}），默认保留。",
+  "@cleanerHeuristicInsufficientSignal": {
+    "placeholders": {
+      "extLabel": {
+        "type": "String"
+      }
+    }
+  },
+  "cleanerLlmSuggestionFallback": "LLM 建议"
 }

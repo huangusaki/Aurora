@@ -26,6 +26,30 @@ class _MobileSettingsPageState extends ConsumerState<MobileSettingsPage> {
     super.dispose();
   }
 
+  Future<void> _refreshModelsWithNotice(AppLocalizations l10n) async {
+    final success = await ref.read(settingsProvider.notifier).fetchModels();
+    if (!mounted) return;
+
+    if (success) {
+      showAuroraNotice(
+        context,
+        '${l10n.fetchModelList} ${l10n.success}',
+        icon: Icons.check_circle_outline_rounded,
+      );
+      return;
+    }
+
+    final errorMessage = ref.read(settingsProvider).error;
+    final message = (errorMessage?.isNotEmpty ?? false)
+        ? '${l10n.fetchModelList} ${l10n.failed}: $errorMessage'
+        : '${l10n.fetchModelList} ${l10n.failed}';
+    showAuroraNotice(
+      context,
+      message,
+      icon: Icons.error_outline_rounded,
+    );
+  }
+
   @override
   @override
   Widget build(BuildContext context) {
@@ -131,8 +155,8 @@ class _MobileSettingsPageState extends ConsumerState<MobileSettingsPage> {
                 ),
                 onPressed: settingsState.isLoadingModels
                     ? null
-                    : () {
-                        ref.read(settingsProvider.notifier).fetchModels();
+                    : () async {
+                        await _refreshModelsWithNotice(l10n);
                       },
                 icon: settingsState.isLoadingModels
                     ? const SizedBox(

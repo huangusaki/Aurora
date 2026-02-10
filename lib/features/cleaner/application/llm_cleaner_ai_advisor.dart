@@ -1,7 +1,9 @@
 import 'dart:convert';
 
 import '../../chat/domain/message.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../shared/services/llm_service.dart';
+import 'package:flutter/widgets.dart';
 import '../domain/cleaner_ai_advisor.dart';
 import '../domain/cleaner_models.dart';
 import 'heuristic_cleaner_ai_advisor.dart';
@@ -118,7 +120,7 @@ class LlmCleanerAiAdvisor implements CleanerAiAdvisor {
         return _fallbackBatch(batch, context: context);
       }
 
-      final parsedById = _parseSuggestions(raw);
+      final parsedById = _parseSuggestions(raw, context.language);
       if (parsedById == null || parsedById.isEmpty) {
         return _fallbackBatch(batch, context: context);
       }
@@ -178,6 +180,13 @@ You are a cautious storage-cleaning advisor.
 You must evaluate each file candidate and produce strict JSON only.
 Do not include markdown or extra prose.
 
+Evaluation requirements:
+- Decide per file, not per category template.
+- You must use `file_name` and `extension` signals together with path/kind/size.
+- Executables or scripts (for example .exe .msi .bat .cmd .ps1 .sh .apk .jar) should default to review_required unless safety evidence is very strong.
+- Logs, dumps, temp artifacts can be delete_recommend with clear reason.
+- `human_reason` should mention concrete file signal (name/extension/path clue), not generic repeated wording.
+
 Allowed decision values:
 - delete_recommend
 - review_required
@@ -222,7 +231,10 @@ Output schema:
     ];
   }
 
-  Map<String, CleanerAiSuggestion>? _parseSuggestions(String raw) {
+  Map<String, CleanerAiSuggestion>? _parseSuggestions(
+    String raw,
+    String languageCode,
+  ) {
     final obj = _decodeJsonObject(raw);
     if (obj == null) return null;
 
@@ -236,14 +248,17 @@ Output schema:
       item.forEach((key, value) {
         if (key is String) map[key] = value;
       });
-      final suggestion = _parseSuggestionMap(map);
+      final suggestion = _parseSuggestionMap(map, languageCode);
       if (suggestion == null) continue;
       mapped[suggestion.candidateId] = suggestion;
     }
     return mapped;
   }
 
-  CleanerAiSuggestion? _parseSuggestionMap(Map<String, dynamic> map) {
+  CleanerAiSuggestion? _parseSuggestionMap(
+    Map<String, dynamic> map,
+    String languageCode,
+  ) {
     final candidateId =
         (map['candidate_id'] ?? map['candidateId'])?.toString().trim();
     if (candidateId == null || candidateId.isEmpty) return null;
@@ -258,6 +273,7 @@ Output schema:
     final reasonCodes = reasonCodesRaw is List
         ? reasonCodesRaw.map((e) => e.toString()).toList()
         : const <String>[];
+    final l10n = _lookupCleanerLocalizations(languageCode);
 
     return CleanerAiSuggestion(
       candidateId: candidateId,
@@ -265,9 +281,16 @@ Output schema:
       riskLevel: cleanerRiskLevelFromWire(riskRaw),
       confidence: confidence,
       reasonCodes: reasonCodes,
-      humanReason: humanReason.isEmpty ? 'LLM suggestion' : humanReason,
+      humanReason:
+          humanReason.isEmpty ? l10n.cleanerLlmSuggestionFallback : humanReason,
       source: 'llm',
     );
+  }
+
+  AppLocalizations _lookupCleanerLocalizations(String languageCode) {
+    final normalized = languageCode.toLowerCase();
+    final locale = Locale(normalized.startsWith('zh') ? 'zh' : 'en');
+    return lookupAppLocalizations(locale);
   }
 
   Map<String, dynamic>? _decodeJsonObject(String raw) {

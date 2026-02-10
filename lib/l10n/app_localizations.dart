@@ -3799,6 +3799,451 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'原文内容：'**
   String get translationPromptSourceText;
+
+  /// No description provided for @cleanerStatusAnalyzing.
+  ///
+  /// In zh, this message translates to:
+  /// **'分析中'**
+  String get cleanerStatusAnalyzing;
+
+  /// No description provided for @cleanerStatusPaused.
+  ///
+  /// In zh, this message translates to:
+  /// **'已暂停'**
+  String get cleanerStatusPaused;
+
+  /// No description provided for @cleanerStatusReady.
+  ///
+  /// In zh, this message translates to:
+  /// **'待命'**
+  String get cleanerStatusReady;
+
+  /// No description provided for @cleanerTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'智能清理'**
+  String get cleanerTitle;
+
+  /// No description provided for @cleanerHeaderSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'规则扫描 + AI 建议 + 策略护栏（全程可中止与继续）'**
+  String get cleanerHeaderSubtitle;
+
+  /// No description provided for @cleanerRuleAiPolicyTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'规则扫描 + AI 建议 + 策略护栏'**
+  String get cleanerRuleAiPolicyTitle;
+
+  /// No description provided for @cleanerRuleAiPolicySubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'先做目录画像，再由 AI 选择需要深度扫描的目录；可额外添加目录。'**
+  String get cleanerRuleAiPolicySubtitle;
+
+  /// No description provided for @cleanerScanSetupTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'扫描配置'**
+  String get cleanerScanSetupTitle;
+
+  /// No description provided for @cleanerExecutionModelDefaultChat.
+  ///
+  /// In zh, this message translates to:
+  /// **'默认（跟随聊天模型）'**
+  String get cleanerExecutionModelDefaultChat;
+
+  /// No description provided for @cleanerDefaultUseChatModel.
+  ///
+  /// In zh, this message translates to:
+  /// **'默认会使用聊天当前模型。'**
+  String get cleanerDefaultUseChatModel;
+
+  /// No description provided for @cleanerAddExtraFolder.
+  ///
+  /// In zh, this message translates to:
+  /// **'添加额外目录'**
+  String get cleanerAddExtraFolder;
+
+  /// No description provided for @cleanerClearFolders.
+  ///
+  /// In zh, this message translates to:
+  /// **'清空目录'**
+  String get cleanerClearFolders;
+
+  /// No description provided for @cleanerDetectDuplicates.
+  ///
+  /// In zh, this message translates to:
+  /// **'启用重复文件检测'**
+  String get cleanerDetectDuplicates;
+
+  /// No description provided for @cleanerIncludeReviewOnDelete.
+  ///
+  /// In zh, this message translates to:
+  /// **'按建议删除时包含“需复核”'**
+  String get cleanerIncludeReviewOnDelete;
+
+  /// No description provided for @cleanerActionsTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'执行操作'**
+  String get cleanerActionsTitle;
+
+  /// No description provided for @cleanerActionsSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'分析支持中止与继续；删除需手动触发。'**
+  String get cleanerActionsSubtitle;
+
+  /// No description provided for @cleanerStartAnalyze.
+  ///
+  /// In zh, this message translates to:
+  /// **'开始分析'**
+  String get cleanerStartAnalyze;
+
+  /// No description provided for @cleanerStopping.
+  ///
+  /// In zh, this message translates to:
+  /// **'中止中…'**
+  String get cleanerStopping;
+
+  /// No description provided for @cleanerStop.
+  ///
+  /// In zh, this message translates to:
+  /// **'中止'**
+  String get cleanerStop;
+
+  /// No description provided for @cleanerContinue.
+  ///
+  /// In zh, this message translates to:
+  /// **'继续'**
+  String get cleanerContinue;
+
+  /// No description provided for @cleanerDeleteSelectedCount.
+  ///
+  /// In zh, this message translates to:
+  /// **'删除已选({count})'**
+  String cleanerDeleteSelectedCount(int count);
+
+  /// No description provided for @cleanerDeleteRecommended.
+  ///
+  /// In zh, this message translates to:
+  /// **'按建议删除'**
+  String get cleanerDeleteRecommended;
+
+  /// No description provided for @cleanerProgressLine.
+  ///
+  /// In zh, this message translates to:
+  /// **'进度 {processed}/{total} · 批次 {batchesProcessed}/{batchesTotal}'**
+  String cleanerProgressLine(
+      int processed, int total, int batchesProcessed, String batchesTotal);
+
+  /// No description provided for @cleanerDeleteResultTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'删除结果'**
+  String get cleanerDeleteResultTitle;
+
+  /// No description provided for @cleanerDeleteResultSummary.
+  ///
+  /// In zh, this message translates to:
+  /// **'释放 {freed} · 成功 {success}/{total}'**
+  String cleanerDeleteResultSummary(String freed, int success, int total);
+
+  /// No description provided for @cleanerNoAnalysisYetStartScan.
+  ///
+  /// In zh, this message translates to:
+  /// **'尚未分析，先开始扫描。'**
+  String get cleanerNoAnalysisYetStartScan;
+
+  /// No description provided for @cleanerAnalysisOverviewTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'分析总览'**
+  String get cleanerAnalysisOverviewTitle;
+
+  /// No description provided for @cleanerAnalysisOverviewSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'按结果、体积、风险三组汇总。'**
+  String get cleanerAnalysisOverviewSubtitle;
+
+  /// No description provided for @cleanerCandidates.
+  ///
+  /// In zh, this message translates to:
+  /// **'候选'**
+  String get cleanerCandidates;
+
+  /// No description provided for @cleanerDelete.
+  ///
+  /// In zh, this message translates to:
+  /// **'建议删除'**
+  String get cleanerDelete;
+
+  /// No description provided for @cleanerReview.
+  ///
+  /// In zh, this message translates to:
+  /// **'需复核'**
+  String get cleanerReview;
+
+  /// No description provided for @cleanerKeep.
+  ///
+  /// In zh, this message translates to:
+  /// **'保留'**
+  String get cleanerKeep;
+
+  /// No description provided for @cleanerEstimatedReclaim.
+  ///
+  /// In zh, this message translates to:
+  /// **'预计释放'**
+  String get cleanerEstimatedReclaim;
+
+  /// No description provided for @cleanerRiskLow.
+  ///
+  /// In zh, this message translates to:
+  /// **'低风险'**
+  String get cleanerRiskLow;
+
+  /// No description provided for @cleanerRiskMedium.
+  ///
+  /// In zh, this message translates to:
+  /// **'中风险'**
+  String get cleanerRiskMedium;
+
+  /// No description provided for @cleanerRiskHigh.
+  ///
+  /// In zh, this message translates to:
+  /// **'高风险'**
+  String get cleanerRiskHigh;
+
+  /// No description provided for @cleanerSizeFilter.
+  ///
+  /// In zh, this message translates to:
+  /// **'大小筛选'**
+  String get cleanerSizeFilter;
+
+  /// No description provided for @cleanerRiskFilter.
+  ///
+  /// In zh, this message translates to:
+  /// **'风险筛选'**
+  String get cleanerRiskFilter;
+
+  /// No description provided for @cleanerAllRisk.
+  ///
+  /// In zh, this message translates to:
+  /// **'全部风险'**
+  String get cleanerAllRisk;
+
+  /// No description provided for @cleanerShowingCount.
+  ///
+  /// In zh, this message translates to:
+  /// **'当前显示 {shown}/{total}'**
+  String cleanerShowingCount(int shown, int total);
+
+  /// No description provided for @cleanerSelectDeletable.
+  ///
+  /// In zh, this message translates to:
+  /// **'选中可删项'**
+  String get cleanerSelectDeletable;
+
+  /// No description provided for @cleanerClearSelection.
+  ///
+  /// In zh, this message translates to:
+  /// **'清空选择'**
+  String get cleanerClearSelection;
+
+  /// No description provided for @cleanerScanningAndAnalyzing.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在扫描与分析'**
+  String get cleanerScanningAndAnalyzing;
+
+  /// No description provided for @cleanerScanningHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'稍候，候选项会实时出现。'**
+  String get cleanerScanningHint;
+
+  /// No description provided for @cleanerReadyTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'准备就绪'**
+  String get cleanerReadyTitle;
+
+  /// No description provided for @cleanerReadyHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'点击“开始分析”启动扫描'**
+  String get cleanerReadyHint;
+
+  /// No description provided for @cleanerNoResultsTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'筛选后无结果'**
+  String get cleanerNoResultsTitle;
+
+  /// No description provided for @cleanerNoResultsHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'调整大小或风险筛选条件。'**
+  String get cleanerNoResultsHint;
+
+  /// No description provided for @cleanerConfidence.
+  ///
+  /// In zh, this message translates to:
+  /// **'置信度'**
+  String get cleanerConfidence;
+
+  /// No description provided for @cleanerRuleTag.
+  ///
+  /// In zh, this message translates to:
+  /// **'规则:{group}'**
+  String cleanerRuleTag(String group);
+
+  /// No description provided for @cleanerPolicyGuard.
+  ///
+  /// In zh, this message translates to:
+  /// **'策略护栏'**
+  String get cleanerPolicyGuard;
+
+  /// No description provided for @cleanerAutoModeHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'当前自动模式：先做目录画像，再由 AI 筛选目录进行深度扫描。'**
+  String get cleanerAutoModeHint;
+
+  /// No description provided for @cleanerAllSize.
+  ///
+  /// In zh, this message translates to:
+  /// **'全部大小'**
+  String get cleanerAllSize;
+
+  /// No description provided for @cleanerClassificationFilter.
+  ///
+  /// In zh, this message translates to:
+  /// **'分类筛选'**
+  String get cleanerClassificationFilter;
+
+  /// No description provided for @cleanerNoCandidatesYet.
+  ///
+  /// In zh, this message translates to:
+  /// **'暂无候选项'**
+  String get cleanerNoCandidatesYet;
+
+  /// No description provided for @cleanerNoItemsUnderFilters.
+  ///
+  /// In zh, this message translates to:
+  /// **'当前筛选下无结果'**
+  String get cleanerNoItemsUnderFilters;
+
+  /// No description provided for @cleanerAndroidStorageRestriction.
+  ///
+  /// In zh, this message translates to:
+  /// **'Android 受系统存储策略限制，部分目录（如 Android/data）可能无法选择或访问。'**
+  String get cleanerAndroidStorageRestriction;
+
+  /// No description provided for @cleanerIncludeReviewRequiredItems.
+  ///
+  /// In zh, this message translates to:
+  /// **'包含“需复核”项'**
+  String get cleanerIncludeReviewRequiredItems;
+
+  /// No description provided for @cleanerFreedBytesOnly.
+  ///
+  /// In zh, this message translates to:
+  /// **'已释放 {freed}'**
+  String cleanerFreedBytesOnly(String freed);
+
+  /// No description provided for @cleanerErrorAnalyzeFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'清理分析失败: {message}'**
+  String cleanerErrorAnalyzeFailed(String message);
+
+  /// No description provided for @cleanerErrorContinueFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'清理继续分析失败: {message}'**
+  String cleanerErrorContinueFailed(String message);
+
+  /// No description provided for @cleanerErrorDeleteFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'清理删除失败: {message}'**
+  String cleanerErrorDeleteFailed(String message);
+
+  /// No description provided for @cleanerPolicyDefaultAiUnavailable.
+  ///
+  /// In zh, this message translates to:
+  /// **'AI 建议不可用。'**
+  String get cleanerPolicyDefaultAiUnavailable;
+
+  /// No description provided for @cleanerHeuristicNoExtension.
+  ///
+  /// In zh, this message translates to:
+  /// **'无扩展名'**
+  String get cleanerHeuristicNoExtension;
+
+  /// No description provided for @cleanerHeuristicProtected.
+  ///
+  /// In zh, this message translates to:
+  /// **'命中保护规则，默认保留。'**
+  String get cleanerHeuristicProtected;
+
+  /// No description provided for @cleanerHeuristicExecutableReview.
+  ///
+  /// In zh, this message translates to:
+  /// **'检测到可执行/脚本文件（{extLabel}），不自动建议删除。'**
+  String cleanerHeuristicExecutableReview(String extLabel);
+
+  /// No description provided for @cleanerHeuristicValuableKeep.
+  ///
+  /// In zh, this message translates to:
+  /// **'文件类型看起来是内容型数据（{extLabel}），默认保留。'**
+  String cleanerHeuristicValuableKeep(String extLabel);
+
+  /// No description provided for @cleanerHeuristicDisposableDelete.
+  ///
+  /// In zh, this message translates to:
+  /// **'文件名/后缀显示为临时或日志产物（{extLabel}），通常可清理。'**
+  String cleanerHeuristicDisposableDelete(String extLabel);
+
+  /// No description provided for @cleanerHeuristicCachePathDelete.
+  ///
+  /// In zh, this message translates to:
+  /// **'该文件位于缓存/临时路径（{extLabel}），通常可清理。'**
+  String cleanerHeuristicCachePathDelete(String extLabel);
+
+  /// No description provided for @cleanerHeuristicDuplicateReview.
+  ///
+  /// In zh, this message translates to:
+  /// **'疑似重复文件（{extLabel}），建议先确认保留哪一份。'**
+  String cleanerHeuristicDuplicateReview(String extLabel);
+
+  /// No description provided for @cleanerHeuristicLargeFileReview.
+  ///
+  /// In zh, this message translates to:
+  /// **'大文件（{extLabel}），价值未知，建议先人工复核。'**
+  String cleanerHeuristicLargeFileReview(String extLabel);
+
+  /// No description provided for @cleanerHeuristicStaleFileReview.
+  ///
+  /// In zh, this message translates to:
+  /// **'长期未修改（{extLabel}），可能可清理，建议确认后执行。'**
+  String cleanerHeuristicStaleFileReview(String extLabel);
+
+  /// No description provided for @cleanerHeuristicInsufficientSignal.
+  ///
+  /// In zh, this message translates to:
+  /// **'信号不足（{extLabel}），默认保留。'**
+  String cleanerHeuristicInsufficientSignal(String extLabel);
+
+  /// No description provided for @cleanerLlmSuggestionFallback.
+  ///
+  /// In zh, this message translates to:
+  /// **'LLM 建议'**
+  String get cleanerLlmSuggestionFallback;
 }
 
 class _AppLocalizationsDelegate

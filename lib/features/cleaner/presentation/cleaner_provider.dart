@@ -1,5 +1,7 @@
 import 'dart:math' as math;
 
+import 'package:aurora/l10n/app_localizations.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../shared/services/openai_llm_service.dart';
@@ -7,15 +9,20 @@ import '../../settings/presentation/settings_provider.dart';
 import '../application/cleaner_orchestrator.dart';
 import '../application/cleaner_policy_engine.dart';
 import '../application/heuristic_cleaner_ai_advisor.dart';
+import '../application/heuristic_cleaner_directory_planner.dart';
 import '../application/llm_cleaner_ai_advisor.dart';
+import '../application/llm_cleaner_directory_planner.dart';
 import '../data/cleaner_scan_service.dart';
 import '../data/soft_delete_executor.dart';
 import '../domain/cleaner_ai_advisor.dart';
+import '../domain/cleaner_directory_planner.dart';
 import '../domain/cleaner_models.dart';
 import '../domain/cleaner_services.dart';
 
 final cleanerScannerProvider = Provider<CleanerScanner>((ref) {
-  return const CleanerScanService();
+  return CleanerScanService(
+    directoryPlanner: ref.watch(cleanerDirectoryPlannerProvider),
+  );
 });
 
 final cleanerDeleteExecutorProvider = Provider<CleanerDeleteExecutor>((ref) {
@@ -37,6 +44,29 @@ final cleanerAiAdvisorProvider = Provider<CleanerAiAdvisor>((ref) {
   return LlmCleanerAiAdvisor(
     llmService: llmService,
     fallbackAdvisor: fallbackAdvisor,
+  );
+});
+
+final cleanerFallbackDirectoryPlannerProvider =
+    Provider<CleanerDirectoryPlanner>((ref) {
+  return const HeuristicCleanerDirectoryPlanner();
+});
+
+final cleanerDirectoryPlannerProvider =
+    Provider<CleanerDirectoryPlanner>((ref) {
+  final settings = ref.watch(settingsProvider);
+  final llmService = OpenAILLMService(settings);
+  final fallbackPlanner = ref.watch(cleanerFallbackDirectoryPlannerProvider);
+  final context = CleanerAiContext(
+    language: settings.language,
+    model: settings.executionModel ?? settings.selectedModel,
+    providerId: settings.executionProviderId ?? settings.activeProviderId,
+    redactPaths: true,
+  );
+  return LlmCleanerDirectoryPlanner(
+    llmService: llmService,
+    context: context,
+    fallbackPlanner: fallbackPlanner,
   );
 });
 
@@ -194,11 +224,12 @@ class CleanerNotifier extends StateNotifier<CleanerState> {
       await _analyzeRemainingCandidates();
     } catch (e) {
       _stopRequested = false;
+      final l10n = _localizations();
       state = state.copyWith(
         isAnalyzing: false,
         stopRequested: false,
         canContinueAnalyze: false,
-        error: 'Cleaner analyze failed: $e',
+        error: l10n.cleanerErrorAnalyzeFailed('$e'),
       );
     }
   }
@@ -243,11 +274,12 @@ class CleanerNotifier extends StateNotifier<CleanerState> {
       await _analyzeRemainingCandidates();
     } catch (e) {
       _stopRequested = false;
+      final l10n = _localizations();
       state = state.copyWith(
         isAnalyzing: false,
         stopRequested: false,
         canContinueAnalyze: true,
-        error: 'Cleaner continue failed: $e',
+        error: l10n.cleanerErrorContinueFailed('$e'),
       );
     }
   }
@@ -357,6 +389,7 @@ class CleanerNotifier extends StateNotifier<CleanerState> {
     final items = _ref.read(cleanerPolicyEngineProvider).evaluateAll(
           candidates: candidates,
           suggestions: suggestions.toList(),
+          languageCode: _effectiveLanguageCode,
         );
     final summary = _buildSummary(items);
     return CleanerRunResult(
@@ -441,9 +474,10 @@ class CleanerNotifier extends StateNotifier<CleanerState> {
         lastDeleteResult: deleteResult,
       );
     } catch (e) {
+      final l10n = _localizations();
       state = state.copyWith(
         isDeleting: false,
-        error: 'Cleaner delete failed: $e',
+        error: l10n.cleanerErrorDeleteFailed('$e'),
       );
     }
   }
@@ -468,11 +502,26 @@ class CleanerNotifier extends StateNotifier<CleanerState> {
         lastDeleteResult: deleteResult,
       );
     } catch (e) {
+      final l10n = _localizations();
       state = state.copyWith(
         isDeleting: false,
-        error: 'Cleaner delete failed: $e',
+        error: l10n.cleanerErrorDeleteFailed('$e'),
       );
     }
+  }
+
+  String get _effectiveLanguageCode {
+    final contextLanguage = _lastContext?.language;
+    if (contextLanguage != null && contextLanguage.trim().isNotEmpty) {
+      return contextLanguage;
+    }
+    return _ref.read(settingsProvider).language;
+  }
+
+  AppLocalizations _localizations() {
+    final lang = _effectiveLanguageCode.toLowerCase();
+    final locale = Locale(lang.startsWith('zh') ? 'zh' : 'en');
+    return lookupAppLocalizations(locale);
   }
 }
 

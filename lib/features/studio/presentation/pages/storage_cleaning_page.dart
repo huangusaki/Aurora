@@ -4,6 +4,7 @@ import 'package:aurora/features/settings/presentation/settings_provider.dart';
 import 'package:aurora/shared/theme/aurora_icons.dart';
 import 'package:aurora/features/studio/presentation/widgets/studio_cleanup_components.dart';
 import 'package:aurora/features/studio/presentation/widgets/studio_surface_components.dart';
+import 'package:aurora/l10n/app_localizations.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,6 +14,22 @@ enum _DesktopSizeFilter {
   oneToTenMb,
   tenToHundredMb,
   overHundredMb,
+}
+
+const String _desktopDefaultExecutionModelKey = '__default_execution_model__';
+
+class _DesktopExecutionModelChoice {
+  final String key;
+  final String label;
+  final String? model;
+  final String? providerId;
+
+  const _DesktopExecutionModelChoice({
+    required this.key,
+    required this.label,
+    required this.model,
+    required this.providerId,
+  });
 }
 
 class StudioStorageCleaningPage extends ConsumerStatefulWidget {
@@ -37,14 +54,7 @@ class _StudioStorageCleaningPageState
   CleanerRiskLevel? _riskFilter;
   Set<String> _selectedCandidateIds = <String>{};
 
-  bool get _isZh {
-    return Localizations.localeOf(context)
-        .languageCode
-        .toLowerCase()
-        .startsWith('zh');
-  }
-
-  String _t(String zh, String en) => _isZh ? zh : en;
+  AppLocalizations get _l10n => AppLocalizations.of(context)!;
 
   Future<void> _pickFolder() async {
     final path = await getDirectoryPath();
@@ -75,8 +85,9 @@ class _StudioStorageCleaningPageState
     final hasUserRoots = roots.isNotEmpty;
     await notifier.analyze(
       options: CleanerScanOptions(
-        includeAppCache: !hasUserRoots,
-        includeTemporary: !hasUserRoots,
+        includeAppCache: true,
+        includeTemporary: true,
+        includeCommonUserRoots: true,
         additionalRootPaths: roots,
         includeUserSelectedRoots: hasUserRoots,
         includeUnknownInUserSelectedRoots: hasUserRoots,
@@ -143,17 +154,85 @@ class _StudioStorageCleaningPageState
     });
   }
 
+  List<_DesktopExecutionModelChoice> _buildExecutionModelChoices(
+      SettingsState settings) {
+    final choices = <_DesktopExecutionModelChoice>[
+      _DesktopExecutionModelChoice(
+        key: _desktopDefaultExecutionModelKey,
+        label: _l10n.cleanerExecutionModelDefaultChat,
+        model: null,
+        providerId: null,
+      ),
+    ];
+
+    for (final provider in settings.providers) {
+      if (!provider.isEnabled || provider.models.isEmpty) {
+        continue;
+      }
+      for (final model in provider.models) {
+        if (!provider.isModelEnabled(model)) {
+          continue;
+        }
+        choices.add(
+          _DesktopExecutionModelChoice(
+            key: '${provider.id}::$model',
+            label: '${provider.name} - $model',
+            model: model,
+            providerId: provider.id,
+          ),
+        );
+      }
+    }
+    return choices;
+  }
+
+  String _currentExecutionModelChoiceKey(
+    SettingsState settings,
+    List<_DesktopExecutionModelChoice> choices,
+  ) {
+    final model = settings.executionModel;
+    if (model == null || model.trim().isEmpty) {
+      return _desktopDefaultExecutionModelKey;
+    }
+    final providerId =
+        (settings.executionProviderId ?? settings.activeProviderId).trim();
+    final key = '$providerId::$model';
+    final exists = choices.any((choice) => choice.key == key);
+    return exists ? key : _desktopDefaultExecutionModelKey;
+  }
+
+  void _setExecutionModelByKey(
+    String key,
+    List<_DesktopExecutionModelChoice> choices,
+  ) {
+    if (key == _desktopDefaultExecutionModelKey) {
+      ref
+          .read(settingsProvider.notifier)
+          .setExecutionSettings(model: null, providerId: null);
+      return;
+    }
+
+    for (final choice in choices) {
+      if (choice.key != key) continue;
+      ref.read(settingsProvider.notifier).setExecutionSettings(
+            model: choice.model,
+            providerId: choice.providerId,
+          );
+      return;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(cleanerProvider);
-    final hasBackground = ref.watch(
-      settingsProvider.select(
-        (s) =>
-            s.useCustomTheme &&
-            s.backgroundImagePath != null &&
-            s.backgroundImagePath!.isNotEmpty,
-      ),
-    );
+    final settings = ref.watch(settingsProvider);
+    final hasBackground =
+        (settings.useCustomTheme || settings.themeMode == 'custom') &&
+            settings.backgroundImagePath != null &&
+            settings.backgroundImagePath!.isNotEmpty;
+    final executionModelChoices = _buildExecutionModelChoices(settings);
+    final executionModelChoiceKey =
+        _currentExecutionModelChoiceKey(settings, executionModelChoices);
     final result = state.runResult;
     final summary = result?.summary;
     final allItems = result?.items ?? const <CleanerReviewItem>[];
@@ -186,6 +265,8 @@ class _StudioStorageCleaningPageState
                           theme: theme,
                           state: state,
                           hasBackground: hasBackground,
+                          executionModelChoices: executionModelChoices,
+                          executionModelChoiceKey: executionModelChoiceKey,
                         ),
                         const SizedBox(height: 12),
                         _buildSummaryPanel(
@@ -232,6 +313,8 @@ class _StudioStorageCleaningPageState
                             theme: theme,
                             state: state,
                             hasBackground: hasBackground,
+                            executionModelChoices: executionModelChoices,
+                            executionModelChoiceKey: executionModelChoiceKey,
                           ),
                         ),
                       ),
@@ -286,11 +369,12 @@ class _StudioStorageCleaningPageState
     required CleanerRunSummary? summary,
     required bool hasBackground,
   }) {
+    final l10n = _l10n;
     final statusText = state.isAnalyzing
-        ? _t('分析中', 'Analyzing')
+        ? l10n.cleanerStatusAnalyzing
         : state.canContinueAnalyze
-            ? _t('已暂停', 'Paused')
-            : _t('待命', 'Ready');
+            ? l10n.cleanerStatusPaused
+            : l10n.cleanerStatusReady;
     final statusColor = state.isAnalyzing
         ? Colors.orange
         : state.canContinueAnalyze
@@ -317,15 +401,12 @@ class _StudioStorageCleaningPageState
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        _t('智能清理', 'AI Cleanup'),
+                        l10n.cleanerTitle,
                         style: theme.typography.title?.copyWith(fontSize: 30),
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        _t(
-                          '规则扫描 + AI 建议 + 策略护栏（全程可中止与继续）',
-                          'Rule scan + AI advice + policy guardrails (stop/continue supported)',
-                        ),
+                        l10n.cleanerHeaderSubtitle,
                         style: theme.typography.caption,
                       ),
                     ],
@@ -344,25 +425,25 @@ class _StudioStorageCleaningPageState
               children: [
                 StudioKpiChip(
                   icon: AuroraIcons.database,
-                  label: _t('候选', 'Candidates'),
+                  label: l10n.cleanerCandidates,
                   value: summary?.totalCandidates.toString() ?? '-',
                   hasBackground: hasBackground,
                 ),
                 StudioKpiChip(
                   icon: AuroraIcons.broom,
-                  label: _t('建议删除', 'Delete'),
+                  label: l10n.cleanerDelete,
                   value: summary?.deleteRecommendedCount.toString() ?? '-',
                   hasBackground: hasBackground,
                 ),
                 StudioKpiChip(
                   icon: AuroraIcons.warning,
-                  label: _t('需复核', 'Review'),
+                  label: l10n.cleanerReview,
                   value: summary?.reviewRequiredCount.toString() ?? '-',
                   hasBackground: hasBackground,
                 ),
                 StudioKpiChip(
                   icon: AuroraIcons.download,
-                  label: _t('预计释放', 'Est. Reclaim'),
+                  label: l10n.cleanerEstimatedReclaim,
                   value: summary == null
                       ? '-'
                       : _formatBytes(summary.estimatedReclaimBytes),
@@ -380,7 +461,10 @@ class _StudioStorageCleaningPageState
     required FluentThemeData theme,
     required CleanerState state,
     required bool hasBackground,
+    required List<_DesktopExecutionModelChoice> executionModelChoices,
+    required String executionModelChoiceKey,
   }) {
+    final l10n = _l10n;
     final selectedCount = _selectedCandidateIds.length;
     final progressValue = state.totalCandidates <= 0
         ? 0.0
@@ -393,13 +477,41 @@ class _StudioStorageCleaningPageState
         children: [
           StudioSectionHeader(
             icon: AuroraIcons.folderOpen,
-            title: _t('扫描配置', 'Scan Setup'),
-            subtitle: _t(
-              '可选目录优先；不选目录时走默认缓存/临时目录策略。',
-              'Selected folders first; defaults to cache/temp roots otherwise.',
-            ),
+            title: l10n.cleanerScanSetupTitle,
+            subtitle: l10n.cleanerRuleAiPolicySubtitle,
           ),
           const SizedBox(height: 12),
+          InfoLabel(
+            label: l10n.executionModel,
+            child: ComboBox<String>(
+              value: executionModelChoiceKey,
+              isExpanded: true,
+              items: executionModelChoices
+                  .map(
+                    (choice) => ComboBoxItem<String>(
+                      value: choice.key,
+                      child: Text(
+                        choice.label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  )
+                  .toList(growable: false),
+              onChanged: state.isAnalyzing || state.isDeleting
+                  ? null
+                  : (value) {
+                      if (value == null) return;
+                      _setExecutionModelByKey(value, executionModelChoices);
+                    },
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            l10n.cleanerDefaultUseChatModel,
+            style: theme.typography.caption,
+          ),
+          const SizedBox(height: 10),
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -412,13 +524,13 @@ class _StudioStorageCleaningPageState
                   children: [
                     const Icon(AuroraIcons.add, size: 12),
                     const SizedBox(width: 6),
-                    Text(_t('添加文件夹', 'Add Folder')),
+                    Text(l10n.cleanerAddExtraFolder),
                   ],
                 ),
               ),
               Button(
                 onPressed: _selectedRoots.isEmpty ? null : _clearFolders,
-                child: Text(_t('清空目录', 'Clear Folders')),
+                child: Text(l10n.cleanerClearFolders),
               ),
             ],
           ),
@@ -427,7 +539,7 @@ class _StudioStorageCleaningPageState
           const SizedBox(height: 12),
           Checkbox(
             checked: _detectDuplicates,
-            content: Text(_t('启用重复文件检测', 'Detect Duplicates')),
+            content: Text(l10n.cleanerDetectDuplicates),
             onChanged: (value) {
               setState(() {
                 _detectDuplicates = value ?? true;
@@ -436,7 +548,7 @@ class _StudioStorageCleaningPageState
           ),
           Checkbox(
             checked: _deleteReviewRequired,
-            content: Text(_t('按建议删除时包含“需复核”', 'Include Review On Delete')),
+            content: Text(l10n.cleanerIncludeReviewOnDelete),
             onChanged: (value) {
               setState(() {
                 _deleteReviewRequired = value ?? false;
@@ -446,11 +558,8 @@ class _StudioStorageCleaningPageState
           const SizedBox(height: 10),
           StudioSectionHeader(
             icon: AuroraIcons.zap,
-            title: _t('执行操作', 'Actions'),
-            subtitle: _t(
-              '分析支持中止与继续；删除需手动触发。',
-              'Analysis supports stop/continue; deletion is always manual.',
-            ),
+            title: l10n.cleanerActionsTitle,
+            subtitle: l10n.cleanerActionsSubtitle,
           ),
           const SizedBox(height: 10),
           Wrap(
@@ -475,7 +584,7 @@ class _StudioStorageCleaningPageState
                     else
                       const Icon(AuroraIcons.search, size: 12),
                     const SizedBox(width: 6),
-                    Text(_t('开始分析', 'Start Analyze')),
+                    Text(l10n.cleanerStartAnalyze),
                   ],
                 ),
               ),
@@ -500,9 +609,9 @@ class _StudioStorageCleaningPageState
                     Text(
                       state.isAnalyzing
                           ? (state.stopRequested
-                              ? _t('中止中…', 'Stopping...')
-                              : _t('中止', 'Stop'))
-                          : _t('继续', 'Continue'),
+                              ? l10n.cleanerStopping
+                              : l10n.cleanerStop)
+                          : l10n.cleanerContinue,
                     ),
                   ],
                 ),
@@ -512,7 +621,7 @@ class _StudioStorageCleaningPageState
                     ? null
                     : _deleteSelected,
                 child: Text(
-                  _t('删除已选($selectedCount)', 'Delete Selected($selectedCount)'),
+                  l10n.cleanerDeleteSelectedCount(selectedCount),
                 ),
               ),
               Button(
@@ -534,7 +643,7 @@ class _StudioStorageCleaningPageState
                     else
                       const Icon(AuroraIcons.broom, size: 12),
                     const SizedBox(width: 6),
-                    Text(_t('按建议删除', 'Delete Recommended')),
+                    Text(l10n.cleanerDeleteRecommended),
                   ],
                 ),
               ),
@@ -543,9 +652,11 @@ class _StudioStorageCleaningPageState
           if (state.totalCandidates > 0) ...[
             const SizedBox(height: 12),
             Text(
-              _t(
-                '进度 ${state.processedCandidates}/${state.totalCandidates} · 批次 ${state.processedBatches}/${state.totalBatches > 0 ? state.totalBatches : '?'}',
-                'Progress ${state.processedCandidates}/${state.totalCandidates} · Batches ${state.processedBatches}/${state.totalBatches > 0 ? state.totalBatches : '?'}',
+              l10n.cleanerProgressLine(
+                state.processedCandidates,
+                state.totalCandidates,
+                state.processedBatches,
+                state.totalBatches > 0 ? '${state.totalBatches}' : '?',
               ),
               style: theme.typography.caption,
             ),
@@ -555,7 +666,7 @@ class _StudioStorageCleaningPageState
           if (state.error != null) ...[
             const SizedBox(height: 12),
             InfoBar(
-              title: Text(_t('错误', 'Error')),
+              title: Text(l10n.error),
               severity: InfoBarSeverity.error,
               content: Text(state.error!),
             ),
@@ -563,12 +674,15 @@ class _StudioStorageCleaningPageState
           if (state.lastDeleteResult != null) ...[
             const SizedBox(height: 12),
             InfoBar(
-              title: Text(_t('删除结果', 'Delete Result')),
+              title: Text(l10n.cleanerDeleteResultTitle),
               severity: InfoBarSeverity.success,
               content: Text(
-                _t(
-                  '释放 ${_formatBytes(state.lastDeleteResult!.totalFreedBytes)} · 成功 ${state.lastDeleteResult!.results.where((e) => e.success).length}/${state.lastDeleteResult!.results.length}',
-                  'Freed ${_formatBytes(state.lastDeleteResult!.totalFreedBytes)} · Success ${state.lastDeleteResult!.results.where((e) => e.success).length}/${state.lastDeleteResult!.results.length}',
+                l10n.cleanerDeleteResultSummary(
+                  _formatBytes(state.lastDeleteResult!.totalFreedBytes),
+                  state.lastDeleteResult!.results
+                      .where((e) => e.success)
+                      .length,
+                  state.lastDeleteResult!.results.length,
                 ),
               ),
             ),
@@ -585,6 +699,7 @@ class _StudioStorageCleaningPageState
     required Map<CleanerRiskLevel, int> riskCounts,
     required bool hasBackground,
   }) {
+    final l10n = _l10n;
     if (summary == null) {
       return StudioPanel(
         hasBackground: hasBackground,
@@ -601,7 +716,7 @@ class _StudioStorageCleaningPageState
                 ),
                 const SizedBox(width: 10),
                 Text(
-                  _t('尚未分析，先开始扫描。', 'No results yet. Start analysis first.'),
+                  l10n.cleanerNoAnalysisYetStartScan,
                   style: theme.typography.caption,
                 ),
               ],
@@ -618,9 +733,8 @@ class _StudioStorageCleaningPageState
         children: [
           StudioSectionHeader(
             icon: AuroraIcons.stats,
-            title: _t('分析总览', 'Analysis Overview'),
-            subtitle:
-                _t('按结果、体积、风险三组汇总。', 'Summarized by decision, size, and risk.'),
+            title: l10n.cleanerAnalysisOverviewTitle,
+            subtitle: l10n.cleanerAnalysisOverviewSubtitle,
           ),
           const SizedBox(height: 12),
           Wrap(
@@ -628,31 +742,31 @@ class _StudioStorageCleaningPageState
             runSpacing: 10,
             children: [
               StudioStatTile(
-                label: _t('候选', 'Candidates'),
+                label: l10n.cleanerCandidates,
                 value: summary.totalCandidates.toString(),
                 color: Colors.blue,
                 hasBackground: hasBackground,
               ),
               StudioStatTile(
-                label: _t('建议删除', 'Delete'),
+                label: l10n.cleanerDelete,
                 value: summary.deleteRecommendedCount.toString(),
                 color: Colors.green,
                 hasBackground: hasBackground,
               ),
               StudioStatTile(
-                label: _t('需复核', 'Review'),
+                label: l10n.cleanerReview,
                 value: summary.reviewRequiredCount.toString(),
                 color: Colors.orange,
                 hasBackground: hasBackground,
               ),
               StudioStatTile(
-                label: _t('保留', 'Keep'),
+                label: l10n.cleanerKeep,
                 value: summary.keepCount.toString(),
                 color: Colors.grey,
                 hasBackground: hasBackground,
               ),
               StudioStatTile(
-                label: _t('预计释放', 'Est. Reclaim'),
+                label: l10n.cleanerEstimatedReclaim,
                 value: _formatBytes(summary.estimatedReclaimBytes),
                 color: Colors.teal,
                 wide: true,
@@ -680,19 +794,19 @@ class _StudioStorageCleaningPageState
                 hasBackground: hasBackground,
               ),
               StudioStatTile(
-                label: _t('低风险', 'Low Risk'),
+                label: l10n.cleanerRiskLow,
                 value: (riskCounts[CleanerRiskLevel.low] ?? 0).toString(),
                 color: Colors.green,
                 hasBackground: hasBackground,
               ),
               StudioStatTile(
-                label: _t('中风险', 'Medium Risk'),
+                label: l10n.cleanerRiskMedium,
                 value: (riskCounts[CleanerRiskLevel.medium] ?? 0).toString(),
                 color: Colors.orange,
                 hasBackground: hasBackground,
               ),
               StudioStatTile(
-                label: _t('高风险', 'High Risk'),
+                label: l10n.cleanerRiskHigh,
                 value: (riskCounts[CleanerRiskLevel.high] ?? 0).toString(),
                 color: Colors.red,
                 hasBackground: hasBackground,
@@ -712,6 +826,7 @@ class _StudioStorageCleaningPageState
     required VoidCallback onClearSelection,
     required bool hasBackground,
   }) {
+    final l10n = _l10n;
     return StudioPanel(
       hasBackground: hasBackground,
       child: Row(
@@ -725,7 +840,7 @@ class _StudioStorageCleaningPageState
                 SizedBox(
                   width: 220,
                   child: InfoLabel(
-                    label: _t('大小筛选', 'Size Filter'),
+                    label: l10n.cleanerSizeFilter,
                     child: ComboBox<_DesktopSizeFilter>(
                       value: _sizeFilter,
                       isExpanded: true,
@@ -749,26 +864,26 @@ class _StudioStorageCleaningPageState
                 SizedBox(
                   width: 220,
                   child: InfoLabel(
-                    label: _t('风险筛选', 'Risk Filter'),
+                    label: l10n.cleanerRiskFilter,
                     child: ComboBox<String>(
                       value: _riskFilterWireValue,
                       isExpanded: true,
                       items: [
                         ComboBoxItem(
                           value: 'all',
-                          child: Text(_t('全部风险', 'All Risk')),
+                          child: Text(l10n.cleanerAllRisk),
                         ),
                         ComboBoxItem(
                           value: CleanerRiskLevel.low.name,
-                          child: Text(_t('低风险', 'Low Risk')),
+                          child: Text(l10n.cleanerRiskLow),
                         ),
                         ComboBoxItem(
                           value: CleanerRiskLevel.medium.name,
-                          child: Text(_t('中风险', 'Medium Risk')),
+                          child: Text(l10n.cleanerRiskMedium),
                         ),
                         ComboBoxItem(
                           value: CleanerRiskLevel.high.name,
-                          child: Text(_t('高风险', 'High Risk')),
+                          child: Text(l10n.cleanerRiskHigh),
                         ),
                       ],
                       onChanged: (value) {
@@ -787,9 +902,9 @@ class _StudioStorageCleaningPageState
                   ),
                 ),
                 Text(
-                  _t(
-                    '当前显示 ${filteredItems.length}/${allItems.length}',
-                    'Showing ${filteredItems.length}/${allItems.length}',
+                  l10n.cleanerShowingCount(
+                    filteredItems.length,
+                    allItems.length,
                   ),
                   style: theme.typography.caption,
                 ),
@@ -802,12 +917,12 @@ class _StudioStorageCleaningPageState
             children: [
               Button(
                 onPressed: filteredItems.isEmpty ? null : onSelectVisible,
-                child: Text(_t('选中可删项', 'Select Deletable')),
+                child: Text(l10n.cleanerSelectDeletable),
               ),
               Button(
                 onPressed:
                     _selectedCandidateIds.isEmpty ? null : onClearSelection,
-                child: Text(_t('清空选择', 'Clear Selection')),
+                child: Text(l10n.cleanerClearSelection),
               ),
             ],
           ),
@@ -839,6 +954,7 @@ class _StudioStorageCleaningPageState
     required List<CleanerReviewItem> visibleItems,
     required bool hasBackground,
   }) {
+    final l10n = _l10n;
     final result = state.runResult;
     final isDark = theme.brightness == Brightness.dark;
     final itemFill = hasBackground
@@ -852,9 +968,8 @@ class _StudioStorageCleaningPageState
     if (state.isAnalyzing && result == null) {
       return StudioEmptyState(
         icon: AuroraIcons.search,
-        title: _t('正在扫描与分析', 'Scanning and Analyzing'),
-        subtitle:
-            _t('稍候，候选项会实时出现。', 'Please wait; candidates appear in real time.'),
+        title: l10n.cleanerScanningAndAnalyzing,
+        subtitle: l10n.cleanerScanningHint,
         loading: true,
       );
     }
@@ -862,16 +977,16 @@ class _StudioStorageCleaningPageState
     if (result == null || result.items.isEmpty) {
       return StudioEmptyState(
         icon: AuroraIcons.database,
-        title: _t('准备就绪', 'Ready'),
-        subtitle: _t('点击“开始分析”启动扫描', 'Click "Start Analyze" to begin'),
+        title: l10n.cleanerReadyTitle,
+        subtitle: l10n.cleanerReadyHint,
       );
     }
 
     if (visibleItems.isEmpty) {
       return StudioEmptyState(
         icon: AuroraIcons.parameter,
-        title: _t('筛选后无结果', 'No Results'),
-        subtitle: _t('调整大小或风险筛选条件。', 'Adjust size/risk filters.'),
+        title: l10n.cleanerNoResultsTitle,
+        subtitle: l10n.cleanerNoResultsHint,
       );
     }
 
@@ -950,14 +1065,13 @@ class _StudioStorageCleaningPageState
                             ),
                             StudioTag(
                               text:
-                                  '${_t('置信度', 'Confidence')} ${(item.aiSuggestion.confidence * 100).toStringAsFixed(0)}%',
+                                  '${l10n.cleanerConfidence} ${(item.aiSuggestion.confidence * 100).toStringAsFixed(0)}%',
                               color: Colors.blue,
                               hasBackground: hasBackground,
                             ),
                             if (windowsGroup != null)
                               StudioTag(
-                                text: _t(
-                                    '规则:$windowsGroup', 'Rule:$windowsGroup'),
+                                text: l10n.cleanerRuleTag(windowsGroup),
                                 color: Colors.teal,
                                 hasBackground: hasBackground,
                               ),
@@ -976,7 +1090,7 @@ class _StudioStorageCleaningPageState
               if (item.policyReasons.isNotEmpty) ...[
                 const SizedBox(height: 4),
                 Text(
-                  '${_t('策略护栏', 'Policy Guard')}: ${item.policyReasons.join(', ')}',
+                  '${l10n.cleanerPolicyGuard}: ${item.policyReasons.join(', ')}',
                   style: theme.typography.caption?.copyWith(
                     color: Colors.orange,
                   ),
@@ -990,6 +1104,7 @@ class _StudioStorageCleaningPageState
   }
 
   Widget _rootList(FluentThemeData theme, bool hasBackground) {
+    final l10n = _l10n;
     final isDark = theme.brightness == Brightness.dark;
     final listFill = hasBackground
         ? (isDark
@@ -1016,10 +1131,7 @@ class _StudioStorageCleaningPageState
           color: listFill,
         ),
         child: Text(
-          _t(
-            '当前使用默认模式：扫描应用缓存与临时目录。',
-            'Using default mode: app cache and temp roots.',
-          ),
+          l10n.cleanerAutoModeHint,
           style: theme.typography.caption,
         ),
       );
@@ -1078,22 +1190,22 @@ class _StudioStorageCleaningPageState
   String _decisionText(CleanerDecision decision) {
     switch (decision) {
       case CleanerDecision.deleteRecommend:
-        return _t('建议删除', 'Delete');
+        return _l10n.cleanerDelete;
       case CleanerDecision.reviewRequired:
-        return _t('需复核', 'Review');
+        return _l10n.cleanerReview;
       case CleanerDecision.keep:
-        return _t('保留', 'Keep');
+        return _l10n.cleanerKeep;
     }
   }
 
   String _riskText(CleanerRiskLevel riskLevel) {
     switch (riskLevel) {
       case CleanerRiskLevel.low:
-        return _t('低风险', 'Low Risk');
+        return _l10n.cleanerRiskLow;
       case CleanerRiskLevel.medium:
-        return _t('中风险', 'Medium Risk');
+        return _l10n.cleanerRiskMedium;
       case CleanerRiskLevel.high:
-        return _t('高风险', 'High Risk');
+        return _l10n.cleanerRiskHigh;
     }
   }
 
@@ -1124,7 +1236,7 @@ class _StudioStorageCleaningPageState
   String _sizeFilterText(_DesktopSizeFilter filter) {
     switch (filter) {
       case _DesktopSizeFilter.all:
-        return _t('全部大小', 'All Size');
+        return _l10n.cleanerAllSize;
       case _DesktopSizeFilter.oneToTenMb:
         return '1-10MB';
       case _DesktopSizeFilter.tenToHundredMb:

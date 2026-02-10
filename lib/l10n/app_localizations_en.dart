@@ -1986,4 +1986,271 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get translationPromptSourceText => 'Source text:';
+
+  @override
+  String get cleanerStatusAnalyzing => 'Analyzing';
+
+  @override
+  String get cleanerStatusPaused => 'Paused';
+
+  @override
+  String get cleanerStatusReady => 'Ready';
+
+  @override
+  String get cleanerTitle => 'AI Cleanup';
+
+  @override
+  String get cleanerHeaderSubtitle =>
+      'Rule scan + AI advice + policy guardrails (stop/continue supported)';
+
+  @override
+  String get cleanerRuleAiPolicyTitle =>
+      'Rule scan + AI advice + policy guardrails';
+
+  @override
+  String get cleanerRuleAiPolicySubtitle =>
+      'Builds a directory profile first, then AI selects directories for deep scan. Optional folders can be added.';
+
+  @override
+  String get cleanerScanSetupTitle => 'Scan Setup';
+
+  @override
+  String get cleanerExecutionModelDefaultChat => 'Default (Use Chat Model)';
+
+  @override
+  String get cleanerDefaultUseChatModel =>
+      'Defaults to the current chat model.';
+
+  @override
+  String get cleanerAddExtraFolder => 'Add Extra Folder';
+
+  @override
+  String get cleanerClearFolders => 'Clear Folders';
+
+  @override
+  String get cleanerDetectDuplicates => 'Detect Duplicates';
+
+  @override
+  String get cleanerIncludeReviewOnDelete => 'Include Review On Delete';
+
+  @override
+  String get cleanerActionsTitle => 'Actions';
+
+  @override
+  String get cleanerActionsSubtitle =>
+      'Analysis supports stop/continue; deletion is always manual.';
+
+  @override
+  String get cleanerStartAnalyze => 'Start Analyze';
+
+  @override
+  String get cleanerStopping => 'Stopping...';
+
+  @override
+  String get cleanerStop => 'Stop';
+
+  @override
+  String get cleanerContinue => 'Continue';
+
+  @override
+  String cleanerDeleteSelectedCount(int count) {
+    return 'Delete Selected($count)';
+  }
+
+  @override
+  String get cleanerDeleteRecommended => 'Delete Recommended';
+
+  @override
+  String cleanerProgressLine(
+      int processed, int total, int batchesProcessed, String batchesTotal) {
+    return 'Progress $processed/$total · Batches $batchesProcessed/$batchesTotal';
+  }
+
+  @override
+  String get cleanerDeleteResultTitle => 'Delete Result';
+
+  @override
+  String cleanerDeleteResultSummary(String freed, int success, int total) {
+    return 'Freed $freed · Success $success/$total';
+  }
+
+  @override
+  String get cleanerNoAnalysisYetStartScan =>
+      'No results yet. Start analysis first.';
+
+  @override
+  String get cleanerAnalysisOverviewTitle => 'Analysis Overview';
+
+  @override
+  String get cleanerAnalysisOverviewSubtitle =>
+      'Summarized by decision, size, and risk.';
+
+  @override
+  String get cleanerCandidates => 'Candidates';
+
+  @override
+  String get cleanerDelete => 'Delete';
+
+  @override
+  String get cleanerReview => 'Review';
+
+  @override
+  String get cleanerKeep => 'Keep';
+
+  @override
+  String get cleanerEstimatedReclaim => 'Est. Reclaim';
+
+  @override
+  String get cleanerRiskLow => 'Low Risk';
+
+  @override
+  String get cleanerRiskMedium => 'Medium Risk';
+
+  @override
+  String get cleanerRiskHigh => 'High Risk';
+
+  @override
+  String get cleanerSizeFilter => 'Size Filter';
+
+  @override
+  String get cleanerRiskFilter => 'Risk Filter';
+
+  @override
+  String get cleanerAllRisk => 'All Risk';
+
+  @override
+  String cleanerShowingCount(int shown, int total) {
+    return 'Showing $shown/$total';
+  }
+
+  @override
+  String get cleanerSelectDeletable => 'Select Deletable';
+
+  @override
+  String get cleanerClearSelection => 'Clear Selection';
+
+  @override
+  String get cleanerScanningAndAnalyzing => 'Scanning and Analyzing';
+
+  @override
+  String get cleanerScanningHint =>
+      'Please wait; candidates appear in real time.';
+
+  @override
+  String get cleanerReadyTitle => 'Ready';
+
+  @override
+  String get cleanerReadyHint => 'Click \"Start Analyze\" to begin';
+
+  @override
+  String get cleanerNoResultsTitle => 'No Results';
+
+  @override
+  String get cleanerNoResultsHint => 'Adjust size/risk filters.';
+
+  @override
+  String get cleanerConfidence => 'Confidence';
+
+  @override
+  String cleanerRuleTag(String group) {
+    return 'Rule:$group';
+  }
+
+  @override
+  String get cleanerPolicyGuard => 'Policy Guard';
+
+  @override
+  String get cleanerAutoModeHint =>
+      'Auto mode: profile directories first, then AI selects paths for deep scan.';
+
+  @override
+  String get cleanerAllSize => 'All Size';
+
+  @override
+  String get cleanerClassificationFilter => 'Classification Filter';
+
+  @override
+  String get cleanerNoCandidatesYet => 'No candidates yet';
+
+  @override
+  String get cleanerNoItemsUnderFilters => 'No items under current filters.';
+
+  @override
+  String get cleanerAndroidStorageRestriction =>
+      'Android storage policy may block selecting/accessing some folders (for example Android/data).';
+
+  @override
+  String get cleanerIncludeReviewRequiredItems => 'Include review-required';
+
+  @override
+  String cleanerFreedBytesOnly(String freed) {
+    return 'Freed $freed';
+  }
+
+  @override
+  String cleanerErrorAnalyzeFailed(String message) {
+    return 'Cleaner analyze failed: $message';
+  }
+
+  @override
+  String cleanerErrorContinueFailed(String message) {
+    return 'Cleaner continue failed: $message';
+  }
+
+  @override
+  String cleanerErrorDeleteFailed(String message) {
+    return 'Cleaner delete failed: $message';
+  }
+
+  @override
+  String get cleanerPolicyDefaultAiUnavailable => 'AI suggestion unavailable.';
+
+  @override
+  String get cleanerHeuristicNoExtension => 'no extension';
+
+  @override
+  String get cleanerHeuristicProtected => 'Protected by safety policy.';
+
+  @override
+  String cleanerHeuristicExecutableReview(String extLabel) {
+    return 'Executable/script file detected ($extLabel); do not auto-delete.';
+  }
+
+  @override
+  String cleanerHeuristicValuableKeep(String extLabel) {
+    return 'Content-like file type detected ($extLabel); keep by default.';
+  }
+
+  @override
+  String cleanerHeuristicDisposableDelete(String extLabel) {
+    return 'Filename/extension indicates temp/log artifact ($extLabel), usually safe to clean.';
+  }
+
+  @override
+  String cleanerHeuristicCachePathDelete(String extLabel) {
+    return 'This file is in a cache/temp path ($extLabel) and is usually safe to clean.';
+  }
+
+  @override
+  String cleanerHeuristicDuplicateReview(String extLabel) {
+    return 'Possible duplicate ($extLabel); confirm which copy to keep first.';
+  }
+
+  @override
+  String cleanerHeuristicLargeFileReview(String extLabel) {
+    return 'Large file ($extLabel) with unknown value; manual review is safer.';
+  }
+
+  @override
+  String cleanerHeuristicStaleFileReview(String extLabel) {
+    return 'Long-unmodified file ($extLabel) may be removable, but confirm first.';
+  }
+
+  @override
+  String cleanerHeuristicInsufficientSignal(String extLabel) {
+    return 'Not enough evidence ($extLabel); keep by default.';
+  }
+
+  @override
+  String get cleanerLlmSuggestionFallback => 'LLM suggestion';
 }
