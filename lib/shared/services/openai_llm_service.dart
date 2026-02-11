@@ -418,6 +418,65 @@ String _thinkingTierToOpenAIEffort(_ThinkingTier tier,
   }
 }
 
+String? _thinkingInputToCompatReasoningEffort(
+  _ThinkingInput input, {
+  required _ModelFamily modelFamily,
+  required bool supportsXHigh,
+}) {
+  final normalizedRaw = input.raw.trim().toLowerCase();
+  if (normalizedRaw.isEmpty) return null;
+
+  if (normalizedRaw == 'auto' || normalizedRaw == '-1') return 'auto';
+  if (normalizedRaw == 'none' || normalizedRaw == 'off') return 'none';
+
+  if (input.budgetTokens != null) {
+    final budget = input.budgetTokens!;
+    if (budget < 0) return 'auto';
+    if (budget == 0) return 'none';
+    final tier = modelFamily == _ModelFamily.gemini3
+        ? _tierFromBudgetForGemini3(budget)
+        : _tierFromBudgetForOpenAI(budget);
+    return _thinkingTierToOpenAIEffort(tier, supportsXHigh: supportsXHigh);
+  }
+
+  if (input.tier != null) {
+    return _thinkingTierToOpenAIEffort(input.tier!,
+        supportsXHigh: supportsXHigh);
+  }
+
+  // Allow explicit effort strings if user typed them directly.
+  if (normalizedRaw == 'low' ||
+      normalizedRaw == 'medium' ||
+      normalizedRaw == 'high' ||
+      normalizedRaw == 'xhigh') {
+    return normalizedRaw;
+  }
+
+  return null;
+}
+
+void _applyGeminiExtraBodyReasoningCompat({
+  required Map<String, dynamic> requestData,
+  required _ThinkingInput input,
+  required _ModelFamily modelFamily,
+  required String baseUrl,
+  required String selectedModel,
+}) {
+  if (modelFamily != _ModelFamily.gemini &&
+      modelFamily != _ModelFamily.gemini3) {
+    return;
+  }
+  if (requestData.containsKey('reasoning_effort')) return;
+
+  final effort = _thinkingInputToCompatReasoningEffort(
+    input,
+    modelFamily: modelFamily,
+    supportsXHigh: _supportsXHighReasoningEffort(baseUrl, selectedModel),
+  );
+  if (effort == null || effort.isEmpty) return;
+  requestData['reasoning_effort'] = effort;
+}
+
 bool _isClaudeRoutedModel(String model) {
   final lowerModel = model.toLowerCase();
   return lowerModel.contains('claude') || lowerModel.contains('anthropic');
@@ -626,6 +685,16 @@ void _applyThinkingConfigToRequest({
           },
         );
       }
+
+      // Compatibility for legacy CPA translators:
+      // they may ignore extra_body.google.thinking_config but support reasoning_effort.
+      _applyGeminiExtraBodyReasoningCompat(
+        requestData: requestData,
+        input: input,
+        modelFamily: modelFamily,
+        baseUrl: baseUrl,
+        selectedModel: selectedModel,
+      );
     } else if (modelFamily == _ModelFamily.anthropic) {
       final budgetTokens = _budgetTokensFromThinkingInput(input);
       if (budgetTokens == null) return;
