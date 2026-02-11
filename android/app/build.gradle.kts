@@ -28,6 +28,7 @@ android {
         targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        resourceConfigurations.addAll(listOf("en", "zh"))
     }
 
     buildTypes {

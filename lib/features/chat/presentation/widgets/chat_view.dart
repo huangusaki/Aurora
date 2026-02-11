@@ -8,8 +8,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_selector/file_selector.dart';
 
 import 'package:super_clipboard/super_clipboard.dart';
-
-import 'package:pasteboard/pasteboard.dart';
 import 'package:image_picker/image_picker.dart';
 import '../chat_provider.dart';
 
@@ -203,25 +201,6 @@ class ChatViewState extends ConsumerState<ChatView> {
           await _processReader(newReader);
           return;
         }
-      }
-      try {
-        final imageBytes = await Pasteboard.image;
-        if (imageBytes != null && imageBytes.isNotEmpty) {
-          final attachDir = await getAttachmentsDir();
-          final path =
-              '${attachDir.path}${Platform.pathSeparator}paste_fb_${DateTime.now().millisecondsSinceEpoch}.png';
-          await File(path).writeAsBytes(imageBytes);
-          if (mounted) {
-            if (!_attachments.contains(path)) {
-              setState(() {
-                _attachments.add(path);
-              });
-            }
-          }
-          return;
-        }
-      } catch (e) {
-        debugPrint('Pasteboard fallback failed: $e');
       }
       await _processReader(reader);
     } else {

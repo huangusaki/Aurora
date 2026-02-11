@@ -11,7 +11,6 @@ import io.flutter.plugins.GeneratedPluginRegistrant
 import io.flutter.plugins.pathprovider.PathProviderPlugin
 import io.flutter.plugins.sharedpreferences.SharedPreferencesPlugin
 import io.flutter.plugins.urllauncher.UrlLauncherPlugin
-import one.mixin.pasteboard.PasteboardPlugin
 
 class MainActivity : FlutterActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -29,9 +28,6 @@ class MainActivity : FlutterActivity() {
         }
         safeRegister(flutterEngine, "package_info_plus", PackageInfoPlugin::class.java) {
             PackageInfoPlugin()
-        }
-        safeRegister(flutterEngine, "pasteboard", PasteboardPlugin::class.java) {
-            PasteboardPlugin()
         }
         safeRegister(flutterEngine, "path_provider_android", PathProviderPlugin::class.java) {
             PathProviderPlugin()

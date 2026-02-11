@@ -7,7 +7,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../selectable_markdown/animated_streaming_markdown.dart';
 import 'package:super_clipboard/super_clipboard.dart';
-import 'package:pasteboard/pasteboard.dart';
 import 'package:file_selector/file_selector.dart';
 import '../../chat_provider.dart';
 import '../../../domain/message.dart';
@@ -122,25 +121,6 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
           }
         }
         return;
-      }
-      try {
-        final imageBytes = await Pasteboard.image;
-        if (imageBytes != null && imageBytes.isNotEmpty) {
-          final attachDir = await getAttachmentsDir();
-          final path =
-              '${attachDir.path}${Platform.pathSeparator}paste_fb_${DateTime.now().millisecondsSinceEpoch}.png';
-          await File(path).writeAsBytes(imageBytes);
-          if (mounted) {
-            if (!_newAttachments.contains(path)) {
-              setState(() {
-                _newAttachments.add(path);
-              });
-            } else {}
-          }
-          return;
-        }
-      } catch (e) {
-        debugPrint('Pasteboard Fallback Error: $e');
       }
     } finally {
       _isPasting = false;
