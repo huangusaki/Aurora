@@ -596,27 +596,36 @@ class MarkdownGenerator {
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
-                    // Render the math
-                    Math.tex(
-                      displayLatex,
-                      textStyle:
-                          (context.currentStyle ?? const TextStyle()).copyWith(
-                        // Ensure color is respected if not overridden by latex
-                        color: textColor,
-                        fontSize: baseFontSize,
+                    // Render layer: visible formula
+                    SelectionContainer.disabled(
+                      child: Math.tex(
+                        displayLatex,
+                        textStyle: (context.currentStyle ?? const TextStyle())
+                            .copyWith(
+                          color: textColor,
+                          fontSize: baseFontSize,
+                        ),
                       ),
                     ),
-                    // Invisible text overlay for selection/copying
-                    // We use a small font size text that contains the source.
-                    // Positioned.fill ensures it covers the area for selection hit-testing.
-                    Semantics(
-                      label: latex,
-                      child: Opacity(
-                        opacity: 0.0,
-                        child: Text(
-                          latex,
-                          style: const TextStyle(
-                              color: Colors.transparent, fontSize: 1),
+                    // Copy layer: near-invisible selectable source
+                    Positioned.fill(
+                      child: Align(
+                        alignment: Alignment.center,
+                        child: DefaultSelectionStyle(
+                          // Keep a normal text-like selection feedback, but lighter
+                          // to avoid visually "covering" the rendered formula.
+                          selectionColor: const Color(0x4D66A3FF),
+                          cursorColor: Colors.transparent,
+                          child: Text(
+                            rawLatex,
+                            textAlign: TextAlign.center,
+                            style: (context.currentStyle ?? const TextStyle())
+                                .copyWith(
+                              color: textColor.withValues(alpha: 0.005),
+                              fontSize: baseFontSize * 0.95,
+                              height: 1.2,
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -1630,22 +1639,52 @@ class _LatexBlockState extends State<_LatexBlock> {
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.only(
                       left: 16, right: 16, top: 4, bottom: 16),
-                  child: Math.tex(
-                    widget.latex,
-                    textStyle: TextStyle(
-                      fontSize: widget.baseFontSize + 2,
-                      color: widget.textColor,
-                    ),
-                    onErrorFallback: (error) {
-                      return Text(
-                        widget.latex,
-                        style: TextStyle(
-                          fontFamily: 'monospace',
-                          fontSize: widget.baseFontSize,
-                          color: widget.textColor,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Render layer: visible formula
+                      SelectionContainer.disabled(
+                        child: Math.tex(
+                          widget.latex,
+                          textStyle: TextStyle(
+                            fontSize: widget.baseFontSize + 2,
+                            color: widget.textColor,
+                          ),
+                          onErrorFallback: (error) {
+                            return Text(
+                              widget.latex,
+                              style: TextStyle(
+                                fontFamily: 'monospace',
+                                fontSize: widget.baseFontSize,
+                                color: widget.textColor,
+                              ),
+                            );
+                          },
                         ),
-                      );
-                    },
+                      ),
+                      // Copy layer: near-invisible selectable source
+                      Positioned.fill(
+                        child: Align(
+                          alignment: Alignment.center,
+                          child: DefaultSelectionStyle(
+                            // Keep a normal text-like selection feedback, but lighter
+                            // to avoid visually "covering" the rendered formula.
+                            selectionColor: const Color(0x4D66A3FF),
+                            cursorColor: Colors.transparent,
+                            child: Text(
+                              widget.rawLatex,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color:
+                                    widget.textColor.withValues(alpha: 0.005),
+                                fontSize: widget.baseFontSize,
+                                height: 1.5,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
