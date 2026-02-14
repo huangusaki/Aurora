@@ -97,16 +97,28 @@ String? _normalizeImageDataUrl(String url) {
 }
 
 List<Map<String, dynamic>> _sanitizeOutgoingImageMessages(
-    List<Map<String, dynamic>> apiMessages) {
+  List<Map<String, dynamic>> apiMessages, {
+  required String selectedModel,
+}) {
   final List<Map<String, dynamic>> sanitized = [];
+  final isGeminiModel = selectedModel.toLowerCase().contains('gemini');
   for (final msg in apiMessages) {
     final Map<String, dynamic> newMsg = Map<String, dynamic>.from(msg);
+    final role = (newMsg['role'] ?? '').toString().toLowerCase();
     final content = newMsg['content'];
     if (content is List) {
       final List<dynamic> newContent = [];
       bool removedImage = false;
+      bool removedForGeminiRoleCompat = false;
       for (final item in content) {
         if (item is Map && item['type'] == 'image_url') {
+          if (isGeminiModel && role != 'user') {
+            // Gemini OpenAI-compatible chat/completions currently rejects
+            // non-user image parts and expects assistant parts to be text/refusal.
+            removedImage = true;
+            removedForGeminiRoleCompat = true;
+            continue;
+          }
           final imageUrlObj = item['image_url'];
           final url = imageUrlObj is Map ? imageUrlObj['url'] : null;
           if (url is String && url.startsWith('data:')) {
@@ -131,7 +143,12 @@ List<Map<String, dynamic>> _sanitizeOutgoingImageMessages(
         newContent.add(item);
       }
       if (newContent.isEmpty && removedImage) {
-        newMsg['content'] = '[Image omitted: invalid or unsupported format]';
+        if (removedForGeminiRoleCompat) {
+          newMsg['content'] =
+              '[Image omitted: unsupported in non-user role for Gemini compatibility]';
+        } else {
+          newMsg['content'] = '[Image omitted: invalid or unsupported format]';
+        }
       } else {
         newMsg['content'] = newContent;
       }

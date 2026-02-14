@@ -221,6 +221,35 @@ String? _thinkingInputToCompatReasoningEffort(
   return null;
 }
 
+bool _isOfficialGeminiOpenAIEndpoint(String baseUrl) {
+  final uri = Uri.tryParse(baseUrl);
+  final host = (uri?.host ?? '').toLowerCase();
+  if (host.isNotEmpty) {
+    return host == 'generativelanguage.googleapis.com';
+  }
+  return baseUrl.toLowerCase().contains('generativelanguage.googleapis.com');
+}
+
+void _removeGoogleThinkingConfigFromRequest(Map<String, dynamic> requestData) {
+  final extraBody = _safeStringKeyedMap(requestData['extra_body']);
+  if (extraBody.isEmpty) return;
+  final google = _safeStringKeyedMap(extraBody['google']);
+  if (google.isEmpty) return;
+
+  google.remove('thinking_config');
+  if (google.isEmpty) {
+    extraBody.remove('google');
+  } else {
+    extraBody['google'] = google;
+  }
+
+  if (extraBody.isEmpty) {
+    requestData.remove('extra_body');
+  } else {
+    requestData['extra_body'] = extraBody;
+  }
+}
+
 void _applyGeminiExtraBodyReasoningCompat({
   required Map<String, dynamic> requestData,
   required _ThinkingInput input,
@@ -232,6 +261,7 @@ void _applyGeminiExtraBodyReasoningCompat({
       modelFamily != _ModelFamily.gemini3) {
     return;
   }
+  if (_isOfficialGeminiOpenAIEndpoint(baseUrl)) return;
   if (requestData.containsKey('reasoning_effort')) return;
 
   final effort = _thinkingInputToCompatReasoningEffort(
@@ -397,6 +427,16 @@ void _applyThinkingConfigToRequest({
   if (raw.isEmpty) return;
 
   final modelFamily = _inferModelFamily(selectedModel);
+  final isOfficialGeminiOpenAI = _isOfficialGeminiOpenAIEndpoint(baseUrl);
+  if (isOfficialGeminiOpenAI) {
+    // Official Gemini OpenAI-compatible endpoint requires strict mutual exclusion:
+    // Gemini 2.x => thinking_config, Gemini 3.x => reasoning_effort.
+    if (modelFamily == _ModelFamily.gemini) {
+      thinkingMode = 'extra_body';
+    } else if (modelFamily == _ModelFamily.gemini3) {
+      thinkingMode = 'reasoning_effort';
+    }
+  }
   if (thinkingMode == 'auto') {
     if (modelFamily == _ModelFamily.gemini) {
       thinkingMode = 'extra_body';
@@ -503,5 +543,15 @@ void _applyThinkingConfigToRequest({
       effort = input.raw;
     }
     requestData['reasoning_effort'] = effort;
+  }
+
+  // Enforce official Gemini endpoint mutual exclusion even if user/custom params
+  // pre-populated one side before compatibility mapping runs.
+  if (isOfficialGeminiOpenAI) {
+    if (modelFamily == _ModelFamily.gemini) {
+      requestData.remove('reasoning_effort');
+    } else if (modelFamily == _ModelFamily.gemini3) {
+      _removeGoogleThinkingConfigFromRequest(requestData);
+    }
   }
 }

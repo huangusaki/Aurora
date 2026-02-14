@@ -55,6 +55,15 @@ class OpenAILLMService implements LLMService {
   }
 
   dynamic _sanitizeForLog(dynamic data) {
+    if (data is ResponseBody) {
+      return {
+        'content_type': 'ResponseBody',
+        'status_code': data.statusCode,
+        if (data.statusMessage != null) 'status_message': data.statusMessage,
+        'headers': data.headers,
+        'stream': '[OMITTED_STREAM]',
+      };
+    }
     if (data is Map) {
       return data.map((k, v) {
         if (k == 'messages' && v is List) {

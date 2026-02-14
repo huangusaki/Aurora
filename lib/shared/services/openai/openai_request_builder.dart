@@ -197,7 +197,10 @@ Use search for:
     String? toolChoice,
   }) async {
     var apiMessages = await _buildApiMessages(messages);
-    apiMessages = _sanitizeOutgoingImageMessages(apiMessages);
+    apiMessages = _sanitizeOutgoingImageMessages(
+      apiMessages,
+      selectedModel: selectedModel,
+    );
     apiMessages = await _compressApiMessagesIfNeeded(apiMessages);
     _injectSystemInstructions(apiMessages);
 
