@@ -20,6 +20,7 @@ part 'openai/openai_request_builder.dart';
 class OpenAILLMService implements LLMService {
   final Dio _dio;
   final SettingsState _settings;
+  final Map<String, String> _imageThoughtSignatureByUrl = {};
   OpenAILLMService(this._settings)
       : _dio = Dio(BaseOptions(
           connectTimeout: const Duration(seconds: 30),
@@ -30,6 +31,50 @@ class OpenAILLMService implements LLMService {
             'User-Agent': 'Aurora/1.0 (Flutter; Dio)',
           },
         ));
+
+  String? _normalizeThoughtSignature(dynamic raw) {
+    if (raw == null) return null;
+    final value = raw.toString().trim();
+    if (value.isEmpty) return null;
+    return value;
+  }
+
+  String? _extractThoughtSignatureFromImageItem(dynamic item) {
+    if (item is! Map) return null;
+    final snake = _normalizeThoughtSignature(item['thought_signature']);
+    if (snake != null) return snake;
+    final camel = _normalizeThoughtSignature(item['thoughtSignature']);
+    if (camel != null) return camel;
+    final nested = item['image_url'];
+    if (nested is Map) {
+      final nestedSnake =
+          _normalizeThoughtSignature(nested['thought_signature']);
+      if (nestedSnake != null) return nestedSnake;
+      return _normalizeThoughtSignature(nested['thoughtSignature']);
+    }
+    return null;
+  }
+
+  void _rememberImageThoughtSignature(String? imageUrl, String? signature) {
+    if (imageUrl == null || imageUrl.isEmpty || signature == null) return;
+    _imageThoughtSignatureByUrl[imageUrl] = signature;
+    // Prevent unbounded growth when many generated images appear in one run.
+    if (_imageThoughtSignatureByUrl.length > 128) {
+      _imageThoughtSignatureByUrl
+          .remove(_imageThoughtSignatureByUrl.keys.first);
+    }
+  }
+
+  String _resolveOutgoingThoughtSignature(String imageUrl) {
+    final cached = _imageThoughtSignatureByUrl[imageUrl];
+    if (cached != null && cached.trim().isNotEmpty) return cached;
+    // TODO(usaki): Temporary fallback for proxy chains that drop or rename
+    // thought_signature during OpenAI<->Gemini conversion.
+    // Proper fix: persist per-image thought_signature in message state and send
+    // the original signature value end-to-end (no synthetic sentinel).
+    // Remove this sentinel once translator compatibility is verified.
+    return 'skip_thought_signature_validator';
+  }
 
   void _debugLog(String message,
       {String level = 'DEBUG', String category = 'GENERAL'}) {
@@ -66,9 +111,6 @@ class OpenAILLMService implements LLMService {
     }
     if (data is Map) {
       return data.map((k, v) {
-        if (k == 'messages' && v is List) {
-          return MapEntry(k, _summarizeMessagesForLog(v));
-        }
         if (k == 'b64_json' && v is String && v.length > 200) {
           return MapEntry(
               k, '${v.substring(0, 50)}...[TRUNCATED ${v.length} chars]');
@@ -93,97 +135,6 @@ class OpenAILLMService implements LLMService {
       }
     }
     return data;
-  }
-
-  Map<String, dynamic> _summarizeMessagesForLog(List<dynamic> messages) {
-    const maxRecentMessages = 2;
-    final roleCounts = <String, int>{};
-
-    for (final item in messages) {
-      if (item is Map) {
-        final role = (item['role'] ?? 'unknown').toString();
-        roleCounts[role] = (roleCounts[role] ?? 0) + 1;
-      }
-    }
-
-    final total = messages.length;
-    final keep = total > maxRecentMessages ? maxRecentMessages : total;
-    final recent = keep == 0
-        ? const <Map<String, dynamic>>[]
-        : messages.sublist(total - keep).map(_summarizeMessageForLog).toList();
-
-    return {
-      'total_messages': total,
-      'omitted_messages': total - keep,
-      'role_counts': roleCounts,
-      'recent_messages': recent,
-    };
-  }
-
-  Map<String, dynamic> _summarizeMessageForLog(dynamic raw) {
-    if (raw is! Map) {
-      return {
-        'role': 'unknown',
-        'preview': _sanitizeForLog(raw.toString()),
-      };
-    }
-
-    final content = raw['content'];
-    return {
-      'role': (raw['role'] ?? 'unknown').toString(),
-      if (raw['name'] != null) 'name': raw['name'].toString(),
-      ..._summarizeMessageContentForLog(content),
-    };
-  }
-
-  Map<String, dynamic> _summarizeMessageContentForLog(dynamic content) {
-    if (content is String) {
-      return {
-        'content_type': 'text',
-        'content_length': content.length,
-        'content_preview': _sanitizeForLog(content),
-      };
-    }
-
-    if (content is List) {
-      int textParts = 0;
-      int imageParts = 0;
-      int otherParts = 0;
-      String? textPreview;
-
-      for (final item in content) {
-        if (item is Map) {
-          final type = (item['type'] ?? 'unknown').toString();
-          if (type == 'text') {
-            textParts++;
-            final text = item['text']?.toString() ?? '';
-            if (textPreview == null && text.isNotEmpty) {
-              textPreview = _sanitizeForLog(text).toString();
-            }
-          } else if (type == 'image_url') {
-            imageParts++;
-          } else {
-            otherParts++;
-          }
-        } else {
-          otherParts++;
-        }
-      }
-
-      return {
-        'content_type': 'multipart',
-        'parts': content.length,
-        'text_parts': textParts,
-        'image_parts': imageParts,
-        'other_parts': otherParts,
-        if (textPreview != null) 'text_preview': textPreview,
-      };
-    }
-
-    return {
-      'content_type': 'other',
-      'content_preview': _sanitizeForLog(content.toString()),
-    };
   }
 
   void _logEvent(String category, dynamic payload, {String level = 'DEBUG'}) {
@@ -435,6 +386,7 @@ class OpenAILLMService implements LLMService {
                   final toolCalls = delta['tool_calls'];
 
                   String? imageUrl;
+                  String? imageThoughtSignature;
                   if (choices[0]['b64_json'] != null) {
                     imageUrl =
                         'data:image/png;base64,${choices[0]['b64_json']}';
@@ -482,39 +434,44 @@ class OpenAILLMService implements LLMService {
                     } else if (delta['images'] != null &&
                         delta['images'] is List) {
                       final images = delta['images'] as List;
-                      final List<String> parsedImages = [];
                       for (final imgData in images) {
+                        String? candidateUrl;
+                        String? candidateSignature =
+                            _extractThoughtSignatureFromImageItem(imgData);
                         if (imgData is String) {
-                          if (imgData.startsWith('http')) {
-                            parsedImages.add(imgData);
-                          } else if (imgData.startsWith('data:image')) {
-                            parsedImages.add(imgData);
+                          if (imgData.startsWith('http') ||
+                              imgData.startsWith('data:image')) {
+                            candidateUrl = imgData;
                           } else {
-                            parsedImages.add('data:image/png;base64,$imgData');
+                            candidateUrl = 'data:image/png;base64,$imgData';
                           }
                         } else if (imgData is Map) {
                           if (imgData['url'] != null) {
                             final url = imgData['url'].toString();
-                            parsedImages.add(url.startsWith('http') ||
-                                    url.startsWith('data:')
+                            candidateUrl = (url.startsWith('http') ||
+                                    url.startsWith('data:'))
                                 ? url
-                                : 'data:image/png;base64,$url');
+                                : 'data:image/png;base64,$url';
                           } else if (imgData['data'] != null) {
-                            parsedImages.add(
-                                'data:image/png;base64,${imgData['data']}');
+                            candidateUrl =
+                                'data:image/png;base64,${imgData['data']}';
                           } else if (imgData['image_url'] != null) {
                             final imgUrlObj = imgData['image_url'];
                             if (imgUrlObj is Map && imgUrlObj['url'] != null) {
-                              parsedImages.add(imgUrlObj['url'].toString());
+                              candidateUrl = imgUrlObj['url'].toString();
+                              candidateSignature ??=
+                                  _extractThoughtSignatureFromImageItem(
+                                      imgUrlObj);
                             } else if (imgUrlObj is String) {
-                              parsedImages.add(imgUrlObj);
+                              candidateUrl = imgUrlObj;
                             }
                           }
                         }
-                      }
-                      if (parsedImages.isNotEmpty) {
-                        // Use first image for simplified logic
-                        imageUrl = parsedImages.first;
+                        if (candidateUrl != null && candidateUrl.isNotEmpty) {
+                          imageUrl = candidateUrl;
+                          imageThoughtSignature = candidateSignature;
+                          break;
+                        }
                       }
                     }
                   }
@@ -525,6 +482,8 @@ class OpenAILLMService implements LLMService {
                         final url = item['image_url']?['url'];
                         if (url != null) {
                           imageUrl = url;
+                          imageThoughtSignature =
+                              _extractThoughtSignatureFromImageItem(item);
                           break;
                         }
                       }
@@ -532,6 +491,8 @@ class OpenAILLMService implements LLMService {
                   }
 
                   if (imageUrl != null) {
+                    _rememberImageThoughtSignature(
+                        imageUrl, imageThoughtSignature);
                     yield LLMResponseChunk(
                         content: '',
                         images: [imageUrl],
@@ -804,11 +765,6 @@ class OpenAILLMService implements LLMService {
             'type': 'text',
             'text': m.content,
           });
-        } else if (!m.isUser && hasImages) {
-          contentList.add({
-            'type': 'text',
-            'text': '',
-          });
         }
         for (final path in m.attachments) {
           try {
@@ -895,6 +851,9 @@ class OpenAILLMService implements LLMService {
         }
         if (m.images.isNotEmpty) {
           final lastImage = m.images.last;
+          // TODO(usaki): Promote to structured image parts in Message model so
+          // we can preserve per-image metadata (including thought_signature)
+          // across full multi-image histories instead of last-image fallback.
           if (lastImage.startsWith('data:')) {
             if (!m.isUser) {
               contentList.add({
@@ -902,7 +861,8 @@ class OpenAILLMService implements LLMService {
                 'image_url': {
                   'url': lastImage,
                 },
-                'thought_signature': 'skip_thought_signature_validator',
+                'thought_signature':
+                    _resolveOutgoingThoughtSignature(lastImage),
               });
             } else {
               contentList.add({
@@ -1031,12 +991,19 @@ class OpenAILLMService implements LLMService {
         if (message['images'] != null && message['images'] is List) {
           for (final img in message['images']) {
             if (img is String) {
-              images.add(img.startsWith('data:') || img.startsWith('http')
-                  ? img
-                  : 'data:image/png;base64,$img');
+              final normalized =
+                  img.startsWith('data:') || img.startsWith('http')
+                      ? img
+                      : 'data:image/png;base64,$img';
+              images.add(normalized);
             } else if (img is Map) {
               final url = img['url'] ?? img['image_url']?['url'];
-              if (url != null) images.add(url.toString());
+              if (url != null) {
+                final normalized = url.toString();
+                images.add(normalized);
+                _rememberImageThoughtSignature(
+                    normalized, _extractThoughtSignatureFromImageItem(img));
+              }
             }
           }
         }
@@ -1044,7 +1011,12 @@ class OpenAILLMService implements LLMService {
           for (final item in message['content']) {
             if (item is Map && item['type'] == 'image_url') {
               final url = item['image_url']?['url'];
-              if (url != null) images.add(url);
+              if (url != null) {
+                final normalized = url.toString();
+                images.add(normalized);
+                _rememberImageThoughtSignature(
+                    normalized, _extractThoughtSignatureFromImageItem(item));
+              }
             }
           }
         }

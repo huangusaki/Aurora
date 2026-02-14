@@ -196,10 +196,17 @@ Use search for:
     List<Map<String, dynamic>>? tools,
     String? toolChoice,
   }) async {
+    final baseUrl = _normalizeBaseUrl(provider.baseUrl);
     var apiMessages = await _buildApiMessages(messages);
     apiMessages = _sanitizeOutgoingImageMessages(
       apiMessages,
       selectedModel: selectedModel,
+      baseUrl: baseUrl,
+    );
+    apiMessages = _applyGeminiImageEditFallback(
+      apiMessages,
+      selectedModel: selectedModel,
+      baseUrl: baseUrl,
     );
     apiMessages = await _compressApiMessagesIfNeeded(apiMessages);
     _injectSystemInstructions(apiMessages);
@@ -230,7 +237,6 @@ Use search for:
       apiMessages: apiMessages,
     );
 
-    final baseUrl = _normalizeBaseUrl(provider.baseUrl);
     _applyThinkingConfigToRequest(
       requestData: requestData,
       activeParams: activeParams,

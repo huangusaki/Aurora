@@ -156,6 +156,20 @@ class _ChatGenerationOrchestrator {
         aiMsg.content.contains('<skill');
   }
 
+  List<String> _mergeStreamingImages(
+      List<String> existing, List<String> incoming) {
+    if (incoming.isEmpty) return existing;
+    // Some OpenAI-compatible image backends emit iterative updates for the same
+    // image index in separate chunks. For the common single-image path, keep
+    // only the newest frame instead of appending duplicates.
+    if (incoming.length == 1 && existing.length <= 1) {
+      final next = incoming.first;
+      if (existing.isNotEmpty && existing.first == next) return existing;
+      return [next];
+    }
+    return [...existing, ...incoming];
+  }
+
   Future<_ChatTurnResult> _runStreamingTurn(Message aiMsg) async {
     final turnStartTime = DateTime.now();
     DateTime? turnFirstContentTime;
@@ -228,7 +242,7 @@ class _ChatGenerationOrchestrator {
           isUser: false,
           timestamp: aiMsg.timestamp,
           attachments: aiMsg.attachments,
-          images: [...aiMsg.images, ...chunk.images],
+          images: _mergeStreamingImages(aiMsg.images, chunk.images),
           model: aiMsg.model,
           provider: aiMsg.provider,
           reasoningDurationSeconds: reasoningDuration,
@@ -256,7 +270,7 @@ class _ChatGenerationOrchestrator {
         isUser: false,
         timestamp: aiMsg.timestamp,
         attachments: aiMsg.attachments,
-        images: [...aiMsg.images, ...chunk.images],
+        images: _mergeStreamingImages(aiMsg.images, chunk.images),
         model: aiMsg.model,
         provider: aiMsg.provider,
         reasoningDurationSeconds: reasoningDuration,
