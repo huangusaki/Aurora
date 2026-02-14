@@ -30,6 +30,11 @@ class MobileAppSettingsPage extends ConsumerWidget {
     final settingsState = ref.watch(settingsProvider);
     final knowledgeState = ref.watch(knowledgeProvider);
     final l10n = AppLocalizations.of(context)!;
+    final customThemeEnabled =
+        settingsState.useCustomTheme || settingsState.themeMode == 'custom';
+    final hasCustomBackground = customThemeEnabled &&
+        settingsState.backgroundImagePath != null &&
+        settingsState.backgroundImagePath!.isNotEmpty;
     final versionSubtitle = ref.watch(_packageInfoProvider).maybeWhen(
           data: (info) {
             final buildSuffix =
@@ -128,8 +133,13 @@ class MobileAppSettingsPage extends ConsumerWidget {
                 title: l10n.backgroundStyle,
                 subtitle: _getBackgroundStyleLabel(
                     settingsState.backgroundColor, l10n),
-                onTap: () => _showBackgroundStylePicker(
-                    context, ref, settingsState, l10n),
+                trailing:
+                    hasCustomBackground ? const Icon(Icons.lock_outline) : null,
+                showChevron: !hasCustomBackground,
+                onTap: hasCustomBackground
+                    ? null
+                    : () => _showBackgroundStylePicker(
+                        context, ref, settingsState, l10n),
               ),
               MobileSettingsTile(
                 leading: const Icon(Icons.format_size),
@@ -498,6 +508,13 @@ class MobileAppSettingsPage extends ConsumerWidget {
 
   void _showBackgroundStylePicker(BuildContext context, WidgetRef ref,
       SettingsState settings, AppLocalizations l10n) {
+    final customThemeEnabled =
+        settings.useCustomTheme || settings.themeMode == 'custom';
+    final hasCustomBackground = customThemeEnabled &&
+        settings.backgroundImagePath != null &&
+        settings.backgroundImagePath!.isNotEmpty;
+    if (hasCustomBackground) return;
+
     final styles = [
       ('default', l10n.bgDefault),
       ('pure_black', l10n.bgPureBlack),
@@ -804,4 +821,3 @@ class MobileAppSettingsPage extends ConsumerWidget {
     );
   }
 }
-

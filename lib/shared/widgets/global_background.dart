@@ -12,11 +12,13 @@ class GlobalBackground extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(settingsProvider);
+    final customThemeEnabled =
+        settings.useCustomTheme || settings.themeMode == 'custom';
     final imagePath = settings.backgroundImagePath;
     final blur = settings.backgroundBlur;
     final brightness = settings.backgroundBrightness;
 
-    if (!settings.useCustomTheme || imagePath == null || imagePath.isEmpty) {
+    if (!customThemeEnabled || imagePath == null || imagePath.isEmpty) {
       return child;
     }
 
@@ -57,4 +59,3 @@ class GlobalBackground extends ConsumerWidget {
     );
   }
 }
-

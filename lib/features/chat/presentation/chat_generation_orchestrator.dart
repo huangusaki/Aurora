@@ -323,9 +323,6 @@ class _ChatGenerationOrchestrator {
       cancelToken: _notifier._currentCancelToken,
     );
 
-    _firstContentTime ??= DateTime.now();
-    final turnFirstContentTime = DateTime.now();
-
     var turnPromptTokens = 0;
     var turnCompletionTokens = 0;
     var turnReasoningTokens = 0;
@@ -347,8 +344,9 @@ class _ChatGenerationOrchestrator {
         (turnPromptTokens + turnCompletionTokens + turnReasoningTokens);
     final turnDurationMs =
         DateTime.now().difference(turnStartTime).inMilliseconds;
-    final turnFirstTokenMs =
-        turnFirstContentTime.difference(turnStartTime).inMilliseconds;
+    // Non-streaming responses do not have an accurate TTFT signal.
+    // Keep TTFT at 0 so TPS is calculated from request start time.
+    const turnFirstTokenMs = 0;
 
     if (_isGenerationActive) {
       aiMsg = Message(
@@ -365,7 +363,6 @@ class _ChatGenerationOrchestrator {
         promptTokens: response.promptTokens,
         completionTokens: response.completionTokens,
         reasoningTokens: response.reasoningTokens,
-        firstTokenMs: _firstContentTime!.difference(_startTime).inMilliseconds,
         toolCalls: response.toolCalls
             ?.map((tc) => ToolCall(
                   id: tc.id ?? '',

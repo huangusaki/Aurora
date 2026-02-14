@@ -255,6 +255,11 @@ class _DesktopChatScreenState extends ConsumerState<DesktopChatScreen>
     }
     final backgroundColor =
         ref.watch(settingsProvider.select((s) => s.backgroundColor));
+    final customThemeEnabled =
+        settings.useCustomTheme || settings.themeMode == 'custom';
+    final hasCustomBackground = customThemeEnabled &&
+        settings.backgroundImagePath != null &&
+        settings.backgroundImagePath!.isNotEmpty;
 
     final isDark = theme.brightness == fluent.Brightness.dark;
     final backgroundGradient =
@@ -266,18 +271,13 @@ class _DesktopChatScreenState extends ConsumerState<DesktopChatScreen>
 
     return Stack(
       children: [
-        if (!settings.useCustomTheme ||
-            settings.backgroundImagePath == null ||
-            settings.backgroundImagePath!.isEmpty)
+        if (!hasCustomBackground)
           Positioned.fill(
             child: Container(
               color: solidBackgroundColor, // Base color
             ),
           ),
-        if (backgroundGradient != null &&
-            (!settings.useCustomTheme ||
-                settings.backgroundImagePath == null ||
-                settings.backgroundImagePath!.isEmpty))
+        if (backgroundGradient != null && !hasCustomBackground)
           Positioned.fill(
             child: Container(
               decoration: BoxDecoration(
@@ -580,13 +580,24 @@ class _DesktopChatScreenState extends ConsumerState<DesktopChatScreen>
                                   const SizedBox(height: 4),
                                   Consumer(
                                     builder: (context, ref, child) {
+                                      final settingsTheme = ref.watch(
+                                        settingsProvider.select((s) => (
+                                              useCustomTheme: s.useCustomTheme,
+                                              themeMode: s.themeMode,
+                                            )),
+                                      );
                                       final currentTheme =
-                                          ref.watch(settingsProvider).themeMode;
+                                          settingsTheme.useCustomTheme ||
+                                                  settingsTheme.themeMode ==
+                                                      'custom'
+                                              ? 'custom'
+                                              : settingsTheme.themeMode;
                                       final IconData icon =
                                           switch (currentTheme) {
                                         'dark' => AuroraIcons.themeDark,
                                         'light' => AuroraIcons.themeLight,
-                                        _ => AuroraIcons.image,
+                                        'custom' => AuroraIcons.image,
+                                        _ => AuroraIcons.themeAuto,
                                       };
                                       return fluent.HoverButton(
                                         onPressed: () => ref
@@ -671,4 +682,3 @@ class _DesktopChatScreenState extends ConsumerState<DesktopChatScreen>
     );
   }
 }
-

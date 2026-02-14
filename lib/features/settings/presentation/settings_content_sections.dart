@@ -1271,6 +1271,11 @@ extension _SettingsContentSections on _SettingsContentState {
     final l10n = AppLocalizations.of(context)!;
     final settingsState = ref.watch(settingsProvider);
     final theme = fluent.FluentTheme.of(context);
+    final customThemeEnabled =
+        settingsState.useCustomTheme || settingsState.themeMode == 'custom';
+    final hasCustomBackground = customThemeEnabled &&
+        settingsState.backgroundImagePath != null &&
+        settingsState.backgroundImagePath!.isNotEmpty;
 
     final colors = [
       ('Teal', 'teal', fluent.Colors.teal),
@@ -1395,169 +1400,175 @@ extension _SettingsContentSections on _SettingsContentState {
           const SizedBox(height: 24),
           fluent.InfoLabel(
             label: l10n.backgroundStyle,
-            child: Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: [
-                (
-                  l10n.bgDefault,
-                  'default',
-                  [const Color(0xFF2B2B2B)],
-                  [const Color(0xFFE0F7FA), const Color(0xFFF1F8E9)]
-                ),
-                (
-                  l10n.bgPureBlack,
-                  'pure_black',
-                  [const Color(0xFF000000)],
-                  [const Color(0xFFFFFFFF)]
-                ),
-                (
-                  l10n.bgWarm,
-                  'warm',
-                  [const Color(0xFF1E1C1A), const Color(0xFF2E241E)],
-                  [const Color(0xFFFFF8E1), const Color(0xFFFFF3E0)]
-                ),
-                (
-                  l10n.bgCool,
-                  'cool',
-                  [const Color(0xFF1A1C1E), const Color(0xFF1E252E)],
-                  [const Color(0xFFE1F5FE), const Color(0xFFE3F2FD)]
-                ),
-                (
-                  l10n.bgRose,
-                  'rose',
-                  [const Color(0xFF2D1A1E), const Color(0xFF3B1E26)],
-                  [const Color(0xFFFCE4EC), const Color(0xFFFFEBEE)]
-                ),
-                (
-                  l10n.bgLavender,
-                  'lavender',
-                  [const Color(0xFF1F1A2D), const Color(0xFF261E3B)],
-                  [const Color(0xFFF3E5F5), const Color(0xFFEDE7F6)]
-                ),
-                (
-                  l10n.bgMint,
-                  'mint',
-                  [const Color(0xFF1A2D24), const Color(0xFF1E3B2E)],
-                  [const Color(0xFFE0F2F1), const Color(0xFFE8F5E9)]
-                ),
-                (
-                  l10n.bgSky,
-                  'sky',
-                  [const Color(0xFF1A202D), const Color(0xFF1E263B)],
-                  [const Color(0xFFE0F7FA), const Color(0xFFE1F5FE)]
-                ),
-                (
-                  l10n.bgGray,
-                  'gray',
-                  [const Color(0xFF1E1E1E), const Color(0xFF2C2C2C)],
-                  [const Color(0xFFFAFAFA), const Color(0xFFF5F5F5)]
-                ),
-                (
-                  l10n.bgSunset,
-                  'sunset',
-                  [const Color(0xFF1A0B0E), const Color(0xFF4A1F28)],
-                  [const Color(0xFFFFF3E0), const Color(0xFFFBE9E7)]
-                ),
-                (
-                  l10n.bgOcean,
-                  'ocean',
-                  [const Color(0xFF05101A), const Color(0xFF0D2B42)],
-                  [const Color(0xFFE3F2FD), const Color(0xFFE8EAF6)]
-                ),
-                (
-                  l10n.bgForest,
-                  'forest',
-                  [const Color(0xFF051408), const Color(0xFF0E3316)],
-                  [const Color(0xFFE8F5E9), const Color(0xFFF1F8E9)]
-                ),
-                (
-                  l10n.bgDream,
-                  'dream',
-                  [const Color(0xFF120817), const Color(0xFF261233)],
-                  [const Color(0xFFEDE7F6), const Color(0xFFE8EAF6)]
-                ),
-                (
-                  l10n.bgAurora,
-                  'aurora',
-                  [const Color(0xFF051715), const Color(0xFF181533)],
-                  [const Color(0xFFE0F2F1), const Color(0xFFEDE7F6)]
-                ),
-                (
-                  l10n.bgVolcano,
-                  'volcano',
-                  [const Color(0xFF1F0808), const Color(0xFF3E1212)],
-                  [const Color(0xFFFBE9E7), const Color(0xFFFFEBEE)]
-                ),
-                (
-                  l10n.bgMidnight,
-                  'midnight',
-                  [const Color(0xFF020205), const Color(0xFF141426)],
-                  [const Color(0xFFECEFF1), const Color(0xFFFAFAFA)]
-                ),
-                (
-                  l10n.bgDawn,
-                  'dawn',
-                  [const Color(0xFF141005), const Color(0xFF33260D)],
-                  [const Color(0xFFFFFDE7), const Color(0xFFFFF8E1)]
-                ),
-                (
-                  l10n.bgNeon,
-                  'neon',
-                  [const Color(0xFF08181A), const Color(0xFF240C21)],
-                  [const Color(0xFFE0F7FA), const Color(0xFFF3E5F5)]
-                ),
-                (
-                  l10n.bgBlossom,
-                  'blossom',
-                  [const Color(0xFF1F050B), const Color(0xFF3D0F19)],
-                  [const Color(0xFFFFEBEE), const Color(0xFFFCE4EC)]
-                ),
-              ].map((c) {
-                final isSelected = settingsState.backgroundColor == c.$2;
-                final isDark = theme.brightness == fluent.Brightness.dark;
-                final colors = isDark ? c.$3 : c.$4;
-
-                return fluent.Tooltip(
-                  message: c.$1,
-                  child: GestureDetector(
-                    onTap: () {
-                      ref
-                          .read(settingsProvider.notifier)
-                          .setBackgroundColor(c.$2);
-                    },
-                    child: Container(
-                      width: 48,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: colors.length == 1 ? colors.first : null,
-                        gradient: colors.length > 1
-                            ? LinearGradient(
-                                colors: colors,
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              )
-                            : null,
-                        borderRadius: BorderRadius.circular(4),
-                        border: isSelected
-                            ? Border.all(
-                                color: theme.accentColor,
-                                width: 2,
-                              )
-                            : Border.all(
-                                color:
-                                    fluent.Colors.grey.withValues(alpha: 0.3),
-                              ),
-                      ),
-                      child: isSelected
-                          ? Icon(AuroraIcons.check,
-                              size: 16,
-                              color: isDark ? Colors.white : Colors.black)
-                          : null,
+            child: Opacity(
+              opacity: hasCustomBackground ? 0.45 : 1.0,
+              child: IgnorePointer(
+                ignoring: hasCustomBackground,
+                child: Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: [
+                    (
+                      l10n.bgDefault,
+                      'default',
+                      [const Color(0xFF2B2B2B)],
+                      [const Color(0xFFE0F7FA), const Color(0xFFF1F8E9)]
                     ),
-                  ),
-                );
-              }).toList(),
+                    (
+                      l10n.bgPureBlack,
+                      'pure_black',
+                      [const Color(0xFF000000)],
+                      [const Color(0xFFFFFFFF)]
+                    ),
+                    (
+                      l10n.bgWarm,
+                      'warm',
+                      [const Color(0xFF1E1C1A), const Color(0xFF2E241E)],
+                      [const Color(0xFFFFF8E1), const Color(0xFFFFF3E0)]
+                    ),
+                    (
+                      l10n.bgCool,
+                      'cool',
+                      [const Color(0xFF1A1C1E), const Color(0xFF1E252E)],
+                      [const Color(0xFFE1F5FE), const Color(0xFFE3F2FD)]
+                    ),
+                    (
+                      l10n.bgRose,
+                      'rose',
+                      [const Color(0xFF2D1A1E), const Color(0xFF3B1E26)],
+                      [const Color(0xFFFCE4EC), const Color(0xFFFFEBEE)]
+                    ),
+                    (
+                      l10n.bgLavender,
+                      'lavender',
+                      [const Color(0xFF1F1A2D), const Color(0xFF261E3B)],
+                      [const Color(0xFFF3E5F5), const Color(0xFFEDE7F6)]
+                    ),
+                    (
+                      l10n.bgMint,
+                      'mint',
+                      [const Color(0xFF1A2D24), const Color(0xFF1E3B2E)],
+                      [const Color(0xFFE0F2F1), const Color(0xFFE8F5E9)]
+                    ),
+                    (
+                      l10n.bgSky,
+                      'sky',
+                      [const Color(0xFF1A202D), const Color(0xFF1E263B)],
+                      [const Color(0xFFE0F7FA), const Color(0xFFE1F5FE)]
+                    ),
+                    (
+                      l10n.bgGray,
+                      'gray',
+                      [const Color(0xFF1E1E1E), const Color(0xFF2C2C2C)],
+                      [const Color(0xFFFAFAFA), const Color(0xFFF5F5F5)]
+                    ),
+                    (
+                      l10n.bgSunset,
+                      'sunset',
+                      [const Color(0xFF1A0B0E), const Color(0xFF4A1F28)],
+                      [const Color(0xFFFFF3E0), const Color(0xFFFBE9E7)]
+                    ),
+                    (
+                      l10n.bgOcean,
+                      'ocean',
+                      [const Color(0xFF05101A), const Color(0xFF0D2B42)],
+                      [const Color(0xFFE3F2FD), const Color(0xFFE8EAF6)]
+                    ),
+                    (
+                      l10n.bgForest,
+                      'forest',
+                      [const Color(0xFF051408), const Color(0xFF0E3316)],
+                      [const Color(0xFFE8F5E9), const Color(0xFFF1F8E9)]
+                    ),
+                    (
+                      l10n.bgDream,
+                      'dream',
+                      [const Color(0xFF120817), const Color(0xFF261233)],
+                      [const Color(0xFFEDE7F6), const Color(0xFFE8EAF6)]
+                    ),
+                    (
+                      l10n.bgAurora,
+                      'aurora',
+                      [const Color(0xFF051715), const Color(0xFF181533)],
+                      [const Color(0xFFE0F2F1), const Color(0xFFEDE7F6)]
+                    ),
+                    (
+                      l10n.bgVolcano,
+                      'volcano',
+                      [const Color(0xFF1F0808), const Color(0xFF3E1212)],
+                      [const Color(0xFFFBE9E7), const Color(0xFFFFEBEE)]
+                    ),
+                    (
+                      l10n.bgMidnight,
+                      'midnight',
+                      [const Color(0xFF020205), const Color(0xFF141426)],
+                      [const Color(0xFFECEFF1), const Color(0xFFFAFAFA)]
+                    ),
+                    (
+                      l10n.bgDawn,
+                      'dawn',
+                      [const Color(0xFF141005), const Color(0xFF33260D)],
+                      [const Color(0xFFFFFDE7), const Color(0xFFFFF8E1)]
+                    ),
+                    (
+                      l10n.bgNeon,
+                      'neon',
+                      [const Color(0xFF08181A), const Color(0xFF240C21)],
+                      [const Color(0xFFE0F7FA), const Color(0xFFF3E5F5)]
+                    ),
+                    (
+                      l10n.bgBlossom,
+                      'blossom',
+                      [const Color(0xFF1F050B), const Color(0xFF3D0F19)],
+                      [const Color(0xFFFFEBEE), const Color(0xFFFCE4EC)]
+                    ),
+                  ].map((c) {
+                    final isSelected = settingsState.backgroundColor == c.$2;
+                    final isDark = theme.brightness == fluent.Brightness.dark;
+                    final colors = isDark ? c.$3 : c.$4;
+
+                    return fluent.Tooltip(
+                      message: c.$1,
+                      child: GestureDetector(
+                        onTap: () {
+                          ref
+                              .read(settingsProvider.notifier)
+                              .setBackgroundColor(c.$2);
+                        },
+                        child: Container(
+                          width: 48,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: colors.length == 1 ? colors.first : null,
+                            gradient: colors.length > 1
+                                ? LinearGradient(
+                                    colors: colors,
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  )
+                                : null,
+                            borderRadius: BorderRadius.circular(4),
+                            border: isSelected
+                                ? Border.all(
+                                    color: theme.accentColor,
+                                    width: 2,
+                                  )
+                                : Border.all(
+                                    color: fluent.Colors.grey
+                                        .withValues(alpha: 0.3),
+                                  ),
+                          ),
+                          child: isSelected
+                              ? Icon(AuroraIcons.check,
+                                  size: 16,
+                                  color: isDark ? Colors.white : Colors.black)
+                              : null,
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
             ),
           ),
           const SizedBox(height: 24),

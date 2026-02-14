@@ -142,6 +142,11 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
       settingsState.backgroundColor,
       isDark: isDark,
     );
+    final customThemeEnabled =
+        settingsState.useCustomTheme || settingsState.themeMode == 'custom';
+    final hasCustomBackground = customThemeEnabled &&
+        settingsState.backgroundImagePath != null &&
+        settingsState.backgroundImagePath!.isNotEmpty;
     final bool isSpecialView = _isSpecialKey(_currentViewKey);
     final bool isFirstRoute = ModalRoute.of(context)?.isFirst ?? true;
     final bool canPop = _isDrawerOpen ||
@@ -174,10 +179,7 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
       },
       child: Stack(
         children: [
-          if (backgroundGradient != null &&
-              (!settingsState.useCustomTheme ||
-                  settingsState.backgroundImagePath == null ||
-                  settingsState.backgroundImagePath!.isEmpty))
+          if (backgroundGradient != null && !hasCustomBackground)
             Positioned.fill(
               child: Container(
                 decoration: BoxDecoration(
@@ -523,17 +525,23 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
 
   void _cycleTheme() {
     final l10n = AppLocalizations.of(context)!;
-    final current = ref.read(settingsProvider).themeMode;
+    final settings = ref.read(settingsProvider);
+    final current = settings.useCustomTheme || settings.themeMode == 'custom'
+        ? 'custom'
+        : settings.themeMode;
     String next;
     switch (current) {
-      case 'custom':
-        next = 'light';
-        break;
       case 'light':
         next = 'dark';
         break;
-      default:
+      case 'dark':
         next = 'custom';
+        break;
+      case 'custom':
+        next = 'light';
+        break;
+      default:
+        next = 'light';
     }
     ref.read(settingsProvider.notifier).setThemeMode(next);
     final modeLabel = next == 'light'
@@ -585,4 +593,3 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
     );
   }
 }
-

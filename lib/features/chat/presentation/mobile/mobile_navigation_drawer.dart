@@ -221,7 +221,19 @@ class MobileNavigationDrawer extends ConsumerWidget {
                         Expanded(
                           child: _MobileDrawerNavItem(
                             icon: _getThemeIcon(
-                                ref.watch(settingsProvider).themeMode),
+                              (() {
+                                final themeState = ref.watch(
+                                  settingsProvider.select((s) => (
+                                        useCustomTheme: s.useCustomTheme,
+                                        themeMode: s.themeMode,
+                                      )),
+                                );
+                                return themeState.useCustomTheme ||
+                                        themeState.themeMode == 'custom'
+                                    ? 'custom'
+                                    : themeState.themeMode;
+                              })(),
+                            ),
                             label: AppLocalizations.of(context)!.theme,
                             onTap: onThemeCycle,
                           ),
@@ -290,7 +302,7 @@ class MobileNavigationDrawer extends ConsumerWidget {
       case 'custom':
         return AuroraIcons.image;
       default:
-        return AuroraIcons.image;
+        return AuroraIcons.themeAuto;
     }
   }
 }
@@ -329,4 +341,3 @@ class _MobileDrawerNavItem extends StatelessWidget {
     );
   }
 }
-

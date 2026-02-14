@@ -969,11 +969,14 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
   }
 
   Future<void> toggleThemeMode() async {
-    final current = state.themeMode;
+    final current = state.useCustomTheme || state.themeMode == 'custom'
+        ? 'custom'
+        : state.themeMode;
     final next = switch (current) {
-      'custom' => 'light',
       'light' => 'dark',
-      _ => 'custom',
+      'dark' => 'custom',
+      'custom' => 'light',
+      _ => 'light',
     };
     await setThemeMode(next);
   }
@@ -1396,4 +1399,3 @@ final settingsInitialStateProvider = Provider<SettingsState>((ref) {
   throw UnimplementedError();
 });
 final settingsPageIndexProvider = StateProvider<int>((ref) => 0);
-
