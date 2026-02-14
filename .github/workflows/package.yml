@@ -40,6 +40,23 @@ jobs:
           echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "Detected Version: $VERSION_RAW"
 
+      - name: Validate Android Signing Secrets
+        if: startsWith(github.ref, 'refs/tags/v') && secrets.ANDROID_KEYSTORE_BASE64 == ''
+        run: |
+          echo "::error::Missing Android signing secrets. Set ANDROID_KEYSTORE_BASE64/ANDROID_KEYSTORE_PASSWORD/ANDROID_KEY_ALIAS/ANDROID_KEY_PASSWORD in repository secrets."
+          exit 1
+
+      - name: Setup Android Signing
+        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+        run: |
+          printf '%s' "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/upload-keystore.jks
+          cat > android/key.properties <<'EOF'
+          storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
+          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
+          storeFile=upload-keystore.jks
+          EOF
+
       - name: Build Android APKs
         run: |
           mkdir -p "release_symbols/${VERSION_RAW}/android"
