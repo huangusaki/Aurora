@@ -1070,12 +1070,8 @@ class _MobileNovelWritingPageState extends ConsumerState<MobileNovelWritingPage>
 
   Widget _buildProjectKnowledgeCard(BuildContext context, AppLocalizations l10n,
       ThemeData theme, NovelWritingState state, NovelNotifier notifier) {
-    final projectOnlyHint = Localizations.localeOf(context).languageCode == 'zh'
-        ? '该知识库仅用于当前项目写作，不会应用在对话中。'
-        : 'This knowledge base is project-only and never applied in chat.';
-    final importingLabel = Localizations.localeOf(context).languageCode == 'zh'
-        ? '导入中...'
-        : 'Importing...';
+    final projectOnlyHint = l10n.projectOnlyKnowledgeBaseHint;
+    final importingLabel = l10n.importingEllipsis;
 
     return AuroraCard(
       borderRadius: _cardRadius,

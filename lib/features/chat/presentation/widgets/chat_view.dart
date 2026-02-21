@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 
 import 'package:aurora/shared/riverpod_compat.dart';
 import 'package:file_selector/file_selector.dart';
+import 'package:aurora/l10n/app_localizations.dart';
 
 import 'package:super_clipboard/super_clipboard.dart';
 import 'package:image_picker/image_picker.dart';
@@ -156,8 +157,8 @@ class ChatViewState extends ConsumerState<ChatView> {
   }
 
   Future<void> _pickFiles() async {
-    const XTypeGroup typeGroup = XTypeGroup(
-      label: 'All supported files',
+    final typeGroup = XTypeGroup(
+      label: AppLocalizations.of(context)!.selectFile,
       extensions: <String>[
         // Images
         'jpg', 'png', 'jpeg', 'bmp', 'gif', 'webp',

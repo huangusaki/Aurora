@@ -18,8 +18,6 @@ class _MobileStudioPageState extends State<MobileStudioPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
-    final isZh =
-        Localizations.localeOf(context).languageCode.toLowerCase() == 'zh';
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -86,7 +84,7 @@ class _MobileStudioPageState extends State<MobileStudioPage> {
                 _buildFeatureCard(
                   context,
                   icon: AuroraIcons.broom,
-                  title: isZh ? '智能清理' : 'AI Cleanup',
+                  title: l10n.cleanerTitle,
                   onTap: () {
                     Navigator.push(
                       context,

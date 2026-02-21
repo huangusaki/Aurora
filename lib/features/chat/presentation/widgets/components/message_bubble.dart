@@ -71,8 +71,10 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
 
   bool _isPasting = false;
   Future<void> _pickFiles() async {
-    const typeGroup = XTypeGroup(
-        label: 'images', extensions: ['jpg', 'png', 'jpeg', 'bmp', 'gif']);
+    final typeGroup = XTypeGroup(
+      label: AppLocalizations.of(context)!.images,
+      extensions: ['jpg', 'png', 'jpeg', 'bmp', 'gif'],
+    );
     final files = await openFiles(acceptedTypeGroups: [typeGroup]);
     if (files.isEmpty) return;
     final newPaths = files
@@ -657,7 +659,6 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
                                           message.tokenCount! > 0) ...[
                                         Builder(builder: (context) {
                                           final total = message.tokenCount!;
-
                                           final tokenText =
                                               formatFullTokenCount(total);
 

@@ -40,8 +40,6 @@ class _StudioContentState extends ConsumerState<StudioContent> {
 
     final theme = FluentTheme.of(context);
     final l10n = AppLocalizations.of(context)!;
-    final isZh =
-        Localizations.localeOf(context).languageCode.toLowerCase() == 'zh';
     final settings = ref.watch(settingsProvider);
     final hasBackground = settings.useCustomTheme &&
         settings.backgroundImagePath != null &&
@@ -91,10 +89,8 @@ class _StudioContentState extends ConsumerState<StudioContent> {
                   _buildFeatureCard(
                     context,
                     icon: AuroraIcons.broom,
-                    title: isZh ? '智能清理' : 'AI Cleanup',
-                    description: isZh
-                        ? '扫描可访问目录并给出 AI 删除建议'
-                        : 'Scan accessible files and get AI cleanup advice',
+                    title: l10n.cleanerTitle,
+                    description: l10n.cleanerRuleAiPolicySubtitle,
                     hasBackground: hasBackground,
                     onTap: () {
                       setState(() {

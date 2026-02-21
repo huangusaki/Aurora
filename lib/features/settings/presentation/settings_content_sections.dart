@@ -969,12 +969,12 @@ extension _SettingsContentSections on _SettingsContentState {
                 fluent.Button(
                   child: Text(l10n.selectImage),
                   onPressed: () async {
+                    final imageTypeGroup = XTypeGroup(
+                      label: l10n.images,
+                      extensions: const ['png', 'jpg', 'jpeg', 'gif', 'webp'],
+                    );
                     final result = await openFile(
-                      acceptedTypeGroups: [
-                        const XTypeGroup(
-                            label: 'Images',
-                            extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp']),
-                      ],
+                      acceptedTypeGroups: [imageTypeGroup],
                     );
                     if (result != null) {
                       if (!mounted) return;
@@ -1050,12 +1050,12 @@ extension _SettingsContentSections on _SettingsContentState {
                 fluent.Button(
                   child: Text(l10n.selectImage),
                   onPressed: () async {
+                    final imageTypeGroup = XTypeGroup(
+                      label: l10n.images,
+                      extensions: const ['png', 'jpg', 'jpeg', 'gif', 'webp'],
+                    );
                     final result = await openFile(
-                      acceptedTypeGroups: [
-                        const XTypeGroup(
-                            label: 'Images',
-                            extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp']),
-                      ],
+                      acceptedTypeGroups: [imageTypeGroup],
                     );
                     if (result != null) {
                       if (!mounted) return;
@@ -1610,9 +1610,9 @@ extension _SettingsContentSections on _SettingsContentState {
                   children: [
                     fluent.Button(
                       onPressed: () async {
-                        const typeGroup = XTypeGroup(
-                          label: 'images',
-                          extensions: ['jpg', 'png', 'jpeg', 'webp'],
+                        final typeGroup = XTypeGroup(
+                          label: l10n.images,
+                          extensions: const ['jpg', 'png', 'jpeg', 'webp'],
                         );
                         final file =
                             await openFile(acceptedTypeGroups: [typeGroup]);

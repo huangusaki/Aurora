@@ -551,7 +551,6 @@ class _MergedMessageBubbleState extends ConsumerState<MergedMessageBubble>
                 if (message.tokenCount != null && message.tokenCount! > 0) ...[
                   Builder(builder: (context) {
                     final total = message.tokenCount!;
-
                     final tokenText = formatFullTokenCount(total);
 
                     return Text(

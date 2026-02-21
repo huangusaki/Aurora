@@ -310,6 +310,7 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
         titleSpacing: 0,
         title: Consumer(
           builder: (context, ref, _) {
+            final l10n = AppLocalizations.of(context)!;
             final currentSettings = ref.watch(settingsProvider);
             final sessionsState = ref.watch(sessionsProvider);
             String dynamicTitle = sessionTitle;
@@ -379,8 +380,7 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
                             Flexible(
                               child: Text(
                                 currentSettings.selectedModel ??
-                                    AppLocalizations.of(context)!
-                                        .modelNotSelected,
+                                    l10n.modelNotSelected,
                                 style: TextStyle(
                                     fontSize: 13, color: Colors.grey[600]),
                                 overflow: TextOverflow.ellipsis,

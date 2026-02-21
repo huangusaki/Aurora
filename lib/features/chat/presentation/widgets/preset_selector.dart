@@ -16,6 +16,8 @@ class PresetSelector extends ConsumerStatefulWidget {
 }
 
 class _PresetSelectorState extends ConsumerState<PresetSelector> {
+  static const int _desktopSettingsTabIndex = 4;
+  static const int _presetSettingsPageIndex = 4;
   final LayerLink _layerLink = LayerLink();
   OverlayEntry? _overlayEntry;
   bool _isOpen = false;
@@ -113,8 +115,10 @@ class _PresetSelectorState extends ConsumerState<PresetSelector> {
     items.add(ColoredDropdownItem(
       onPressed: () {
         _removeOverlay();
-        ref.read(desktopActiveTabProvider.notifier).state = 4;
-        ref.read(settingsPageIndexProvider.notifier).state = 2;
+        ref.read(desktopActiveTabProvider.notifier).state =
+            _desktopSettingsTabIndex;
+        ref.read(settingsPageIndexProvider.notifier).state =
+            _presetSettingsPageIndex;
       },
       child: Row(
         children: [
