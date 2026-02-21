@@ -842,38 +842,42 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
                           children: [
                             MobileActionButton(
                               icon: AuroraIcons.retry,
-                              color:
-                                  (settingsState.backgroundImagePath != null &&
-                                          settingsState
-                                              .backgroundImagePath!.isNotEmpty)
-                                      ? Colors.white.withValues(alpha: 0.7)
-                                      : null,
+                              color: (settingsState.useCustomTheme &&
+                                      settingsState.backgroundImagePath !=
+                                          null &&
+                                      settingsState
+                                          .backgroundImagePath!.isNotEmpty)
+                                  ? Colors.white.withValues(alpha: 0.7)
+                                  : null,
                               onPressed: () => _handleAction('retry'),
                             ),
                             MobileActionButton(
                               icon: AuroraIcons.edit,
-                              color:
-                                  (settingsState.backgroundImagePath != null &&
-                                          settingsState
-                                              .backgroundImagePath!.isNotEmpty)
-                                      ? Colors.white.withValues(alpha: 0.7)
-                                      : null,
+                              color: (settingsState.useCustomTheme &&
+                                      settingsState.backgroundImagePath !=
+                                          null &&
+                                      settingsState
+                                          .backgroundImagePath!.isNotEmpty)
+                                  ? Colors.white.withValues(alpha: 0.7)
+                                  : null,
                               onPressed: () => _handleAction('edit'),
                             ),
                             MobileActionButton(
                               icon: AuroraIcons.copy,
-                              color:
-                                  (settingsState.backgroundImagePath != null &&
-                                          settingsState
-                                              .backgroundImagePath!.isNotEmpty)
-                                      ? Colors.white.withValues(alpha: 0.7)
-                                      : null,
+                              color: (settingsState.useCustomTheme &&
+                                      settingsState.backgroundImagePath !=
+                                          null &&
+                                      settingsState
+                                          .backgroundImagePath!.isNotEmpty)
+                                  ? Colors.white.withValues(alpha: 0.7)
+                                  : null,
                               onPressed: () => _handleAction('copy'),
                             ),
                             if (!isUser)
                               MobileActionButton(
                                 icon: AuroraIcons.branch,
-                                color: (settingsState.backgroundImagePath !=
+                                color: (settingsState.useCustomTheme &&
+                                        settingsState.backgroundImagePath !=
                                             null &&
                                         settingsState
                                             .backgroundImagePath!.isNotEmpty)
@@ -883,12 +887,13 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
                               ),
                             MobileActionButton(
                               icon: AuroraIcons.delete,
-                              color:
-                                  (settingsState.backgroundImagePath != null &&
-                                          settingsState
-                                              .backgroundImagePath!.isNotEmpty)
-                                      ? Colors.white.withValues(alpha: 0.7)
-                                      : null,
+                              color: (settingsState.useCustomTheme &&
+                                      settingsState.backgroundImagePath !=
+                                          null &&
+                                      settingsState
+                                          .backgroundImagePath!.isNotEmpty)
+                                  ? Colors.white.withValues(alpha: 0.7)
+                                  : null,
                               onPressed: () => _handleAction('delete'),
                             ),
                           ],
@@ -989,4 +994,3 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
     );
   }
 }
-
