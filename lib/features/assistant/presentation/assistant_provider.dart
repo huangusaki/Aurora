@@ -140,7 +140,3 @@ final assistantProvider =
   return AssistantNotifier(ref);
 });
 
-final selectedAssistantProvider = Provider<Assistant?>((ref) {
-  return ref.watch(assistantProvider).selectedAssistant;
-});
-

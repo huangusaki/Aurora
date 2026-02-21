@@ -1395,7 +1395,4 @@ final settingsProvider =
   throw UnimplementedError(
       'settingsProvider must be overridden or dependencies provided');
 });
-final settingsInitialStateProvider = Provider<SettingsState>((ref) {
-  throw UnimplementedError();
-});
 final settingsPageIndexProvider = StateProvider<int>((ref) => 0);

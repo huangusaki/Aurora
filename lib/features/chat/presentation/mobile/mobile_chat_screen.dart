@@ -13,7 +13,6 @@ import '../../../settings/presentation/mobile_user_page.dart';
 import '../../../settings/presentation/mobile_app_settings_page.dart';
 import '../../../sync/presentation/mobile_sync_settings_page.dart';
 import '../mobile_translation_page.dart';
-import '../widgets/cached_page_stack.dart';
 import 'mobile_navigation_drawer.dart';
 import '../../../assistant/presentation/mobile_assistant_page.dart';
 import '../../../studio/presentation/pages/mobile_studio_page.dart';
@@ -235,43 +234,12 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
                       : viewInsets;
                   return MediaQuery(
                     data: mediaQuery.copyWith(viewInsets: frozenViewInsets),
-                    child: CachedPageStack(
-                      selectedKey: _currentViewKey,
-                      cacheSize: 10,
-                      itemBuilder: (context, key) {
-                        if (key == keySettings) {
-                          return MobileSettingsPage(
-                              onBack: _navigateBackToSession);
-                        } else if (key == keyAppSettings) {
-                          return MobileAppSettingsPage(
-                              onBack: _navigateBackToSession);
-                        } else if (key == keyTranslation) {
-                          return MobileTranslationPage(
-                              onBack: _navigateBackToSession);
-                        } else if (key == keyUser) {
-                          return MobileUserPage(onBack: _navigateBackToSession);
-                        } else if (key == keyStudio) {
-                          return MobileStudioPage(
-                              onBack: _navigateBackToSession);
-                        } else if (key == keyBackup) {
-                          return MobileSyncSettingsPage(
-                              onBack: _navigateBackToSession);
-                        } else if (key == keyAssistant) {
-                          return MobileAssistantPage(
-                              onBack: _navigateBackToSession);
-                        } else {
-                          return _buildSessionPage(
-                            context,
-                            key,
-                            sessionTitle,
-                            settingsState,
-                            sessionsState,
-                            selectedSessionId,
-                            isDark,
-                            freezeKeyboardInsets: _isDrawerOpen,
-                          );
-                        }
-                      },
+                    child: _buildPageForKey(
+                      context,
+                      key: _currentViewKey,
+                      sessionTitle: sessionTitle,
+                      isDark: isDark,
+                      freezeKeyboardInsets: _isDrawerOpen,
                     ),
                   );
                 },
@@ -283,13 +251,42 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
     );
   }
 
+  Widget _buildPageForKey(
+    BuildContext context, {
+    required String key,
+    required String sessionTitle,
+    required bool isDark,
+    required bool freezeKeyboardInsets,
+  }) {
+    if (key == keySettings) {
+      return MobileSettingsPage(onBack: _navigateBackToSession);
+    } else if (key == keyAppSettings) {
+      return MobileAppSettingsPage(onBack: _navigateBackToSession);
+    } else if (key == keyTranslation) {
+      return MobileTranslationPage(onBack: _navigateBackToSession);
+    } else if (key == keyUser) {
+      return MobileUserPage(onBack: _navigateBackToSession);
+    } else if (key == keyStudio) {
+      return MobileStudioPage(onBack: _navigateBackToSession);
+    } else if (key == keyBackup) {
+      return MobileSyncSettingsPage(onBack: _navigateBackToSession);
+    } else if (key == keyAssistant) {
+      return MobileAssistantPage(onBack: _navigateBackToSession);
+    }
+
+    return _buildSessionPage(
+      context,
+      key,
+      sessionTitle,
+      isDark,
+      freezeKeyboardInsets: freezeKeyboardInsets,
+    );
+  }
+
   Widget _buildSessionPage(
     BuildContext context,
     String sessionId,
     String sessionTitle,
-    SettingsState settingsState,
-    SessionsState sessionsState,
-    String? selectedSessionId,
     bool isDark, {
     bool freezeKeyboardInsets = false,
   }) {

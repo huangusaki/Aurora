@@ -201,7 +201,7 @@ class _AssistantContentState extends ConsumerState<AssistantContent> {
         onBack: () {
           // This depends on how the parent handles navigation,
           // but usually on mobile we want to pop or go back to session list.
-          // Since it's in a CachedPageStack, the parent should handle it.
+          // Parent navigation should handle this callback.
         },
       );
     }
@@ -679,4 +679,3 @@ class _AssistantContentState extends ConsumerState<AssistantContent> {
     );
   }
 }
-

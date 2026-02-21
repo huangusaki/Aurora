@@ -54,19 +54,9 @@ final historyChatProvider = Provider<ChatNotifier>((ref) {
   }
   return manager.getOrCreate(sessionId);
 });
-final historyChatStateProvider = Provider<ChatState>((ref) {
-  final notifier = ref.watch(historyChatProvider);
-  ref.watch(chatStateUpdateTriggerProvider);
-  return notifier.currentState;
-});
 final chatSessionNotifierProvider =
     Provider.family<ChatNotifier, String>((ref, sessionId) {
   final manager = ref.watch(chatSessionManagerProvider);
   ref.watch(chatStateUpdateTriggerProvider);
   return manager.getOrCreate(sessionId);
-});
-
-final chatProvider = StateNotifierProvider<ChatNotifier, ChatState>((ref) {
-  final storage = ref.watch(chatStorageProvider);
-  return ChatNotifier(ref: ref, storage: storage, sessionId: 'chat');
 });
