@@ -140,6 +140,13 @@ class _ModelSelectorState extends ConsumerState<ModelSelector> {
 
     if (widget.isWindows) {
       final theme = fluent.FluentTheme.of(context);
+      final textStyle = theme.typography.body?.copyWith(
+        fontSize: 13,
+        fontWeight: FontWeight.w500,
+      );
+      final secondaryTextStyle = textStyle?.copyWith(
+        color: theme.typography.caption?.color,
+      );
       return CompositedTransformTarget(
         link: _layerLink,
         child: fluent.HoverButton(
@@ -160,23 +167,17 @@ class _ModelSelectorState extends ConsumerState<ModelSelector> {
                     width: 200,
                     child: fluent.Text(
                       selected ?? AppLocalizations.of(context)!.selectModel,
-                      style: const TextStyle(fontWeight: FontWeight.w500),
+                      style: textStyle,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   if (activeProvider.name.isNotEmpty) ...[
                     const SizedBox(width: 8),
-                    fluent.Text('|',
-                        style: TextStyle(
-                            color: fluent.Colors.grey.withValues(alpha: 0.5))),
+                    fluent.Text('|', style: secondaryTextStyle),
                     const SizedBox(width: 8),
                     fluent.Text(
                       activeProvider.name.toUpperCase(),
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: theme.typography.caption?.color,
-                        fontSize: 10,
-                      ),
+                      style: secondaryTextStyle,
                     ),
                   ],
                   const SizedBox(width: 4),
@@ -302,4 +303,3 @@ class _ModelSelectorState extends ConsumerState<ModelSelector> {
     );
   }
 }
-

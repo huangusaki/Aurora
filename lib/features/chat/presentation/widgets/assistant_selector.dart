@@ -115,7 +115,8 @@ class _AssistantSelectorState extends ConsumerState<AssistantSelector> {
                   if (assistant.description.isNotEmpty)
                     Text(assistant.description,
                         style: TextStyle(
-                            fontSize: 10, color: theme.typography.caption?.color),
+                            fontSize: 10,
+                            color: theme.typography.caption?.color),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis),
                 ],
@@ -132,6 +133,10 @@ class _AssistantSelectorState extends ConsumerState<AssistantSelector> {
   @override
   Widget build(BuildContext context) {
     final theme = fluent.FluentTheme.of(context);
+    final textStyle = theme.typography.body?.copyWith(
+      fontSize: 13,
+      fontWeight: FontWeight.w500,
+    );
     final l10n = AppLocalizations.of(context)!;
     final selectedId = ref.watch(assistantProvider).selectedAssistantId;
     final assistants = ref.watch(assistantProvider).assistants;
@@ -163,8 +168,7 @@ class _AssistantSelectorState extends ConsumerState<AssistantSelector> {
                   constraints: const BoxConstraints(maxWidth: 120),
                   child: fluent.Text(
                     selectedAssistant?.name ?? l10n.defaultAssistant,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.w500, fontSize: 13),
+                    style: textStyle,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -181,4 +185,3 @@ class _AssistantSelectorState extends ConsumerState<AssistantSelector> {
     );
   }
 }
-
