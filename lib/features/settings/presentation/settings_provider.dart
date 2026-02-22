@@ -221,6 +221,7 @@ class SettingsState {
   final List<String> activeKnowledgeBaseIds;
   final bool enableSmartTopic;
   final String? topicGenerationModel;
+  final bool restoreLastSessionOnLaunch;
   final String language;
   final List<ChatPreset> presets;
   final String? lastPresetId;
@@ -266,6 +267,7 @@ class SettingsState {
     this.activeKnowledgeBaseIds = const [],
     this.enableSmartTopic = true,
     this.topicGenerationModel,
+    this.restoreLastSessionOnLaunch = true,
     this.language = 'zh',
     this.presets = const [],
     this.lastPresetId,
@@ -319,6 +321,7 @@ class SettingsState {
     List<String>? activeKnowledgeBaseIds,
     bool? enableSmartTopic,
     String? topicGenerationModel,
+    bool? restoreLastSessionOnLaunch,
     String? language,
     List<ChatPreset>? presets,
     Object? lastPresetId = _settingsSentinel,
@@ -379,6 +382,8 @@ class SettingsState {
           activeKnowledgeBaseIds ?? this.activeKnowledgeBaseIds,
       enableSmartTopic: enableSmartTopic ?? this.enableSmartTopic,
       topicGenerationModel: topicGenerationModel ?? this.topicGenerationModel,
+      restoreLastSessionOnLaunch:
+          restoreLastSessionOnLaunch ?? this.restoreLastSessionOnLaunch,
       language: language ?? this.language,
       presets: presets ?? this.presets,
       lastPresetId: lastPresetId == _settingsSentinel
@@ -473,6 +478,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     List<String> activeKnowledgeBaseIds = const [],
     bool enableSmartTopic = true,
     String? topicGenerationModel,
+    bool restoreLastSessionOnLaunch = true,
     String language = 'zh',
     String themeColor = 'teal',
     String backgroundColor = 'default',
@@ -515,6 +521,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
           activeKnowledgeBaseIds: activeKnowledgeBaseIds,
           enableSmartTopic: enableSmartTopic,
           topicGenerationModel: topicGenerationModel,
+          restoreLastSessionOnLaunch: restoreLastSessionOnLaunch,
           language: language,
           presets: [],
           themeColor: themeColor,
@@ -1125,6 +1132,14 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     await _storage.saveAppSettings(
       activeProviderId: state.activeProviderId,
       enableSmartTopic: enabled,
+    );
+  }
+
+  Future<void> toggleRestoreLastSessionOnLaunch(bool enabled) async {
+    state = state.copyWith(restoreLastSessionOnLaunch: enabled);
+    await _storage.saveAppSettings(
+      activeProviderId: state.activeProviderId,
+      restoreLastSessionOnLaunch: enabled,
     );
   }
 

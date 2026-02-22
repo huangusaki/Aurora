@@ -98,6 +98,7 @@ extension _SettingsContentSections on _SettingsContentState {
     );
     // controller.dispose is tricky in functional dialogs, letting GC handle or ignoring for now
   }
+
   Widget _buildSectionCard(BuildContext context, {required Widget child}) {
     final theme = fluent.FluentTheme.of(context);
     return Container(
@@ -421,92 +422,96 @@ extension _SettingsContentSections on _SettingsContentState {
                           ),
                         ],
                       ),
-                    const SizedBox(height: 8),
-                    if (viewingProvider.apiKeys.isEmpty)
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          border: Border.all(
-                              color: fluent.Colors.grey.withValues(alpha: 0.3)),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Row(
-                          children: [
-                            fluent.Icon(AuroraIcons.info,
-                                size: 14, color: fluent.Colors.grey),
-                            const SizedBox(width: 8),
-                            fluent.Text(l10n.noModelsData,
-                                style: TextStyle(color: fluent.Colors.grey)),
-                          ],
-                        ),
-                      )
-                    else
-                      ...viewingProvider.apiKeys.asMap().entries.map((entry) {
-                        final index = entry.key;
-                        final key = entry.value;
-                        final isCurrent =
-                            index == viewingProvider.safeCurrentKeyIndex;
+                      const SizedBox(height: 8),
+                      if (viewingProvider.apiKeys.isEmpty)
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                                color:
+                                    fluent.Colors.grey.withValues(alpha: 0.3)),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Row(
+                            children: [
+                              fluent.Icon(AuroraIcons.info,
+                                  size: 14, color: fluent.Colors.grey),
+                              const SizedBox(width: 8),
+                              fluent.Text(l10n.noModelsData,
+                                  style: TextStyle(color: fluent.Colors.grey)),
+                            ],
+                          ),
+                        )
+                      else
+                        ...viewingProvider.apiKeys.asMap().entries.map((entry) {
+                          final index = entry.key;
+                          final key = entry.value;
+                          final isCurrent =
+                              index == viewingProvider.safeCurrentKeyIndex;
 
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: apiKeyCardBg,
-                              borderRadius: BorderRadius.circular(4),
-                              border: Border.all(
-                                color: isCurrent
-                                    ? fluent.FluentTheme.of(context).accentColor
-                                    : Colors.transparent,
-                                width: 1,
-                              ),
-                            ),
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 6),
-                            child: Row(
-                              children: [
-                                fluent.RadioButton(
-                                  checked: isCurrent,
-                                  onChanged: (checked) {
-                                    if (checked == true) {
-                                      ref
-                                          .read(settingsProvider.notifier)
-                                          .setCurrentKeyIndex(
-                                              viewingProvider.id, index);
-                                    }
-                                  },
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: apiKeyCardBg,
+                                borderRadius: BorderRadius.circular(4),
+                                border: Border.all(
+                                  color: isCurrent
+                                      ? fluent.FluentTheme.of(context)
+                                          .accentColor
+                                      : Colors.transparent,
+                                  width: 1,
                                 ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: _ApiKeyItem(
-                                    key: ValueKey(
-                                        '${viewingProvider.id}_$index'),
-                                    apiKey: key,
-                                    onUpdate: (value) {
-                                      ref
-                                          .read(settingsProvider.notifier)
-                                          .updateApiKeyAtIndex(
-                                              viewingProvider.id, index, value);
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 6),
+                              child: Row(
+                                children: [
+                                  fluent.RadioButton(
+                                    checked: isCurrent,
+                                    onChanged: (checked) {
+                                      if (checked == true) {
+                                        ref
+                                            .read(settingsProvider.notifier)
+                                            .setCurrentKeyIndex(
+                                                viewingProvider.id, index);
+                                      }
                                     },
                                   ),
-                                ),
-                                const SizedBox(width: 4),
-                                fluent.IconButton(
-                                  icon: fluent.Icon(AuroraIcons.delete,
-                                      size: 14,
-                                      color: fluent.Colors.red
-                                          .withValues(alpha: 0.7)),
-                                  onPressed: () {
-                                    ref
-                                        .read(settingsProvider.notifier)
-                                        .removeApiKey(
-                                            viewingProvider.id, index);
-                                  },
-                                ),
-                              ],
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: _ApiKeyItem(
+                                      key: ValueKey(
+                                          '${viewingProvider.id}_$index'),
+                                      apiKey: key,
+                                      onUpdate: (value) {
+                                        ref
+                                            .read(settingsProvider.notifier)
+                                            .updateApiKeyAtIndex(
+                                                viewingProvider.id,
+                                                index,
+                                                value);
+                                      },
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  fluent.IconButton(
+                                    icon: fluent.Icon(AuroraIcons.delete,
+                                        size: 14,
+                                        color: fluent.Colors.red
+                                            .withValues(alpha: 0.7)),
+                                    onPressed: () {
+                                      ref
+                                          .read(settingsProvider.notifier)
+                                          .removeApiKey(
+                                              viewingProvider.id, index);
+                                    },
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                        );
-                      }),
+                          );
+                        }),
                       const SizedBox(height: 16),
 
                       // --- Base URL ---
@@ -532,277 +537,289 @@ extension _SettingsContentSections on _SettingsContentState {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    fluent.Text(l10n.availableModels,
-                        overflow: TextOverflow.ellipsis,
-                        style:
-                            fluent.FluentTheme.of(context).typography.subtitle),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (viewingProvider.models.isNotEmpty) ...[
-                          fluent.Button(
-                            onPressed: () => ref
-                                .read(settingsProvider.notifier)
-                                .setAllModelsEnabled(viewingProvider.id, true),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(AuroraIcons.selectAll, size: 14),
-                                const SizedBox(width: 4),
-                                fluent.Text(l10n.enableAll),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          fluent.Button(
-                            onPressed: () => ref
-                                .read(settingsProvider.notifier)
-                                .setAllModelsEnabled(viewingProvider.id, false),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(AuroraIcons.deselectAll, size: 14),
-                                const SizedBox(width: 4),
-                                fluent.Text(l10n.disableAll),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                        ],
-                        fluent.Button(
-                          style: fluent.ButtonStyle(
-                            padding: WidgetStateProperty.all(
-                                const EdgeInsets.symmetric(
-                                    horizontal: 12, vertical: 6)),
-                            backgroundColor: WidgetStateProperty.all(
-                                fluent.FluentTheme.of(context)
-                                    .accentColor
-                                    .withValues(alpha: 0.1)),
-                            shape: WidgetStateProperty.all(
-                                RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    side: BorderSide.none)),
-                          ),
-                          onPressed: settingsState.isLoadingModels
-                              ? null
-                              : () async {
-                                  await _refreshModelsWithNotice(l10n);
-                                },
-                          child: settingsState.isLoadingModels
-                              ? const SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: fluent.ProgressRing())
-                              : Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(AuroraIcons.refresh,
-                                        size: 14,
-                                        color: fluent.FluentTheme.of(context)
-                                            .accentColor),
-                                    const SizedBox(width: 8),
-                                    fluent.Text(
-                                      l10n.refreshList,
-                                      style: TextStyle(
-                                        color: fluent.FluentTheme.of(context)
-                                            .accentColor,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                if (settingsState.error != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8.0),
-                    child: fluent.Text(settingsState.error!,
-                        style: TextStyle(color: fluent.Colors.red)),
-                  ),
-                const SizedBox(height: 8),
-
-                // --- Models List (grouped: enabled / disabled) ---
-                if (viewingProvider.models.isNotEmpty)
-                  Builder(
-                    builder: (context) {
-                      final displayNameCounts =
-                          buildModelDisplayNameCounts(viewingProvider.models);
-
-                      Widget buildModelRow(
-                        String model, {
-                        required bool isEnabled,
-                      }) {
-                        final displayName =
-                            resolveModelDisplayName(model, displayNameCounts);
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 8.0),
-                          child: fluent.HoverButton(
-                            onPressed: () {},
-                            builder: (context, states) {
-                              return Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 12, vertical: 12),
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(4),
-                                  color: states.isHovered
-                                      ? theme.typography.body?.color
-                                              ?.withValues(alpha: 0.05) ??
-                                          Colors.transparent
-                                      : Colors.transparent,
-                                ),
-                                width: double.infinity,
-                                alignment: Alignment.centerLeft,
-                                child: Row(
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        displayName,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                    fluent.ToggleSwitch(
-                                      checked: isEnabled,
-                                      onChanged: (v) => ref
-                                          .read(settingsProvider.notifier)
-                                          .toggleModelDisabled(
-                                              viewingProvider.id, model),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    fluent.IconButton(
-                                      icon: const fluent.Icon(
-                                          AuroraIcons.settings,
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          fluent.Text(l10n.availableModels,
+                              overflow: TextOverflow.ellipsis,
+                              style: fluent.FluentTheme.of(context)
+                                  .typography
+                                  .subtitle),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (viewingProvider.models.isNotEmpty) ...[
+                                fluent.Button(
+                                  onPressed: () => ref
+                                      .read(settingsProvider.notifier)
+                                      .setAllModelsEnabled(
+                                          viewingProvider.id, true),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(AuroraIcons.selectAll,
                                           size: 14),
-                                      onPressed: () => _openModelSettings(
-                                          viewingProvider, model),
-                                    ),
-                                  ],
+                                      const SizedBox(width: 4),
+                                      fluent.Text(l10n.enableAll),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                fluent.Button(
+                                  onPressed: () => ref
+                                      .read(settingsProvider.notifier)
+                                      .setAllModelsEnabled(
+                                          viewingProvider.id, false),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(AuroraIcons.deselectAll,
+                                          size: 14),
+                                      const SizedBox(width: 4),
+                                      fluent.Text(l10n.disableAll),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                              ],
+                              fluent.Button(
+                                style: fluent.ButtonStyle(
+                                  padding: WidgetStateProperty.all(
+                                      const EdgeInsets.symmetric(
+                                          horizontal: 12, vertical: 6)),
+                                  backgroundColor: WidgetStateProperty.all(
+                                      fluent.FluentTheme.of(context)
+                                          .accentColor
+                                          .withValues(alpha: 0.1)),
+                                  shape: WidgetStateProperty.all(
+                                      RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                          side: BorderSide.none)),
+                                ),
+                                onPressed: settingsState.isLoadingModels
+                                    ? null
+                                    : () async {
+                                        await _refreshModelsWithNotice(l10n);
+                                      },
+                                child: settingsState.isLoadingModels
+                                    ? const SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: fluent.ProgressRing())
+                                    : Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(AuroraIcons.refresh,
+                                              size: 14,
+                                              color:
+                                                  fluent.FluentTheme.of(context)
+                                                      .accentColor),
+                                          const SizedBox(width: 8),
+                                          fluent.Text(
+                                            l10n.refreshList,
+                                            style: TextStyle(
+                                              color:
+                                                  fluent.FluentTheme.of(context)
+                                                      .accentColor,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      if (settingsState.error != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8.0),
+                          child: fluent.Text(settingsState.error!,
+                              style: TextStyle(color: fluent.Colors.red)),
+                        ),
+                      const SizedBox(height: 8),
+
+                      // --- Models List (grouped: enabled / disabled) ---
+                      if (viewingProvider.models.isNotEmpty)
+                        Builder(
+                          builder: (context) {
+                            final displayNameCounts =
+                                buildModelDisplayNameCounts(
+                                    viewingProvider.models);
+
+                            Widget buildModelRow(
+                              String model, {
+                              required bool isEnabled,
+                            }) {
+                              final displayName = resolveModelDisplayName(
+                                  model, displayNameCounts);
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 8.0),
+                                child: fluent.HoverButton(
+                                  onPressed: () {},
+                                  builder: (context, states) {
+                                    return Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 12, vertical: 12),
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(4),
+                                        color: states.isHovered
+                                            ? theme.typography.body?.color
+                                                    ?.withValues(alpha: 0.05) ??
+                                                Colors.transparent
+                                            : Colors.transparent,
+                                      ),
+                                      width: double.infinity,
+                                      alignment: Alignment.centerLeft,
+                                      child: Row(
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              displayName,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                          fluent.ToggleSwitch(
+                                            checked: isEnabled,
+                                            onChanged: (v) => ref
+                                                .read(settingsProvider.notifier)
+                                                .toggleModelDisabled(
+                                                    viewingProvider.id, model),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          fluent.IconButton(
+                                            icon: const fluent.Icon(
+                                                AuroraIcons.settings,
+                                                size: 14),
+                                            onPressed: () => _openModelSettings(
+                                                viewingProvider, model),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  },
                                 ),
                               );
-                            },
-                          ),
-                        );
-                      }
+                            }
 
-                      final enabledModels = <String>[];
-                      final disabledModels = <String>[];
-                      for (final model in viewingProvider.models) {
-                        if (viewingProvider.isModelEnabled(model)) {
-                          enabledModels.add(model);
-                        } else {
-                          disabledModels.add(model);
-                        }
-                      }
+                            final enabledModels = <String>[];
+                            final disabledModels = <String>[];
+                            for (final model in viewingProvider.models) {
+                              if (viewingProvider.isModelEnabled(model)) {
+                                enabledModels.add(model);
+                              } else {
+                                disabledModels.add(model);
+                              }
+                            }
 
-                      Widget buildGroup(
-                        String title,
-                        List<String> models, {
-                        required bool isEnabled,
-                      }) {
-                        return fluent.Expander(
-                          key: ValueKey(
-                              '${viewingProvider.id}_${isEnabled ? 'enabled' : 'disabled'}_models_group'),
-                          initiallyExpanded: isEnabled,
-                          contentPadding: const EdgeInsets.only(top: 8.0),
-                          header: fluent.Text(
-                            '$title (${models.length})',
-                            style: theme.typography.bodyStrong,
-                          ),
-                          content: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: models
-                                .map(
-                                  (model) => buildModelRow(
-                                    model,
-                                    isEnabled: isEnabled,
-                                  ),
-                                )
-                                .toList(),
-                          ),
-                        );
-                      }
+                            Widget buildGroup(
+                              String title,
+                              List<String> models, {
+                              required bool isEnabled,
+                            }) {
+                              return fluent.Expander(
+                                key: ValueKey(
+                                    '${viewingProvider.id}_${isEnabled ? 'enabled' : 'disabled'}_models_group'),
+                                initiallyExpanded: isEnabled,
+                                contentPadding: const EdgeInsets.only(top: 8.0),
+                                header: fluent.Text(
+                                  '$title (${models.length})',
+                                  style: theme.typography.bodyStrong,
+                                ),
+                                content: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: models
+                                      .map(
+                                        (model) => buildModelRow(
+                                          model,
+                                          isEnabled: isEnabled,
+                                        ),
+                                      )
+                                      .toList(),
+                                ),
+                              );
+                            }
 
-                      final groups = <Widget>[];
-                      if (enabledModels.isNotEmpty) {
-                        groups.add(
-                          buildGroup(
-                            l10n.enabled,
-                            enabledModels,
-                            isEnabled: true,
-                          ),
-                        );
-                      }
-                      if (disabledModels.isNotEmpty) {
-                        if (groups.isNotEmpty) {
-                          groups.add(const SizedBox(height: 12));
-                        }
-                        groups.add(
-                          buildGroup(
-                            l10n.disabled,
-                            disabledModels,
-                            isEnabled: false,
-                          ),
-                        );
-                      }
+                            final groups = <Widget>[];
+                            if (enabledModels.isNotEmpty) {
+                              groups.add(
+                                buildGroup(
+                                  l10n.enabled,
+                                  enabledModels,
+                                  isEnabled: true,
+                                ),
+                              );
+                            }
+                            if (disabledModels.isNotEmpty) {
+                              if (groups.isNotEmpty) {
+                                groups.add(const SizedBox(height: 12));
+                              }
+                              groups.add(
+                                buildGroup(
+                                  l10n.disabled,
+                                  disabledModels,
+                                  isEnabled: false,
+                                ),
+                              );
+                            }
 
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: groups,
-                      );
-                    },
-                  )
-                else
-                  Container(
-                    padding: const EdgeInsets.all(24),
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                          color: fluent.Colors.grey.withValues(alpha: 0.2)),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: fluent.Text(l10n.noModelsData),
-                  ),
-
-                const SizedBox(height: 16),
-
-                // --- Color Selector ---
-                fluent.InfoLabel(
-                  label: l10n.providerColor,
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          color: (viewingProvider.color != null &&
-                                  viewingProvider.color!.isNotEmpty)
-                              ? Color(int.tryParse(viewingProvider.color!
-                                      .replaceFirst('#', '0xFF')) ??
-                                  0xFF000000)
-                              : Colors.transparent,
-                          border: Border.all(color: fluent.Colors.grey),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _buildStyledTextBox(
-                          controller: _colorController,
-                          placeholder: '#FF0000',
-                          onChanged: (value) {
-                            ref.read(settingsProvider.notifier).updateProvider(
-                                id: viewingProvider.id, color: value);
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: groups,
+                            );
                           },
+                        )
+                      else
+                        Container(
+                          padding: const EdgeInsets.all(24),
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                                color:
+                                    fluent.Colors.grey.withValues(alpha: 0.2)),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: fluent.Text(l10n.noModelsData),
+                        ),
+
+                      const SizedBox(height: 16),
+
+                      // --- Color Selector ---
+                      fluent.InfoLabel(
+                        label: l10n.providerColor,
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: (viewingProvider.color != null &&
+                                        viewingProvider.color!.isNotEmpty)
+                                    ? Color(int.tryParse(viewingProvider.color!
+                                            .replaceFirst('#', '0xFF')) ??
+                                        0xFF000000)
+                                    : Colors.transparent,
+                                border: Border.all(color: fluent.Colors.grey),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: _buildStyledTextBox(
+                                controller: _colorController,
+                                placeholder: '#FF0000',
+                                onChanged: (value) {
+                                  ref
+                                      .read(settingsProvider.notifier)
+                                      .updateProvider(
+                                          id: viewingProvider.id, color: value);
+                                },
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
-                  ),
-                ),
                     ],
                   ),
                 ),
@@ -824,404 +841,471 @@ extension _SettingsContentSections on _SettingsContentState {
           fluent.Text(l10n.chatSettings,
               style: fluent.FluentTheme.of(context).typography.subtitle),
           const SizedBox(height: 24),
-          fluent.InfoLabel(
-            label: l10n.smartTopicGeneration,
+          _buildSectionCard(
+            context,
+            child: fluent.InfoLabel(
+              label: l10n.restoreLastChatOnLaunch,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l10n.restoreLastChatOnLaunchHint,
+                    style: const TextStyle(
+                      color: fluent.Colors.grey,
+                      fontSize: 12,
+                      height: 1.35,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  fluent.ToggleSwitch(
+                    checked: settingsState.restoreLastSessionOnLaunch,
+                    onChanged: (v) {
+                      ref
+                          .read(settingsProvider.notifier)
+                          .toggleRestoreLastSessionOnLaunch(v);
+                    },
+                    content: fluent.Text(
+                        settingsState.restoreLastSessionOnLaunch
+                            ? l10n.enabled
+                            : l10n.disabled),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          _buildSectionCard(
+            context,
+            child: fluent.InfoLabel(
+              label: l10n.smartTopicGeneration,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  fluent.ToggleSwitch(
+                    checked: settingsState.enableSmartTopic,
+                    onChanged: (v) {
+                      ref
+                          .read(settingsProvider.notifier)
+                          .toggleSmartTopicEnabled(v);
+                    },
+                    content: fluent.Text(settingsState.enableSmartTopic
+                        ? l10n.enabled
+                        : l10n.disabled),
+                  ),
+                  if (settingsState.enableSmartTopic) ...[
+                    const SizedBox(height: 12),
+                    Builder(builder: (context) {
+                      final options = <AuroraDropdownOption<String>>[];
+                      for (final provider in settingsState.providers) {
+                        if (provider.isEnabled) {
+                          for (final model in provider.models) {
+                            if (!provider.isModelEnabled(model)) continue;
+                            final value = '${provider.id}@$model';
+                            options.add(
+                              AuroraDropdownOption<String>(
+                                value: value,
+                                label: '${provider.name} - $model',
+                              ),
+                            );
+                          }
+                        }
+                      }
+
+                      if (options.isEmpty) {
+                        return fluent.Button(
+                          onPressed: null,
+                          child: Text(l10n.noModelsData),
+                        );
+                      }
+
+                      String? selectedLabel;
+                      final currentValue = settingsState.topicGenerationModel;
+                      if (currentValue != null) {
+                        for (final option in options) {
+                          if (option.value == currentValue) {
+                            selectedLabel = option.label;
+                            break;
+                          }
+                        }
+                        selectedLabel ??= currentValue;
+                      }
+
+                      return AuroraDropdown<String>(
+                        value: currentValue,
+                        selectedLabel: selectedLabel,
+                        placeholder: l10n.selectTopicModel,
+                        options: options,
+                        onChanged: (value) {
+                          ref
+                              .read(settingsProvider.notifier)
+                              .setTopicGenerationModel(value);
+                        },
+                      );
+                    }),
+                    if (settingsState.topicGenerationModel == null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4.0),
+                        child: Text(
+                          l10n.noModelFallback,
+                          style: TextStyle(
+                              color: fluent.Colors.orange, fontSize: 12),
+                        ),
+                      ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          _buildSectionCard(
+            context,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                fluent.ToggleSwitch(
-                  checked: settingsState.enableSmartTopic,
-                  onChanged: (v) {
-                    ref
-                        .read(settingsProvider.notifier)
-                        .toggleSmartTopicEnabled(v);
-                  },
-                  content: fluent.Text(settingsState.enableSmartTopic
-                      ? l10n.enabled
-                      : l10n.disabled),
+                fluent.Text(
+                  l10n.assistantMemoryGlobalDefaults,
+                  style: fluent.FluentTheme.of(context).typography.bodyStrong,
                 ),
-                if (settingsState.enableSmartTopic) ...[
-                  const SizedBox(height: 12),
-                  Builder(builder: (context) {
-                    final options = <AuroraDropdownOption<String>>[];
-                    for (final provider in settingsState.providers) {
-                      if (provider.isEnabled) {
-                        for (final model in provider.models) {
-                          if (!provider.isModelEnabled(model)) continue;
-                          final value = '${provider.id}@$model';
-                          options.add(
-                            AuroraDropdownOption<String>(
-                              value: value,
-                              label: '${provider.name} - $model',
-                            ),
-                          );
-                        }
-                      }
-                    }
-
-                    if (options.isEmpty) {
-                      return fluent.Button(
-                        onPressed: null,
-                        child: Text(l10n.noModelsData),
-                      );
-                    }
-
-                    String? selectedLabel;
-                    final currentValue = settingsState.topicGenerationModel;
-                    if (currentValue != null) {
-                      for (final option in options) {
-                        if (option.value == currentValue) {
-                          selectedLabel = option.label;
-                          break;
-                        }
-                      }
-                      selectedLabel ??= currentValue;
-                    }
-
-                    return AuroraDropdown<String>(
-                      value: currentValue,
-                      selectedLabel: selectedLabel,
-                      placeholder: l10n.selectTopicModel,
-                      options: options,
-                      onChanged: (value) {
-                        ref
-                            .read(settingsProvider.notifier)
-                            .setTopicGenerationModel(value);
-                      },
-                    );
-                  }),
-                  if (settingsState.topicGenerationModel == null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4.0),
-                      child: Text(
-                        l10n.noModelFallback,
-                        style: TextStyle(
-                            color: fluent.Colors.orange, fontSize: 12),
+                const SizedBox(height: 16),
+                fluent.InfoLabel(
+                  label: l10n.assistantMemoryMinNewUserTurns,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: fluent.Slider(
+                          value:
+                              settingsState.memoryMinNewUserMessages.toDouble(),
+                          min: 1,
+                          max: 200,
+                          onChanged: (v) {
+                            ref
+                                .read(settingsProvider.notifier)
+                                .setMemoryMinNewUserMessages(v.round());
+                          },
+                        ),
                       ),
-                    ),
-                ],
+                      const SizedBox(width: 12),
+                      Text('${settingsState.memoryMinNewUserMessages}'),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                fluent.InfoLabel(
+                  label: l10n.assistantMemoryIdleSecondsBeforeConsolidation,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: fluent.Slider(
+                          value: settingsState.memoryIdleSeconds.toDouble(),
+                          min: 30,
+                          max: 7200,
+                          onChanged: (v) {
+                            ref
+                                .read(settingsProvider.notifier)
+                                .setMemoryIdleSeconds(v.round());
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Text('${settingsState.memoryIdleSeconds}s'),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                fluent.InfoLabel(
+                  label: l10n.assistantMemoryMaxBufferedMessages,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: fluent.Slider(
+                          value: settingsState.memoryMaxBufferedMessages
+                              .toDouble(),
+                          min: 20,
+                          max: 500,
+                          onChanged: (v) {
+                            ref
+                                .read(settingsProvider.notifier)
+                                .setMemoryMaxBufferedMessages(v.round());
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Text('${settingsState.memoryMaxBufferedMessages}'),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                fluent.InfoLabel(
+                  label: l10n.assistantMemoryMaxRunsPerDay,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: fluent.Slider(
+                          value: settingsState.memoryMaxRunsPerDay.toDouble(),
+                          min: 1,
+                          max: 30,
+                          onChanged: (v) {
+                            ref
+                                .read(settingsProvider.notifier)
+                                .setMemoryMaxRunsPerDay(v.round());
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Text('${settingsState.memoryMaxRunsPerDay}'),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                fluent.InfoLabel(
+                  label: l10n.assistantMemoryContextWindowSize,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: fluent.Slider(
+                          value:
+                              settingsState.memoryContextWindowSize.toDouble(),
+                          min: 20,
+                          max: 240,
+                          onChanged: (v) {
+                            ref
+                                .read(settingsProvider.notifier)
+                                .setMemoryContextWindowSize(v.round());
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Text('${settingsState.memoryContextWindowSize}'),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
           const SizedBox(height: 24),
-          const fluent.Divider(),
-          const SizedBox(height: 24),
-          fluent.Text(
-            l10n.assistantMemoryGlobalDefaults,
-            style: fluent.FluentTheme.of(context).typography.bodyStrong,
-          ),
-          const SizedBox(height: 16),
-          fluent.InfoLabel(
-            label: l10n.assistantMemoryMinNewUserTurns,
-            child: Row(
+          _buildSectionCard(
+            context,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: fluent.Slider(
-                    value: settingsState.memoryMinNewUserMessages.toDouble(),
-                    min: 1,
-                    max: 200,
-                    onChanged: (v) {
+                fluent.InfoLabel(
+                  label: l10n.userName,
+                  child: _buildStyledTextBox(
+                    placeholder: l10n.user,
+                    controller: _userNameController,
+                    onChanged: (value) {
                       ref
                           .read(settingsProvider.notifier)
-                          .setMemoryMinNewUserMessages(v.round());
+                          .setChatDisplaySettings(userName: value);
                     },
                   ),
                 ),
-                const SizedBox(width: 12),
-                Text('${settingsState.memoryMinNewUserMessages}'),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          fluent.InfoLabel(
-            label: l10n.assistantMemoryIdleSecondsBeforeConsolidation,
-            child: Row(
-              children: [
-                Expanded(
-                  child: fluent.Slider(
-                    value: settingsState.memoryIdleSeconds.toDouble(),
-                    min: 30,
-                    max: 7200,
-                    onChanged: (v) {
-                      ref
-                          .read(settingsProvider.notifier)
-                          .setMemoryIdleSeconds(v.round());
-                    },
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Text('${settingsState.memoryIdleSeconds}s'),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          fluent.InfoLabel(
-            label: l10n.assistantMemoryMaxBufferedMessages,
-            child: Row(
-              children: [
-                Expanded(
-                  child: fluent.Slider(
-                    value: settingsState.memoryMaxBufferedMessages.toDouble(),
-                    min: 20,
-                    max: 500,
-                    onChanged: (v) {
-                      ref
-                          .read(settingsProvider.notifier)
-                          .setMemoryMaxBufferedMessages(v.round());
-                    },
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Text('${settingsState.memoryMaxBufferedMessages}'),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          fluent.InfoLabel(
-            label: l10n.assistantMemoryMaxRunsPerDay,
-            child: Row(
-              children: [
-                Expanded(
-                  child: fluent.Slider(
-                    value: settingsState.memoryMaxRunsPerDay.toDouble(),
-                    min: 1,
-                    max: 30,
-                    onChanged: (v) {
-                      ref
-                          .read(settingsProvider.notifier)
-                          .setMemoryMaxRunsPerDay(v.round());
-                    },
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Text('${settingsState.memoryMaxRunsPerDay}'),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          fluent.InfoLabel(
-            label: l10n.assistantMemoryContextWindowSize,
-            child: Row(
-              children: [
-                Expanded(
-                  child: fluent.Slider(
-                    value: settingsState.memoryContextWindowSize.toDouble(),
-                    min: 20,
-                    max: 240,
-                    onChanged: (v) {
-                      ref
-                          .read(settingsProvider.notifier)
-                          .setMemoryContextWindowSize(v.round());
-                    },
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Text('${settingsState.memoryContextWindowSize}'),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-          const fluent.Divider(),
-          const SizedBox(height: 24),
-          fluent.InfoLabel(
-            label: l10n.userName,
-            child: _buildStyledTextBox(
-              placeholder: l10n.user,
-              controller: _userNameController,
-              onChanged: (value) {
-                ref
-                    .read(settingsProvider.notifier)
-                    .setChatDisplaySettings(userName: value);
-              },
-            ),
-          ),
-          const SizedBox(height: 16),
-          fluent.InfoLabel(
-            label: l10n.userAvatar,
-            child: Row(
-              children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                        color: fluent.Colors.grey.withValues(alpha: 0.3)),
-                  ),
-                  child: settingsState.userAvatar != null &&
-                          settingsState.userAvatar!.isNotEmpty
-                      ? ClipRRect(
+                const SizedBox(height: 16),
+                fluent.InfoLabel(
+                  label: l10n.userAvatar,
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(8),
-                          child: Image.file(
-                            File(settingsState.userAvatar!),
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => const Icon(
-                                fluent.FluentIcons.contact,
-                                size: 24),
-                          ),
-                        )
-                      : const Icon(fluent.FluentIcons.contact, size: 24),
+                          border: Border.all(
+                              color: fluent.Colors.grey.withValues(alpha: 0.3)),
+                        ),
+                        child: settingsState.userAvatar != null &&
+                                settingsState.userAvatar!.isNotEmpty
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Image.file(
+                                  File(settingsState.userAvatar!),
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => const Icon(
+                                      fluent.FluentIcons.contact,
+                                      size: 24),
+                                ),
+                              )
+                            : const Icon(fluent.FluentIcons.contact, size: 24),
+                      ),
+                      const SizedBox(width: 12),
+                      fluent.Button(
+                        child: Text(l10n.selectImage),
+                        onPressed: () async {
+                          final imageTypeGroup = XTypeGroup(
+                            label: l10n.images,
+                            extensions: const [
+                              'png',
+                              'jpg',
+                              'jpeg',
+                              'gif',
+                              'webp'
+                            ],
+                          );
+                          final result = await openFile(
+                            acceptedTypeGroups: [imageTypeGroup],
+                          );
+                          if (result != null) {
+                            if (!mounted) return;
+                            final croppedPath = await AvatarCropper.cropImage(
+                                context, result.path);
+                            if (croppedPath != null) {
+                              final persistentPath =
+                                  await AvatarStorage.persistAvatar(
+                                sourcePath: croppedPath,
+                                owner: AvatarOwner.user,
+                              );
+                              ref
+                                  .read(settingsProvider.notifier)
+                                  .setChatDisplaySettings(
+                                      userAvatar: persistentPath);
+                            }
+                          }
+                        },
+                      ),
+                      if (settingsState.userAvatar != null) ...[
+                        const SizedBox(width: 8),
+                        fluent.IconButton(
+                          icon: const Icon(AuroraIcons.delete),
+                          onPressed: () {
+                            ref
+                                .read(settingsProvider.notifier)
+                                .setChatDisplaySettings(userAvatar: '');
+                          },
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
-                const SizedBox(width: 12),
-                fluent.Button(
-                  child: Text(l10n.selectImage),
-                  onPressed: () async {
-                    final imageTypeGroup = XTypeGroup(
-                      label: l10n.images,
-                      extensions: const ['png', 'jpg', 'jpeg', 'gif', 'webp'],
-                    );
-                    final result = await openFile(
-                      acceptedTypeGroups: [imageTypeGroup],
-                    );
-                    if (result != null) {
-                      if (!mounted) return;
-                      final croppedPath =
-                          await AvatarCropper.cropImage(context, result.path);
-                      if (croppedPath != null) {
-                        final persistentPath =
-                            await AvatarStorage.persistAvatar(
-                          sourcePath: croppedPath,
-                          owner: AvatarOwner.user,
-                        );
-                        ref
-                            .read(settingsProvider.notifier)
-                            .setChatDisplaySettings(userAvatar: persistentPath);
-                      }
-                    }
-                  },
-                ),
-                if (settingsState.userAvatar != null) ...[
-                  const SizedBox(width: 8),
-                  fluent.IconButton(
-                    icon: const Icon(AuroraIcons.delete),
-                    onPressed: () {
+                const SizedBox(height: 24),
+                fluent.InfoLabel(
+                  label: l10n.aiName,
+                  child: _buildStyledTextBox(
+                    placeholder: l10n.aiNamePlaceholder,
+                    controller: _llmNameController,
+                    onChanged: (value) {
                       ref
                           .read(settingsProvider.notifier)
-                          .setChatDisplaySettings(userAvatar: '');
+                          .setChatDisplaySettings(llmName: value);
                     },
                   ),
-                ],
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-          fluent.InfoLabel(
-            label: l10n.aiName,
-            child: _buildStyledTextBox(
-              placeholder: l10n.aiNamePlaceholder,
-              controller: _llmNameController,
-              onChanged: (value) {
-                ref
-                    .read(settingsProvider.notifier)
-                    .setChatDisplaySettings(llmName: value);
-              },
-            ),
-          ),
-          const SizedBox(height: 16),
-          fluent.InfoLabel(
-            label: l10n.aiAvatar,
-            child: Row(
-              children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                        color: fluent.Colors.grey.withValues(alpha: 0.3)),
-                  ),
-                  child: settingsState.llmAvatar != null &&
-                          settingsState.llmAvatar!.isNotEmpty
-                      ? ClipRRect(
+                ),
+                const SizedBox(height: 16),
+                fluent.InfoLabel(
+                  label: l10n.aiAvatar,
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(8),
-                          child: Image.file(
-                            File(settingsState.llmAvatar!),
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) =>
-                                const Icon(fluent.FluentIcons.robot, size: 24),
-                          ),
-                        )
-                      : const Icon(fluent.FluentIcons.robot, size: 24),
-                ),
-                const SizedBox(width: 12),
-                fluent.Button(
-                  child: Text(l10n.selectImage),
-                  onPressed: () async {
-                    final imageTypeGroup = XTypeGroup(
-                      label: l10n.images,
-                      extensions: const ['png', 'jpg', 'jpeg', 'gif', 'webp'],
-                    );
-                    final result = await openFile(
-                      acceptedTypeGroups: [imageTypeGroup],
-                    );
-                    if (result != null) {
-                      if (!mounted) return;
-                      final croppedPath =
-                          await AvatarCropper.cropImage(context, result.path);
-                      if (croppedPath != null) {
-                        final persistentPath =
-                            await AvatarStorage.persistAvatar(
-                          sourcePath: croppedPath,
-                          owner: AvatarOwner.llm,
-                        );
-                        ref
-                            .read(settingsProvider.notifier)
-                            .setChatDisplaySettings(llmAvatar: persistentPath);
-                      }
-                    }
-                  },
-                ),
-                if (settingsState.llmAvatar != null) ...[
-                  const SizedBox(width: 8),
-                  fluent.IconButton(
-                    icon: const Icon(AuroraIcons.delete),
-                    onPressed: () {
-                      ref
-                          .read(settingsProvider.notifier)
-                          .setChatDisplaySettings(llmAvatar: '');
-                    },
+                          border: Border.all(
+                              color: fluent.Colors.grey.withValues(alpha: 0.3)),
+                        ),
+                        child: settingsState.llmAvatar != null &&
+                                settingsState.llmAvatar!.isNotEmpty
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Image.file(
+                                  File(settingsState.llmAvatar!),
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => const Icon(
+                                      fluent.FluentIcons.robot,
+                                      size: 24),
+                                ),
+                              )
+                            : const Icon(fluent.FluentIcons.robot, size: 24),
+                      ),
+                      const SizedBox(width: 12),
+                      fluent.Button(
+                        child: Text(l10n.selectImage),
+                        onPressed: () async {
+                          final imageTypeGroup = XTypeGroup(
+                            label: l10n.images,
+                            extensions: const [
+                              'png',
+                              'jpg',
+                              'jpeg',
+                              'gif',
+                              'webp'
+                            ],
+                          );
+                          final result = await openFile(
+                            acceptedTypeGroups: [imageTypeGroup],
+                          );
+                          if (result != null) {
+                            if (!mounted) return;
+                            final croppedPath = await AvatarCropper.cropImage(
+                                context, result.path);
+                            if (croppedPath != null) {
+                              final persistentPath =
+                                  await AvatarStorage.persistAvatar(
+                                sourcePath: croppedPath,
+                                owner: AvatarOwner.llm,
+                              );
+                              ref
+                                  .read(settingsProvider.notifier)
+                                  .setChatDisplaySettings(
+                                      llmAvatar: persistentPath);
+                            }
+                          }
+                        },
+                      ),
+                      if (settingsState.llmAvatar != null) ...[
+                        const SizedBox(width: 8),
+                        fluent.IconButton(
+                          icon: const Icon(AuroraIcons.delete),
+                          onPressed: () {
+                            ref
+                                .read(settingsProvider.notifier)
+                                .setChatDisplaySettings(llmAvatar: '');
+                          },
+                        ),
+                      ],
+                    ],
                   ),
-                ],
+                ),
               ],
             ),
           ),
           const SizedBox(height: 24),
-          const fluent.Divider(),
-          const SizedBox(height: 24),
-          fluent.InfoLabel(
-            label: l10n.closeBehavior,
-            child: Row(
-              children: [
-                fluent.RadioButton(
-                  checked: settingsState.closeBehavior == 0,
-                  onChanged: (v) {
-                    if (v) {
-                      ref.read(settingsProvider.notifier).setCloseBehavior(0);
-                    }
-                  },
-                  content: Text(l10n.askEveryTime),
-                ),
-                const SizedBox(width: 24),
-                fluent.RadioButton(
-                  checked: settingsState.closeBehavior == 1,
-                  onChanged: (v) {
-                    if (v) {
-                      ref.read(settingsProvider.notifier).setCloseBehavior(1);
-                    }
-                  },
-                  content: Text(l10n.minimizeToTrayOption),
-                ),
-                const SizedBox(width: 24),
-                fluent.RadioButton(
-                  checked: settingsState.closeBehavior == 2,
-                  onChanged: (v) {
-                    if (v) {
-                      ref.read(settingsProvider.notifier).setCloseBehavior(2);
-                    }
-                  },
-                  content: Text(l10n.exitApplicationOption),
-                ),
-              ],
+          _buildSectionCard(
+            context,
+            child: fluent.InfoLabel(
+              label: l10n.closeBehavior,
+              child: Row(
+                children: [
+                  fluent.RadioButton(
+                    checked: settingsState.closeBehavior == 0,
+                    onChanged: (v) {
+                      if (v) {
+                        ref.read(settingsProvider.notifier).setCloseBehavior(0);
+                      }
+                    },
+                    content: Text(l10n.askEveryTime),
+                  ),
+                  const SizedBox(width: 24),
+                  fluent.RadioButton(
+                    checked: settingsState.closeBehavior == 1,
+                    onChanged: (v) {
+                      if (v) {
+                        ref.read(settingsProvider.notifier).setCloseBehavior(1);
+                      }
+                    },
+                    content: Text(l10n.minimizeToTrayOption),
+                  ),
+                  const SizedBox(width: 24),
+                  fluent.RadioButton(
+                    checked: settingsState.closeBehavior == 2,
+                    onChanged: (v) {
+                      if (v) {
+                        ref.read(settingsProvider.notifier).setCloseBehavior(2);
+                      }
+                    },
+                    content: Text(l10n.exitApplicationOption),
+                  ),
+                ],
+              ),
             ),
           ),
         ],

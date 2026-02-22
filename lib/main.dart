@@ -10,6 +10,7 @@ import 'package:window_manager/window_manager.dart';
 import 'features/chat/presentation/chat_screen.dart';
 import 'features/chat/presentation/chat_provider.dart';
 import 'features/chat/presentation/topic_provider.dart';
+import 'features/chat/data/chat_storage.dart';
 import 'features/settings/data/settings_storage.dart';
 import 'features/settings/presentation/settings_provider.dart';
 import 'shared/widgets/global_background.dart';
@@ -121,6 +122,19 @@ void main() async {
         _bootLog('loading providers and settings');
         final providerEntities = await storage.loadProviders();
         final appSettings = await storage.loadAppSettings();
+        final restoreLastSessionOnLaunch =
+            appSettings?.restoreLastSessionOnLaunch ?? true;
+        String? initialSelectedHistorySessionId = 'new_chat';
+        if (restoreLastSessionOnLaunch) {
+          final lastId = appSettings?.lastSessionId;
+          if (lastId != null && lastId.isNotEmpty) {
+            final chatStorage = ChatStorage(storage);
+            final existingSession = await chatStorage.getSession(lastId);
+            if (existingSession != null) {
+              initialSelectedHistorySessionId = lastId;
+            }
+          }
+        }
         _bootLog(
             'providers=${providerEntities.length}, hasAppSettings=${appSettings != null}');
 
@@ -131,6 +145,8 @@ void main() async {
         runApp(ProviderScope(
           overrides: [
             settingsStorageProvider.overrideWithValue(storage),
+            selectedHistorySessionIdProvider
+                .overrideWith((ref) => initialSelectedHistorySessionId),
             settingsProvider.overrideWith((ref) {
               // Load skills from a default directory (Desktop only)
               if (PlatformUtils.isDesktop) {
@@ -174,6 +190,8 @@ void main() async {
                     appSettings?.activeKnowledgeBaseIds ?? const [],
                 enableSmartTopic: appSettings?.enableSmartTopic ?? true,
                 topicGenerationModel: appSettings?.topicGenerationModel,
+                restoreLastSessionOnLaunch:
+                    appSettings?.restoreLastSessionOnLaunch ?? true,
                 language: appSettings?.language ??
                     (Platform.localeName.startsWith('zh') ? 'zh' : 'en'),
                 themeColor: appSettings?.themeColor ?? 'teal',
@@ -531,4 +549,3 @@ class MyApp extends ConsumerWidget {
     );
   }
 }
-

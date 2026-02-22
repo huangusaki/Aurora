@@ -104,6 +104,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get chatExperience => '对话体验';
 
   @override
+  String get restoreLastChatOnLaunch => '启动时恢复上次对话';
+
+  @override
+  String get restoreLastChatOnLaunchHint => '开启后，应用启动时会回到上次退出前使用的对话。';
+
+  @override
   String get smartTopicGeneration => '智能话题生成';
 
   @override
@@ -1264,6 +1270,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get mobileInputHint => '随便输入点什么吧';
+
+  @override
+  String get greetingMessage => '有什么可以帮您？';
 
   @override
   String get topics => '话题分组';

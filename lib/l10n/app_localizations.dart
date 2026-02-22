@@ -284,6 +284,18 @@ abstract class AppLocalizations {
   /// **'对话体验'**
   String get chatExperience;
 
+  /// No description provided for @restoreLastChatOnLaunch.
+  ///
+  /// In zh, this message translates to:
+  /// **'启动时恢复上次对话'**
+  String get restoreLastChatOnLaunch;
+
+  /// No description provided for @restoreLastChatOnLaunchHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'开启后，应用启动时会回到上次退出前使用的对话。'**
+  String get restoreLastChatOnLaunchHint;
+
   /// No description provided for @smartTopicGeneration.
   ///
   /// In zh, this message translates to:
@@ -2515,6 +2527,12 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'随便输入点什么吧'**
   String get mobileInputHint;
+
+  /// No description provided for @greetingMessage.
+  ///
+  /// In zh, this message translates to:
+  /// **'有什么可以帮您？'**
+  String get greetingMessage;
 
   /// No description provided for @topics.
   ///

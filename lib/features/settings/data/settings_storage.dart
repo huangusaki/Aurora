@@ -210,6 +210,7 @@ class SettingsStorage {
     List<String>? activeKnowledgeBaseIds,
     bool? enableSmartTopic,
     String? topicGenerationModel,
+    bool? restoreLastSessionOnLaunch,
     String? lastSessionId,
     String? lastTopicId,
     String? language,
@@ -266,6 +267,9 @@ class SettingsStorage {
           enableSmartTopic ?? existing?.enableSmartTopic ?? true
       ..topicGenerationModel =
           topicGenerationModel ?? existing?.topicGenerationModel
+      ..restoreLastSessionOnLaunch = restoreLastSessionOnLaunch ??
+          existing?.restoreLastSessionOnLaunch ??
+          true
       ..lastSessionId = lastSessionId ?? existing?.lastSessionId
       ..lastTopicId = lastTopicId ?? existing?.lastTopicId
       ..language = language ?? existing?.language ?? 'zh'
@@ -659,6 +663,7 @@ class SettingsStorage {
           List<String>.from(source.activeKnowledgeBaseIds)
       ..enableSmartTopic = source.enableSmartTopic
       ..topicGenerationModel = source.topicGenerationModel
+      ..restoreLastSessionOnLaunch = source.restoreLastSessionOnLaunch
       ..lastSessionId = source.lastSessionId
       ..lastTopicId = source.lastTopicId
       ..language = source.language

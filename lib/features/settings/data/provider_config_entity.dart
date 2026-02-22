@@ -52,6 +52,7 @@ class AppSettingsEntity {
   List<String> activeKnowledgeBaseIds = [];
   bool enableSmartTopic = true;
   String? topicGenerationModel;
+  bool? restoreLastSessionOnLaunch;
   String? lastSessionId;
   String? lastTopicId;
   String language = 'zh';

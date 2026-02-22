@@ -115,6 +115,30 @@ class _MobileUserPageState extends ConsumerState<MobileUserPage> {
               ),
             ],
           ),
+          MobileSettingsSection(
+            title: l10n.chatSettings,
+            children: [
+              MobileSettingsTile(
+                leading: const Icon(Icons.restore),
+                title: l10n.restoreLastChatOnLaunch,
+                subtitle: l10n.restoreLastChatOnLaunchHint,
+                trailing: Switch.adaptive(
+                  value: settingsState.restoreLastSessionOnLaunch,
+                  onChanged: (bool value) {
+                    ref
+                        .read(settingsProvider.notifier)
+                        .toggleRestoreLastSessionOnLaunch(value);
+                  },
+                ),
+                onTap: () {
+                  ref
+                      .read(settingsProvider.notifier)
+                      .toggleRestoreLastSessionOnLaunch(
+                          !settingsState.restoreLastSessionOnLaunch);
+                },
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -251,4 +275,3 @@ class _MobileUserPageState extends ConsumerState<MobileUserPage> {
     }
   }
 }
-

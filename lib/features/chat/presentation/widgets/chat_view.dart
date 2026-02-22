@@ -477,6 +477,34 @@ class ChatViewState extends ConsumerState<ChatView> {
     }
     return Stack(
       children: [
+        if (displayItems.isEmpty && !isLoadingHistory)
+          Positioned.fill(
+            child: Container(
+              padding: EdgeInsets.only(bottom: PlatformUtils.isDesktop ? 120 : 100),
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      AppLocalizations.of(context)!.greetingMessage,
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.5,
+                        color: fluent.FluentTheme.of(context)
+                                .typography
+                                .body
+                                ?.color
+                                ?.withOpacity(0.5) ??
+                            Colors.grey.withOpacity(0.5),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         Positioned.fill(
           child: Column(
             children: [

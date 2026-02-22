@@ -262,7 +262,7 @@ class _HistoryContentState extends ConsumerState<HistoryContent> {
     final isSidebarVisible = ref.watch(isHistorySidebarVisibleProvider);
     final sessionsState = ref.watch(sessionsProvider);
     final selectedSessionId = ref.watch(selectedHistorySessionIdProvider);
-    final l10n = AppLocalizations.of(context)!;
+    final effectiveSessionId = selectedSessionId ?? 'new_chat';
     return Container(
       color: Colors.transparent,
       child: Row(
@@ -302,11 +302,9 @@ class _HistoryContentState extends ConsumerState<HistoryContent> {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(16),
                 child: RepaintBoundary(
-                  child: selectedSessionId == null
-                      ? Center(child: Text(l10n.selectOrNewTopic))
-                      : ChatView(
-                          key: ValueKey(selectedSessionId),
-                          sessionId: selectedSessionId),
+                  child: ChatView(
+                      key: ValueKey(effectiveSessionId),
+                      sessionId: effectiveSessionId),
                 ),
               ),
             ),
@@ -352,7 +350,7 @@ class _SessionListState extends ConsumerState<_SessionList> {
     final manager = ref.watch(chatSessionManagerProvider);
     ref.watch(chatStateUpdateTriggerProvider);
     ref.listen(selectedHistorySessionIdProvider, (_, next) {
-      if (next != null) {
+      if (next != null && next != 'new_chat' && next != 'translation') {
         final storage = ref.read(settingsStorageProvider);
         storage.saveLastSessionId(next);
       }
@@ -564,7 +562,7 @@ class _SessionListState extends ConsumerState<_SessionList> {
                           if (isSelected) {
                             ref
                                 .read(selectedHistorySessionIdProvider.notifier)
-                                .state = null;
+                                .state = widget.isMobile ? null : 'new_chat';
                           }
                         },
                         depth: treeItem.depth,

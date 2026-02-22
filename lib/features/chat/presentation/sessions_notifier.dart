@@ -52,18 +52,26 @@ class SessionsNotifier extends StateNotifier<SessionsState> {
     await loadSessions();
     _storage.preloadAllSessions();
     final settings = await _ref.read(settingsStorageProvider).loadAppSettings();
+    final restoreLast = settings?.restoreLastSessionOnLaunch ?? true;
     final lastId = settings?.lastSessionId;
     final lastTopicId = settings?.lastTopicId;
-    debugPrint('Restoring session. lastId: $lastId, lastTopicId: $lastTopicId');
-    if (lastTopicId != null) {
-      final topicId = int.tryParse(lastTopicId);
-      _ref.read(selectedTopicIdProvider.notifier).state = topicId;
-      debugPrint('Restored topic id: $topicId');
-    }
-    if (lastId != null && state.sessions.any((s) => s.sessionId == lastId)) {
-      _ref.read(selectedHistorySessionIdProvider.notifier).state = lastId;
+    debugPrint(
+        'Restoring session (enabled=$restoreLast). lastId: $lastId, lastTopicId: $lastTopicId');
+
+    if (restoreLast) {
+      if (lastTopicId != null) {
+        final topicId = int.tryParse(lastTopicId);
+        _ref.read(selectedTopicIdProvider.notifier).state = topicId;
+        debugPrint('Restored topic id: $topicId');
+      }
+      if (lastId != null && state.sessions.any((s) => s.sessionId == lastId)) {
+        _ref.read(selectedHistorySessionIdProvider.notifier).state = lastId;
+      } else {
+        // Start with virtual new chat if no last session or it was deleted
+        _ref.read(selectedHistorySessionIdProvider.notifier).state = 'new_chat';
+      }
     } else {
-      // Start with virtual new chat if no last session or it was deleted
+      _ref.read(selectedTopicIdProvider.notifier).state = null;
       _ref.read(selectedHistorySessionIdProvider.notifier).state = 'new_chat';
     }
   }

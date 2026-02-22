@@ -105,6 +105,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatExperience => 'Chat Experience';
 
   @override
+  String get restoreLastChatOnLaunch => 'Restore last chat on launch';
+
+  @override
+  String get restoreLastChatOnLaunchHint =>
+      'When enabled, the app opens the conversation you were using before you quit.';
+
+  @override
   String get smartTopicGeneration => 'Smart Topic Generation';
 
   @override
@@ -1299,6 +1306,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get mobileInputHint => 'Type something...';
+
+  @override
+  String get greetingMessage => 'How can I help you today?';
 
   @override
   String get topics => 'Topic Groups';
