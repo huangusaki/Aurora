@@ -2,7 +2,7 @@ part of 'chat_provider.dart';
 
 final llmServiceProvider = Provider<LLMService>((ref) {
   final settings = ref.watch(settingsProvider);
-  return OpenAILLMService(settings);
+  return ModelRoutedLlmService(settings);
 });
 
 final assistantMemoryServiceProvider = Provider<AssistantMemoryService>((ref) {

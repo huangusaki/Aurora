@@ -12,7 +12,7 @@ import 'package:aurora/features/chat/domain/message.dart';
 import 'package:aurora/features/knowledge/data/knowledge_storage.dart';
 import 'package:aurora/features/knowledge/domain/knowledge_models.dart';
 import 'package:aurora/features/knowledge/presentation/knowledge_provider.dart';
-import 'package:aurora/shared/services/openai_llm_service.dart';
+import 'package:aurora/shared/services/model_routed_llm_service.dart';
 import 'package:aurora/shared/utils/string_utils.dart';
 import 'package:aurora/features/settings/presentation/settings_provider.dart';
 import 'package:aurora/features/settings/presentation/usage_stats_provider.dart';
@@ -1316,4 +1316,3 @@ class NovelNotifier extends StateNotifier<NovelWritingState> {
     unawaited(_saveState());
   }
 }
-

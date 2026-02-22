@@ -927,8 +927,11 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
                       dismissWithEsc: true,
                       builder: (context) {
                         return fluent.FlyoutContent(
-                          child: SizedBox(
-                            width: 320,
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(
+                              maxWidth: 320,
+                              maxHeight: MediaQuery.of(context).size.height * 0.8,
+                            ),
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -943,9 +946,14 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
                                   ),
                                 ),
                                 const SizedBox(height: 12),
-                                PayloadConfigPanel(
-                                  providerId: settings.activeProviderId,
-                                  modelName: settings.selectedModel ?? '',
+                                Flexible(
+                                  child: SingleChildScrollView(
+                                    padding: const EdgeInsets.only(right: 12.0),
+                                    child: PayloadConfigPanel(
+                                      providerId: settings.activeProviderId,
+                                      modelName: settings.selectedModel ?? '',
+                                    ),
+                                  ),
                                 ),
                               ],
                             ),

@@ -7,6 +7,7 @@ class _ChatRequestContext {
   final List<Message> messagesForApi;
   final List<Skill> activeSkills;
   final List<Map<String, dynamic>>? tools;
+  final bool allowLegacySearchTool;
   final String? currentModel;
   final String currentProviderName;
 
@@ -17,6 +18,7 @@ class _ChatRequestContext {
     required this.messagesForApi,
     required this.activeSkills,
     required this.tools,
+    required this.allowLegacySearchTool,
     required this.currentModel,
     required this.currentProviderName,
   });
@@ -66,9 +68,12 @@ class _ChatRequestContextBuilder {
 
     final activeSkills =
         _resolveActiveSkills(settings: settings, assistant: assistant);
+    final nativeGoogleSearchEnabled = _isNativeGoogleSearchEnabled(settings);
+    final allowLegacySearchTool =
+        settings.isSearchEnabled && !nativeGoogleSearchEnabled;
 
     List<Map<String, dynamic>>? tools;
-    if (settings.isSearchEnabled || activeSkills.isNotEmpty) {
+    if (allowLegacySearchTool || activeSkills.isNotEmpty) {
       tools = toolManager.getTools(skills: activeSkills);
     }
 
@@ -104,9 +109,26 @@ To invoke a skill, output a skill tag in this exact format:
       messagesForApi: messagesForApi,
       activeSkills: activeSkills,
       tools: tools,
+      allowLegacySearchTool: allowLegacySearchTool,
       currentModel: settings.activeProvider.selectedModel,
       currentProviderName: settings.activeProvider.name,
     );
+  }
+
+  bool _isNativeGoogleSearchEnabled(SettingsState settings) {
+    final provider = settings.activeProvider;
+    final rawModelName = provider.selectedModel;
+    final modelName = rawModelName?.trim();
+    if (modelName == null || modelName.isEmpty) return false;
+    final transportMode = resolveModelTransportMode(
+      provider: provider,
+      modelName: modelName,
+    );
+    if (transportMode != LlmTransportMode.geminiNative) return false;
+    final modelSettings = provider.modelSettings[modelName] ??
+        provider.modelSettings[rawModelName];
+    final nativeTools = resolveGeminiNativeToolsFromSettings(modelSettings);
+    return nativeTools.googleSearch;
   }
 
   List<Skill> _resolveActiveSkills({

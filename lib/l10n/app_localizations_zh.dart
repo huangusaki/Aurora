@@ -1308,16 +1308,53 @@ class AppLocalizationsZh extends AppLocalizations {
   String get thinkingBudgetHint => '输入数字 (如 1024) 或级别 (如 low, high)';
 
   @override
-  String get transmissionMode => '传输模式';
+  String get transmissionMode => '思考传输模式';
 
   @override
-  String get modeAuto => '自动智能';
+  String get modeAuto => '自动（按模型族）';
 
   @override
   String get modeExtraBody => 'Extra Body (Google)';
 
   @override
   String get modeReasoningEffort => 'Reasoning Effort (OpenAI)';
+
+  @override
+  String get transportMode => '传输模式';
+
+  @override
+  String get transportModeSubtitle => '按模型选择请求协议';
+
+  @override
+  String get transportModeType => '模式';
+
+  @override
+  String get transportModeAuto => '自动（按模型与服务商）';
+
+  @override
+  String get transportModeOpenaiCompat => 'OpenAI 兼容';
+
+  @override
+  String get transportModeGeminiNative => 'Gemini 原生';
+
+  @override
+  String get geminiNativeTools => 'Gemini 原生工具';
+
+  @override
+  String get geminiNativeToolsSubtitle => '官方内置工具';
+
+  @override
+  String get geminiNativeGoogleSearch => 'Google 搜索';
+
+  @override
+  String get geminiNativeUrlContext => 'URL 上下文';
+
+  @override
+  String get geminiNativeCodeExecution => '代码执行';
+
+  @override
+  String get geminiNativeSearchDisablesLegacySearch =>
+      '启用 Google 搜索后，该模型会禁用 Aurora 旧版联网搜索流程。';
 
   @override
   String get providers => '服务商';

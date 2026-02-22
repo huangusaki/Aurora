@@ -1345,16 +1345,53 @@ class AppLocalizationsEn extends AppLocalizations {
       'Enter number (e.g. 1024) or level (e.g. low, high)';
 
   @override
-  String get transmissionMode => 'Transmission Mode';
+  String get transmissionMode => 'Thinking Transport Mode';
 
   @override
-  String get modeAuto => 'Smart Auto';
+  String get modeAuto => 'Auto (By Model Family)';
 
   @override
   String get modeExtraBody => 'Extra Body (Google)';
 
   @override
   String get modeReasoningEffort => 'Reasoning Effort (OpenAI)';
+
+  @override
+  String get transportMode => 'Transport Mode';
+
+  @override
+  String get transportModeSubtitle => 'Select request protocol per model';
+
+  @override
+  String get transportModeType => 'Mode';
+
+  @override
+  String get transportModeAuto => 'Auto (By Model & Provider)';
+
+  @override
+  String get transportModeOpenaiCompat => 'OpenAI Compatible';
+
+  @override
+  String get transportModeGeminiNative => 'Gemini Native';
+
+  @override
+  String get geminiNativeTools => 'Gemini Native Tools';
+
+  @override
+  String get geminiNativeToolsSubtitle => 'Official built-in tools';
+
+  @override
+  String get geminiNativeGoogleSearch => 'Google Search';
+
+  @override
+  String get geminiNativeUrlContext => 'URL Context';
+
+  @override
+  String get geminiNativeCodeExecution => 'Code Execution';
+
+  @override
+  String get geminiNativeSearchDisablesLegacySearch =>
+      'When Google Search is enabled, Aurora legacy web-search flow is disabled for this model.';
 
   @override
   String get providers => 'Providers';

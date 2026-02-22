@@ -2603,13 +2603,13 @@ abstract class AppLocalizations {
   /// No description provided for @transmissionMode.
   ///
   /// In zh, this message translates to:
-  /// **'传输模式'**
+  /// **'思考传输模式'**
   String get transmissionMode;
 
   /// No description provided for @modeAuto.
   ///
   /// In zh, this message translates to:
-  /// **'自动智能'**
+  /// **'自动（按模型族）'**
   String get modeAuto;
 
   /// No description provided for @modeExtraBody.
@@ -2623,6 +2623,78 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'Reasoning Effort (OpenAI)'**
   String get modeReasoningEffort;
+
+  /// No description provided for @transportMode.
+  ///
+  /// In zh, this message translates to:
+  /// **'传输模式'**
+  String get transportMode;
+
+  /// No description provided for @transportModeSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'按模型选择请求协议'**
+  String get transportModeSubtitle;
+
+  /// No description provided for @transportModeType.
+  ///
+  /// In zh, this message translates to:
+  /// **'模式'**
+  String get transportModeType;
+
+  /// No description provided for @transportModeAuto.
+  ///
+  /// In zh, this message translates to:
+  /// **'自动（按模型与服务商）'**
+  String get transportModeAuto;
+
+  /// No description provided for @transportModeOpenaiCompat.
+  ///
+  /// In zh, this message translates to:
+  /// **'OpenAI 兼容'**
+  String get transportModeOpenaiCompat;
+
+  /// No description provided for @transportModeGeminiNative.
+  ///
+  /// In zh, this message translates to:
+  /// **'Gemini 原生'**
+  String get transportModeGeminiNative;
+
+  /// No description provided for @geminiNativeTools.
+  ///
+  /// In zh, this message translates to:
+  /// **'Gemini 原生工具'**
+  String get geminiNativeTools;
+
+  /// No description provided for @geminiNativeToolsSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'官方内置工具'**
+  String get geminiNativeToolsSubtitle;
+
+  /// No description provided for @geminiNativeGoogleSearch.
+  ///
+  /// In zh, this message translates to:
+  /// **'Google 搜索'**
+  String get geminiNativeGoogleSearch;
+
+  /// No description provided for @geminiNativeUrlContext.
+  ///
+  /// In zh, this message translates to:
+  /// **'URL 上下文'**
+  String get geminiNativeUrlContext;
+
+  /// No description provided for @geminiNativeCodeExecution.
+  ///
+  /// In zh, this message translates to:
+  /// **'代码执行'**
+  String get geminiNativeCodeExecution;
+
+  /// No description provided for @geminiNativeSearchDisablesLegacySearch.
+  ///
+  /// In zh, this message translates to:
+  /// **'启用 Google 搜索后，该模型会禁用 Aurora 旧版联网搜索流程。'**
+  String get geminiNativeSearchDisablesLegacySearch;
 
   /// No description provided for @providers.
   ///

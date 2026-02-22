@@ -212,7 +212,7 @@ extension NovelNotifierWorkflowIo on NovelNotifier {
 
     final finalSettings = tempSettings.copyWith(providers: updatedProviders);
 
-    final llmService = OpenAILLMService(finalSettings);
+    final llmService = ModelRoutedLlmService(finalSettings);
 
     final messages = [
       Message(

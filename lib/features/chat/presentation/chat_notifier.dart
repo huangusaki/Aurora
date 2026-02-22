@@ -882,7 +882,7 @@ class ChatNotifier extends StateNotifier<ChatState> {
       activeProviderId: providerId,
       providers: tempProviders,
     );
-    final tempLLMService = OpenAILLMService(tempSettings);
+    final tempLLMService = ModelRoutedLlmService(tempSettings);
     try {
       final inputContent = text.length > 3000 ? text.substring(0, 3000) : text;
       final prompt =

@@ -42,6 +42,10 @@ class _ChatActionExecutor {
   Future<_ChatActionResult> execute(Message aiMsg) async {
     final searchMatch = _searchPattern.firstMatch(aiMsg.content);
     if (searchMatch != null) {
+      if (!_requestContext.allowLegacySearchTool) {
+        return _ChatActionResult.stop(
+            _cleanTagFromDisplay(aiMsg, _searchPattern));
+      }
       return _handleSearch(aiMsg, searchMatch);
     }
 

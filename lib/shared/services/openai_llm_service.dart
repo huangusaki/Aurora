@@ -99,7 +99,7 @@ class OpenAILLMService implements LLMService {
     }());
   }
 
-  dynamic _sanitizeForLog(dynamic data) {
+  dynamic _sanitizeForLog(dynamic data, {bool preserveLongText = false}) {
     if (data is ResponseBody) {
       return {
         'content_type': 'ResponseBody',
@@ -122,12 +122,17 @@ class OpenAILLMService implements LLMService {
           return MapEntry(
               k, '${v.substring(0, 50)}...[TRUNCATED ${v.length} chars]');
         }
-        return MapEntry(k, _sanitizeForLog(v));
+        return MapEntry(
+          k,
+          _sanitizeForLog(v, preserveLongText: preserveLongText),
+        );
       });
     } else if (data is List) {
-      return data.map((i) => _sanitizeForLog(i)).toList();
+      return data
+          .map((i) => _sanitizeForLog(i, preserveLongText: preserveLongText))
+          .toList();
     } else if (data is String) {
-      if (data.length > 800) {
+      if (!preserveLongText && data.length > 800) {
         return '${data.substring(0, 200)}...[TRUNCATED ${data.length} chars]';
       }
       if (data.startsWith('data:') && data.length > 200) {
@@ -139,7 +144,10 @@ class OpenAILLMService implements LLMService {
 
   void _logEvent(String category, dynamic payload, {String level = 'DEBUG'}) {
     assert(() {
-      final sanitized = _sanitizeForLog(payload);
+      final sanitized = _sanitizeForLog(
+        payload,
+        preserveLongText: AppLogger.showRawLlmPayload,
+      );
       var effectiveCategory = category;
       var effectiveLevel = level.toUpperCase();
       dynamic effectivePayload = sanitized;
@@ -176,7 +184,13 @@ class OpenAILLMService implements LLMService {
   void _logRequest(String url, Map<String, dynamic> data) {
     assert(() {
       try {
-        AppLogger.llmRequest(url: url, payload: _sanitizeForLog(data));
+        AppLogger.llmRequest(
+          url: url,
+          payload: _sanitizeForLog(
+            data,
+            preserveLongText: AppLogger.showRawLlmPayload,
+          ),
+        );
       } catch (e) {
         AppLogger.error('LLM', 'Request log error: $e',
             category: 'REQUEST_LOG');
@@ -188,7 +202,12 @@ class OpenAILLMService implements LLMService {
   void _logResponse(dynamic data) {
     assert(() {
       try {
-        AppLogger.llmResponse(payload: _sanitizeForLog(data));
+        AppLogger.llmResponse(
+          payload: _sanitizeForLog(
+            data,
+            preserveLongText: AppLogger.showRawLlmPayload,
+          ),
+        );
       } catch (e) {
         AppLogger.error('LLM', 'Response log error: $e',
             category: 'RESPONSE_LOG');

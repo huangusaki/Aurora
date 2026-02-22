@@ -4,7 +4,7 @@ import 'package:aurora/l10n/app_localizations.dart';
 import 'package:flutter/widgets.dart';
 import 'package:aurora/shared/riverpod_compat.dart';
 
-import '../../../shared/services/openai_llm_service.dart';
+import '../../../shared/services/model_routed_llm_service.dart';
 import '../../settings/presentation/settings_provider.dart';
 import '../application/cleaner_orchestrator.dart';
 import '../application/cleaner_policy_engine.dart';
@@ -40,7 +40,7 @@ final cleanerFallbackAdvisorProvider = Provider<CleanerAiAdvisor>((ref) {
 final cleanerAiAdvisorProvider = Provider<CleanerAiAdvisor>((ref) {
   final settings = ref.watch(settingsProvider);
   final fallbackAdvisor = ref.watch(cleanerFallbackAdvisorProvider);
-  final llmService = OpenAILLMService(settings);
+  final llmService = ModelRoutedLlmService(settings);
   return LlmCleanerAiAdvisor(
     llmService: llmService,
     fallbackAdvisor: fallbackAdvisor,
@@ -55,7 +55,7 @@ final cleanerFallbackDirectoryPlannerProvider =
 final cleanerDirectoryPlannerProvider =
     Provider<CleanerDirectoryPlanner>((ref) {
   final settings = ref.watch(settingsProvider);
-  final llmService = OpenAILLMService(settings);
+  final llmService = ModelRoutedLlmService(settings);
   final fallbackPlanner = ref.watch(cleanerFallbackDirectoryPlannerProvider);
   final context = CleanerAiContext(
     language: settings.language,
@@ -528,4 +528,3 @@ class CleanerNotifier extends StateNotifier<CleanerState> {
 final cleanerProvider = StateNotifierProvider<CleanerNotifier, CleanerState>(
   (ref) => CleanerNotifier(ref),
 );
-

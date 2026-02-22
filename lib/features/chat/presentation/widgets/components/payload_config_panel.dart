@@ -1,7 +1,9 @@
 import 'package:aurora/features/settings/presentation/settings_provider.dart';
 import 'package:aurora/l10n/app_localizations.dart';
+import 'package:aurora/shared/services/llm_transport_mode.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:aurora/shared/riverpod_compat.dart';
+import 'package:aurora/shared/theme/aurora_icons.dart';
 
 class PayloadConfigPanel extends ConsumerStatefulWidget {
   final String providerId;
@@ -62,6 +64,57 @@ class _PayloadConfigPanelState extends ConsumerState<PayloadConfigPanel> {
           modelName: widget.modelName,
           settings: settings,
         );
+  }
+
+  bool _toBool(dynamic value) {
+    if (value is bool) return value;
+    if (value is num) return value != 0;
+    if (value == null) return false;
+    final normalized = value.toString().trim().toLowerCase();
+    return normalized == '1' ||
+        normalized == 'true' ||
+        normalized == 'yes' ||
+        normalized == 'on';
+  }
+
+  Widget _buildSectionCard({
+    required IconData icon,
+    required Widget child,
+    Widget? headerAction,
+  }) {
+    final theme = FluentTheme.of(context);
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: theme.scaffoldBackgroundColor,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: theme.resources.dividerStrokeColorDefault),
+      ),
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (headerAction == null)
+            Row(
+              children: [
+                Icon(icon, size: 14, color: theme.accentColor),
+                const SizedBox(width: 8),
+                Expanded(child: child),
+              ],
+            )
+          else ...[
+            Row(
+              children: [
+                Icon(icon, size: 14, color: theme.accentColor),
+                const SizedBox(width: 8),
+                Expanded(child: child),
+                headerAction,
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
   }
 
   @override
@@ -168,34 +221,157 @@ class _PayloadConfigPanelState extends ConsumerState<PayloadConfigPanel> {
 
   Widget _buildReasoningConfig(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final theme = FluentTheme.of(context);
     final Map<String, dynamic> thinkingConfig = Map<String, dynamic>.from(
         _modelSettings['_aurora_thinking_config'] ?? {});
     final Map<String, dynamic> generationConfig = Map<String, dynamic>.from(
         _modelSettings['_aurora_generation_config'] ?? {});
+    final LlmTransportMode transportMode =
+        resolveTransportModeFromSettings(_modelSettings);
+    final nativeToolRaw = _modelSettings[auroraGeminiNativeToolsKey];
+    final nativeToolMap = nativeToolRaw is Map
+        ? Map<String, dynamic>.from(nativeToolRaw)
+        : <String, dynamic>{};
+    final nativeGoogleSearch =
+        _toBool(nativeToolMap[auroraGeminiNativeGoogleSearchKey]);
+    final nativeUrlContext =
+        _toBool(nativeToolMap[auroraGeminiNativeUrlContextKey]);
+    final nativeCodeExecution =
+        _toBool(nativeToolMap[auroraGeminiNativeCodeExecutionKey]);
 
     final bool thinkingEnabled = thinkingConfig['enabled'] == true;
     final String thinkingMode = thinkingConfig['mode']?.toString() ?? 'auto';
+
+    String transportModeLabel(LlmTransportMode mode) {
+      switch (mode) {
+        case LlmTransportMode.auto:
+          return l10n.transportModeAuto;
+        case LlmTransportMode.openaiCompat:
+          return l10n.transportModeOpenaiCompat;
+        case LlmTransportMode.geminiNative:
+          return l10n.transportModeGeminiNative;
+      }
+    }
+
+    void saveNativeTools({
+      bool? googleSearch,
+      bool? urlContext,
+      bool? codeExecution,
+    }) {
+      final config = GeminiNativeToolsConfig(
+        googleSearch: googleSearch ?? nativeGoogleSearch,
+        urlContext: urlContext ?? nativeUrlContext,
+        codeExecution: codeExecution ?? nativeCodeExecution,
+      );
+      final newSettings = withGeminiNativeTools(_modelSettings, config);
+      _saveSettings(newSettings);
+    }
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Expanded(child: Text(l10n.enableThinking)),
-            ToggleSwitch(
-              checked: thinkingEnabled,
-              onChanged: (v) {
-                thinkingConfig['enabled'] = v;
-                final newSettings = Map<String, dynamic>.from(_modelSettings);
-                newSettings['_aurora_thinking_config'] = thinkingConfig;
-                _saveSettings(newSettings);
-              },
+        _buildSectionCard(
+          icon: AuroraIcons.globe,
+          child: Text(l10n.transportMode,
+              style: const TextStyle(fontWeight: FontWeight.w600)),
+        ),
+        const SizedBox(height: 8),
+        ComboBox<LlmTransportMode>(
+          value: transportMode,
+          isExpanded: true,
+          items: LlmTransportMode.values
+              .map((mode) => ComboBoxItem<LlmTransportMode>(
+                    value: mode,
+                    child: Text(transportModeLabel(mode)),
+                  ))
+              .toList(),
+          onChanged: (mode) {
+            if (mode == null) return;
+            final newSettings = withTransportMode(_modelSettings, mode);
+            _saveSettings(newSettings);
+          },
+        ),
+
+        if (transportMode == LlmTransportMode.geminiNative) ...[
+          const SizedBox(height: 16),
+          _buildSectionCard(
+            icon: AuroraIcons.skills,
+            child: Text(l10n.geminiNativeTools,
+                style: const TextStyle(fontWeight: FontWeight.w600)),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: Text(l10n.geminiNativeGoogleSearch),
+              ),
+              ToggleSwitch(
+                checked: nativeGoogleSearch,
+                onChanged: (v) => saveNativeTools(googleSearch: v),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: Text(l10n.geminiNativeUrlContext),
+              ),
+              ToggleSwitch(
+                checked: nativeUrlContext,
+                onChanged: (v) => saveNativeTools(urlContext: v),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: Text(l10n.geminiNativeCodeExecution),
+              ),
+              ToggleSwitch(
+                checked: nativeCodeExecution,
+                onChanged: (v) => saveNativeTools(codeExecution: v),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            decoration: BoxDecoration(
+              color: theme.resources.subtleFillColorSecondary,
+              borderRadius: BorderRadius.circular(6),
             ),
-          ],
+            child: Text(
+              l10n.geminiNativeSearchDisablesLegacySearch,
+              style: TextStyle(
+                fontSize: 12,
+                color: theme.resources.textFillColorPrimary.withValues(
+                  alpha: 0.82,
+                ),
+              ),
+            ),
+          ),
+        ],
+
+        const SizedBox(height: 16),
+        _buildSectionCard(
+          icon: AuroraIcons.lightbulb,
+          child: Text(l10n.thinkingConfig,
+              style: const TextStyle(fontWeight: FontWeight.w600)),
+          headerAction: ToggleSwitch(
+            checked: thinkingEnabled,
+            onChanged: (v) {
+              thinkingConfig['enabled'] = v;
+              final newSettings = Map<String, dynamic>.from(_modelSettings);
+              newSettings['_aurora_thinking_config'] = thinkingConfig;
+              _saveSettings(newSettings);
+            },
+          ),
         ),
         if (thinkingEnabled) ...[
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           InfoLabel(
             label: l10n.thinkingBudget,
             child: TextBox(
@@ -209,7 +385,7 @@ class _PayloadConfigPanelState extends ConsumerState<PayloadConfigPanel> {
               },
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           InfoLabel(
             label: l10n.transmissionMode,
             child: ComboBox<String>(
@@ -234,9 +410,14 @@ class _PayloadConfigPanelState extends ConsumerState<PayloadConfigPanel> {
             ),
           ),
         ],
+
         const SizedBox(height: 16),
-        const Divider(),
-        const SizedBox(height: 16),
+        _buildSectionCard(
+          icon: AuroraIcons.settings,
+          child: Text(l10n.generationConfig,
+              style: const TextStyle(fontWeight: FontWeight.w600)),
+        ),
+        const SizedBox(height: 8),
         InfoLabel(
           label: l10n.temperature,
           child: TextBox(
@@ -250,7 +431,7 @@ class _PayloadConfigPanelState extends ConsumerState<PayloadConfigPanel> {
             },
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
         InfoLabel(
           label: l10n.contextLength,
           child: TextBox(
@@ -268,4 +449,3 @@ class _PayloadConfigPanelState extends ConsumerState<PayloadConfigPanel> {
     );
   }
 }
-
