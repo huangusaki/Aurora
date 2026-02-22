@@ -295,155 +295,160 @@ class _KnowledgeSettingsPanelState
               child: Text(l10n.noKnowledgeBaseYetCreateOne),
             )
           else
-            ...bases.map((base) {
-              final isSelected = base.baseId == _selectedBaseId;
-              final isActive =
-                  settings.activeKnowledgeBaseIds.contains(base.baseId);
-              final hintColor = fluent.FluentTheme.of(context)
-                  .resources
-                  .textFillColorSecondary;
-              return Container(
-                margin: const EdgeInsets.only(bottom: 8),
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    color: isSelected
-                        ? fluent.FluentTheme.of(context).accentColor
-                        : fluent.FluentTheme.of(context)
-                            .resources
-                            .dividerStrokeColorDefault,
-                  ),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+            RadioGroup<String>(
+              groupValue: _selectedBaseId,
+              onChanged: (value) {
+                if (value == null) return;
+                setState(() {
+                  _selectedBaseId = value;
+                });
+              },
+              child: Column(
+                children: bases.map((base) {
+                  final isSelected = base.baseId == _selectedBaseId;
+                  final isActive =
+                      settings.activeKnowledgeBaseIds.contains(base.baseId);
+                  final hintColor = fluent.FluentTheme.of(context)
+                      .resources
+                      .textFillColorSecondary;
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: isSelected
+                            ? fluent.FluentTheme.of(context).accentColor
+                            : fluent.FluentTheme.of(context)
+                                .resources
+                                .dividerStrokeColorDefault,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        fluent.RadioButton(
-                          checked: isSelected,
-                          content: const SizedBox.shrink(),
-                          onChanged: (v) {
-                            if (v) {
-                              setState(() {
-                                _selectedBaseId = base.baseId;
-                              });
-                            }
-                          },
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Radio<String>(value: base.baseId),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                base.name,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w600),
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            base.name,
-                            style: const TextStyle(fontWeight: FontWeight.w600),
+                        if (base.description.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(left: 30, top: 4),
+                            child: Text(
+                              base.description,
+                              style: TextStyle(
+                                color: hintColor,
+                              ),
+                            ),
+                          ),
+                        Padding(
+                          padding: const EdgeInsets.only(left: 30, top: 6),
+                          child: Text(l10n.knowledgeDocsAndChunks(
+                              base.documentCount, base.chunkCount)),
+                        ),
+                        const SizedBox(height: 12),
+                        Container(
+                          margin: const EdgeInsets.only(left: 30),
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                              color: fluent.FluentTheme.of(context)
+                                  .resources
+                                  .dividerStrokeColorDefault,
+                            ),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Column(
+                            children: [
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                            l10n.knowledgeGlobalSelectionLabel),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          l10n.knowledgeGlobalSelectionHint,
+                                          style: TextStyle(
+                                            color: hintColor,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  fluent.Checkbox(
+                                    checked: isActive,
+                                    content: const SizedBox.shrink(),
+                                    onChanged: (v) {
+                                      final next = List<String>.from(
+                                          settings.activeKnowledgeBaseIds);
+                                      if (v == true) {
+                                        if (!next.contains(base.baseId)) {
+                                          next.add(base.baseId);
+                                        }
+                                      } else {
+                                        next.remove(base.baseId);
+                                      }
+                                      ref
+                                          .read(settingsProvider.notifier)
+                                          .setActiveKnowledgeBaseIds(next);
+                                    },
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 10),
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(l10n.knowledgeBaseEnabledLabel),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          l10n.knowledgeBaseEnabledHint,
+                                          style: TextStyle(
+                                            color: hintColor,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  fluent.ToggleSwitch(
+                                    checked: base.isEnabled,
+                                    onChanged: (v) =>
+                                        notifier.setBaseEnabled(base.baseId, v),
+                                    content: const SizedBox.shrink(),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
                         ),
                       ],
                     ),
-                    if (base.description.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(left: 30, top: 4),
-                        child: Text(
-                          base.description,
-                          style: TextStyle(
-                            color: hintColor,
-                          ),
-                        ),
-                      ),
-                    Padding(
-                      padding: const EdgeInsets.only(left: 30, top: 6),
-                      child: Text(l10n.knowledgeDocsAndChunks(
-                          base.documentCount, base.chunkCount)),
-                    ),
-                    const SizedBox(height: 12),
-                    Container(
-                      margin: const EdgeInsets.only(left: 30),
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: fluent.FluentTheme.of(context)
-                              .resources
-                              .dividerStrokeColorDefault,
-                        ),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Column(
-                        children: [
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(l10n.knowledgeGlobalSelectionLabel),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      l10n.knowledgeGlobalSelectionHint,
-                                      style: TextStyle(
-                                        color: hintColor,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              fluent.Checkbox(
-                                checked: isActive,
-                                content: const SizedBox.shrink(),
-                                onChanged: (v) {
-                                  final next = List<String>.from(
-                                      settings.activeKnowledgeBaseIds);
-                                  if (v == true) {
-                                    if (!next.contains(base.baseId)) {
-                                      next.add(base.baseId);
-                                    }
-                                  } else {
-                                    next.remove(base.baseId);
-                                  }
-                                  ref
-                                      .read(settingsProvider.notifier)
-                                      .setActiveKnowledgeBaseIds(next);
-                                },
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(l10n.knowledgeBaseEnabledLabel),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      l10n.knowledgeBaseEnabledHint,
-                                      style: TextStyle(
-                                        color: hintColor,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              fluent.ToggleSwitch(
-                                checked: base.isEnabled,
-                                onChanged: (v) =>
-                                    notifier.setBaseEnabled(base.baseId, v),
-                                content: const SizedBox.shrink(),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }),
+                  );
+                }).toList(),
+              ),
+            ),
         ],
       ),
     );
@@ -594,4 +599,3 @@ class _KnowledgeSettingsPanelState
     );
   }
 }
-

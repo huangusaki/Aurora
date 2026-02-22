@@ -22,7 +22,7 @@ extension _SettingsContentSections on _SettingsContentState {
     final hasBackground =
         settings.enabled && settings.path != null && settings.path!.isNotEmpty;
     final wallpaperTint = ref.watch(wallpaperTintColorProvider);
-    final baseFill = theme.brightness.isDark
+    final baseFill = theme.brightness == Brightness.dark
         ? const Color(0xFF3C3C3C)
         : const Color(0xFFF3F3F3);
     return fluent.TextBox(
@@ -122,7 +122,7 @@ extension _SettingsContentSections on _SettingsContentState {
             settingsState.backgroundImagePath != null &&
             settingsState.backgroundImagePath!.isNotEmpty;
     final wallpaperTint = ref.watch(wallpaperTintColorProvider);
-    final apiKeyCardBaseBg = theme.brightness.isDark
+    final apiKeyCardBaseBg = theme.brightness == Brightness.dark
         ? const Color(0xFF323232)
         : const Color(0xFFF9F9F9);
     final apiKeyCardBg = hasBackground
@@ -443,75 +443,80 @@ extension _SettingsContentSections on _SettingsContentState {
                           ),
                         )
                       else
-                        ...viewingProvider.apiKeys.asMap().entries.map((entry) {
-                          final index = entry.key;
-                          final key = entry.value;
-                          final isCurrent =
-                              index == viewingProvider.safeCurrentKeyIndex;
+                        RadioGroup<int>(
+                          groupValue: viewingProvider.safeCurrentKeyIndex,
+                          onChanged: (index) {
+                            if (index == null) return;
+                            ref
+                                .read(settingsProvider.notifier)
+                                .setCurrentKeyIndex(viewingProvider.id, index);
+                          },
+                          child: Column(
+                            children:
+                                viewingProvider.apiKeys.asMap().entries.map(
+                              (entry) {
+                                final index = entry.key;
+                                final key = entry.value;
+                                final isCurrent = index ==
+                                    viewingProvider.safeCurrentKeyIndex;
 
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 8),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: apiKeyCardBg,
-                                borderRadius: BorderRadius.circular(4),
-                                border: Border.all(
-                                  color: isCurrent
-                                      ? fluent.FluentTheme.of(context)
-                                          .accentColor
-                                      : Colors.transparent,
-                                  width: 1,
-                                ),
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 6),
-                              child: Row(
-                                children: [
-                                  fluent.RadioButton(
-                                    checked: isCurrent,
-                                    onChanged: (checked) {
-                                      if (checked == true) {
-                                        ref
-                                            .read(settingsProvider.notifier)
-                                            .setCurrentKeyIndex(
-                                                viewingProvider.id, index);
-                                      }
-                                    },
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: _ApiKeyItem(
-                                      key: ValueKey(
-                                          '${viewingProvider.id}_$index'),
-                                      apiKey: key,
-                                      onUpdate: (value) {
-                                        ref
-                                            .read(settingsProvider.notifier)
-                                            .updateApiKeyAtIndex(
-                                                viewingProvider.id,
-                                                index,
-                                                value);
-                                      },
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 8),
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: apiKeyCardBg,
+                                      borderRadius: BorderRadius.circular(4),
+                                      border: Border.all(
+                                        color: isCurrent
+                                            ? fluent.FluentTheme.of(context)
+                                                .accentColor
+                                            : Colors.transparent,
+                                        width: 1,
+                                      ),
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 6),
+                                    child: Row(
+                                      children: [
+                                        Radio<int>(value: index),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: _ApiKeyItem(
+                                            key: ValueKey(
+                                                '${viewingProvider.id}_$index'),
+                                            apiKey: key,
+                                            onUpdate: (value) {
+                                              ref
+                                                  .read(
+                                                      settingsProvider.notifier)
+                                                  .updateApiKeyAtIndex(
+                                                      viewingProvider.id,
+                                                      index,
+                                                      value);
+                                            },
+                                          ),
+                                        ),
+                                        const SizedBox(width: 4),
+                                        fluent.IconButton(
+                                          icon: fluent.Icon(AuroraIcons.delete,
+                                              size: 14,
+                                              color: fluent.Colors.red
+                                                  .withValues(alpha: 0.7)),
+                                          onPressed: () {
+                                            ref
+                                                .read(settingsProvider.notifier)
+                                                .removeApiKey(
+                                                    viewingProvider.id, index);
+                                          },
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                  const SizedBox(width: 4),
-                                  fluent.IconButton(
-                                    icon: fluent.Icon(AuroraIcons.delete,
-                                        size: 14,
-                                        color: fluent.Colors.red
-                                            .withValues(alpha: 0.7)),
-                                    onPressed: () {
-                                      ref
-                                          .read(settingsProvider.notifier)
-                                          .removeApiKey(
-                                              viewingProvider.id, index);
-                                    },
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        }),
+                                );
+                              },
+                            ).toList(),
+                          ),
+                        ),
                       const SizedBox(height: 16),
 
                       // --- Base URL ---
@@ -1273,38 +1278,39 @@ extension _SettingsContentSections on _SettingsContentState {
             context,
             child: fluent.InfoLabel(
               label: l10n.closeBehavior,
-              child: Row(
-                children: [
-                  fluent.RadioButton(
-                    checked: settingsState.closeBehavior == 0,
-                    onChanged: (v) {
-                      if (v) {
-                        ref.read(settingsProvider.notifier).setCloseBehavior(0);
-                      }
-                    },
-                    content: Text(l10n.askEveryTime),
-                  ),
-                  const SizedBox(width: 24),
-                  fluent.RadioButton(
-                    checked: settingsState.closeBehavior == 1,
-                    onChanged: (v) {
-                      if (v) {
-                        ref.read(settingsProvider.notifier).setCloseBehavior(1);
-                      }
-                    },
-                    content: Text(l10n.minimizeToTrayOption),
-                  ),
-                  const SizedBox(width: 24),
-                  fluent.RadioButton(
-                    checked: settingsState.closeBehavior == 2,
-                    onChanged: (v) {
-                      if (v) {
-                        ref.read(settingsProvider.notifier).setCloseBehavior(2);
-                      }
-                    },
-                    content: Text(l10n.exitApplicationOption),
-                  ),
-                ],
+              child: RadioGroup<int>(
+                groupValue: settingsState.closeBehavior,
+                onChanged: (value) {
+                  if (value == null) return;
+                  ref.read(settingsProvider.notifier).setCloseBehavior(value);
+                },
+                child: Row(
+                  children: [
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Radio<int>(value: 0),
+                        Text(l10n.askEveryTime),
+                      ],
+                    ),
+                    const SizedBox(width: 24),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Radio<int>(value: 1),
+                        Text(l10n.minimizeToTrayOption),
+                      ],
+                    ),
+                    const SizedBox(width: 24),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Radio<int>(value: 2),
+                        Text(l10n.exitApplicationOption),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -1498,30 +1504,39 @@ extension _SettingsContentSections on _SettingsContentState {
           const SizedBox(height: 24),
           fluent.InfoLabel(
             label: l10n.themeMode,
-            child: Row(
-              children: [
-                fluent.RadioButton(
-                  checked: settingsState.themeMode == 'light',
-                  onChanged: (_) =>
-                      ref.read(settingsProvider.notifier).setThemeMode('light'),
-                  content: Text(l10n.themeLight),
-                ),
-                const SizedBox(width: 16),
-                fluent.RadioButton(
-                  checked: settingsState.themeMode == 'dark',
-                  onChanged: (_) =>
-                      ref.read(settingsProvider.notifier).setThemeMode('dark'),
-                  content: Text(l10n.themeDark),
-                ),
-                const SizedBox(width: 16),
-                fluent.RadioButton(
-                  checked: settingsState.themeMode == 'system',
-                  onChanged: (_) => ref
-                      .read(settingsProvider.notifier)
-                      .setThemeMode('system'),
-                  content: Text(l10n.themeSystem),
-                ),
-              ],
+            child: RadioGroup<String>(
+              groupValue: settingsState.themeMode,
+              onChanged: (value) {
+                if (value == null) return;
+                ref.read(settingsProvider.notifier).setThemeMode(value);
+              },
+              child: Row(
+                children: [
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Radio<String>(value: 'light'),
+                      Text(l10n.themeLight),
+                    ],
+                  ),
+                  const SizedBox(width: 16),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Radio<String>(value: 'dark'),
+                      Text(l10n.themeDark),
+                    ],
+                  ),
+                  const SizedBox(width: 16),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Radio<String>(value: 'system'),
+                      Text(l10n.themeSystem),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 12),

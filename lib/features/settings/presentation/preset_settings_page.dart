@@ -151,10 +151,11 @@ class _PresetSettingsPageState extends ConsumerState<PresetSettingsPage> {
                           icon: const Icon(AuroraIcons.delete),
                           onPressed: () => _delete(preset.id),
                         ),
-                        tileColor: isSelected
-                            ? WidgetStateProperty.all(
-                                theme.accentColor.withValues(alpha: 0.1))
-                            : WidgetStateProperty.all(Colors.transparent),
+                        tileColor: WidgetStateColor.resolveWith(
+                          (_) => isSelected
+                              ? theme.accentColor.withValues(alpha: 0.1)
+                              : Colors.transparent,
+                        ),
                       ),
                     );
                   },
@@ -267,4 +268,3 @@ class _PresetSettingsPageState extends ConsumerState<PresetSettingsPage> {
     );
   }
 }
-
