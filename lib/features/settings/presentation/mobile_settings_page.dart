@@ -4,6 +4,7 @@ import 'package:aurora/shared/riverpod_compat.dart';
 import 'settings_provider.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 import 'package:aurora/shared/widgets/aurora_bottom_sheet.dart';
+import 'package:aurora/shared/widgets/aurora_dropdown.dart';
 import 'package:aurora/shared/widgets/aurora_notice.dart';
 import 'model_display_name.dart';
 import 'widgets/mobile_settings_widgets.dart';
@@ -866,22 +867,22 @@ class _ModelConfigDialogState extends State<_ModelConfigDialog> {
                                   _saveSettings(thinkingBudget: v),
                             ),
                             const SizedBox(height: 12),
-                            DropdownButtonFormField<String>(
-                              initialValue: _thinkingMode,
-                              decoration: InputDecoration(
-                                labelText: l10n.transmissionMode,
-                                border: const OutlineInputBorder(),
-                                isDense: true,
-                              ),
-                              items: [
-                                DropdownMenuItem(
-                                    value: 'auto', child: Text(l10n.modeAuto)),
-                                DropdownMenuItem(
-                                    value: 'extra_body',
-                                    child: Text(l10n.modeExtraBody)),
-                                DropdownMenuItem(
-                                    value: 'reasoning_effort',
-                                    child: Text(l10n.modeReasoningEffort)),
+                            AuroraMaterialDropdownField<String>(
+                              value: _thinkingMode,
+                              label: l10n.transmissionMode,
+                              options: [
+                                AuroraDropdownOption(
+                                  value: 'auto',
+                                  label: l10n.modeAuto,
+                                ),
+                                AuroraDropdownOption(
+                                  value: 'extra_body',
+                                  label: l10n.modeExtraBody,
+                                ),
+                                AuroraDropdownOption(
+                                  value: 'reasoning_effort',
+                                  label: l10n.modeReasoningEffort,
+                                ),
                               ],
                               onChanged: (v) {
                                 if (v != null) _saveSettings(thinkingMode: v);
@@ -1184,7 +1185,6 @@ class _ParameterConfigDialogState extends State<_ParameterConfigDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final isEditing = widget.initialKey != null;
     final l10n = AppLocalizations.of(context)!;
     final typeMap = {
@@ -1213,17 +1213,17 @@ class _ParameterConfigDialogState extends State<_ParameterConfigDialog> {
                 ),
               ),
               const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                initialValue: _type,
-                dropdownColor: isDark ? const Color(0xFF2C2C2C) : Colors.white,
-                decoration: InputDecoration(
-                  labelText: l10n.paramType,
-                  border: const OutlineInputBorder(),
-                ),
-                items: typeMap.entries
-                    .map((e) =>
-                        DropdownMenuItem(value: e.key, child: Text(e.value)))
-                    .toList(),
+              AuroraMaterialDropdownField<String>(
+                value: _type,
+                label: l10n.paramType,
+                options: typeMap.entries
+                    .map(
+                      (entry) => AuroraDropdownOption<String>(
+                        value: entry.key,
+                        label: entry.value,
+                      ),
+                    )
+                    .toList(growable: false),
                 onChanged: (v) => setState(() => _type = v!),
               ),
               const SizedBox(height: 12),
@@ -1615,22 +1615,22 @@ class _GlobalConfigBottomSheetState
                                   _saveSettings(thinkingBudget: v),
                             ),
                             const SizedBox(height: 12),
-                            DropdownButtonFormField<String>(
-                              initialValue: _thinkingMode,
-                              decoration: InputDecoration(
-                                labelText: l10n.transmissionMode,
-                                border: const OutlineInputBorder(),
-                                isDense: true,
-                              ),
-                              items: [
-                                DropdownMenuItem(
-                                    value: 'auto', child: Text(l10n.modeAuto)),
-                                DropdownMenuItem(
-                                    value: 'extra_body',
-                                    child: Text(l10n.modeExtraBody)),
-                                DropdownMenuItem(
-                                    value: 'reasoning_effort',
-                                    child: Text(l10n.modeReasoningEffort)),
+                            AuroraMaterialDropdownField<String>(
+                              value: _thinkingMode,
+                              label: l10n.transmissionMode,
+                              options: [
+                                AuroraDropdownOption(
+                                  value: 'auto',
+                                  label: l10n.modeAuto,
+                                ),
+                                AuroraDropdownOption(
+                                  value: 'extra_body',
+                                  label: l10n.modeExtraBody,
+                                ),
+                                AuroraDropdownOption(
+                                  value: 'reasoning_effort',
+                                  label: l10n.modeReasoningEffort,
+                                ),
                               ],
                               onChanged: (v) {
                                 if (v != null) _saveSettings(thinkingMode: v);

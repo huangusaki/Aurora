@@ -1,6 +1,7 @@
 import 'package:aurora/features/settings/presentation/settings_provider.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 import 'package:aurora/shared/services/llm_transport_mode.dart';
+import 'package:aurora/shared/widgets/aurora_dropdown.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:aurora/shared/riverpod_compat.dart';
 import 'package:aurora/shared/theme/aurora_icons.dart';
@@ -158,32 +159,29 @@ class _PayloadConfigPanelState extends ConsumerState<PayloadConfigPanel> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        InfoLabel(
+        AuroraAdaptiveDropdownField<String>(
           label: l10n.aspectRatio,
-          child: ComboBox<String>(
-            value: displayAspectRatio,
-            isExpanded: true,
-            items: aspectRatios.map((r) {
-              return ComboBoxItem(
-                value: r,
-                child: Text(r),
-              );
-            }).toList(),
-            onChanged: (v) {
-              if (v != null) {
-                if (v == l10n.auto) {
-                  imageConfig.remove('aspect_ratio');
-                } else {
-                  imageConfig['aspect_ratio'] = v;
-                }
-                final newSettings = Map<String, dynamic>.from(_modelSettings);
-                // Remove old key if present to migrate
-                newSettings.remove('image_config');
-                newSettings['_aurora_image_config'] = imageConfig;
-                _saveSettings(newSettings);
+          value: displayAspectRatio,
+          options: aspectRatios
+              .map((ratio) => AuroraDropdownOption<String>(
+                    value: ratio,
+                    label: ratio,
+                  ))
+              .toList(),
+          onChanged: (v) {
+            if (v != null) {
+              if (v == l10n.auto) {
+                imageConfig.remove('aspect_ratio');
+              } else {
+                imageConfig['aspect_ratio'] = v;
               }
-            },
-          ),
+              final newSettings = Map<String, dynamic>.from(_modelSettings);
+              // Remove old key if present to migrate
+              newSettings.remove('image_config');
+              newSettings['_aurora_image_config'] = imageConfig;
+              _saveSettings(newSettings);
+            }
+          },
         ),
         const SizedBox(height: 16),
         InfoLabel(
@@ -277,13 +275,13 @@ class _PayloadConfigPanelState extends ConsumerState<PayloadConfigPanel> {
               style: const TextStyle(fontWeight: FontWeight.w600)),
         ),
         const SizedBox(height: 8),
-        ComboBox<LlmTransportMode>(
+        AuroraAdaptiveDropdownField<LlmTransportMode>(
+          label: l10n.transportModeType,
           value: transportMode,
-          isExpanded: true,
-          items: LlmTransportMode.values
-              .map((mode) => ComboBoxItem<LlmTransportMode>(
+          options: LlmTransportMode.values
+              .map((mode) => AuroraDropdownOption<LlmTransportMode>(
                     value: mode,
-                    child: Text(transportModeLabel(mode)),
+                    label: transportModeLabel(mode),
                   ))
               .toList(),
           onChanged: (mode) {
@@ -292,7 +290,6 @@ class _PayloadConfigPanelState extends ConsumerState<PayloadConfigPanel> {
             _saveSettings(newSettings);
           },
         ),
-
         if (transportMode == LlmTransportMode.geminiNative) ...[
           const SizedBox(height: 16),
           _buildSectionCard(
@@ -354,7 +351,6 @@ class _PayloadConfigPanelState extends ConsumerState<PayloadConfigPanel> {
             ),
           ),
         ],
-
         const SizedBox(height: 16),
         _buildSectionCard(
           icon: AuroraIcons.lightbulb,
@@ -386,31 +382,30 @@ class _PayloadConfigPanelState extends ConsumerState<PayloadConfigPanel> {
             ),
           ),
           const SizedBox(height: 8),
-          InfoLabel(
+          AuroraAdaptiveDropdownField<String>(
             label: l10n.transmissionMode,
-            child: ComboBox<String>(
-              value: thinkingMode,
-              isExpanded: true,
-              items: [
-                ComboBoxItem(value: 'auto', child: Text(l10n.modeAuto)),
-                ComboBoxItem(
-                    value: 'extra_body', child: Text(l10n.modeExtraBody)),
-                ComboBoxItem(
-                    value: 'reasoning_effort',
-                    child: Text(l10n.modeReasoningEffort)),
-              ],
-              onChanged: (v) {
-                if (v != null) {
-                  thinkingConfig['mode'] = v;
-                  final newSettings = Map<String, dynamic>.from(_modelSettings);
-                  newSettings['_aurora_thinking_config'] = thinkingConfig;
-                  _saveSettings(newSettings);
-                }
-              },
-            ),
+            value: thinkingMode,
+            options: [
+              AuroraDropdownOption(value: 'auto', label: l10n.modeAuto),
+              AuroraDropdownOption(
+                value: 'extra_body',
+                label: l10n.modeExtraBody,
+              ),
+              AuroraDropdownOption(
+                value: 'reasoning_effort',
+                label: l10n.modeReasoningEffort,
+              ),
+            ],
+            onChanged: (v) {
+              if (v != null) {
+                thinkingConfig['mode'] = v;
+                final newSettings = Map<String, dynamic>.from(_modelSettings);
+                newSettings['_aurora_thinking_config'] = thinkingConfig;
+                _saveSettings(newSettings);
+              }
+            },
           ),
         ],
-
         const SizedBox(height: 16),
         _buildSectionCard(
           icon: AuroraIcons.settings,

@@ -443,8 +443,8 @@ class MyApp extends ConsumerWidget {
               data: MediaQuery.of(context).copyWith(
                 textScaler: TextScaler.linear(fontSize / 14.0),
               ),
-              child: Theme(
-                data: ThemeData(
+               child: Theme(
+                 data: ThemeData(
                   fontFamily: fontFamily,
                   brightness: brightness == fluent.Brightness.dark
                       ? Brightness.dark
@@ -513,17 +513,20 @@ class MyApp extends ConsumerWidget {
                     ),
                   ),
                   useMaterial3: true,
-                  textSelectionTheme: TextSelectionThemeData(
-                    selectionColor: brightness == fluent.Brightness.dark
-                        ? const Color(
-                            0xFF3A5A80) // Neutral dark blue for dark mode
-                        : const Color(0xFFB3D4FC), // Light blue for light mode
-                    cursorColor: materialPrimary,
-                    selectionHandleColor: materialPrimary,
+                   textSelectionTheme: TextSelectionThemeData(
+                     selectionColor: brightness == fluent.Brightness.dark
+                         ? const Color(
+                             0xFF3A5A80) // Neutral dark blue for dark mode
+                         : const Color(0xFFB3D4FC), // Light blue for light mode
+                     cursorColor: materialPrimary,
+                     selectionHandleColor: materialPrimary,
+                   ),
+                 ),
+                child: Material(
+                  type: MaterialType.transparency,
+                  child: ScaffoldMessenger(
+                    child: child ?? const SizedBox.shrink(),
                   ),
-                ),
-                child: ScaffoldMessenger(
-                  child: child ?? const SizedBox.shrink(),
                 ),
               ),
             );

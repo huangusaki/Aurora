@@ -486,105 +486,119 @@ class _SessionListState extends ConsumerState<_SessionList> {
           child: widget.sessionsState.isLoading &&
                   widget.sessionsState.sessions.isEmpty
               ? const Center(child: fluent.ProgressRing())
-              : ReorderableListView.builder(
-                  buildDefaultDragHandles: false,
-                  proxyDecorator: (child, index, animation) {
-                    return Material(
-                      type: MaterialType.transparency,
-                      child: fluent.FluentTheme(
-                        data: fluent.FluentTheme.of(context),
-                        child: child,
-                      ),
-                    );
-                  },
-                  onReorder: (oldIndex, newIndex) {
-                    final visibleIds = visibleSessionItems
-                        .map((item) => item.session.sessionId)
-                        .toList();
-                    if (oldIndex < 0 || oldIndex >= visibleIds.length) return;
-                    final draggedId = visibleIds.removeAt(oldIndex);
-                    if (oldIndex < newIndex) {
-                      newIndex -= 1;
-                    }
-                    if (newIndex < 0) newIndex = 0;
-                    if (newIndex > visibleIds.length) {
-                      newIndex = visibleIds.length;
-                    }
-                    final beforeSessionId = newIndex >= visibleIds.length
-                        ? null
-                        : visibleIds[newIndex];
-                    ref.read(sessionsProvider.notifier).reorderSessionById(
-                          draggedSessionId: draggedId,
-                          beforeSessionId: beforeSessionId,
+              : LayoutBuilder(
+                  builder: (context, constraints) {
+                    final proxyWidth =
+                        constraints.maxWidth.isFinite ? constraints.maxWidth : null;
+                    final stableDefaultTextStyle =
+                        DefaultTextStyle.of(context).style.copyWith(inherit: true);
+                    return ReorderableListView.builder(
+                      buildDefaultDragHandles: false,
+                      proxyDecorator: (child, index, animation) {
+                        return SizedBox(
+                          width: proxyWidth,
+                          child: DefaultTextStyle(
+                            style: stableDefaultTextStyle,
+                            child: fluent.FluentTheme(
+                              data: fluent.FluentTheme.of(context),
+                              child: child,
+                            ),
+                          ),
                         );
-                  },
-                  itemCount: visibleSessionItems.length,
-                  itemBuilder: (context, index) {
-                    final treeItem = visibleSessionItems[index];
-                    final session = treeItem.session;
-                    final isSelected =
-                        session.sessionId == widget.selectedSessionId;
-                    final sessionState = manager.getState(session.sessionId);
-                    final statusColor =
-                        _resolveSessionStatusColor(sessionState);
-                    return ReorderableDragStartListener(
-                      key: Key(session.sessionId),
-                      index: index,
-                      child: _SessionItem(
-                        session: session,
-                        isSelected: isSelected,
-                        statusColor: statusColor,
-                        onTap: () async {
-                          final currentId =
-                              ref.read(selectedHistorySessionIdProvider);
-                          if (currentId != null &&
-                              currentId != session.sessionId) {
-                            await ref
-                                .read(sessionsProvider.notifier)
-                                .cleanupSessionIfEmpty(currentId);
-                          }
-                          ref
-                              .read(sessionsProvider.notifier)
-                              .ensureSessionVisible(session.sessionId);
-                          ref
-                              .read(selectedHistorySessionIdProvider.notifier)
-                              .state = session.sessionId;
-                        },
-                        onRename: (newTitle) {
-                          ref
-                              .read(sessionsProvider.notifier)
-                              .renameSession(session.sessionId, newTitle);
-                        },
-                        onDelete: () {
-                          ref
-                              .read(sessionsProvider.notifier)
-                              .deleteSession(session.sessionId);
-                          if (isSelected) {
-                            ref
-                                .read(selectedHistorySessionIdProvider.notifier)
-                                .state = widget.isMobile ? null : 'new_chat';
-                          }
-                        },
-                        depth: treeItem.depth,
-                        hasChildren: treeItem.hasChildren,
-                        isCollapsed: treeItem.isCollapsed,
-                        onToggleCollapse: treeItem.hasChildren
-                            ? () {
-                                final nextCollapsed = Set<String>.from(ref
-                                    .read(collapsedHistorySessionIdsProvider));
-                                if (treeItem.isCollapsed) {
-                                  nextCollapsed.remove(session.sessionId);
-                                } else {
-                                  nextCollapsed.add(session.sessionId);
+                      },
+                      onReorder: (oldIndex, newIndex) {
+                        final visibleIds = visibleSessionItems
+                            .map((item) => item.session.sessionId)
+                            .toList();
+                        if (oldIndex < 0 || oldIndex >= visibleIds.length) return;
+                        final draggedId = visibleIds.removeAt(oldIndex);
+                        if (oldIndex < newIndex) {
+                          newIndex -= 1;
+                        }
+                        if (newIndex < 0) newIndex = 0;
+                        if (newIndex > visibleIds.length) {
+                          newIndex = visibleIds.length;
+                        }
+                        final beforeSessionId = newIndex >= visibleIds.length
+                            ? null
+                            : visibleIds[newIndex];
+                        ref.read(sessionsProvider.notifier).reorderSessionById(
+                              draggedSessionId: draggedId,
+                              beforeSessionId: beforeSessionId,
+                            );
+                      },
+                      itemCount: visibleSessionItems.length,
+                      itemBuilder: (context, index) {
+                        final treeItem = visibleSessionItems[index];
+                        final session = treeItem.session;
+                        final isSelected =
+                            session.sessionId == widget.selectedSessionId;
+                        final sessionState = manager.getState(session.sessionId);
+                        final statusColor = _resolveSessionStatusColor(sessionState);
+                        return ReorderableDragStartListener(
+                          key: Key(session.sessionId),
+                          index: index,
+                          child: DefaultTextStyle(
+                            style: stableDefaultTextStyle,
+                            child: _SessionItem(
+                              session: session,
+                              isSelected: isSelected,
+                              statusColor: statusColor,
+                              onTap: () async {
+                                final currentId =
+                                    ref.read(selectedHistorySessionIdProvider);
+                                if (currentId != null &&
+                                    currentId != session.sessionId) {
+                                  await ref
+                                      .read(sessionsProvider.notifier)
+                                      .cleanupSessionIfEmpty(currentId);
                                 }
                                 ref
-                                    .read(collapsedHistorySessionIdsProvider
-                                        .notifier)
-                                    .state = nextCollapsed;
-                              }
-                            : null,
-                        isMobile: widget.isMobile,
-                      ),
+                                    .read(sessionsProvider.notifier)
+                                    .ensureSessionVisible(session.sessionId);
+                                ref
+                                    .read(selectedHistorySessionIdProvider.notifier)
+                                    .state = session.sessionId;
+                              },
+                              onRename: (newTitle) {
+                                ref
+                                    .read(sessionsProvider.notifier)
+                                    .renameSession(session.sessionId, newTitle);
+                              },
+                              onDelete: () {
+                                ref
+                                    .read(sessionsProvider.notifier)
+                                    .deleteSession(session.sessionId);
+                                if (isSelected) {
+                                  ref
+                                      .read(selectedHistorySessionIdProvider
+                                          .notifier)
+                                      .state = widget.isMobile ? null : 'new_chat';
+                                }
+                              },
+                              depth: treeItem.depth,
+                              hasChildren: treeItem.hasChildren,
+                              isCollapsed: treeItem.isCollapsed,
+                              onToggleCollapse: treeItem.hasChildren
+                                  ? () {
+                                      final nextCollapsed = Set<String>.from(ref
+                                          .read(collapsedHistorySessionIdsProvider));
+                                      if (treeItem.isCollapsed) {
+                                        nextCollapsed.remove(session.sessionId);
+                                      } else {
+                                        nextCollapsed.add(session.sessionId);
+                                      }
+                                      ref
+                                          .read(collapsedHistorySessionIdsProvider
+                                              .notifier)
+                                          .state = nextCollapsed;
+                                    }
+                                  : null,
+                              isMobile: widget.isMobile,
+                            ),
+                          ),
+                        );
+                      },
                     );
                   },
                 ),

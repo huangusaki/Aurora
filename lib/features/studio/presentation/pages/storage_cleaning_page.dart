@@ -8,6 +8,7 @@ import 'package:aurora/l10n/app_localizations.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:aurora/shared/riverpod_compat.dart';
+import 'package:aurora/shared/widgets/aurora_dropdown.dart';
 
 enum _DesktopSizeFilter {
   all,
@@ -483,18 +484,13 @@ class _StudioStorageCleaningPageState
           const SizedBox(height: 12),
           InfoLabel(
             label: l10n.executionModel,
-            child: ComboBox<String>(
+            child: AuroraFluentDropdownField<String>(
               value: executionModelChoiceKey,
-              isExpanded: true,
-              items: executionModelChoices
+              options: executionModelChoices
                   .map(
-                    (choice) => ComboBoxItem<String>(
+                    (choice) => AuroraDropdownOption<String>(
                       value: choice.key,
-                      child: Text(
-                        choice.label,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                      label: choice.label,
                     ),
                   )
                   .toList(growable: false),
@@ -841,14 +837,14 @@ class _StudioStorageCleaningPageState
                   width: 220,
                   child: InfoLabel(
                     label: l10n.cleanerSizeFilter,
-                    child: ComboBox<_DesktopSizeFilter>(
+                    child: AuroraFluentDropdownField<_DesktopSizeFilter>(
                       value: _sizeFilter,
-                      isExpanded: true,
-                      items: _DesktopSizeFilter.values
+                      options: _DesktopSizeFilter.values
                           .map(
-                            (filter) => ComboBoxItem<_DesktopSizeFilter>(
+                            (filter) =>
+                                AuroraDropdownOption<_DesktopSizeFilter>(
                               value: filter,
-                              child: Text(_sizeFilterText(filter)),
+                              label: _sizeFilterText(filter),
                             ),
                           )
                           .toList(),
@@ -865,25 +861,24 @@ class _StudioStorageCleaningPageState
                   width: 220,
                   child: InfoLabel(
                     label: l10n.cleanerRiskFilter,
-                    child: ComboBox<String>(
+                    child: AuroraFluentDropdownField<String>(
                       value: _riskFilterWireValue,
-                      isExpanded: true,
-                      items: [
-                        ComboBoxItem(
+                      options: [
+                        AuroraDropdownOption(
                           value: 'all',
-                          child: Text(l10n.cleanerAllRisk),
+                          label: l10n.cleanerAllRisk,
                         ),
-                        ComboBoxItem(
+                        AuroraDropdownOption(
                           value: CleanerRiskLevel.low.name,
-                          child: Text(l10n.cleanerRiskLow),
+                          label: l10n.cleanerRiskLow,
                         ),
-                        ComboBoxItem(
+                        AuroraDropdownOption(
                           value: CleanerRiskLevel.medium.name,
-                          child: Text(l10n.cleanerRiskMedium),
+                          label: l10n.cleanerRiskMedium,
                         ),
-                        ComboBoxItem(
+                        AuroraDropdownOption(
                           value: CleanerRiskLevel.high.name,
-                          child: Text(l10n.cleanerRiskHigh),
+                          label: l10n.cleanerRiskHigh,
                         ),
                       ],
                       onChanged: (value) {
@@ -1336,4 +1331,3 @@ class _StudioStorageCleaningPageState
     return '${value.toStringAsFixed(fractionDigits)} ${units[index]}';
   }
 }
-

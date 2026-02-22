@@ -3,6 +3,7 @@ import 'package:aurora/shared/theme/aurora_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:aurora/shared/riverpod_compat.dart';
 import 'package:super_clipboard/super_clipboard.dart';
+import 'package:aurora/shared/widgets/aurora_dropdown.dart';
 import '../chat_provider.dart';
 import '../../domain/message.dart';
 import 'package:aurora/l10n/app_localizations.dart';
@@ -276,17 +277,19 @@ class _TranslationContentState extends ConsumerState<TranslationContent> {
   }) {
     return SizedBox(
       width: 200,
-      child: fluent.ComboBox<String>(
+      child: AuroraFluentDropdownField<String>(
         value: value,
-        items: items
-            .map((e) => fluent.ComboBoxItem(
-                value: e,
-                child: Text(_getDisplayLanguage(context, e),
-                    style: const TextStyle(fontSize: 13))))
-            .toList(),
+        textStyle: const TextStyle(fontSize: 13),
+        options: items
+            .map(
+              (item) => AuroraDropdownOption<String>(
+                value: item,
+                label: _getDisplayLanguage(context, item),
+              ),
+            )
+            .toList(growable: false),
         onChanged: onChanged,
-        placeholder: Text(AppLocalizations.of(context)!.selectLanguage,
-            style: const TextStyle(fontSize: 13)),
+        placeholder: AppLocalizations.of(context)!.selectLanguage,
       ),
     );
   }
@@ -443,4 +446,3 @@ class _TranslationContentState extends ConsumerState<TranslationContent> {
     );
   }
 }
-

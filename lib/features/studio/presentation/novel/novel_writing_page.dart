@@ -8,6 +8,7 @@ import 'package:aurora/shared/riverpod_compat.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 import 'package:aurora/features/settings/presentation/settings_provider.dart';
 import 'package:aurora/shared/widgets/aurora_bottom_sheet.dart';
+import 'package:aurora/shared/widgets/aurora_dropdown.dart';
 import 'package:aurora/features/studio/presentation/widgets/studio_surface_components.dart';
 import 'widgets/model_config_dialog.dart';
 import 'widgets/create_project_dialog.dart';
@@ -429,7 +430,8 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
     NovelWritingState state,
     NovelNotifier notifier,
   ) {
-    final hasAnalysis = state.selectedProject?.analyzedStyle?.isNotEmpty ?? false;
+    final hasAnalysis =
+        state.selectedProject?.analyzedStyle?.isNotEmpty ?? false;
     return Button(
       onPressed: () => _showStyleImitationDialog(context, l10n, theme),
       child: Row(
@@ -478,47 +480,62 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
       if (active.id.isNotEmpty) selectedLabel = active.name;
     }
 
-    return DropDownButton(
-      title: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(AuroraIcons.parameter, size: 14),
-          const SizedBox(width: 6),
-          Text(selectedLabel, style: const TextStyle(fontSize: 13)),
-        ],
-      ),
-      items: [
-        MenuFlyoutItem(
-          text: Text(l10n.systemDefault,
-              style: const TextStyle(fontWeight: FontWeight.bold)),
-          onPressed: () {
-            notifier.setOutlinePrompt(NovelPromptPresets.outline);
-            notifier.setDecomposePrompt(NovelPromptPresets.decompose);
-            notifier.setWriterPrompt(NovelPromptPresets.writer);
-            notifier.setReviewerPrompt(NovelPromptPresets.reviewer);
-            notifier.setActivePromptPresetId(null);
-          },
+    const systemDefaultKey = '__system_default__';
+    return AuroraDropdown<String>(
+      leading: const Icon(AuroraIcons.parameter, size: 14),
+      textStyle: const TextStyle(fontSize: 13),
+      value: activePresetId ?? systemDefaultKey,
+      selectedLabel: selectedLabel,
+      options: [
+        AuroraDropdownOption<String>(
+          value: systemDefaultKey,
+          label: l10n.systemDefault,
         ),
-        if (presets.isNotEmpty) const MenuFlyoutSeparator(),
-        ...presets.map((preset) => MenuFlyoutItem(
-              text: Text(preset.name),
-              onPressed: () {
-                if (preset.outlinePrompt.isNotEmpty) {
-                  notifier.setOutlinePrompt(preset.outlinePrompt);
-                }
-                if (preset.decomposePrompt.isNotEmpty) {
-                  notifier.setDecomposePrompt(preset.decomposePrompt);
-                }
-                if (preset.writerPrompt.isNotEmpty) {
-                  notifier.setWriterPrompt(preset.writerPrompt);
-                }
-                if (preset.reviewerPrompt.isNotEmpty) {
-                  notifier.setReviewerPrompt(preset.reviewerPrompt);
-                }
-                notifier.setActivePromptPresetId(preset.id);
-              },
-            )),
+        ...presets.map(
+          (preset) => AuroraDropdownOption<String>(
+            value: preset.id,
+            label: preset.name,
+          ),
+        ),
       ],
+      onChanged: (selectedId) {
+        if (selectedId == systemDefaultKey) {
+          notifier.setOutlinePrompt(NovelPromptPresets.outline);
+          notifier.setDecomposePrompt(NovelPromptPresets.decompose);
+          notifier.setWriterPrompt(NovelPromptPresets.writer);
+          notifier.setReviewerPrompt(NovelPromptPresets.reviewer);
+          notifier.setActivePromptPresetId(null);
+          return;
+        }
+
+        final selectedPreset = presets.firstWhere(
+          (preset) => preset.id == selectedId,
+          orElse: () => NovelPromptPreset(
+            id: '',
+            name: '',
+            outlinePrompt: '',
+            decomposePrompt: '',
+            writerPrompt: '',
+            reviewerPrompt: '',
+          ),
+        );
+        if (selectedPreset.id.isEmpty) {
+          return;
+        }
+        if (selectedPreset.outlinePrompt.isNotEmpty) {
+          notifier.setOutlinePrompt(selectedPreset.outlinePrompt);
+        }
+        if (selectedPreset.decomposePrompt.isNotEmpty) {
+          notifier.setDecomposePrompt(selectedPreset.decomposePrompt);
+        }
+        if (selectedPreset.writerPrompt.isNotEmpty) {
+          notifier.setWriterPrompt(selectedPreset.writerPrompt);
+        }
+        if (selectedPreset.reviewerPrompt.isNotEmpty) {
+          notifier.setReviewerPrompt(selectedPreset.reviewerPrompt);
+        }
+        notifier.setActivePromptPresetId(selectedPreset.id);
+      },
     );
   }
 
@@ -956,7 +973,7 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-                _buildProjectKnowledgeSection(
+                  _buildProjectKnowledgeSection(
                       context, l10n, theme, state, notifier),
                   const SizedBox(height: 24),
                   Wrap(
@@ -1895,7 +1912,8 @@ class _StyleImitationDialogContentState
               ),
             if (hasAnalysis) ...[
               const SizedBox(height: 16),
-              Text(l10n.styleAnalysisResult, style: theme.typography.bodyStrong),
+              Text(l10n.styleAnalysisResult,
+                  style: theme.typography.bodyStrong),
               const SizedBox(height: 8),
               Container(
                 width: double.infinity,
@@ -1956,4 +1974,3 @@ class _StyleImitationDialogContentState
     );
   }
 }
-

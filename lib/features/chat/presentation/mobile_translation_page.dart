@@ -6,6 +6,7 @@ import 'chat_provider.dart';
 import '../../settings/presentation/settings_provider.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 import 'package:aurora/shared/utils/translation_prompt_utils.dart';
+import 'package:aurora/shared/widgets/aurora_dropdown.dart';
 import 'package:aurora/shared/widgets/aurora_notice.dart';
 
 class MobileTranslationPage extends ConsumerStatefulWidget {
@@ -479,29 +480,20 @@ class _LanguageDropdown extends StatelessWidget {
   });
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: DropdownButton<String>(
-        value: value,
-        isExpanded: true,
-        underline: const SizedBox.shrink(),
-        icon: const Icon(Icons.arrow_drop_down, size: 20),
-        items: items.map((e) {
-          return DropdownMenuItem(
-            value: e,
-            child: Text(
-              labelBuilder(e),
-              style: const TextStyle(fontSize: 14),
+    return AuroraMaterialDropdownField<String>(
+      value: value,
+      borderRadius: 10,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+      textStyle: const TextStyle(fontSize: 14),
+      options: items
+          .map(
+            (item) => AuroraDropdownOption<String>(
+              value: item,
+              label: labelBuilder(item),
             ),
-          );
-        }).toList(),
-        onChanged: onChanged,
-      ),
+          )
+          .toList(growable: false),
+      onChanged: onChanged,
     );
   }
 }
-

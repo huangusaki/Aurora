@@ -4,6 +4,7 @@ import 'package:fluent_ui/fluent_ui.dart';
 import 'package:aurora/shared/riverpod_compat.dart';
 import 'package:aurora/features/settings/presentation/settings_provider.dart';
 import 'package:aurora/l10n/app_localizations.dart';
+import 'package:aurora/shared/widgets/aurora_dropdown.dart';
 import '../novel_provider.dart';
 import '../novel_state.dart';
 
@@ -207,18 +208,17 @@ class _ModelConfigDialogState extends ConsumerState<ModelConfigDialog> {
             ],
             InfoLabel(
               label: l10n.selectModel,
-              child: ComboBox<NovelModelConfig>(
-                placeholder: Text(l10n.selectModel),
-                items: allModels.map((item) {
+              child: AuroraFluentDropdownField<NovelModelConfig>(
+                placeholder: l10n.selectModel,
+                options: allModels.map((item) {
                   final providerName = settingsState.providers
                       .firstWhere((p) => p.id == item.providerId,
                           orElse: () => ProviderConfig(
                               id: item.providerId, name: l10n.unknown))
                       .name;
-                  return ComboBoxItem<NovelModelConfig>(
+                  return AuroraDropdownOption<NovelModelConfig>(
                     value: item,
-                    child: Text('$providerName - ${item.modelId}',
-                        overflow: TextOverflow.ellipsis),
+                    label: '$providerName - ${item.modelId}',
                   );
                 }).toList(),
                 value: allModels.contains(selectedBase) ? selectedBase : null,
@@ -659,4 +659,3 @@ class _ModelConfigDialogState extends ConsumerState<ModelConfigDialog> {
     _showToast(l10n.presetLoaded(preset.name), AuroraIcons.check);
   }
 }
-

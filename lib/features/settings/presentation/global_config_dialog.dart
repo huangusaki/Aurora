@@ -3,6 +3,7 @@ import 'package:aurora/shared/theme/aurora_icons.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:aurora/shared/riverpod_compat.dart';
 import 'package:aurora/l10n/app_localizations.dart';
+import 'package:aurora/shared/widgets/aurora_dropdown.dart';
 import 'settings_provider.dart';
 
 class GlobalConfigDialog extends ConsumerStatefulWidget {
@@ -375,18 +376,21 @@ class _GlobalConfigDialogState extends ConsumerState<GlobalConfigDialog> {
                         const SizedBox(height: 12),
                         InfoLabel(
                           label: l10n.transmissionMode,
-                          child: ComboBox<String>(
+                          child: AuroraFluentDropdownField<String>(
                             value: _thinkingMode,
-                            isExpanded: true,
-                            items: [
-                              ComboBoxItem(
-                                  value: 'auto', child: Text(l10n.modeAuto)),
-                              ComboBoxItem(
-                                  value: 'extra_body',
-                                  child: Text(l10n.modeExtraBody)),
-                              ComboBoxItem(
-                                  value: 'reasoning_effort',
-                                  child: Text(l10n.modeReasoningEffort)),
+                            options: [
+                              AuroraDropdownOption(
+                                value: 'auto',
+                                label: l10n.modeAuto,
+                              ),
+                              AuroraDropdownOption(
+                                value: 'extra_body',
+                                label: l10n.modeExtraBody,
+                              ),
+                              AuroraDropdownOption(
+                                value: 'reasoning_effort',
+                                label: l10n.modeReasoningEffort,
+                              ),
                             ],
                             onChanged: (v) {
                               if (v != null) _saveSettings(thinkingMode: v);
@@ -541,12 +545,11 @@ class _AddParamDialogState extends State<_AddParamDialog> {
           const SizedBox(height: 12),
           InfoLabel(
             label: l10n.paramType,
-            child: ComboBox<String>(
+            child: AuroraFluentDropdownField<String>(
               value: _type,
-              isExpanded: true,
-              items: [
-                ComboBoxItem(value: 'String', child: Text(l10n.typeText)),
-                ComboBoxItem(value: 'JSON', child: Text(l10n.typeJson)),
+              options: [
+                AuroraDropdownOption(value: 'String', label: l10n.typeText),
+                AuroraDropdownOption(value: 'JSON', label: l10n.typeJson),
               ],
               onChanged: (v) => setState(() => _type = v!),
             ),
@@ -590,4 +593,3 @@ class _AddParamDialogState extends State<_AddParamDialog> {
     );
   }
 }
-
