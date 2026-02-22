@@ -11,6 +11,7 @@ import 'package:aurora/shared/utils/platform_utils.dart';
 import 'package:aurora/shared/widgets/aurora_dropdown.dart';
 import 'package:aurora/shared/widgets/aurora_notice.dart';
 import 'settings_provider.dart';
+import 'model_display_name.dart';
 import 'usage_stats_view.dart';
 import 'preset_settings_page.dart';
 import 'knowledge_settings_panel.dart';
@@ -265,4 +266,3 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
     }
   }
 }
-

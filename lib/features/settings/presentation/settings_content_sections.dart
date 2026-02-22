@@ -98,6 +98,19 @@ extension _SettingsContentSections on _SettingsContentState {
     );
     // controller.dispose is tricky in functional dialogs, letting GC handle or ignoring for now
   }
+  Widget _buildSectionCard(BuildContext context, {required Widget child}) {
+    final theme = fluent.FluentTheme.of(context);
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: theme.scaffoldBackgroundColor,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: theme.resources.dividerStrokeColorDefault),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: child,
+    );
+  }
 
   Widget _buildProviderSettings(
       SettingsState settingsState, ProviderConfig viewingProvider) {
@@ -364,43 +377,50 @@ extension _SettingsContentSections on _SettingsContentState {
                 ),
                 const SizedBox(height: 16),
 
-                // --- API Keys Section ---
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            fluent.Text(l10n.apiKeys,
-                                style: fluent.FluentTheme.of(context)
-                                    .typography
-                                    .bodyStrong),
-                            const SizedBox(width: 16),
-                            // Auto-rotate toggle moved here
-                            fluent.ToggleSwitch(
-                              checked: viewingProvider.autoRotateKeys,
-                              onChanged: (v) {
-                                ref
-                                    .read(settingsProvider.notifier)
-                                    .setAutoRotateKeys(viewingProvider.id, v);
-                              },
-                              content: fluent.Text(l10n.autoRotateKeys,
+                _buildSectionCard(
+                  context,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              fluent.Text(l10n.apiKeys,
                                   style: fluent.FluentTheme.of(context)
                                       .typography
-                                      .caption),
+                                      .bodyStrong),
+                              const SizedBox(width: 16),
+                              fluent.ToggleSwitch(
+                                checked: viewingProvider.autoRotateKeys,
+                                onChanged: (v) {
+                                  ref
+                                      .read(settingsProvider.notifier)
+                                      .setAutoRotateKeys(viewingProvider.id, v);
+                                },
+                                content: fluent.Text(l10n.autoRotateKeys,
+                                    style: fluent.FluentTheme.of(context)
+                                        .typography
+                                        .caption),
+                              ),
+                            ],
+                          ),
+                          fluent.Button(
+                            onPressed: () {
+                              _showKeyDialog(context, viewingProvider.id);
+                            },
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const fluent.Icon(AuroraIcons.add, size: 12),
+                                const SizedBox(width: 6),
+                                fluent.Text(l10n.add),
+                              ],
                             ),
-                          ],
-                        ),
-                        fluent.IconButton(
-                          icon: const fluent.Icon(AuroraIcons.add, size: 14),
-                          onPressed: () {
-                            _showKeyDialog(context, viewingProvider.id);
-                          },
-                        ),
-                      ],
-                    ),
+                          ),
+                        ],
+                      ),
                     const SizedBox(height: 8),
                     if (viewingProvider.apiKeys.isEmpty)
                       Container(
@@ -487,25 +507,31 @@ extension _SettingsContentSections on _SettingsContentState {
                           ),
                         );
                       }),
-                  ],
-                ),
-                const SizedBox(height: 16),
+                      const SizedBox(height: 16),
 
-                // --- Base URL ---
-                fluent.InfoLabel(
-                  label: l10n.apiBaseUrl,
-                  child: _buildStyledTextBox(
-                    controller: _baseUrlController,
-                    placeholder: l10n.baseUrlPlaceholder,
-                    onChanged: (value) {
-                      ref.read(settingsProvider.notifier).updateProvider(
-                          id: viewingProvider.id, baseUrl: value);
-                    },
+                      // --- Base URL ---
+                      fluent.InfoLabel(
+                        label: l10n.apiBaseUrl,
+                        child: _buildStyledTextBox(
+                          controller: _baseUrlController,
+                          placeholder: l10n.baseUrlPlaceholder,
+                          onChanged: (value) {
+                            ref.read(settingsProvider.notifier).updateProvider(
+                                id: viewingProvider.id, baseUrl: value);
+                          },
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 16),
 
                 // --- Available Models Section ---
+                _buildSectionCard(
+                  context,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -601,67 +627,135 @@ extension _SettingsContentSections on _SettingsContentState {
                   ),
                 const SizedBox(height: 8),
 
-                // --- Models List (no Expanded, just Column) ---
+                // --- Models List (grouped: enabled / disabled) ---
                 if (viewingProvider.models.isNotEmpty)
-                  ...viewingProvider.models.map((model) {
-                    final theme = fluent.FluentTheme.of(context);
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 8.0),
-                      child: fluent.HoverButton(
-                        onPressed: () {},
-                        builder: (context, states) {
-                          return Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 12),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(4),
-                              color: states.isHovered
-                                  ? theme.typography.body?.color
-                                          ?.withValues(alpha: 0.05) ??
-                                      Colors.transparent
-                                  : Colors.transparent,
-                            ),
-                            width: double.infinity,
-                            alignment: Alignment.centerLeft,
-                            child: Row(
-                              children: [
-                                Icon(AuroraIcons.org,
-                                    size: 16,
-                                    color: theme.typography.body?.color
-                                        ?.withValues(alpha: 0.7)),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                    child: Text(model,
-                                        overflow: TextOverflow.ellipsis)),
-                                fluent.IconButton(
-                                  icon: Icon(
-                                      viewingProvider.isModelEnabled(model)
-                                          ? AuroraIcons.success
-                                          : AuroraIcons.blocked,
-                                      size: 14,
-                                      color:
-                                          viewingProvider.isModelEnabled(model)
-                                              ? fluent.Colors.green
-                                              : fluent.Colors.red),
-                                  onPressed: () => ref
-                                      .read(settingsProvider.notifier)
-                                      .toggleModelDisabled(
-                                          viewingProvider.id, model),
+                  Builder(
+                    builder: (context) {
+                      final displayNameCounts =
+                          buildModelDisplayNameCounts(viewingProvider.models);
+
+                      Widget buildModelRow(
+                        String model, {
+                        required bool isEnabled,
+                      }) {
+                        final displayName =
+                            resolveModelDisplayName(model, displayNameCounts);
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8.0),
+                          child: fluent.HoverButton(
+                            onPressed: () {},
+                            builder: (context, states) {
+                              return Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 12),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(4),
+                                  color: states.isHovered
+                                      ? theme.typography.body?.color
+                                              ?.withValues(alpha: 0.05) ??
+                                          Colors.transparent
+                                      : Colors.transparent,
                                 ),
-                                const SizedBox(width: 8),
-                                fluent.IconButton(
-                                  icon: const fluent.Icon(AuroraIcons.settings,
-                                      size: 14),
-                                  onPressed: () => _openModelSettings(
-                                      viewingProvider, model),
+                                width: double.infinity,
+                                alignment: Alignment.centerLeft,
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        displayName,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    fluent.ToggleSwitch(
+                                      checked: isEnabled,
+                                      onChanged: (v) => ref
+                                          .read(settingsProvider.notifier)
+                                          .toggleModelDisabled(
+                                              viewingProvider.id, model),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    fluent.IconButton(
+                                      icon: const fluent.Icon(
+                                          AuroraIcons.settings,
+                                          size: 14),
+                                      onPressed: () => _openModelSettings(
+                                          viewingProvider, model),
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-                    );
-                  })
+                              );
+                            },
+                          ),
+                        );
+                      }
+
+                      final enabledModels = <String>[];
+                      final disabledModels = <String>[];
+                      for (final model in viewingProvider.models) {
+                        if (viewingProvider.isModelEnabled(model)) {
+                          enabledModels.add(model);
+                        } else {
+                          disabledModels.add(model);
+                        }
+                      }
+
+                      Widget buildGroup(
+                        String title,
+                        List<String> models, {
+                        required bool isEnabled,
+                      }) {
+                        return fluent.Expander(
+                          key: ValueKey(
+                              '${viewingProvider.id}_${isEnabled ? 'enabled' : 'disabled'}_models_group'),
+                          initiallyExpanded: isEnabled,
+                          contentPadding: const EdgeInsets.only(top: 8.0),
+                          header: fluent.Text(
+                            '$title (${models.length})',
+                            style: theme.typography.bodyStrong,
+                          ),
+                          content: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: models
+                                .map(
+                                  (model) => buildModelRow(
+                                    model,
+                                    isEnabled: isEnabled,
+                                  ),
+                                )
+                                .toList(),
+                          ),
+                        );
+                      }
+
+                      final groups = <Widget>[];
+                      if (enabledModels.isNotEmpty) {
+                        groups.add(
+                          buildGroup(
+                            l10n.enabled,
+                            enabledModels,
+                            isEnabled: true,
+                          ),
+                        );
+                      }
+                      if (disabledModels.isNotEmpty) {
+                        if (groups.isNotEmpty) {
+                          groups.add(const SizedBox(height: 12));
+                        }
+                        groups.add(
+                          buildGroup(
+                            l10n.disabled,
+                            disabledModels,
+                            isEnabled: false,
+                          ),
+                        );
+                      }
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: groups,
+                      );
+                    },
+                  )
                 else
                   Container(
                     padding: const EdgeInsets.all(24),
@@ -706,6 +800,9 @@ extension _SettingsContentSections on _SettingsContentState {
                           },
                         ),
                       ),
+                    ],
+                  ),
+                ),
                     ],
                   ),
                 ),

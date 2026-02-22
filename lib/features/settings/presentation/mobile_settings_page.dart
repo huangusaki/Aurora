@@ -5,6 +5,7 @@ import 'settings_provider.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 import 'package:aurora/shared/widgets/aurora_bottom_sheet.dart';
 import 'package:aurora/shared/widgets/aurora_notice.dart';
+import 'model_display_name.dart';
 import 'widgets/mobile_settings_widgets.dart';
 
 class MobileSettingsPage extends ConsumerStatefulWidget {
@@ -18,6 +19,9 @@ class _MobileSettingsPageState extends ConsumerState<MobileSettingsPage> {
   final TextEditingController _apiKeyController = TextEditingController();
   final TextEditingController _baseUrlController = TextEditingController();
   final TextEditingController _userNameController = TextEditingController();
+
+  final Map<String, bool> _enabledModelsExpandedByProvider = {};
+  final Map<String, bool> _disabledModelsExpandedByProvider = {};
   @override
   void dispose() {
     _apiKeyController.dispose();
@@ -218,36 +222,153 @@ class _MobileSettingsPageState extends ConsumerState<MobileSettingsPage> {
                   ),
                 ),
               if (activeProvider.models.isNotEmpty)
-                ...activeProvider.models.map((model) {
-                  return MobileSettingsTile(
-                    leading: const Icon(Icons.account_tree_outlined),
-                    title: model,
-                    showChevron: false,
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: Icon(
-                            activeProvider.isModelEnabled(model)
-                                ? Icons.check_circle
-                                : Icons.circle_outlined,
-                            color: activeProvider.isModelEnabled(model)
-                                ? Colors.green
-                                : Colors.grey,
+                ...(() {
+                  final displayNameCounts =
+                      buildModelDisplayNameCounts(activeProvider.models);
+
+                  MobileSettingsTile buildModelTile(
+                    String model, {
+                    required bool isEnabled,
+                  }) {
+                    final displayName =
+                        resolveModelDisplayName(model, displayNameCounts);
+                    return MobileSettingsTile(
+                      title: displayName,
+                      showChevron: false,
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: Icon(
+                              isEnabled
+                                  ? Icons.check_circle
+                                  : Icons.circle_outlined,
+                              color: isEnabled ? Colors.green : Colors.grey,
+                            ),
+                            onPressed: () => ref
+                                .read(settingsProvider.notifier)
+                                .toggleModelDisabled(activeProvider.id, model),
                           ),
-                          onPressed: () => ref
-                              .read(settingsProvider.notifier)
-                              .toggleModelDisabled(activeProvider.id, model),
+                          IconButton(
+                            icon: const Icon(Icons.settings_outlined, size: 20),
+                            onPressed: () => _showModelConfigDialog(
+                                context, activeProvider, model),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  Widget buildGroup({
+                    required String title,
+                    required List<String> models,
+                    required bool isEnabled,
+                    required bool isExpanded,
+                    required VoidCallback onToggle,
+                  }) {
+                    final theme = Theme.of(context);
+                    final chevronColor =
+                        theme.iconTheme.color?.withValues(alpha: 0.7);
+                    final groupIcon =
+                        isEnabled ? Icons.check_circle_outline : Icons.block;
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        MobileSettingsTile(
+                          leading: Icon(groupIcon),
+                          title: '$title (${models.length})',
+                          showChevron: false,
+                          trailing: AnimatedRotation(
+                            turns: isExpanded ? 0.5 : 0.0,
+                            duration: const Duration(milliseconds: 150),
+                            curve: Curves.easeInOut,
+                            child: Icon(
+                              Icons.expand_more_rounded,
+                              color: chevronColor,
+                            ),
+                          ),
+                          onTap: onToggle,
                         ),
-                        IconButton(
-                          icon: const Icon(Icons.settings_outlined, size: 20),
-                          onPressed: () => _showModelConfigDialog(
-                              context, activeProvider, model),
+                        AnimatedSize(
+                          duration: const Duration(milliseconds: 150),
+                          curve: Curves.easeInOut,
+                          alignment: Alignment.topLeft,
+                          clipBehavior: Clip.none,
+                          child: isExpanded
+                              ? Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: models
+                                      .map(
+                                        (model) => buildModelTile(
+                                          model,
+                                          isEnabled: isEnabled,
+                                        ),
+                                      )
+                                      .toList(),
+                                )
+                              : const SizedBox.shrink(),
                         ),
                       ],
-                    ),
-                  );
-                })
+                    );
+                  }
+
+                  final enabledModels = <String>[];
+                  final disabledModels = <String>[];
+                  for (final model in activeProvider.models) {
+                    if (activeProvider.isModelEnabled(model)) {
+                      enabledModels.add(model);
+                    } else {
+                      disabledModels.add(model);
+                    }
+                  }
+
+                  final providerId = activeProvider.id;
+                  final enabledExpanded =
+                      _enabledModelsExpandedByProvider[providerId] ?? true;
+                  final disabledExpanded =
+                      _disabledModelsExpandedByProvider[providerId] ?? false;
+
+                  final widgets = <Widget>[];
+                  if (enabledModels.isNotEmpty) {
+                    widgets.add(
+                      buildGroup(
+                        title: l10n.enabled,
+                        models: enabledModels,
+                        isEnabled: true,
+                        isExpanded: enabledExpanded,
+                        onToggle: () {
+                          setState(() {
+                            _enabledModelsExpandedByProvider[providerId] =
+                                !enabledExpanded;
+                          });
+                        },
+                      ),
+                    );
+                  }
+                  if (disabledModels.isNotEmpty) {
+                    if (widgets.isNotEmpty) {
+                      widgets.add(const Divider(height: 1));
+                    }
+                    widgets.add(
+                      buildGroup(
+                        title: l10n.disabled,
+                        models: disabledModels,
+                        isEnabled: false,
+                        isExpanded: disabledExpanded,
+                        onToggle: () {
+                          setState(() {
+                            _disabledModelsExpandedByProvider[providerId] =
+                                !disabledExpanded;
+                          });
+                        },
+                      ),
+                    );
+                  }
+
+                  return widgets;
+                })()
               else
                 Padding(
                   padding: EdgeInsets.all(24),
@@ -1825,4 +1946,3 @@ class _ExclusionPickerState extends State<_ExclusionPicker> {
     );
   }
 }
-
