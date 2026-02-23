@@ -119,9 +119,15 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
         });
       }
     });
+    final isRestoringSession = ref.watch(sessionRestoreInProgressProvider);
     final settingsState = ref.watch(settingsProvider);
     final selectedSessionId = ref.watch(selectedHistorySessionIdProvider);
     final sessionsState = ref.watch(sessionsProvider);
+
+    if (isRestoringSession) {
+      return _buildSessionRestoreLoading(context, settingsState);
+    }
+
     String sessionTitle = AppLocalizations.of(context)!.startNewChat;
 
     if (selectedSessionId != null &&
@@ -248,6 +254,58 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildSessionRestoreLoading(
+      BuildContext context, SettingsState settingsState) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final backgroundGradient = ChatBackgroundTheme.getGradient(
+      settingsState.backgroundColor,
+      isDark: isDark,
+    );
+    final customThemeEnabled =
+        settingsState.useCustomTheme || settingsState.themeMode == 'custom';
+    final hasCustomBackground = customThemeEnabled &&
+        settingsState.backgroundImagePath != null &&
+        settingsState.backgroundImagePath!.isNotEmpty;
+    final l10n = AppLocalizations.of(context)!;
+
+    return Stack(
+      children: [
+        if (backgroundGradient != null && !hasCustomBackground)
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: backgroundGradient,
+                ),
+              ),
+            ),
+          ),
+        Scaffold(
+          backgroundColor: Colors.transparent,
+          body: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(
+                  width: 28,
+                  height: 28,
+                  child: CircularProgressIndicator(strokeWidth: 3),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  l10n.loadingEllipsis,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 

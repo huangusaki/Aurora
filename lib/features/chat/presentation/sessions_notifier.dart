@@ -7,6 +7,9 @@ class SessionsState {
 }
 
 class SessionsNotifier extends StateNotifier<SessionsState> {
+  static const Duration _maintenanceInterval = Duration(hours: 24);
+  static const int _desktopPreloadLimit = 24;
+
   final ChatStorage _storage;
   final Ref _ref;
   SessionsNotifier(this._ref, this._storage) : super(SessionsState()) {
@@ -47,16 +50,27 @@ class SessionsNotifier extends StateNotifier<SessionsState> {
   }
 
   Future<void> _init() async {
-    await _storage.cleanupEmptySessions();
-    await _storage.backfillSessionLastUserMessageTimes();
+    final initSw = Stopwatch()..start();
+    final isMobile = PlatformUtils.isMobile;
+    if (isMobile) {
+      _ref.read(sessionRestoreInProgressProvider.notifier).state = true;
+    }
+
+    final loadSw = Stopwatch()..start();
     await loadSessions();
-    _storage.preloadAllSessions();
+    loadSw.stop();
+    debugPrint(
+        '[STARTUP] SessionsNotifier.loadSessions ${loadSw.elapsedMilliseconds}ms (${state.sessions.length} sessions)');
+
     final settings = await _ref.read(settingsStorageProvider).loadAppSettings();
     final restoreLast = settings?.restoreLastSessionOnLaunch ?? true;
     final lastId = settings?.lastSessionId;
     final lastTopicId = settings?.lastTopicId;
     debugPrint(
         'Restoring session (enabled=$restoreLast). lastId: $lastId, lastTopicId: $lastTopicId');
+
+    var targetSessionId = 'new_chat';
+    var hasRestorableLastSession = false;
 
     if (restoreLast) {
       if (lastTopicId != null) {
@@ -65,18 +79,83 @@ class SessionsNotifier extends StateNotifier<SessionsState> {
         debugPrint('Restored topic id: $topicId');
       }
       if (lastId != null && state.sessions.any((s) => s.sessionId == lastId)) {
-        _ref.read(selectedHistorySessionIdProvider.notifier).state = lastId;
-      } else {
-        // Start with virtual new chat if no last session or it was deleted
-        _ref.read(selectedHistorySessionIdProvider.notifier).state = 'new_chat';
+        targetSessionId = lastId;
+        hasRestorableLastSession = true;
       }
     } else {
       _ref.read(selectedTopicIdProvider.notifier).state = null;
-      _ref.read(selectedHistorySessionIdProvider.notifier).state = 'new_chat';
+    }
+
+    if (isMobile && hasRestorableLastSession) {
+      // Show loading state first, then restore directly to the previous session.
+      final deferredTarget = targetSessionId;
+      Future<void>.delayed(const Duration(milliseconds: 350), () {
+        if (!mounted) return;
+        _ref.read(selectedHistorySessionIdProvider.notifier).state =
+            deferredTarget;
+        _ref.read(sessionRestoreInProgressProvider.notifier).state = false;
+        debugPrint(
+            '[STARTUP] SessionsNotifier.mobile restored session: $deferredTarget');
+      });
+    } else {
+      _ref.read(selectedHistorySessionIdProvider.notifier).state =
+          targetSessionId;
+      if (isMobile) {
+        _ref.read(sessionRestoreInProgressProvider.notifier).state = false;
+      }
+    }
+    initSw.stop();
+    debugPrint('[STARTUP] SessionsNotifier._init total '
+        '${initSw.elapsedMilliseconds}ms');
+
+    unawaited(_runDeferredStartupMaintenance());
+  }
+
+  Future<void> _runDeferredStartupMaintenance() async {
+    final totalSw = Stopwatch()..start();
+    try {
+      // Let first frame and early interactions complete before heavy DB work.
+      await Future<void>.delayed(const Duration(milliseconds: 800));
+
+      final settingsStorage = _ref.read(settingsStorageProvider);
+      final now = DateTime.now();
+      final lastRun = await settingsStorage.loadStartupMaintenanceLastRun();
+      final shouldRunMaintenance =
+          lastRun == null || now.difference(lastRun) >= _maintenanceInterval;
+
+      if (shouldRunMaintenance) {
+        final maintenanceSw = Stopwatch()..start();
+        await _storage.cleanupEmptySessions();
+        await _storage.backfillSessionLastUserMessageTimes();
+        await loadSessions();
+        await settingsStorage.saveStartupMaintenanceLastRun(now);
+        maintenanceSw.stop();
+        debugPrint('[STARTUP] SessionsNotifier.deferredMaintenance '
+            '${maintenanceSw.elapsedMilliseconds}ms');
+      } else {
+        debugPrint('[STARTUP] SessionsNotifier.deferredMaintenance skipped '
+            '(lastRun=$lastRun)');
+      }
+
+      if (PlatformUtils.isDesktop) {
+        final preloadSw = Stopwatch()..start();
+        await _storage.preloadAllSessions(limit: _desktopPreloadLimit);
+        preloadSw.stop();
+        debugPrint('[STARTUP] SessionsNotifier.deferredPreload '
+            '${preloadSw.elapsedMilliseconds}ms '
+            '(limit=$_desktopPreloadLimit)');
+      }
+    } catch (e, st) {
+      debugPrint('[STARTUP] SessionsNotifier.deferred failed: $e\n$st');
+    } finally {
+      totalSw.stop();
+      debugPrint('[STARTUP] SessionsNotifier.deferred total '
+          '${totalSw.elapsedMilliseconds}ms');
     }
   }
 
   Future<void> loadSessions() async {
+    final sw = Stopwatch()..start();
     state = SessionsState(sessions: state.sessions, isLoading: true);
     final sessions = await _storage.loadSessions();
     final order = await _storage.loadSessionOrder();
@@ -93,6 +172,9 @@ class SessionsNotifier extends StateNotifier<SessionsState> {
     }
     _cleanupCollapsedSessionIds(sessions);
     state = SessionsState(sessions: sessions, isLoading: false);
+    sw.stop();
+    debugPrint(
+        '[STARTUP] SessionsNotifier.loadSessionsInternal ${sw.elapsedMilliseconds}ms (order=${order.length}, sessions=${sessions.length})');
   }
 
   Future<void> reorderSession(int oldIndex, int newIndex) async {

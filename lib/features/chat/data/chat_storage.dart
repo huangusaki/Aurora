@@ -86,17 +86,22 @@ class ChatStorage {
     return targets.where((path) => !referenced.contains(path)).toList();
   }
 
-  Future<void> preloadAllSessions() async {
+  Future<void> preloadAllSessions({int? limit}) async {
     final sw = Stopwatch()..start();
     final sessions = await loadSessions();
-    for (final session in sessions) {
+    final targetSessions =
+        (limit != null && limit > 0 && sessions.length > limit)
+            ? sessions.take(limit).toList(growable: false)
+            : sessions;
+    for (final session in targetSessions) {
       if (!_messagesCache.containsKey(session.sessionId)) {
         _messagesCache[session.sessionId] =
             await _loadHistoryFromDb(session.sessionId);
       }
     }
-    debugPrint(
-        'ChatStorage: preloadAllSessions completed in ${sw.elapsedMilliseconds}ms for ${sessions.length} sessions');
+    debugPrint('ChatStorage: preloadAllSessions completed in '
+        '${sw.elapsedMilliseconds}ms for ${targetSessions.length} sessions '
+        '(total=${sessions.length}${limit != null ? ', limit=$limit' : ''})');
   }
 
   Future<String> saveMessage(Message message, String sessionId) async {
@@ -223,7 +228,12 @@ class ChatStorage {
         .sessionIdEqualTo(sessionId)
         .sortByTimestamp()
         .findAll();
-    return entities.map((e) {
+
+    // Convert entities in chunks and yield periodically to keep the UI thread responsive.
+    const chunkSize = 120;
+    final messages = <Message>[];
+    for (var i = 0; i < entities.length; i++) {
+      final e = entities[i];
       List<ToolCall>? toolCalls;
       if (e.toolCallsJson != null) {
         try {
@@ -240,30 +250,37 @@ class ChatStorage {
           debugPrint('Error parsing toolCallsJson: $e');
         }
       }
-      return Message(
-        id: e.id.toString(),
-        content: e.content,
-        isUser: e.isUser,
-        timestamp: e.timestamp,
-        reasoningContent: e.reasoningContent,
-        attachments: e.attachments,
-        images: e.images,
-        model: e.model,
-        provider: e.provider,
-        reasoningDurationSeconds: e.reasoningDurationSeconds,
-        role: e.role,
-        assistantId: e.assistantId,
-        requestId: e.requestId,
-        toolCallId: e.toolCallId,
-        toolCalls: toolCalls,
-        tokenCount: e.tokenCount,
-        firstTokenMs: e.firstTokenMs,
-        durationMs: e.durationMs,
-        promptTokens: e.promptTokens,
-        completionTokens: e.completionTokens,
-        reasoningTokens: e.reasoningTokens,
+      messages.add(
+        Message(
+          id: e.id.toString(),
+          content: e.content,
+          isUser: e.isUser,
+          timestamp: e.timestamp,
+          reasoningContent: e.reasoningContent,
+          attachments: e.attachments,
+          images: e.images,
+          model: e.model,
+          provider: e.provider,
+          reasoningDurationSeconds: e.reasoningDurationSeconds,
+          role: e.role,
+          assistantId: e.assistantId,
+          requestId: e.requestId,
+          toolCallId: e.toolCallId,
+          toolCalls: toolCalls,
+          tokenCount: e.tokenCount,
+          firstTokenMs: e.firstTokenMs,
+          durationMs: e.durationMs,
+          promptTokens: e.promptTokens,
+          completionTokens: e.completionTokens,
+          reasoningTokens: e.reasoningTokens,
+        ),
       );
-    }).toList();
+
+      if ((i + 1) % chunkSize == 0) {
+        await Future<void>.delayed(Duration.zero);
+      }
+    }
+    return messages;
   }
 
   void invalidateCache(String sessionId) {
@@ -639,31 +656,60 @@ class ChatStorage {
   }
 
   Future<void> cleanupEmptySessions() async {
-    await _isar.writeTxn(() async {
-      final sessions = await _isar.sessionEntitys.where().findAll();
-      final parentIds =
-          sessions.map((s) => s.parentSessionId).whereType<String>().toSet();
-      for (final session in sessions) {
-        if (parentIds.contains(session.sessionId)) {
-          continue;
-        }
+    final sw = Stopwatch()..start();
+    const yieldEvery = 40;
+    var scannedSessions = 0;
+    var deletedSessions = 0;
+    final sessions = await _isar.sessionEntitys.where().findAll();
+    scannedSessions = sessions.length;
+    final parentIds =
+        sessions.map((s) => s.parentSessionId).whereType<String>().toSet();
+    final idsToDelete = <int>[];
+
+    for (var i = 0; i < sessions.length; i++) {
+      final session = sessions[i];
+      if (!parentIds.contains(session.sessionId)) {
         final count = await _isar.messageEntitys
             .filter()
             .sessionIdEqualTo(session.sessionId)
             .count();
         if (count == 0) {
-          await _isar.sessionEntitys.delete(session.id);
+          idsToDelete.add(session.id);
         }
       }
-    });
+
+      if ((i + 1) % yieldEvery == 0) {
+        await Future<void>.delayed(Duration.zero);
+      }
+    }
+
+    deletedSessions = idsToDelete.length;
+    if (idsToDelete.isNotEmpty) {
+      await _isar.writeTxn(() async {
+        for (final id in idsToDelete) {
+          await _isar.sessionEntitys.delete(id);
+        }
+      });
+    }
+    sw.stop();
+    debugPrint('[STARTUP] ChatStorage.cleanupEmptySessions '
+        '${sw.elapsedMilliseconds}ms (scanned=$scannedSessions, deleted=$deletedSessions)');
   }
 
   Future<void> backfillSessionLastUserMessageTimes() async {
+    final sw = Stopwatch()..start();
+    const yieldEvery = 40;
     final sessions = await _isar.sessionEntitys.where().findAll();
-    if (sessions.isEmpty) return;
+    if (sessions.isEmpty) {
+      sw.stop();
+      debugPrint('[STARTUP] ChatStorage.backfillSessionLastUserMessageTimes '
+          '${sw.elapsedMilliseconds}ms (scanned=0, updated=0)');
+      return;
+    }
 
     final sessionsToUpdate = <SessionEntity>[];
-    for (final session in sessions) {
+    for (var i = 0; i < sessions.length; i++) {
+      final session = sessions[i];
       final lastUserMessage = await _isar.messageEntitys
           .filter()
           .sessionIdEqualTo(session.sessionId)
@@ -676,12 +722,20 @@ class ChatStorage {
         session.lastMessageTime = lastUserMessage.timestamp;
         sessionsToUpdate.add(session);
       }
+
+      if ((i + 1) % yieldEvery == 0) {
+        await Future<void>.delayed(Duration.zero);
+      }
     }
 
-    if (sessionsToUpdate.isEmpty) return;
-    await _isar.writeTxn(() async {
-      await _isar.sessionEntitys.putAll(sessionsToUpdate);
-    });
+    if (sessionsToUpdate.isNotEmpty) {
+      await _isar.writeTxn(() async {
+        await _isar.sessionEntitys.putAll(sessionsToUpdate);
+      });
+    }
+    sw.stop();
+    debugPrint('[STARTUP] ChatStorage.backfillSessionLastUserMessageTimes '
+        '${sw.elapsedMilliseconds}ms (scanned=${sessions.length}, updated=${sessionsToUpdate.length})');
   }
 
   Future<bool> deleteSessionIfEmpty(String sessionId) async {

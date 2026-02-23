@@ -30,11 +30,16 @@ class MobileAppSettingsPage extends ConsumerWidget {
     final settingsState = ref.watch(settingsProvider);
     final knowledgeState = ref.watch(knowledgeProvider);
     final l10n = AppLocalizations.of(context)!;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final customThemeEnabled =
         settingsState.useCustomTheme || settingsState.themeMode == 'custom';
     final hasCustomBackground = customThemeEnabled &&
         settingsState.backgroundImagePath != null &&
         settingsState.backgroundImagePath!.isNotEmpty;
+    final backgroundStyleForDisplay =
+        !isDarkMode && settingsState.backgroundColor == 'pure_black'
+            ? 'default'
+            : settingsState.backgroundColor;
     final versionSubtitle = ref.watch(_packageInfoProvider).maybeWhen(
           data: (info) {
             final buildSuffix =
@@ -131,8 +136,8 @@ class MobileAppSettingsPage extends ConsumerWidget {
               MobileSettingsTile(
                 leading: const Icon(Icons.gradient),
                 title: l10n.backgroundStyle,
-                subtitle: _getBackgroundStyleLabel(
-                    settingsState.backgroundColor, l10n),
+                subtitle:
+                    _getBackgroundStyleLabel(backgroundStyleForDisplay, l10n),
                 trailing:
                     hasCustomBackground ? const Icon(Icons.lock_outline) : null,
                 showChevron: !hasCustomBackground,
@@ -514,64 +519,228 @@ class MobileAppSettingsPage extends ConsumerWidget {
         settings.backgroundImagePath != null &&
         settings.backgroundImagePath!.isNotEmpty;
     if (hasCustomBackground) return;
-
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final styles = [
-      ('default', l10n.bgDefault),
-      ('pure_black', l10n.bgPureBlack),
-      ('warm', l10n.bgWarm),
-      ('cool', l10n.bgCool),
-      ('rose', l10n.bgRose),
-      ('lavender', l10n.bgLavender),
-      ('mint', l10n.bgMint),
-      ('sky', l10n.bgSky),
-      ('gray', l10n.bgGray),
-      ('sunset', l10n.bgSunset),
-      ('ocean', l10n.bgOcean),
-      ('forest', l10n.bgForest),
-      ('dream', l10n.bgDream),
-      ('aurora', l10n.bgAurora),
-      ('volcano', l10n.bgVolcano),
-      ('midnight', l10n.bgMidnight),
-      ('dawn', l10n.bgDawn),
-      ('neon', l10n.bgNeon),
-      ('blossom', l10n.bgBlossom),
+      (
+        l10n.bgDefault,
+        'default',
+        [const Color(0xFF2B2B2B)],
+        [const Color(0xFFE0F7FA), const Color(0xFFF1F8E9)]
+      ),
+      (
+        l10n.bgPureBlack,
+        'pure_black',
+        [const Color(0xFF000000)],
+        [const Color(0xFFFFFFFF)]
+      ),
+      (
+        l10n.bgWarm,
+        'warm',
+        [const Color(0xFF1E1C1A), const Color(0xFF2E241E)],
+        [const Color(0xFFFFF8E1), const Color(0xFFFFF3E0)]
+      ),
+      (
+        l10n.bgCool,
+        'cool',
+        [const Color(0xFF1A1C1E), const Color(0xFF1E252E)],
+        [const Color(0xFFE1F5FE), const Color(0xFFE3F2FD)]
+      ),
+      (
+        l10n.bgRose,
+        'rose',
+        [const Color(0xFF2D1A1E), const Color(0xFF3B1E26)],
+        [const Color(0xFFFCE4EC), const Color(0xFFFFEBEE)]
+      ),
+      (
+        l10n.bgLavender,
+        'lavender',
+        [const Color(0xFF1F1A2D), const Color(0xFF261E3B)],
+        [const Color(0xFFF3E5F5), const Color(0xFFEDE7F6)]
+      ),
+      (
+        l10n.bgMint,
+        'mint',
+        [const Color(0xFF1A2D24), const Color(0xFF1E3B2E)],
+        [const Color(0xFFE0F2F1), const Color(0xFFE8F5E9)]
+      ),
+      (
+        l10n.bgSky,
+        'sky',
+        [const Color(0xFF1A202D), const Color(0xFF1E263B)],
+        [const Color(0xFFE0F7FA), const Color(0xFFE1F5FE)]
+      ),
+      (
+        l10n.bgGray,
+        'gray',
+        [const Color(0xFF1E1E1E), const Color(0xFF2C2C2C)],
+        [const Color(0xFFFAFAFA), const Color(0xFFF5F5F5)]
+      ),
+      (
+        l10n.bgSunset,
+        'sunset',
+        [const Color(0xFF1A0B0E), const Color(0xFF4A1F28)],
+        [const Color(0xFFFFF3E0), const Color(0xFFFBE9E7)]
+      ),
+      (
+        l10n.bgOcean,
+        'ocean',
+        [const Color(0xFF05101A), const Color(0xFF0D2B42)],
+        [const Color(0xFFE3F2FD), const Color(0xFFE8EAF6)]
+      ),
+      (
+        l10n.bgForest,
+        'forest',
+        [const Color(0xFF051408), const Color(0xFF0E3316)],
+        [const Color(0xFFE8F5E9), const Color(0xFFF1F8E9)]
+      ),
+      (
+        l10n.bgDream,
+        'dream',
+        [const Color(0xFF120817), const Color(0xFF261233)],
+        [const Color(0xFFEDE7F6), const Color(0xFFE8EAF6)]
+      ),
+      (
+        l10n.bgAurora,
+        'aurora',
+        [const Color(0xFF051715), const Color(0xFF181533)],
+        [const Color(0xFFE0F2F1), const Color(0xFFEDE7F6)]
+      ),
+      (
+        l10n.bgVolcano,
+        'volcano',
+        [const Color(0xFF1F0808), const Color(0xFF3E1212)],
+        [const Color(0xFFFBE9E7), const Color(0xFFFFEBEE)]
+      ),
+      (
+        l10n.bgMidnight,
+        'midnight',
+        [const Color(0xFF020205), const Color(0xFF141426)],
+        [const Color(0xFFECEFF1), const Color(0xFFFAFAFA)]
+      ),
+      (
+        l10n.bgDawn,
+        'dawn',
+        [const Color(0xFF141005), const Color(0xFF33260D)],
+        [const Color(0xFFFFFDE7), const Color(0xFFFFF8E1)]
+      ),
+      (
+        l10n.bgNeon,
+        'neon',
+        [const Color(0xFF08181A), const Color(0xFF240C21)],
+        [const Color(0xFFE0F7FA), const Color(0xFFF3E5F5)]
+      ),
+      (
+        l10n.bgBlossom,
+        'blossom',
+        [const Color(0xFF1F050B), const Color(0xFF3D0F19)],
+        [const Color(0xFFFFEBEE), const Color(0xFFFCE4EC)]
+      ),
     ];
+    final visibleStyles = isDark
+        ? styles
+        : styles
+            .where((style) => style.$2 != 'pure_black')
+            .toList(growable: false);
     AuroraBottomSheet.show(
       context: context,
-      builder: (ctx) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          AuroraBottomSheet.buildTitle(context, l10n.backgroundStyle),
-          const Divider(height: 1),
-          Container(
-            constraints: BoxConstraints(
-                maxHeight: MediaQuery.of(context).size.height * 0.6),
-            child: ListView.builder(
-              shrinkWrap: true,
-              itemCount: styles.length,
-              itemBuilder: (context, index) {
-                final style = styles[index];
-                final isSelected = settings.backgroundColor == style.$1;
-                return AuroraBottomSheet.buildListItem(
-                  context: context,
-                  leading: Icon(
-                    isSelected ? Icons.check_circle : Icons.circle_outlined,
-                    color: isSelected ? Theme.of(context).primaryColor : null,
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            AuroraBottomSheet.buildTitle(context, l10n.backgroundStyle),
+            const SizedBox(height: 16),
+            ConstrainedBox(
+              constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.62),
+              child: SingleChildScrollView(
+                child: Center(
+                  child: Wrap(
+                    alignment: WrapAlignment.center,
+                    runAlignment: WrapAlignment.center,
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: visibleStyles.map((style) {
+                      final isSelected = settings.backgroundColor == style.$2;
+                      final colors = isDark ? style.$3 : style.$4;
+                      return SizedBox(
+                        width: 92,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(10),
+                          onTap: () {
+                            ref
+                                .read(settingsProvider.notifier)
+                                .setBackgroundColor(style.$2);
+                            Navigator.pop(ctx);
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.all(4),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 84,
+                                  height: 42,
+                                  decoration: BoxDecoration(
+                                    color: colors.length == 1
+                                        ? colors.first
+                                        : null,
+                                    gradient: colors.length > 1
+                                        ? LinearGradient(
+                                            colors: colors,
+                                            begin: Alignment.topLeft,
+                                            end: Alignment.bottomRight,
+                                          )
+                                        : null,
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: isSelected
+                                          ? Theme.of(context).primaryColor
+                                          : Colors.grey.withValues(alpha: 0.35),
+                                      width: isSelected ? 2 : 1,
+                                    ),
+                                  ),
+                                  child: isSelected
+                                      ? Icon(
+                                          Icons.check,
+                                          color: isDark
+                                              ? Colors.white
+                                              : Colors.black,
+                                          size: 16,
+                                        )
+                                      : null,
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  style.$1,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall
+                                        ?.color,
+                                    fontWeight: isSelected
+                                        ? FontWeight.w600
+                                        : FontWeight.w400,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(growable: false),
                   ),
-                  title: Text(style.$2),
-                  selected: isSelected,
-                  onTap: () {
-                    ref
-                        .read(settingsProvider.notifier)
-                        .setBackgroundColor(style.$1);
-                    Navigator.pop(ctx);
-                  },
-                );
-              },
+                ),
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-        ],
+            const SizedBox(height: 4),
+          ],
+        ),
       ),
     );
   }

@@ -13,7 +13,7 @@ import '../application/heuristic_cleaner_directory_planner.dart';
 import '../application/llm_cleaner_ai_advisor.dart';
 import '../application/llm_cleaner_directory_planner.dart';
 import '../data/cleaner_scan_service.dart';
-import '../data/soft_delete_executor.dart';
+import '../data/hard_delete_executor.dart';
 import '../domain/cleaner_ai_advisor.dart';
 import '../domain/cleaner_directory_planner.dart';
 import '../domain/cleaner_models.dart';
@@ -26,7 +26,7 @@ final cleanerScannerProvider = Provider<CleanerScanner>((ref) {
 });
 
 final cleanerDeleteExecutorProvider = Provider<CleanerDeleteExecutor>((ref) {
-  return const CleanerSoftDeleteExecutor();
+  return const CleanerHardDeleteExecutor();
 });
 
 final cleanerPolicyEngineProvider = Provider<CleanerPolicyEngine>((ref) {

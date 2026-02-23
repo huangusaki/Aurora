@@ -122,10 +122,34 @@ void main() async {
         _bootLog('loading providers and settings');
         final providerEntities = await storage.loadProviders();
         final appSettings = await storage.loadAppSettings();
+        final rawThemeMode = appSettings?.themeMode ?? 'system';
+        final rawUseCustomTheme = appSettings?.useCustomTheme ?? false;
+        final rawBackgroundImagePath = appSettings?.backgroundImagePath;
+        final startupThemeState = resolveThemeBackgroundState(
+          themeMode: rawThemeMode,
+          useCustomTheme: rawUseCustomTheme,
+          backgroundImagePath: rawBackgroundImagePath,
+        );
+        if (appSettings != null &&
+            startupThemeState.differsFrom(
+              themeMode: rawThemeMode,
+              useCustomTheme: rawUseCustomTheme,
+              backgroundImagePath: rawBackgroundImagePath,
+            )) {
+          _bootLog('normalizing invalid custom background settings');
+          await storage.saveAppSettings(
+            activeProviderId: appSettings.activeProviderId,
+            themeMode: startupThemeState.themeMode,
+            useCustomTheme: startupThemeState.useCustomTheme,
+            backgroundImagePath: startupThemeState.backgroundImagePath,
+            clearBackgroundImage: startupThemeState.backgroundImagePath == null,
+          );
+        }
         final restoreLastSessionOnLaunch =
             appSettings?.restoreLastSessionOnLaunch ?? true;
-        String? initialSelectedHistorySessionId = 'new_chat';
-        if (restoreLastSessionOnLaunch) {
+        String? initialSelectedHistorySessionId =
+            PlatformUtils.isMobile ? null : 'new_chat';
+        if (restoreLastSessionOnLaunch && !PlatformUtils.isMobile) {
           final lastId = appSettings?.lastSessionId;
           if (lastId != null && lastId.isNotEmpty) {
             final chatStorage = ChatStorage(storage);
@@ -169,7 +193,7 @@ void main() async {
                 userAvatar: appSettings?.userAvatar,
                 llmName: appSettings?.llmName ?? 'Assistant',
                 llmAvatar: appSettings?.llmAvatar,
-                themeMode: appSettings?.themeMode ?? 'system',
+                themeMode: startupThemeState.themeMode,
                 isStreamEnabled: appSettings?.isStreamEnabled ?? true,
                 isSearchEnabled: appSettings?.isSearchEnabled ?? false,
                 isKnowledgeEnabled: appSettings?.isKnowledgeEnabled ?? false,
@@ -200,10 +224,10 @@ void main() async {
                 executionModel: appSettings?.executionModel,
                 executionProviderId: appSettings?.executionProviderId,
                 fontSize: appSettings?.fontSize ?? 14.0,
-                backgroundImagePath: appSettings?.backgroundImagePath,
+                backgroundImagePath: startupThemeState.backgroundImagePath,
                 backgroundBrightness: appSettings?.backgroundBrightness ?? 0.5,
                 backgroundBlur: appSettings?.backgroundBlur ?? 0.0,
-                useCustomTheme: appSettings?.useCustomTheme ?? false,
+                useCustomTheme: startupThemeState.useCustomTheme,
               );
             }),
           ],
@@ -295,9 +319,14 @@ class MyApp extends ConsumerWidget {
 
     bool hasCustomBackground(WidgetRef ref) {
       final settings = ref.watch(settingsProvider);
-      return (settings.useCustomTheme || settings.themeMode == 'custom') &&
-          settings.backgroundImagePath != null &&
-          settings.backgroundImagePath!.isNotEmpty;
+      final resolved = resolveThemeBackgroundState(
+        themeMode: settings.themeMode,
+        useCustomTheme: settings.useCustomTheme,
+        backgroundImagePath: settings.backgroundImagePath,
+      );
+      return (resolved.useCustomTheme || resolved.themeMode == 'custom') &&
+          resolved.backgroundImagePath != null &&
+          resolved.backgroundImagePath!.isNotEmpty;
     }
 
     fluent.Color getBackgroundColor(
@@ -389,13 +418,14 @@ class MyApp extends ConsumerWidget {
 
     fluent.ThemeMode fluentMode;
     final settingsForMode = ref.watch(settingsProvider);
-    if (hasCustomBackground(ref)) {
-      fluentMode = fluent.ThemeMode.dark;
-    } else if (settingsForMode.themeMode == 'light') {
+    if (settingsForMode.themeMode == 'light') {
       fluentMode = fluent.ThemeMode.light;
     } else if (settingsForMode.themeMode == 'dark') {
       fluentMode = fluent.ThemeMode.dark;
     } else if (settingsForMode.themeMode == 'custom') {
+      fluentMode = fluent.ThemeMode.dark;
+    } else if (hasCustomBackground(ref) && settingsForMode.useCustomTheme) {
+      // Keep compatibility for custom-theme mode while allowing explicit light mode.
       fluentMode = fluent.ThemeMode.dark;
     } else {
       fluentMode = fluent.ThemeMode.system;
@@ -443,8 +473,8 @@ class MyApp extends ConsumerWidget {
               data: MediaQuery.of(context).copyWith(
                 textScaler: TextScaler.linear(fontSize / 14.0),
               ),
-               child: Theme(
-                 data: ThemeData(
+              child: Theme(
+                data: ThemeData(
                   fontFamily: fontFamily,
                   brightness: brightness == fluent.Brightness.dark
                       ? Brightness.dark
@@ -513,15 +543,15 @@ class MyApp extends ConsumerWidget {
                     ),
                   ),
                   useMaterial3: true,
-                   textSelectionTheme: TextSelectionThemeData(
-                     selectionColor: brightness == fluent.Brightness.dark
-                         ? const Color(
-                             0xFF3A5A80) // Neutral dark blue for dark mode
-                         : const Color(0xFFB3D4FC), // Light blue for light mode
-                     cursorColor: materialPrimary,
-                     selectionHandleColor: materialPrimary,
-                   ),
-                 ),
+                  textSelectionTheme: TextSelectionThemeData(
+                    selectionColor: brightness == fluent.Brightness.dark
+                        ? const Color(
+                            0xFF3A5A80) // Neutral dark blue for dark mode
+                        : const Color(0xFFB3D4FC), // Light blue for light mode
+                    cursorColor: materialPrimary,
+                    selectionHandleColor: materialPrimary,
+                  ),
+                ),
                 child: Material(
                   type: MaterialType.transparency,
                   child: ScaffoldMessenger(

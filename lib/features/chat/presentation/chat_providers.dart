@@ -30,6 +30,8 @@ final sessionsProvider =
   return SessionsNotifier(ref, storage);
 });
 final selectedHistorySessionIdProvider = StateProvider<String?>((ref) => null);
+final sessionRestoreInProgressProvider =
+    StateProvider<bool>((ref) => PlatformUtils.isMobile);
 final collapsedHistorySessionIdsProvider =
     StateProvider<Set<String>>((ref) => <String>{});
 final isHistorySidebarVisibleProvider = StateProvider<bool>((ref) => true);
