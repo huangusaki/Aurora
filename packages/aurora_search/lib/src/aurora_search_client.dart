@@ -30,7 +30,7 @@ class AuroraSearch {
   final String? _proxy;
   final Duration _timeout;
   final bool _verify;
-  final Map<Type, BaseSearchEngine<SearchResult>> _enginesCache = {};
+  final Map<String, BaseSearchEngine<SearchResult>> _enginesCache = {};
   final ResultCache? _cache;
   final RateLimiter _rateLimiter;
   InstantAnswerService? _instantAnswerService;
@@ -46,44 +46,65 @@ class AuroraSearch {
 
   List<BaseSearchEngine<SearchResult>> _getEngines(
       String category, String backend) {
-    final backendList = backend.split(',').map((e) => e.trim()).toList();
-    final engineKeys = engines[category]?.keys.toList() ?? [];
+    final categoryEngines = engines[category];
+    if (categoryEngines == null || categoryEngines.isEmpty) {
+      return const [];
+    }
+
+    final backendList = backend
+        .split(',')
+        .map((e) => e.trim().toLowerCase())
+        .where((e) => e.isNotEmpty)
+        .toList();
+
+    final engineKeys = categoryEngines.keys.toList();
     engineKeys.shuffle();
+
     List<String> keys;
-    if (backendList.contains('auto') || backendList.contains('all')) {
+    final autoSelect = backendList.isEmpty ||
+        backendList.contains('auto') ||
+        backendList.contains('all');
+    if (autoSelect) {
       keys = engineKeys;
       if (category == 'text') {
         keys = ['wikipedia', ...keys.where((k) => k != 'wikipedia')];
       }
     } else {
-      keys = backendList;
-    }
-    try {
-      final instances = <BaseSearchEngine<SearchResult>>[];
-      for (final key in keys) {
-        final engineClass = engines[category]?[key];
-        if (engineClass == null) continue;
-        if (_enginesCache.containsKey(engineClass.runtimeType)) {
-          instances.add(_enginesCache[engineClass.runtimeType]!);
-        } else {
-          final instance = engineClass(
-            proxy: _proxy,
-            timeout: _timeout,
-            verify: _verify,
-          );
-          _enginesCache[engineClass.runtimeType] = instance;
-          instances.add(instance);
-        }
+      keys = backendList.where(categoryEngines.containsKey).toList();
+      if (keys.isEmpty) {
+        keys = engineKeys;
       }
-      instances.sort((a, b) {
-        final priorityCompare = b.priority.compareTo(a.priority);
-        if (priorityCompare != 0) return priorityCompare;
-        return Random().nextBool() ? 1 : -1;
-      });
-      return instances;
-    } catch (e) {
-      return _getEngines(category, 'auto');
     }
+
+    final instances = <BaseSearchEngine<SearchResult>>[];
+    for (final key in keys) {
+      final engineFactory = categoryEngines[key];
+      if (engineFactory == null) continue;
+
+      final cacheKey = '$category::$key';
+      final instance = _enginesCache.putIfAbsent(
+        cacheKey,
+        () => engineFactory(
+          proxy: _proxy,
+          timeout: _timeout,
+          verify: _verify,
+        ),
+      );
+      instances.add(instance);
+    }
+
+    final insertionOrder = <BaseSearchEngine<SearchResult>, int>{};
+    for (var i = 0; i < instances.length; i++) {
+      insertionOrder[instances[i]] = i;
+    }
+
+    instances.sort((a, b) {
+      final priorityCompare = b.priority.compareTo(a.priority);
+      if (priorityCompare != 0) return priorityCompare;
+      return insertionOrder[a]!.compareTo(insertionOrder[b]!);
+    });
+
+    return instances;
   }
 
   Future<List<SearchResult>> _searchTyped({
@@ -100,9 +121,17 @@ class AuroraSearch {
     if (query.isEmpty) {
       throw AuroraSearchException('query is mandatory.');
     }
+    if (maxResults != null && maxResults <= 0) {
+      return const [];
+    }
+
     final enginesList = _getEngines(category, backend);
+    if (enginesList.isEmpty) {
+      return const [];
+    }
+
     final uniqueProviders = enginesList.map((e) => e.provider).toSet();
-    final seenProviders = <String>{};
+    final scheduledProviders = <String>{};
     final Set<String> uniqueFields;
     switch (category) {
       case 'images':
@@ -118,33 +147,30 @@ class AuroraSearch {
     final maxWorkers = maxResults != null
         ? min(uniqueProviders.length, (maxResults / 10).ceil() + 1)
         : uniqueProviders.length;
+    final manager = ConcurrentSearchManager(
+      maxConcurrency: max(1, maxWorkers),
+    );
     final futures = <Future<void>>[];
-    var workersStarted = 0;
     for (final engine in enginesList) {
-      if (seenProviders.contains(engine.provider)) {
+      if (!scheduledProviders.add(engine.provider)) {
         continue;
       }
-      final future = _executeEngineSearch(
-        engine,
-        query,
-        region,
-        safesearch,
-        timelimit,
-        page,
-        extra,
-        resultsAggregator,
-        seenProviders,
+      final future = manager.run(
+        () => _executeEngineSearch(
+          engine,
+          query,
+          region,
+          safesearch,
+          timelimit,
+          page,
+          extra,
+          resultsAggregator,
+        ),
       );
       futures.add(future);
-      workersStarted++;
-      if (workersStarted >= maxWorkers) {
-        await Future.wait(futures);
-        futures.clear();
-      }
     }
-    if (futures.isNotEmpty) {
-      await Future.wait(futures);
-    }
+    await Future.wait(futures);
+
     final allResults = resultsAggregator.results;
     if (maxResults != null && allResults.length > maxResults) {
       return allResults.take(maxResults).toList();
@@ -186,7 +212,6 @@ class AuroraSearch {
     int page,
     Map<String, dynamic>? extra,
     ResultsAggregator<SearchResult> resultsAggregator,
-    Set<String> seenProviders,
   ) async {
     try {
       await _rateLimiter.waitForSlot(engine.name);
@@ -203,7 +228,6 @@ class AuroraSearch {
           .timeout(_timeout);
       if (results != null && results.isNotEmpty) {
         resultsAggregator.addAll(results);
-        seenProviders.add(engine.provider);
       }
     } catch (e) {
       print('Error in engine ${engine.name}: $e');

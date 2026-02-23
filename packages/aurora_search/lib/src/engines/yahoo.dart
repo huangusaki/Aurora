@@ -22,7 +22,7 @@ class YahooEngine extends BaseSearchEngine<TextSearchResult> {
   @override
   String get category => 'text';
   @override
-  String get provider => 'bing';
+  String get provider => 'yahoo';
   @override
   String get searchUrl => 'https://search.yahoo.com/search';
   @override

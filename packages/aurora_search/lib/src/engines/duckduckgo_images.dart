@@ -11,7 +11,7 @@ class DuckDuckGoImagesEngine extends BaseSearchEngine<ImageSearchResult> {
   @override
   String get category => 'images';
   @override
-  String get provider => 'bing';
+  String get provider => 'duckduckgo';
   @override
   String get searchUrl => 'https://duckduckgo.com/i.js';
   @override

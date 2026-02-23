@@ -11,7 +11,7 @@ class DuckDuckGoNewsEngine extends BaseSearchEngine<NewsSearchResult> {
   @override
   String get category => 'news';
   @override
-  String get provider => 'bing';
+  String get provider => 'duckduckgo';
   @override
   String get searchUrl => 'https://duckduckgo.com/news.js';
   @override
@@ -102,8 +102,7 @@ class DuckDuckGoNewsEngine extends BaseSearchEngine<NewsSearchResult> {
             body: item['excerpt']?.toString() ?? '',
             url: item['url']?.toString() ?? '',
             dateRaw: item['date']?.toString(),
-            publishedDate:
-                DateTime.tryParse(item['date']?.toString() ?? ''),
+            publishedDate: DateTime.tryParse(item['date']?.toString() ?? ''),
             imageUrl: item['image']?.toString(),
             source: item['source']?.toString(),
             provider: name,

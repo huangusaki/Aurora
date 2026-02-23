@@ -165,10 +165,22 @@ class ResultCache {
   final CacheConfig config;
   final Map<String, _CacheEntry> _cache = {};
   String _generateKey(String category, String query, SearchOptions options) {
-    final keyData = '$category:$query:${options.region.code}:'
-        '${options.safeSearch.code}:${options.timeLimit.code}:'
-        '${options.page}:${options.backend}';
-    return keyData.hashCode.toString();
+    return [
+      category,
+      query,
+      options.region.code,
+      options.safeSearch.code,
+      options.timeLimit.code ?? '',
+      options.maxResults.toString(),
+      options.page.toString(),
+      options.backend,
+      options.includeMetadata.toString(),
+      options.minRelevanceScore?.toString() ?? '',
+      options.language ?? '',
+      options.fileType ?? '',
+      options.imageSize?.name ?? '',
+      options.imageColor?.name ?? '',
+    ].join('|');
   }
 
   List<Map<String, dynamic>>? get(
@@ -184,7 +196,9 @@ class ResultCache {
       _cache.remove(key);
       return null;
     }
-    return entry.results;
+    return entry.results
+        .map((row) => Map<String, dynamic>.from(row))
+        .toList(growable: false);
   }
 
   void put(
@@ -199,7 +213,9 @@ class ResultCache {
     }
     final key = _generateKey(category, query, options);
     _cache[key] = _CacheEntry(
-      results: results,
+      results: results
+          .map((row) => Map<String, dynamic>.from(row))
+          .toList(growable: false),
       expiresAt: DateTime.now().add(config.ttl),
     );
   }

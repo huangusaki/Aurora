@@ -53,7 +53,7 @@ class ToolManager {
 
   Future<String> executeTool(String name, Map<String, dynamic> args,
       {String preferredEngine = 'duckduckgo',
-       List<Skill> skills = const []}) async {
+      List<Skill> skills = const []}) async {
     if (name == 'SearchWeb') {
       return await _searchWeb(args['query'] ?? '', preferredEngine);
     }
@@ -150,12 +150,12 @@ class ToolManager {
         // Replace placeholders in URL and determine what goes into queryParams/body
         args.forEach((key, value) {
           final placeholder = '{{$key}}';
-          final encodedValue = Uri.encodeComponent(value.toString());
+          final rawValue = value.toString();
           if (url.contains(placeholder)) {
-            url = url.replaceAll(placeholder, encodedValue);
+            url = url.replaceAll(placeholder, Uri.encodeComponent(rawValue));
           } else {
             if (method == 'GET') {
-              queryParams[key] = encodedValue;
+              queryParams[key] = value;
             } else {
               bodyData[key] = value;
             }
@@ -245,5 +245,10 @@ class ToolManager {
       'engine': successfulEngine,
       'results': formattedResults
     });
+  }
+
+  void close() {
+    _search.close();
+    _dio.close(force: true);
   }
 }

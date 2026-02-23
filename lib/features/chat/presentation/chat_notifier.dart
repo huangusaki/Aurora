@@ -172,17 +172,19 @@ class ChatNotifier extends StateNotifier<ChatState> {
         state.copyWith(isLoading: true, error: null, hasUnreadResponse: false);
     final startSaveIndex = state.messages.length;
     final startTime = DateTime.now();
+    _ChatRequestContext? requestContext;
 
     try {
-      final requestContext = await _ChatRequestContextBuilder(notifier: this)
+      requestContext = await _ChatRequestContextBuilder(notifier: this)
           .build(text: text, apiContent: apiContent, assistant: assistant);
       if (!mounted || _currentGenerationId != generationId) {
         return _sessionId;
       }
+      final context = requestContext;
 
       final initialAiMessage = _createInitialAiMessage(
-        model: requestContext.currentModel,
-        provider: requestContext.currentProviderName,
+        model: context.currentModel,
+        provider: context.currentProviderName,
         generationId: generationId,
         assistantIdForRequest: assistantIdForRequest,
       );
@@ -190,7 +192,7 @@ class ChatNotifier extends StateNotifier<ChatState> {
 
       final orchestrator = _ChatGenerationOrchestrator(
         notifier: this,
-        requestContext: requestContext,
+        requestContext: context,
         generationId: generationId,
         startTime: startTime,
         recordMainModelUsage: ({
@@ -203,7 +205,7 @@ class ChatNotifier extends StateNotifier<ChatState> {
           int reasoningTokens = 0,
           AppErrorType? errorType,
         }) {
-          final currentModel = requestContext.currentModel;
+          final currentModel = context.currentModel;
           if (currentModel == null || currentModel.isEmpty) return;
           _ref.read(usageStatsProvider.notifier).incrementUsage(
                 currentModel,
@@ -241,14 +243,14 @@ class ChatNotifier extends StateNotifier<ChatState> {
         unawaited(
           _ref.read(assistantMemoryServiceProvider).onRequestCompleted(
                 assistant: assistant,
-                settings: requestContext.settings,
+                settings: context.settings,
                 requestId: generationId,
               ),
         );
       }
 
       if (_currentGenerationId == generationId) {
-        final activeProvider = requestContext.settings.activeProvider;
+        final activeProvider = context.settings.activeProvider;
         if (activeProvider.autoRotateKeys &&
             activeProvider.apiKeys.length > 1) {
           _ref.read(settingsProvider.notifier).rotateApiKey(activeProvider.id);
@@ -261,6 +263,7 @@ class ChatNotifier extends StateNotifier<ChatState> {
         startTime: startTime,
       );
     } finally {
+      requestContext?.toolManager.close();
       if (mounted) state = state.copyWith(isLoading: false);
     }
 

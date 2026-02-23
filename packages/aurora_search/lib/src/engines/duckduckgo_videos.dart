@@ -11,7 +11,7 @@ class DuckDuckGoVideosEngine extends BaseSearchEngine<VideoSearchResult> {
   @override
   String get category => 'videos';
   @override
-  String get provider => 'bing';
+  String get provider => 'duckduckgo';
   @override
   String get searchUrl => 'https://duckduckgo.com/v.js';
   @override
