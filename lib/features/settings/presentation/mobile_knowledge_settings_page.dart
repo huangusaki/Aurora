@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:aurora/shared/riverpod_compat.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 import 'package:aurora/shared/widgets/aurora_bottom_sheet.dart';
+import 'package:aurora/shared/widgets/aurora_notice.dart';
 
 import '../../knowledge/presentation/knowledge_provider.dart';
 import 'settings_provider.dart';
@@ -371,8 +372,10 @@ class _MobileKnowledgeSettingsPageState
     final l10n = AppLocalizations.of(context)!;
     if (models.isEmpty) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.noEmbeddingModelsInProvider)),
+      showAuroraNotice(
+        context,
+        l10n.noEmbeddingModelsInProvider,
+        icon: Icons.info_outline_rounded,
       );
       return;
     }
@@ -561,4 +564,3 @@ class _MobileKnowledgeSettingsPageState
     );
   }
 }
-

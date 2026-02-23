@@ -2,6 +2,7 @@ import 'package:aurora/shared/theme/aurora_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:aurora/shared/riverpod_compat.dart';
 import 'package:aurora/shared/widgets/aurora_bottom_sheet.dart';
+import 'package:aurora/shared/widgets/aurora_notice.dart';
 import 'package:intl/intl.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 import '../../settings/presentation/widgets/mobile_settings_widgets.dart';
@@ -58,21 +59,6 @@ class _MobileSyncSettingsPageState
     final state = ref.watch(syncProvider);
     final l10n = AppLocalizations.of(context)!;
 
-    ref.listen(syncProvider, (previous, next) {
-      if ((previous?.isConfigLoaded != true) && next.isConfigLoaded) {
-        _urlController.text = next.config.url;
-        _usernameController.text = next.config.username;
-        _passwordController.text = next.config.password;
-      }
-    });
-
-    if (!state.isConfigLoaded) {
-      return Scaffold(
-        appBar: AppBar(title: Text(l10n.cloudSync)),
-        body: const Center(child: CircularProgressIndicator()),
-      );
-    }
-
     // Helper to translate message keys
     String translateMessage(String message) {
       final translations = {
@@ -94,6 +80,45 @@ class _MobileSyncSettingsPageState
       return translations[message] ?? message;
     }
 
+    ref.listen(syncProvider, (previous, next) {
+      if ((previous?.isConfigLoaded != true) && next.isConfigLoaded) {
+        _urlController.text = next.config.url;
+        _usernameController.text = next.config.username;
+        _passwordController.text = next.config.password;
+      }
+
+      final topOffset =
+          MediaQuery.of(context).padding.top + kToolbarHeight + 12;
+      final successMessage = next.successMessage;
+      if (successMessage != null &&
+          successMessage != previous?.successMessage) {
+        showAuroraNotice(
+          context,
+          translateMessage(successMessage),
+          icon: AuroraIcons.check,
+          top: topOffset,
+        );
+      }
+
+      final errorMessage = next.error;
+      if (errorMessage != null && errorMessage != previous?.error) {
+        showAuroraNotice(
+          context,
+          translateMessage(errorMessage),
+          icon: AuroraIcons.error,
+          top: topOffset,
+          duration: const Duration(seconds: 3),
+        );
+      }
+    });
+
+    if (!state.isConfigLoaded) {
+      return Scaffold(
+        appBar: AppBar(title: Text(l10n.cloudSync)),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
@@ -112,30 +137,6 @@ class _MobileSyncSettingsPageState
         padding: const EdgeInsets.all(16),
         children: [
           if (state.isBusy) const LinearProgressIndicator(),
-          if (state.error != null)
-            MaterialBanner(
-              content: Text(translateMessage(state.error!),
-                  style: const TextStyle(color: Colors.white)),
-              backgroundColor: Colors.red,
-              actions: [
-                TextButton(
-                    onPressed: () => ref.refresh(syncProvider),
-                    child: Text(l10n.close,
-                        style: const TextStyle(color: Colors.white)))
-              ],
-            ),
-          if (state.successMessage != null)
-            MaterialBanner(
-              content: Text(translateMessage(state.successMessage!),
-                  style: const TextStyle(color: Colors.white)),
-              backgroundColor: Colors.green,
-              actions: [
-                TextButton(
-                    onPressed: () => ref.refresh(syncProvider),
-                    child: Text(l10n.done,
-                        style: const TextStyle(color: Colors.white)))
-              ],
-            ),
           MobileSettingsSection(
             title: l10n.webdavConfig,
             children: [
@@ -320,4 +321,3 @@ class _MobileSyncSettingsPageState
     );
   }
 }
-
