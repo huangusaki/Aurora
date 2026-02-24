@@ -28,8 +28,13 @@ class _BuildToolOutputState extends ConsumerState<BuildToolOutput> {
     } catch (_) {}
     final l10n = AppLocalizations.of(context);
     final theme = fluent.FluentTheme.of(context);
-    final results = data != null ? data['results'] as List? : null;
-    final count = results?.length ?? 0;
+    final results = data != null && data['results'] is List
+        ? (data['results'] as List)
+            .whereType<Map>()
+            .map((item) => Map<String, dynamic>.from(item))
+            .toList(growable: false)
+        : const <Map<String, dynamic>>[];
+    final count = results.length;
     final engine = data?['engine'] ?? 'Search';
 
     final stdout = data?['stdout'] as String?;
@@ -222,7 +227,13 @@ class _BuildToolOutputState extends ConsumerState<BuildToolOutput> {
         ),
       );
     }
-    if (results != null && results.isNotEmpty) {
+
+    final isSearchPayload = _looksLikeSearchPayload(data);
+    if (!isSearchPayload) {
+      return _buildStructuredJsonOutput(l10n, theme, data, hasBackground);
+    }
+
+    if (results.isNotEmpty) {
       return Container(
         margin: const EdgeInsets.only(top: 8, bottom: 8),
         decoration: BoxDecoration(
@@ -455,7 +466,38 @@ class _BuildToolOutputState extends ConsumerState<BuildToolOutput> {
         ),
         if (_isExpanded) ...[
           const SizedBox(height: 8),
-          ...results!.map((r) {
+          if (results.isEmpty)
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: hasBackground
+                    ? tintedGlass(
+                        wallpaperTint: wallpaperTint,
+                        isDark: isDark,
+                        fallback: isDark ? Colors.black : Colors.white,
+                        alpha: 0.45,
+                        mix: 0.22,
+                      )
+                    : theme.cardColor,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                    color: hasBackground
+                        ? (isDark ? Colors.white10 : Colors.black12)
+                        : theme.resources.dividerStrokeColorDefault),
+              ),
+              child: Text(
+                data['message']?.toString() ??
+                    (l10n?.searchResultsWithEngine(0, engine) ??
+                        '0 Search Results ($engine)'),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: theme.typography.body?.color?.withValues(alpha: 0.8),
+                ),
+              ),
+            ),
+          ...results.map((r) {
             final title = r['title'] ?? 'No Title';
             final link = r['link'] ?? '';
             final snippet = r['snippet'] ?? '';
@@ -493,7 +535,9 @@ class _BuildToolOutputState extends ConsumerState<BuildToolOutput> {
                   Text(snippet,
                       style: TextStyle(
                           fontSize: 12,
-                          color: theme.typography.body!.color!
+                          color: (theme.typography.body?.color ??
+                                  theme.typography.caption?.color ??
+                                  Colors.white)
                               .withValues(alpha: 0.8)),
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis),
@@ -503,6 +547,83 @@ class _BuildToolOutputState extends ConsumerState<BuildToolOutput> {
           }),
         ],
       ],
+    );
+  }
+
+  bool _looksLikeSearchPayload(Map<String, dynamic> data) {
+    if (data['results'] is List) return true;
+    if (data['engine'] != null) return true;
+    final status = data['status']?.toString().toLowerCase();
+    if ((status == 'success' || status == 'error') &&
+        (data.containsKey('results') ||
+            data.containsKey('engine') ||
+            data.containsKey('message'))) {
+      return true;
+    }
+    return false;
+  }
+
+  Widget _buildStructuredJsonOutput(
+    AppLocalizations? l10n,
+    fluent.FluentThemeData theme,
+    Map<String, dynamic> data,
+    bool hasBackground,
+  ) {
+    final prettyJson = const JsonEncoder.withIndent('  ').convert(data);
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      decoration: BoxDecoration(
+        color: theme.accentColor.withValues(alpha: hasBackground ? 0.2 : 0.05),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: theme.accentColor.withValues(alpha: hasBackground ? 0.3 : 0.2),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          GestureDetector(
+            onTap: () => setState(() => _isExpanded = !_isExpanded),
+            behavior: HitTestBehavior.opaque,
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              child: Row(
+                children: [
+                  Icon(AuroraIcons.robot, size: 14, color: theme.accentColor),
+                  const SizedBox(width: 8),
+                  Text(
+                    l10n?.agentOutput ?? 'Agent Output',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: theme.accentColor,
+                    ),
+                  ),
+                  const Spacer(),
+                  Icon(
+                    _isExpanded
+                        ? AuroraIcons.chevronUp
+                        : AuroraIcons.chevronDown,
+                    size: 10,
+                    color: theme.accentColor.withValues(alpha: 0.5),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (_isExpanded)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+              child: SelectableText(
+                prettyJson,
+                style: TextStyle(
+                  color: theme.typography.body?.color,
+                  fontSize: 13,
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 
@@ -630,4 +751,3 @@ class _BuildToolOutputState extends ConsumerState<BuildToolOutput> {
     );
   }
 }
-

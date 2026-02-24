@@ -6,6 +6,7 @@ class _ChatRequestContext {
   final ToolManager toolManager;
   final List<Message> messagesForApi;
   final List<Skill> activeSkills;
+  final List<McpServerConfig> mcpServers;
   final List<Map<String, dynamic>>? tools;
   final bool allowLegacySearchTool;
   final String? currentModel;
@@ -17,6 +18,7 @@ class _ChatRequestContext {
     required this.toolManager,
     required this.messagesForApi,
     required this.activeSkills,
+    required this.mcpServers,
     required this.tools,
     required this.allowLegacySearchTool,
     required this.currentModel,
@@ -71,10 +73,20 @@ class _ChatRequestContextBuilder {
     final nativeGoogleSearchEnabled = _isNativeGoogleSearchEnabled(settings);
     final allowLegacySearchTool =
         settings.isSearchEnabled && !nativeGoogleSearchEnabled;
+    final mcpServers = PlatformUtils.isDesktop
+        ? _notifier._ref
+            .read(mcpServerProvider)
+            .servers
+            .where((s) => s.enabled)
+            .toList(growable: false)
+        : const <McpServerConfig>[];
 
     List<Map<String, dynamic>>? tools;
-    if (allowLegacySearchTool || activeSkills.isNotEmpty) {
-      tools = toolManager.getTools(skills: activeSkills);
+    if (allowLegacySearchTool || activeSkills.isNotEmpty || mcpServers.isNotEmpty) {
+      tools = await toolManager.getTools(
+        skills: activeSkills,
+        mcpServers: mcpServers,
+      );
     }
 
     if (activeSkills.isNotEmpty) {
@@ -108,6 +120,7 @@ To invoke a skill, output a skill tag in this exact format:
       toolManager: toolManager,
       messagesForApi: messagesForApi,
       activeSkills: activeSkills,
+      mcpServers: mcpServers,
       tools: tools,
       allowLegacySearchTool: allowLegacySearchTool,
       currentModel: settings.activeProvider.selectedModel,

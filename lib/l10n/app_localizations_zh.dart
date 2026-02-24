@@ -51,6 +51,21 @@ class AppLocalizationsZh extends AppLocalizations {
   String get close => '关闭';
 
   @override
+  String get yes => '是';
+
+  @override
+  String get no => '否';
+
+  @override
+  String get none => '无';
+
+  @override
+  String get optional => '可选';
+
+  @override
+  String get deleteSuccess => '删除成功';
+
+  @override
   String get history => '历史';
 
   @override
@@ -287,6 +302,72 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get agentSkills => '技能';
+
+  @override
+  String get mcpNavLabel => 'MCP';
+
+  @override
+  String get mcpTitle => 'MCP';
+
+  @override
+  String get mcpNoServers => '未配置 MCP 服务器';
+
+  @override
+  String get mcpAddServer => '添加服务器';
+
+  @override
+  String get mcpEditServer => '编辑服务器';
+
+  @override
+  String get mcpDeleteServerTitle => '删除 MCP 服务器';
+
+  @override
+  String get mcpDeleteServerConfirm => '确定要删除该 MCP 服务器吗？此操作不可撤销。';
+
+  @override
+  String get mcpTestConnection => '测试连接';
+
+  @override
+  String get mcpTestResultTitle => '测试结果';
+
+  @override
+  String get mcpToolsCount => '工具数';
+
+  @override
+  String get mcpStderr => 'stderr';
+
+  @override
+  String get mcpServerName => '服务器名称';
+
+  @override
+  String get mcpServerNameHint => '输入名称（例如：Git MCP）';
+
+  @override
+  String get mcpCommand => '命令';
+
+  @override
+  String get mcpCommandHint => '可执行文件（例如：npx）';
+
+  @override
+  String get mcpArgs => '参数';
+
+  @override
+  String get mcpArgsHint => '每行一个参数（例如：-y）';
+
+  @override
+  String get mcpCwd => '工作目录';
+
+  @override
+  String get mcpEnv => '环境变量';
+
+  @override
+  String get mcpEnvHint => '每行一条：KEY=VALUE';
+
+  @override
+  String get mcpRunInShell => '通过 shell 运行';
+
+  @override
+  String get mcpValidationError => '名称和命令不能为空。';
 
   @override
   String get executionModel => '执行模型';

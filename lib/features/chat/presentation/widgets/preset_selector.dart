@@ -3,6 +3,7 @@ import 'package:fluent_ui/fluent_ui.dart' as fluent;
 import 'package:flutter/material.dart';
 import 'package:aurora/shared/riverpod_compat.dart';
 import 'package:aurora/features/settings/presentation/settings_provider.dart';
+import 'package:aurora/features/chat/presentation/desktop/desktop_tabs.dart';
 import '../chat_provider.dart';
 
 import 'custom_dropdown_overlay.dart';
@@ -16,7 +17,7 @@ class PresetSelector extends ConsumerStatefulWidget {
 }
 
 class _PresetSelectorState extends ConsumerState<PresetSelector> {
-  static const int _desktopSettingsTabIndex = 4;
+  static const int _desktopSettingsTabIndex = kDesktopTabSettings;
   static const int _presetSettingsPageIndex = 4;
   final LayerLink _layerLink = LayerLink();
   OverlayEntry? _overlayEntry;

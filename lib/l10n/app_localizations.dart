@@ -182,6 +182,36 @@ abstract class AppLocalizations {
   /// **'关闭'**
   String get close;
 
+  /// No description provided for @yes.
+  ///
+  /// In zh, this message translates to:
+  /// **'是'**
+  String get yes;
+
+  /// No description provided for @no.
+  ///
+  /// In zh, this message translates to:
+  /// **'否'**
+  String get no;
+
+  /// No description provided for @none.
+  ///
+  /// In zh, this message translates to:
+  /// **'无'**
+  String get none;
+
+  /// No description provided for @optional.
+  ///
+  /// In zh, this message translates to:
+  /// **'可选'**
+  String get optional;
+
+  /// No description provided for @deleteSuccess.
+  ///
+  /// In zh, this message translates to:
+  /// **'删除成功'**
+  String get deleteSuccess;
+
   /// No description provided for @history.
   ///
   /// In zh, this message translates to:
@@ -637,6 +667,138 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'技能'**
   String get agentSkills;
+
+  /// No description provided for @mcpNavLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'MCP'**
+  String get mcpNavLabel;
+
+  /// No description provided for @mcpTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'MCP'**
+  String get mcpTitle;
+
+  /// No description provided for @mcpNoServers.
+  ///
+  /// In zh, this message translates to:
+  /// **'未配置 MCP 服务器'**
+  String get mcpNoServers;
+
+  /// No description provided for @mcpAddServer.
+  ///
+  /// In zh, this message translates to:
+  /// **'添加服务器'**
+  String get mcpAddServer;
+
+  /// No description provided for @mcpEditServer.
+  ///
+  /// In zh, this message translates to:
+  /// **'编辑服务器'**
+  String get mcpEditServer;
+
+  /// No description provided for @mcpDeleteServerTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'删除 MCP 服务器'**
+  String get mcpDeleteServerTitle;
+
+  /// No description provided for @mcpDeleteServerConfirm.
+  ///
+  /// In zh, this message translates to:
+  /// **'确定要删除该 MCP 服务器吗？此操作不可撤销。'**
+  String get mcpDeleteServerConfirm;
+
+  /// No description provided for @mcpTestConnection.
+  ///
+  /// In zh, this message translates to:
+  /// **'测试连接'**
+  String get mcpTestConnection;
+
+  /// No description provided for @mcpTestResultTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'测试结果'**
+  String get mcpTestResultTitle;
+
+  /// No description provided for @mcpToolsCount.
+  ///
+  /// In zh, this message translates to:
+  /// **'工具数'**
+  String get mcpToolsCount;
+
+  /// No description provided for @mcpStderr.
+  ///
+  /// In zh, this message translates to:
+  /// **'stderr'**
+  String get mcpStderr;
+
+  /// No description provided for @mcpServerName.
+  ///
+  /// In zh, this message translates to:
+  /// **'服务器名称'**
+  String get mcpServerName;
+
+  /// No description provided for @mcpServerNameHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'输入名称（例如：Git MCP）'**
+  String get mcpServerNameHint;
+
+  /// No description provided for @mcpCommand.
+  ///
+  /// In zh, this message translates to:
+  /// **'命令'**
+  String get mcpCommand;
+
+  /// No description provided for @mcpCommandHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'可执行文件（例如：npx）'**
+  String get mcpCommandHint;
+
+  /// No description provided for @mcpArgs.
+  ///
+  /// In zh, this message translates to:
+  /// **'参数'**
+  String get mcpArgs;
+
+  /// No description provided for @mcpArgsHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'每行一个参数（例如：-y）'**
+  String get mcpArgsHint;
+
+  /// No description provided for @mcpCwd.
+  ///
+  /// In zh, this message translates to:
+  /// **'工作目录'**
+  String get mcpCwd;
+
+  /// No description provided for @mcpEnv.
+  ///
+  /// In zh, this message translates to:
+  /// **'环境变量'**
+  String get mcpEnv;
+
+  /// No description provided for @mcpEnvHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'每行一条：KEY=VALUE'**
+  String get mcpEnvHint;
+
+  /// No description provided for @mcpRunInShell.
+  ///
+  /// In zh, this message translates to:
+  /// **'通过 shell 运行'**
+  String get mcpRunInShell;
+
+  /// No description provided for @mcpValidationError.
+  ///
+  /// In zh, this message translates to:
+  /// **'名称和命令不能为空。'**
+  String get mcpValidationError;
 
   /// No description provided for @executionModel.
   ///

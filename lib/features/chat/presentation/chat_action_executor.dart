@@ -84,16 +84,17 @@ class _ChatActionExecutor {
     }
 
     String searchResult;
-    try {
-      searchResult = await _requestContext.toolManager.executeTool(
-        'SearchWeb',
-        {'query': searchQuery},
-        preferredEngine: _requestContext.settings.searchEngine,
-        skills: _requestContext.activeSkills,
-      );
-    } catch (e) {
-      searchResult = jsonEncode({'error': e.toString()});
-    }
+      try {
+        searchResult = await _requestContext.toolManager.executeTool(
+          'SearchWeb',
+          {'query': searchQuery},
+          preferredEngine: _requestContext.settings.searchEngine,
+          skills: _requestContext.activeSkills,
+          mcpServers: _requestContext.mcpServers,
+        );
+      } catch (e) {
+        searchResult = jsonEncode({'error': e.toString()});
+      }
 
     if (!_isGenerationActive) {
       return _ChatActionResult.stop(aiMsg);
@@ -191,17 +192,18 @@ class _ChatActionExecutor {
         if (tc.name == 'call_skill') {
           toolResult = await _executeLegacySkillCall(tc.arguments);
         } else {
-          final args = jsonDecode(tc.arguments);
-          toolResult = await _requestContext.toolManager.executeTool(
-            tc.name,
-            args,
-            preferredEngine: _requestContext.settings.searchEngine,
-            skills: _requestContext.activeSkills,
-          );
-        }
-      } catch (e) {
-        toolResult = jsonEncode({'error': e.toString()});
-      }
+           final args = jsonDecode(tc.arguments);
+           toolResult = await _requestContext.toolManager.executeTool(
+             tc.name,
+             args,
+             preferredEngine: _requestContext.settings.searchEngine,
+             skills: _requestContext.activeSkills,
+             mcpServers: _requestContext.mcpServers,
+           );
+         }
+       } catch (e) {
+         toolResult = jsonEncode({'error': e.toString()});
+       }
 
       if (!_isGenerationActive) {
         return _ChatActionResult.stop(aiMsg);

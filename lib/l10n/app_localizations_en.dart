@@ -51,6 +51,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get close => 'Close';
 
   @override
+  String get yes => 'Yes';
+
+  @override
+  String get no => 'No';
+
+  @override
+  String get none => 'None';
+
+  @override
+  String get optional => 'Optional';
+
+  @override
+  String get deleteSuccess => 'Deleted Successfully';
+
+  @override
   String get history => 'History';
 
   @override
@@ -291,6 +306,73 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get agentSkills => 'Skills';
+
+  @override
+  String get mcpNavLabel => 'MCP';
+
+  @override
+  String get mcpTitle => 'MCP';
+
+  @override
+  String get mcpNoServers => 'No MCP servers configured';
+
+  @override
+  String get mcpAddServer => 'Add Server';
+
+  @override
+  String get mcpEditServer => 'Edit Server';
+
+  @override
+  String get mcpDeleteServerTitle => 'Delete MCP Server';
+
+  @override
+  String get mcpDeleteServerConfirm =>
+      'Are you sure you want to delete this MCP server? This action cannot be undone.';
+
+  @override
+  String get mcpTestConnection => 'Test Connection';
+
+  @override
+  String get mcpTestResultTitle => 'Test Result';
+
+  @override
+  String get mcpToolsCount => 'Tools';
+
+  @override
+  String get mcpStderr => 'stderr';
+
+  @override
+  String get mcpServerName => 'Server Name';
+
+  @override
+  String get mcpServerNameHint => 'Enter a name (e.g. Git MCP)';
+
+  @override
+  String get mcpCommand => 'Command';
+
+  @override
+  String get mcpCommandHint => 'Executable (e.g. npx)';
+
+  @override
+  String get mcpArgs => 'Args';
+
+  @override
+  String get mcpArgsHint => 'One argument per line (e.g. -y)';
+
+  @override
+  String get mcpCwd => 'Working Directory';
+
+  @override
+  String get mcpEnv => 'Environment Variables';
+
+  @override
+  String get mcpEnvHint => 'One per line: KEY=VALUE';
+
+  @override
+  String get mcpRunInShell => 'Run in shell';
+
+  @override
+  String get mcpValidationError => 'Name and command are required.';
 
   @override
   String get executionModel => 'Execution Model';

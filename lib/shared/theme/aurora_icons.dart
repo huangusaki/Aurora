@@ -7,6 +7,7 @@ class AuroraIcons {
   static const IconData history = LucideIcons.history;
   static const IconData translation = LucideIcons.languages;
   static const IconData skills = LucideIcons.puzzle;
+  static const IconData mcp = LucideIcons.plug;
   static const IconData studio = LucideIcons.penTool;
   static const IconData settings = LucideIcons.settings;
   static const IconData user = LucideIcons.user;

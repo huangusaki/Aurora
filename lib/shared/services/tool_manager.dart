@@ -1,9 +1,19 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:aurora_search/aurora_search.dart';
+import '../../features/mcp/domain/mcp_server_config.dart';
 import '../../features/skills/domain/skill_entity.dart';
 import 'package:aurora/shared/utils/platform_utils.dart';
+import 'mcp/mcp_client_session.dart';
+
+class _McpToolBinding {
+  final String serverId;
+  final String toolName;
+
+  const _McpToolBinding({required this.serverId, required this.toolName});
+}
 
 class ToolManager {
   ToolManager({
@@ -23,8 +33,16 @@ class ToolManager {
   final Dio _dio =
       Dio(BaseOptions(connectTimeout: const Duration(seconds: 10)));
 
-  List<Map<String, dynamic>> getTools({List<Skill> skills = const []}) {
+  final Map<String, _McpToolBinding> _mcpToolBindings = {};
+  final Map<String, McpClientSession> _mcpSessions = {};
+
+  Future<List<Map<String, dynamic>>> getTools({
+    List<Skill> skills = const [],
+    List<McpServerConfig> mcpServers = const [],
+  }) async {
     final tools = <Map<String, dynamic>>[];
+
+    _resetMcpState();
 
     for (final skill in skills) {
       if (!skill.isEnabled || !skill.forAI) continue;
@@ -48,14 +66,87 @@ class ToolManager {
       }
     }
 
+    final enabledMcpServers = mcpServers.where((s) => s.enabled).toList();
+    if (enabledMcpServers.isNotEmpty) {
+      final Set<String> openAiToolNames = {};
+
+      await Future.wait(enabledMcpServers.map((server) async {
+        McpClientSession? session;
+        try {
+          session = await McpClientSession.connect(
+            command: server.command,
+            args: server.args,
+            cwd: server.cwd,
+            env: server.env.isEmpty ? null : server.env,
+            runInShell: server.runInShell,
+          );
+          const timeout = Duration(seconds: 60);
+          await session.initialize(timeout: timeout);
+          final mcpTools = await session.listToolsAll(timeout: timeout);
+          _mcpSessions[server.id] = session;
+
+          for (final mcpTool in mcpTools) {
+            final sanitized = _sanitizeToolName(mcpTool.name);
+            final openAiName = _buildOpenAiToolName(
+              serverId: server.id,
+              toolName: sanitized.isEmpty ? 'tool' : sanitized,
+              taken: openAiToolNames,
+            );
+            _mcpToolBindings[openAiName] = _McpToolBinding(
+              serverId: server.id,
+              toolName: mcpTool.name,
+            );
+            tools.add({
+              'type': 'function',
+              'function': {
+                'name': openAiName,
+                'description': (mcpTool.description.isNotEmpty
+                    ? mcpTool.description
+                    : mcpTool.name),
+                'parameters': mcpTool.inputSchema,
+              },
+            });
+          }
+        } catch (_) {
+          try {
+            await session?.close();
+          } catch (_) {}
+        }
+      }));
+    }
+
     return tools;
   }
 
   Future<String> executeTool(String name, Map<String, dynamic> args,
       {String preferredEngine = 'duckduckgo',
-      List<Skill> skills = const []}) async {
+      List<Skill> skills = const [],
+      List<McpServerConfig> mcpServers = const []}) async {
     if (name == 'SearchWeb') {
       return await _searchWeb(args['query'] ?? '', preferredEngine);
+    }
+
+    final binding = _mcpToolBindings[name];
+    if (binding != null) {
+      try {
+        final session =
+            await _getOrCreateMcpSession(binding.serverId, mcpServers);
+        if (session == null) {
+          return jsonEncode({
+            'error': 'MCP session not available',
+            'serverId': binding.serverId,
+            'tool': binding.toolName,
+          });
+        }
+        final result = await session.callTool(binding.toolName, args);
+        return jsonEncode(result);
+      } catch (e) {
+        return jsonEncode({
+          'error': 'MCP tool execution failed: $e',
+          'serverId': binding.serverId,
+          'tool': binding.toolName,
+        });
+      }
     }
 
     // Check if it's a skill tool
@@ -68,6 +159,78 @@ class ToolManager {
     }
 
     return jsonEncode({'error': 'Unknown tool: $name'});
+  }
+
+  void _resetMcpState() {
+    _mcpToolBindings.clear();
+    for (final session in _mcpSessions.values) {
+      unawaited(session.close());
+    }
+    _mcpSessions.clear();
+  }
+
+  String _sanitizeToolName(String name) {
+    final sanitized = name.replaceAll(RegExp(r'[^A-Za-z0-9_-]'), '_');
+    return sanitized.isEmpty ? 'tool' : sanitized;
+  }
+
+  String _buildOpenAiToolName({
+    required String serverId,
+    required String toolName,
+    required Set<String> taken,
+  }) {
+    const prefix = 'mcp__';
+    const sep = '__';
+    final prefixPart = '$prefix$serverId$sep';
+    var base = toolName;
+
+    var n = 0;
+    while (true) {
+      final suffix = n == 0 ? '' : '_${n + 1}';
+      final maxToolLen = 64 - prefixPart.length - suffix.length;
+      final end = maxToolLen <= 0
+          ? 0
+          : (base.length > maxToolLen ? maxToolLen : base.length);
+      final truncated = base.substring(0, end);
+      final candidate = '$prefixPart$truncated$suffix';
+      if (!taken.contains(candidate)) {
+        taken.add(candidate);
+        return candidate;
+      }
+      n++;
+    }
+  }
+
+  Future<McpClientSession?> _getOrCreateMcpSession(
+    String serverId,
+    List<McpServerConfig> servers,
+  ) async {
+    final existing = _mcpSessions[serverId];
+    if (existing != null) return existing;
+
+    McpServerConfig? cfg;
+    for (final s in servers) {
+      if (s.id == serverId) {
+        cfg = s;
+        break;
+      }
+    }
+    if (cfg == null) return null;
+
+    try {
+      final session = await McpClientSession.connect(
+        command: cfg.command,
+        args: cfg.args,
+        cwd: cfg.cwd,
+        env: cfg.env.isEmpty ? null : cfg.env,
+        runInShell: cfg.runInShell,
+      );
+      await session.initialize(timeout: const Duration(seconds: 60));
+      _mcpSessions[serverId] = session;
+      return session;
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<String> _executeSkillTool(
@@ -248,6 +411,7 @@ class ToolManager {
   }
 
   void close() {
+    _resetMcpState();
     _search.close();
     _dio.close(force: true);
   }

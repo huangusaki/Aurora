@@ -18,6 +18,7 @@ import 'shared/theme/wallpaper_tint.dart';
 import 'shared/theme/wallpaper_tint_provider.dart';
 import 'shared/utils/windows_injector.dart';
 import 'features/skills/presentation/skill_provider.dart';
+import 'features/mcp/presentation/mcp_server_provider.dart';
 import 'package:flutter_displaymode/flutter_displaymode.dart';
 import 'features/chat/presentation/widgets/chat_image_bubble.dart'
     show clearImageCache;
@@ -172,18 +173,19 @@ void main() async {
             selectedHistorySessionIdProvider
                 .overrideWith((ref) => initialSelectedHistorySessionId),
             settingsProvider.overrideWith((ref) {
-              // Load skills from a default directory (Desktop only)
-              if (PlatformUtils.isDesktop) {
-                Future.microtask(() {
-                  final skillsDir =
-                      '${Directory.current.path}${Platform.pathSeparator}skills';
-                  final language = appSettings?.language ??
-                      (Platform.localeName.startsWith('zh') ? 'zh' : 'en');
-                  ref
-                      .read(skillProvider.notifier)
-                      .loadSkills(skillsDir, language: language);
-                });
-              }
+               // Load skills from a default directory (Desktop only)
+               if (PlatformUtils.isDesktop) {
+                 Future.microtask(() {
+                   final skillsDir =
+                       '${Directory.current.path}${Platform.pathSeparator}skills';
+                   final language = appSettings?.language ??
+                       (Platform.localeName.startsWith('zh') ? 'zh' : 'en');
+                   ref
+                       .read(skillProvider.notifier)
+                       .loadSkills(skillsDir, language: language);
+                   ref.read(mcpServerProvider.notifier).load();
+                 });
+               }
 
               return SettingsNotifier(
                 storage: storage,

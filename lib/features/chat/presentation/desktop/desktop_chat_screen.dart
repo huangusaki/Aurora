@@ -19,8 +19,10 @@ import 'package:aurora/features/chat/presentation/widgets/fade_indexed_stack.dar
 import 'package:aurora/features/studio/presentation/studio_content.dart';
 import 'package:aurora/features/skills/presentation/skills_page.dart';
 import 'package:aurora/features/assistant/presentation/assistant_content.dart';
+import 'package:aurora/features/mcp/presentation/mcp_settings_page.dart';
 import 'package:aurora/shared/theme/aurora_icons.dart';
 import 'package:aurora/shared/theme/chat_background_theme.dart';
+import 'desktop_tabs.dart';
 import '../chat_provider.dart';
 
 class DesktopChatScreen extends ConsumerStatefulWidget {
@@ -233,6 +235,7 @@ class _DesktopChatScreenState extends ConsumerState<DesktopChatScreen>
         label: l10n.agentSkills,
         body: SkillSettingsPage()
       ),
+      (icon: AuroraIcons.mcp, label: l10n.mcpNavLabel, body: McpSettingsPage()),
       (icon: AuroraIcons.studio, label: l10n.studio, body: StudioContent()),
       (
         icon: AuroraIcons.settings,
@@ -246,9 +249,9 @@ class _DesktopChatScreenState extends ConsumerState<DesktopChatScreen>
       ),
     ];
     String currentSessionId;
-    if (selectedIndex == 0) {
+    if (selectedIndex == kDesktopTabHistory) {
       currentSessionId = ref.watch(selectedHistorySessionIdProvider) ?? '';
-    } else if (selectedIndex == 1) {
+    } else if (selectedIndex == kDesktopTabTranslation) {
       currentSessionId = 'translation';
     } else {
       currentSessionId = '';

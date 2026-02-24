@@ -17,6 +17,8 @@ import 'package:aurora/features/chat/data/session_entity.dart';
 import 'package:aurora/features/chat/presentation/topic_provider.dart';
 import 'package:aurora/features/skills/presentation/skill_provider.dart';
 import 'package:aurora/features/skills/domain/skill_entity.dart';
+import 'package:aurora/features/mcp/presentation/mcp_server_provider.dart';
+import 'package:aurora/features/mcp/domain/mcp_server_config.dart';
 import 'package:aurora/features/chat/domain/message.dart';
 import 'package:aurora/features/chat/domain/chat_message_transformers.dart';
 import 'package:aurora/features/chat/domain/message_transformer.dart';

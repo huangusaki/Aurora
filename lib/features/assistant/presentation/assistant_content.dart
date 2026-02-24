@@ -15,6 +15,7 @@ import 'package:aurora/features/assistant/presentation/mobile_assistant_page.dar
 import 'package:aurora/features/knowledge/presentation/knowledge_provider.dart';
 import 'package:aurora/features/skills/presentation/skill_provider.dart';
 import 'package:aurora/features/chat/presentation/chat_provider.dart';
+import 'package:aurora/features/chat/presentation/desktop/desktop_tabs.dart';
 import '../../settings/presentation/settings_provider.dart';
 
 class AssistantContent extends ConsumerStatefulWidget {
@@ -421,13 +422,14 @@ class _AssistantContentState extends ConsumerState<AssistantContent> {
                         settingsState.memoryContextWindowSize.toString(),
                       ),
                       const SizedBox(height: 12),
-                      fluent.HyperlinkButton(
-                        onPressed: () {
-                          ref.read(desktopActiveTabProvider.notifier).state = 4;
-                          ref.read(settingsPageIndexProvider.notifier).state =
-                              1;
-                        },
-                        child: Row(
+                          fluent.HyperlinkButton(
+                          onPressed: () {
+                            ref.read(desktopActiveTabProvider.notifier).state =
+                                kDesktopTabSettings;
+                            ref.read(settingsPageIndexProvider.notifier).state =
+                                1;
+                          },
+                          child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(l10n.goToSettings),
