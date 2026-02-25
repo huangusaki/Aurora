@@ -16,6 +16,24 @@ import '../../../../settings/presentation/settings_provider.dart';
 import '../custom_dropdown_overlay.dart'; // for generateColorFromString
 import 'payload_config_panel.dart';
 
+final RegExp _gemini3ImageModelPattern =
+    RegExp(r'gemini.*3.*image.*', caseSensitive: false);
+
+String _normalizeModelNameForPattern(String modelName) {
+  return modelName
+      .trim()
+      .toLowerCase()
+      .replaceAll('（', '(')
+      .replaceAll('）', ')')
+      .replaceAll(RegExp(r'\s+'), '');
+}
+
+bool _isGemini3ImageModel(String? modelName) {
+  if (modelName == null || modelName.trim().isEmpty) return false;
+  return _gemini3ImageModelPattern
+      .hasMatch(_normalizeModelNameForPattern(modelName));
+}
+
 class ModelOption {
   final String providerId;
   final String providerName;
@@ -80,7 +98,8 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
   int? _triggerIndex;
   final fluent.FlyoutController _configFlyoutController =
       fluent.FlyoutController();
-  final fluent.FlyoutController _mcpFlyoutController = fluent.FlyoutController();
+  final fluent.FlyoutController _mcpFlyoutController =
+      fluent.FlyoutController();
   OverlayEntry? _presetOverlayEntry;
   int _presetSelectedIndex = 0;
   List<PresetOption> _filteredPresets = [];
@@ -610,8 +629,7 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
                     ref.watch(selectedHistorySessionIdProvider) ?? 'new_chat';
                 final assistantId =
                     ref.watch(assistantProvider).selectedAssistantId;
-                final configuredServers =
-                    ref.watch(mcpServerProvider).servers;
+                final configuredServers = ref.watch(mcpServerProvider).servers;
                 final enabledServers = configuredServers
                     .where((s) => s.enabled)
                     .toList(growable: false);
@@ -622,12 +640,13 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
                     bindingsState.sessionOverrides[sessionId];
                 final followAssistant = sessionOverride == null;
 
-                final effectiveServers =
-                    ref.read(mcpBindingsProvider.notifier).resolveEffectiveServers(
-                          configuredServers: configuredServers,
-                          sessionId: sessionId,
-                          assistantId: assistantId,
-                        );
+                final effectiveServers = ref
+                    .read(mcpBindingsProvider.notifier)
+                    .resolveEffectiveServers(
+                      configuredServers: configuredServers,
+                      sessionId: sessionId,
+                      assistantId: assistantId,
+                    );
                 final baseIds = effectiveServers
                     .map((s) => s.id)
                     .where(enabledIds.contains)
@@ -705,19 +724,18 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
                         child: ListView.separated(
                           shrinkWrap: true,
                           itemCount: enabledServers.length,
-                          separatorBuilder: (_, __) => const SizedBox(height: 8),
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: 8),
                           itemBuilder: (context, index) {
                             final server = enabledServers[index];
                             final checked = selectedIds.contains(server.id);
-                            final summary =
-                                server.transport == McpServerTransport.http
-                                    ? server.url.trim()
-                                    : [
-                                        server.command,
-                                        ...server.args,
-                                      ]
-                                        .where((s) => s.trim().isNotEmpty)
-                                        .join(' ');
+                            final summary = server.transport ==
+                                    McpServerTransport.http
+                                ? server.url.trim()
+                                : [
+                                    server.command,
+                                    ...server.args,
+                                  ].where((s) => s.trim().isNotEmpty).join(' ');
                             return Container(
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 10, vertical: 8),
@@ -756,9 +774,10 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
                                             overflow: TextOverflow.ellipsis,
                                             style: TextStyle(
                                               fontSize: 12,
-                                              color: fluent.FluentTheme.of(context)
-                                                  .resources
-                                                  .textFillColorSecondary,
+                                              color:
+                                                  fluent.FluentTheme.of(context)
+                                                      .resources
+                                                      .textFillColorSecondary,
                                             ),
                                           ),
                                         ],
@@ -770,7 +789,8 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
                                     onChanged: followAssistant
                                         ? null
                                         : (v) {
-                                            unawaited(toggleServer(server.id, v));
+                                            unawaited(
+                                                toggleServer(server.id, v));
                                           },
                                   ),
                                 ],
@@ -789,7 +809,6 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
       },
     );
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -1140,8 +1159,8 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
                     color: theme.resources.textFillColorSecondary,
                   ),
                   onPressed: () {
-                    final isImageModel =
-                        settings.selectedModel == 'gemini-3-pro-image-preview';
+                    final selectedModel = settings.selectedModel;
+                    final isImageModel = _isGemini3ImageModel(selectedModel);
 
                     _configFlyoutController.showFlyout(
                       autoModeConfiguration: fluent.FlyoutAutoConfiguration(
@@ -1155,7 +1174,8 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
                           child: ConstrainedBox(
                             constraints: BoxConstraints(
                               maxWidth: 320,
-                              maxHeight: MediaQuery.of(context).size.height * 0.8,
+                              maxHeight:
+                                  MediaQuery.of(context).size.height * 0.8,
                             ),
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
@@ -1176,7 +1196,8 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
                                     padding: const EdgeInsets.only(right: 12.0),
                                     child: PayloadConfigPanel(
                                       providerId: settings.activeProviderId,
-                                      modelName: settings.selectedModel ?? '',
+                                      modelName: selectedModel ?? '',
+                                      forceImageConfig: isImageModel,
                                     ),
                                   ),
                                 ),
@@ -1246,7 +1267,8 @@ class MobileChatInputArea extends ConsumerWidget {
           final assistantId = ref.watch(assistantProvider).selectedAssistantId;
           final configuredServers = ref.watch(mcpServerProvider).servers;
           final enabledServers = configuredServers
-              .where((s) => s.enabled && s.transport != McpServerTransport.stdio)
+              .where(
+                  (s) => s.enabled && s.transport != McpServerTransport.stdio)
               .toList(growable: false);
           final enabledIds = enabledServers.map((s) => s.id).toSet();
 
@@ -1295,8 +1317,8 @@ class MobileChatInputArea extends ConsumerWidget {
           }
 
           return ConstrainedBox(
-            constraints:
-                BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * 0.75),
+            constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(ctx).size.height * 0.75),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -1338,8 +1360,7 @@ class MobileChatInputArea extends ConsumerWidget {
                             title: Text(server.name.isNotEmpty
                                 ? server.name
                                 : l10n.unknown),
-                            subtitle:
-                                summary.isEmpty ? null : Text(summary),
+                            subtitle: summary.isEmpty ? null : Text(summary),
                             contentPadding: EdgeInsets.zero,
                           );
                         }),
@@ -1519,6 +1540,8 @@ class MobileChatInputArea extends ConsumerWidget {
               const SizedBox(width: 4),
               InkWell(
                 onTap: () {
+                  final selectedModel = settings.selectedModel;
+                  final isImageModel = _isGemini3ImageModel(selectedModel);
                   AuroraBottomSheet.show(
                     context: context,
                     builder: (ctx) => ConstrainedBox(
@@ -1530,8 +1553,7 @@ class MobileChatInputArea extends ConsumerWidget {
                         children: [
                           AuroraBottomSheet.buildTitle(
                             ctx,
-                            settings.selectedModel ==
-                                    'gemini-3-pro-image-preview'
+                            isImageModel
                                 ? l10n.imagePayload
                                 : l10n.requestConfig,
                           ),
@@ -1541,7 +1563,8 @@ class MobileChatInputArea extends ConsumerWidget {
                               padding: const EdgeInsets.all(20),
                               child: PayloadConfigPanel(
                                 providerId: settings.activeProviderId,
-                                modelName: settings.selectedModel ?? '',
+                                modelName: selectedModel ?? '',
+                                forceImageConfig: isImageModel,
                               ),
                             ),
                           ),
@@ -1582,4 +1605,3 @@ class MobileChatInputArea extends ConsumerWidget {
     );
   }
 }
-

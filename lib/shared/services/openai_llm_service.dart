@@ -351,8 +351,8 @@ class OpenAILLMService implements LLMService {
                 final delta = choices[0]['delta'];
                 if (delta != null) {
                   final finishReason = choices[0]['finish_reason'];
-                  final String? rawContent = delta['content'];
-                  String? content = rawContent;
+                  final dynamic rawContent = delta['content'];
+                  String? content = rawContent is String ? rawContent : null;
                   String? reasoning =
                       delta['reasoning_content'] ?? delta['reasoning'];
 
@@ -404,117 +404,122 @@ class OpenAILLMService implements LLMService {
                   }
                   final toolCalls = delta['tool_calls'];
 
-                  String? imageUrl;
-                  String? imageThoughtSignature;
-                  if (choices[0]['b64_json'] != null) {
-                    imageUrl =
-                        'data:image/png;base64,${choices[0]['b64_json']}';
-                  } else if (choices[0]['url'] != null) {
-                    imageUrl = choices[0]['url'];
-                  }
-                  if (imageUrl == null) {
-                    if (delta['b64_json'] != null) {
-                      imageUrl = 'data:image/png;base64,${delta['b64_json']}';
-                    } else if (delta['url'] != null) {
-                      imageUrl = delta['url'];
-                    } else if (delta['image'] != null) {
-                      final imgVal = delta['image'];
-                      if (imgVal.toString().startsWith('http')) {
-                        imageUrl = imgVal;
-                      } else {
-                        imageUrl = 'data:image/png;base64,$imgVal';
-                      }
-                    } else if (delta['inline_data'] != null) {
-                      final inlineData = delta['inline_data'];
-                      if (inlineData is Map) {
-                        final mimeType = inlineData['mime_type'] ?? 'image/png';
-                        final data = inlineData['data'];
-                        if (data != null) {
-                          imageUrl = 'data:$mimeType;base64,$data';
-                        }
-                      }
-                    } else if (delta['parts'] != null &&
-                        delta['parts'] is List) {
-                      final parts = delta['parts'] as List;
-                      for (final part in parts) {
-                        if (part is Map && part['inline_data'] != null) {
-                          final inlineData = part['inline_data'];
-                          if (inlineData is Map) {
-                            final mimeType =
-                                inlineData['mime_type'] ?? 'image/png';
-                            final data = inlineData['data'];
-                            if (data != null) {
-                              imageUrl = 'data:$mimeType;base64,$data';
-                              break;
-                            }
-                          }
-                        }
-                      }
-                    } else if (delta['images'] != null &&
-                        delta['images'] is List) {
-                      final images = delta['images'] as List;
-                      for (final imgData in images) {
-                        String? candidateUrl;
-                        String? candidateSignature =
-                            _extractThoughtSignatureFromImageItem(imgData);
-                        if (imgData is String) {
-                          if (imgData.startsWith('http') ||
-                              imgData.startsWith('data:image')) {
-                            candidateUrl = imgData;
-                          } else {
-                            candidateUrl = 'data:image/png;base64,$imgData';
-                          }
-                        } else if (imgData is Map) {
-                          if (imgData['url'] != null) {
-                            final url = imgData['url'].toString();
-                            candidateUrl = (url.startsWith('http') ||
-                                    url.startsWith('data:'))
-                                ? url
-                                : 'data:image/png;base64,$url';
-                          } else if (imgData['data'] != null) {
-                            candidateUrl =
-                                'data:image/png;base64,${imgData['data']}';
-                          } else if (imgData['image_url'] != null) {
-                            final imgUrlObj = imgData['image_url'];
-                            if (imgUrlObj is Map && imgUrlObj['url'] != null) {
-                              candidateUrl = imgUrlObj['url'].toString();
-                              candidateSignature ??=
-                                  _extractThoughtSignatureFromImageItem(
-                                      imgUrlObj);
-                            } else if (imgUrlObj is String) {
-                              candidateUrl = imgUrlObj;
-                            }
-                          }
-                        }
-                        if (candidateUrl != null && candidateUrl.isNotEmpty) {
-                          imageUrl = candidateUrl;
-                          imageThoughtSignature = candidateSignature;
-                          break;
-                        }
-                      }
+                  final imageUrls = <String>[];
+                  final imageSignatures = <String, String?>{};
+                  void addImageCandidate(String? rawUrl,
+                      {String? signature, String? mimeType}) {
+                    if (rawUrl == null) return;
+                    final trimmed = rawUrl.trim();
+                    if (trimmed.isEmpty) return;
+                    var normalized = trimmed;
+                    if (!normalized.startsWith('http') &&
+                        !normalized.startsWith('data:')) {
+                      final resolvedMime =
+                          (mimeType == null || mimeType.trim().isEmpty)
+                              ? 'image/png'
+                              : mimeType.trim();
+                      normalized = 'data:$resolvedMime;base64,$normalized';
+                    }
+                    if (imageUrls.contains(normalized)) return;
+                    imageUrls.add(normalized);
+                    final normalizedSignature =
+                        _normalizeThoughtSignature(signature);
+                    if (normalizedSignature != null) {
+                      imageSignatures[normalized] = normalizedSignature;
                     }
                   }
-                  if (delta['content'] is List) {
-                    final contentList = delta['content'] as List;
+
+                  if (choices[0]['b64_json'] != null) {
+                    addImageCandidate(choices[0]['b64_json'].toString(),
+                        mimeType: 'image/png');
+                  }
+                  if (choices[0]['url'] != null) {
+                    addImageCandidate(choices[0]['url'].toString());
+                  }
+                  if (delta['b64_json'] != null) {
+                    addImageCandidate(delta['b64_json'].toString(),
+                        mimeType: 'image/png');
+                  }
+                  if (delta['url'] != null) {
+                    addImageCandidate(delta['url'].toString());
+                  }
+                  if (delta['image'] != null) {
+                    addImageCandidate(delta['image'].toString(),
+                        mimeType: 'image/png');
+                  }
+                  final inlineData = delta['inline_data'];
+                  if (inlineData is Map) {
+                    final mimeType = inlineData['mime_type']?.toString();
+                    final data = inlineData['data']?.toString();
+                    addImageCandidate(data, mimeType: mimeType);
+                  }
+                  if (delta['parts'] is List) {
+                    final parts = delta['parts'] as List;
+                    for (final part in parts) {
+                      if (part is! Map) continue;
+                      final partInlineData = part['inline_data'];
+                      if (partInlineData is! Map) continue;
+                      final mimeType = partInlineData['mime_type']?.toString();
+                      final data = partInlineData['data']?.toString();
+                      addImageCandidate(data, mimeType: mimeType);
+                    }
+                  }
+                  if (delta['images'] is List) {
+                    final images = delta['images'] as List;
+                    for (final imgData in images) {
+                      String? candidateUrl;
+                      String? candidateMimeType;
+                      String? candidateSignature =
+                          _extractThoughtSignatureFromImageItem(imgData);
+                      if (imgData is String) {
+                        candidateUrl = imgData;
+                      } else if (imgData is Map) {
+                        if (imgData['url'] != null) {
+                          candidateUrl = imgData['url'].toString();
+                        } else if (imgData['data'] != null) {
+                          candidateUrl = imgData['data'].toString();
+                          candidateMimeType =
+                              imgData['mime_type']?.toString() ?? 'image/png';
+                        } else if (imgData['image_url'] != null) {
+                          final imgUrlObj = imgData['image_url'];
+                          if (imgUrlObj is Map && imgUrlObj['url'] != null) {
+                            candidateUrl = imgUrlObj['url'].toString();
+                            candidateSignature ??=
+                                _extractThoughtSignatureFromImageItem(
+                                    imgUrlObj);
+                          } else if (imgUrlObj is String) {
+                            candidateUrl = imgUrlObj;
+                          }
+                        }
+                      }
+                      addImageCandidate(candidateUrl,
+                          signature: candidateSignature,
+                          mimeType: candidateMimeType);
+                    }
+                  }
+                  if (rawContent is List) {
+                    final contentList = rawContent;
                     for (final item in contentList) {
                       if (item is Map && item['type'] == 'image_url') {
                         final url = item['image_url']?['url'];
                         if (url != null) {
-                          imageUrl = url;
-                          imageThoughtSignature =
-                              _extractThoughtSignatureFromImageItem(item);
-                          break;
+                          addImageCandidate(
+                            url.toString(),
+                            signature:
+                                _extractThoughtSignatureFromImageItem(item),
+                          );
                         }
                       }
                     }
                   }
 
-                  if (imageUrl != null) {
-                    _rememberImageThoughtSignature(
-                        imageUrl, imageThoughtSignature);
+                  if (imageUrls.isNotEmpty) {
+                    for (final url in imageUrls) {
+                      _rememberImageThoughtSignature(url, imageSignatures[url]);
+                    }
                     yield LLMResponseChunk(
                         content: '',
-                        images: [imageUrl],
+                        images: imageUrls,
                         finishReason: finishReason);
                   } else if (content != null ||
                       reasoning != null ||

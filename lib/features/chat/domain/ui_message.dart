@@ -154,15 +154,18 @@ class UiMessage {
       role: role ?? this.role,
       timestamp: timestamp ?? this.timestamp,
       parts: parts ?? this.parts,
-      assistantId: assistantId == _sentinel ? this.assistantId : assistantId as String?,
+      assistantId:
+          assistantId == _sentinel ? this.assistantId : assistantId as String?,
       requestId: requestId == _sentinel ? this.requestId : requestId as String?,
       model: model == _sentinel ? this.model : model as String?,
       provider: provider == _sentinel ? this.provider : provider as String?,
       reasoningDurationSeconds: reasoningDurationSeconds == _sentinel
           ? this.reasoningDurationSeconds
           : reasoningDurationSeconds as double?,
-      tokenCount: tokenCount == _sentinel ? this.tokenCount : tokenCount as int?,
-      promptTokens: promptTokens == _sentinel ? this.promptTokens : promptTokens as int?,
+      tokenCount:
+          tokenCount == _sentinel ? this.tokenCount : tokenCount as int?,
+      promptTokens:
+          promptTokens == _sentinel ? this.promptTokens : promptTokens as int?,
       completionTokens: completionTokens == _sentinel
           ? this.completionTokens
           : completionTokens as int?,
@@ -173,8 +176,9 @@ class UiMessage {
           firstTokenMs == _sentinel ? this.firstTokenMs : firstTokenMs as int?,
       durationMs:
           durationMs == _sentinel ? this.durationMs : durationMs as int?,
-      toolCalls:
-          toolCalls == _sentinel ? this.toolCalls : toolCalls as List<ToolCall>?,
+      toolCalls: toolCalls == _sentinel
+          ? this.toolCalls
+          : toolCalls as List<ToolCall>?,
       toolCallId:
           toolCallId == _sentinel ? this.toolCallId : toolCallId as String?,
     );
@@ -279,19 +283,16 @@ class UiMessage {
     }
 
     if (chunk.images.isNotEmpty) {
-      final existingCount = nextParts.whereType<UiImagePart>().length;
-      if (chunk.images.length == 1 && existingCount <= 1) {
-        final next = chunk.images.first.trim();
-        if (next.isNotEmpty) {
-          nextParts.removeWhere((p) => p is UiImagePart);
-          nextParts.add(UiImagePart(url: next));
-        }
-      } else {
-        for (final img in chunk.images) {
-          final trimmed = img.trim();
-          if (trimmed.isEmpty) continue;
-          nextParts.add(UiImagePart(url: trimmed));
-        }
+      final knownImageUrls = nextParts
+          .whereType<UiImagePart>()
+          .map((p) => p.url.trim())
+          .where((u) => u.isNotEmpty)
+          .toSet();
+      for (final img in chunk.images) {
+        final trimmed = img.trim();
+        if (trimmed.isEmpty || knownImageUrls.contains(trimmed)) continue;
+        knownImageUrls.add(trimmed);
+        nextParts.add(UiImagePart(url: trimmed));
       }
     }
 
@@ -317,7 +318,8 @@ List<ToolCall>? _mergeToolCalls(
   List<ToolCallChunk>? chunks,
 ) {
   if (chunks == null || chunks.isEmpty) return existing;
-  final merged = existing != null ? List<ToolCall>.from(existing) : <ToolCall>[];
+  final merged =
+      existing != null ? List<ToolCall>.from(existing) : <ToolCall>[];
   for (final chunk in chunks) {
     final index = chunk.index ?? 0;
     if (index >= merged.length) {

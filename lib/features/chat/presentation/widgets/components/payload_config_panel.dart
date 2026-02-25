@@ -6,14 +6,34 @@ import 'package:fluent_ui/fluent_ui.dart';
 import 'package:aurora/shared/riverpod_compat.dart';
 import 'package:aurora/shared/theme/aurora_icons.dart';
 
+final RegExp _gemini3ImageModelPattern =
+    RegExp(r'gemini.*3.*image.*', caseSensitive: false);
+
+String _normalizeModelNameForPattern(String modelName) {
+  return modelName
+      .trim()
+      .toLowerCase()
+      .replaceAll('（', '(')
+      .replaceAll('）', ')')
+      .replaceAll(RegExp(r'\s+'), '');
+}
+
+bool _isGemini3ImageModel(String modelName) {
+  final normalized = _normalizeModelNameForPattern(modelName);
+  if (normalized.isEmpty) return false;
+  return _gemini3ImageModelPattern.hasMatch(normalized);
+}
+
 class PayloadConfigPanel extends ConsumerStatefulWidget {
   final String providerId;
   final String modelName;
+  final bool forceImageConfig;
 
   const PayloadConfigPanel({
     super.key,
     required this.providerId,
     required this.modelName,
+    this.forceImageConfig = false,
   });
 
   @override
@@ -120,7 +140,8 @@ class _PayloadConfigPanelState extends ConsumerState<PayloadConfigPanel> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isImageModel = widget.modelName == 'gemini-3-pro-image-preview';
+    final bool isImageModel =
+        widget.forceImageConfig || _isGemini3ImageModel(widget.modelName);
 
     if (isImageModel) {
       return _buildImageConfig(context);
