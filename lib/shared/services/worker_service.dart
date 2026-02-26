@@ -6,6 +6,7 @@ import 'package:aurora/core/error/app_exception.dart';
 import 'package:aurora/features/chat/domain/message.dart';
 import 'package:aurora/shared/services/llm_service.dart';
 import 'package:aurora/features/skills/domain/skill_entity.dart';
+import 'package:dio/dio.dart';
 import 'package:uuid/uuid.dart';
 import 'package:aurora/shared/utils/platform_utils.dart';
 
@@ -32,6 +33,7 @@ class WorkerService {
     int maxTurns = _defaultMaxTurns,
     SkillWorkerMode mode = SkillWorkerMode.reasoner,
     Duration shellTimeout = _defaultShellTimeout,
+    CancelToken? cancelToken,
     void Function({
       required bool success,
       required int promptTokens,
@@ -156,6 +158,7 @@ $skillSpecificRules
           tools: workerTools,
           model: model,
           providerId: providerId,
+          cancelToken: cancelToken,
         );
         totalPromptTokens += response.promptTokens ?? 0;
         totalCompletionTokens += response.completionTokens ?? 0;
@@ -270,6 +273,10 @@ $skillSpecificRules
       emitUsage(success: success);
       return finalOutput;
     } catch (e) {
+      if (e is DioException && e.type == DioExceptionType.cancel) {
+        emitUsage(success: false, errorType: AppErrorType.unknown);
+        rethrow;
+      }
       AppErrorType errorType = AppErrorType.unknown;
       if (e is AppException) {
         errorType = e.type;

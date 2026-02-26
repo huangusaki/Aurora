@@ -1152,5 +1152,61 @@
   },
   "cleanerLlmSuggestionFallback": "LLM suggestion",
   "novelUnlimitedMode": "Unrestricted Mode",
-  "novelUnlimitedModeHint": "Enable unrestricted creative writing mode with role-play directives"
+  "novelUnlimitedModeHint": "Enable unrestricted creative writing mode with role-play directives",
+
+  "agentWorkflow": "Agent Workflow",
+  "agentWorkflowDescription": "Build and debug agent workflows with nodes and wires.",
+  "templates": "Templates",
+  "newTemplate": "New Template",
+  "templateNameHint": "Template name",
+  "renameTemplate": "Rename Template",
+  "deleteTemplateConfirm": "Delete template \"{name}\"?",
+  "@deleteTemplateConfirm": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "deleteNodeConfirm": "Delete node \"{name}\"?",
+  "@deleteNodeConfirm": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "noTemplate": "No template",
+  "createTemplateHint": "Create a template to start building a workflow.",
+  "startInput": "Start Input",
+  "startInputHint": "Text passed from Start to the workflow",
+  "run": "Run",
+  "stop": "Stop",
+  "addNode": "Add Node",
+  "addLlmNode": "Add LLM Node",
+  "addSkillNode": "Add Skill Node",
+  "addMcpNode": "Add MCP Node",
+  "saved": "Saved",
+
+  "inspector": "Inspector",
+  "selectNodeToEdit": "Select a node to edit its settings.",
+  "typeLabel": "Type",
+  "titleLabel": "Title",
+  "bodyTemplate": "Body template",
+  "bodyTemplateHint": "Use placeholders (double curly braces) to reference inputs.",
+  "toolName": "Tool name",
+  "toolNameHint": "Enter MCP tool name",
+  "debug": "Debug",
+  "status": "Status",
+  "durationMs": "Duration (ms)",
+  "output": "Output",
+  "finalOutput": "Final Output",
+  "noOutputYet": "No output yet.",
+  "skill": "Skill",
+  "selectSkillHint": "Select a skill",
+  "mcpServer": "MCP Server",
+  "selectMcpServerHint": "Select an MCP server",
+  "renamePort": "Rename port",
+  "inputs": "Inputs",
+  "outputs": "Outputs",
+  "connections": "Connections",
+  "inbound": "Inbound",
+  "outbound": "Outbound",
+  "noConnectionsYet": "No connections yet."
 }

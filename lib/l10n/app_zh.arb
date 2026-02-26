@@ -1152,5 +1152,61 @@
   },
   "cleanerLlmSuggestionFallback": "LLM 建议",
   "novelUnlimitedMode": "破限",
-  "novelUnlimitedModeHint": "启用不受限制的创作模式，注入角色扮演指令"
+  "novelUnlimitedModeHint": "启用不受限制的创作模式，注入角色扮演指令",
+
+  "agentWorkflow": "Agent 工作流",
+  "agentWorkflowDescription": "用节点与连线搭建并调试 Agent 工作流。",
+  "templates": "模板",
+  "newTemplate": "新建模板",
+  "templateNameHint": "模板名称",
+  "renameTemplate": "重命名模板",
+  "deleteTemplateConfirm": "删除模板“{name}”？",
+  "@deleteTemplateConfirm": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "deleteNodeConfirm": "删除节点“{name}”？",
+  "@deleteNodeConfirm": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "noTemplate": "暂无模板",
+  "createTemplateHint": "先创建一个模板开始搭建工作流。",
+  "startInput": "Start 输入",
+  "startInputHint": "作为 Start 节点输出传入工作流",
+  "run": "运行",
+  "stop": "停止",
+  "addNode": "添加节点",
+  "addLlmNode": "添加 LLM 节点",
+  "addSkillNode": "添加 Skill 节点",
+  "addMcpNode": "添加 MCP 节点",
+  "saved": "已保存",
+
+  "inspector": "检查器",
+  "selectNodeToEdit": "选择一个节点以编辑其配置。",
+  "typeLabel": "类型",
+  "titleLabel": "标题",
+  "bodyTemplate": "内容模板",
+  "bodyTemplateHint": "使用占位符（双大括号）引用输入。",
+  "toolName": "工具名",
+  "toolNameHint": "请输入 MCP 工具名",
+  "debug": "调试",
+  "status": "状态",
+  "durationMs": "耗时（ms）",
+  "output": "输出",
+  "finalOutput": "最终结果",
+  "noOutputYet": "暂无输出。",
+  "skill": "技能",
+  "selectSkillHint": "选择一个技能",
+  "mcpServer": "MCP 服务器",
+  "selectMcpServerHint": "选择一个 MCP 服务器",
+  "renamePort": "重命名端口",
+  "inputs": "输入",
+  "outputs": "输出",
+  "connections": "连接",
+  "inbound": "入边",
+  "outbound": "出边",
+  "noConnectionsYet": "暂无连接。"
 }

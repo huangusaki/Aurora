@@ -2537,4 +2537,143 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get novelUnlimitedModeHint =>
       'Enable unrestricted creative writing mode with role-play directives';
+
+  @override
+  String get agentWorkflow => 'Agent Workflow';
+
+  @override
+  String get agentWorkflowDescription =>
+      'Build and debug agent workflows with nodes and wires.';
+
+  @override
+  String get templates => 'Templates';
+
+  @override
+  String get newTemplate => 'New Template';
+
+  @override
+  String get templateNameHint => 'Template name';
+
+  @override
+  String get renameTemplate => 'Rename Template';
+
+  @override
+  String deleteTemplateConfirm(String name) {
+    return 'Delete template \"$name\"?';
+  }
+
+  @override
+  String deleteNodeConfirm(String name) {
+    return 'Delete node \"$name\"?';
+  }
+
+  @override
+  String get noTemplate => 'No template';
+
+  @override
+  String get createTemplateHint =>
+      'Create a template to start building a workflow.';
+
+  @override
+  String get startInput => 'Start Input';
+
+  @override
+  String get startInputHint => 'Text passed from Start to the workflow';
+
+  @override
+  String get run => 'Run';
+
+  @override
+  String get stop => 'Stop';
+
+  @override
+  String get addNode => 'Add Node';
+
+  @override
+  String get addLlmNode => 'Add LLM Node';
+
+  @override
+  String get addSkillNode => 'Add Skill Node';
+
+  @override
+  String get addMcpNode => 'Add MCP Node';
+
+  @override
+  String get saved => 'Saved';
+
+  @override
+  String get inspector => 'Inspector';
+
+  @override
+  String get selectNodeToEdit => 'Select a node to edit its settings.';
+
+  @override
+  String get typeLabel => 'Type';
+
+  @override
+  String get titleLabel => 'Title';
+
+  @override
+  String get bodyTemplate => 'Body template';
+
+  @override
+  String get bodyTemplateHint =>
+      'Use placeholders (double curly braces) to reference inputs.';
+
+  @override
+  String get toolName => 'Tool name';
+
+  @override
+  String get toolNameHint => 'Enter MCP tool name';
+
+  @override
+  String get debug => 'Debug';
+
+  @override
+  String get status => 'Status';
+
+  @override
+  String get durationMs => 'Duration (ms)';
+
+  @override
+  String get output => 'Output';
+
+  @override
+  String get finalOutput => 'Final Output';
+
+  @override
+  String get noOutputYet => 'No output yet.';
+
+  @override
+  String get skill => 'Skill';
+
+  @override
+  String get selectSkillHint => 'Select a skill';
+
+  @override
+  String get mcpServer => 'MCP Server';
+
+  @override
+  String get selectMcpServerHint => 'Select an MCP server';
+
+  @override
+  String get renamePort => 'Rename port';
+
+  @override
+  String get inputs => 'Inputs';
+
+  @override
+  String get outputs => 'Outputs';
+
+  @override
+  String get connections => 'Connections';
+
+  @override
+  String get inbound => 'Inbound';
+
+  @override
+  String get outbound => 'Outbound';
+
+  @override
+  String get noConnectionsYet => 'No connections yet.';
 }

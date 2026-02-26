@@ -188,10 +188,36 @@ class BackupService {
     if (options.includeStudioContent) {
       try {
         final docsDir = await getApplicationDocumentsDirectory();
-        final studioFile = File('${docsDir.path}/novel_writing_state.json');
-        if (await studioFile.exists()) {
-          final content = await studioFile.readAsString();
-          studioContent = jsonDecode(content) as Map<String, dynamic>;
+        Map<String, dynamic>? novelWritingState;
+        Map<String, dynamic>? agentWorkflows;
+
+        final novelFile = File('${docsDir.path}/novel_writing_state.json');
+        if (await novelFile.exists()) {
+          final content = await novelFile.readAsString();
+          final decoded = jsonDecode(content);
+          if (decoded is Map) {
+            novelWritingState = decoded.map((k, v) => MapEntry('$k', v));
+          }
+        }
+
+        final workflowFile = File('${docsDir.path}/agent_workflows.json');
+        if (await workflowFile.exists()) {
+          final content = await workflowFile.readAsString();
+          final decoded = jsonDecode(content);
+          if (decoded is Map) {
+            agentWorkflows = decoded.map((k, v) => MapEntry('$k', v));
+          }
+        }
+
+        if (novelWritingState != null || agentWorkflows != null) {
+          final map = <String, dynamic>{};
+          if (novelWritingState != null) {
+            map['novelWritingState'] = novelWritingState;
+          }
+          if (agentWorkflows != null) {
+            map['agentWorkflows'] = agentWorkflows;
+          }
+          studioContent = map;
         }
       } catch (e) {
         debugPrint('Error exporting studio content: $e');
@@ -557,8 +583,27 @@ class BackupService {
     if (backup.studioContent != null) {
       try {
         final docsDir = await getApplicationDocumentsDirectory();
-        final studioFile = File('${docsDir.path}/novel_writing_state.json');
-        await studioFile.writeAsString(jsonEncode(backup.studioContent));
+        final studio = backup.studioContent!;
+        final hasNewKeys =
+            studio.containsKey('novelWritingState') || studio.containsKey('agentWorkflows');
+
+        if (!hasNewKeys) {
+          // Backward compatibility: old backups stored novel state directly.
+          final studioFile = File('${docsDir.path}/novel_writing_state.json');
+          await studioFile.writeAsString(jsonEncode(studio));
+        } else {
+          final novelState = studio['novelWritingState'];
+          if (novelState is Map) {
+            final studioFile = File('${docsDir.path}/novel_writing_state.json');
+            await studioFile.writeAsString(jsonEncode(novelState));
+          }
+
+          final workflows = studio['agentWorkflows'];
+          if (workflows is Map) {
+            final workflowFile = File('${docsDir.path}/agent_workflows.json');
+            await workflowFile.writeAsString(jsonEncode(workflows));
+          }
+        }
       } catch (e) {
         debugPrint('Error restoring studio content: $e');
       }

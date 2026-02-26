@@ -2458,4 +2458,140 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get novelUnlimitedModeHint => '启用不受限制的创作模式，注入角色扮演指令';
+
+  @override
+  String get agentWorkflow => 'Agent 工作流';
+
+  @override
+  String get agentWorkflowDescription => '用节点与连线搭建并调试 Agent 工作流。';
+
+  @override
+  String get templates => '模板';
+
+  @override
+  String get newTemplate => '新建模板';
+
+  @override
+  String get templateNameHint => '模板名称';
+
+  @override
+  String get renameTemplate => '重命名模板';
+
+  @override
+  String deleteTemplateConfirm(String name) {
+    return '删除模板“$name”？';
+  }
+
+  @override
+  String deleteNodeConfirm(String name) {
+    return '删除节点“$name”？';
+  }
+
+  @override
+  String get noTemplate => '暂无模板';
+
+  @override
+  String get createTemplateHint => '先创建一个模板开始搭建工作流。';
+
+  @override
+  String get startInput => 'Start 输入';
+
+  @override
+  String get startInputHint => '作为 Start 节点输出传入工作流';
+
+  @override
+  String get run => '运行';
+
+  @override
+  String get stop => '停止';
+
+  @override
+  String get addNode => '添加节点';
+
+  @override
+  String get addLlmNode => '添加 LLM 节点';
+
+  @override
+  String get addSkillNode => '添加 Skill 节点';
+
+  @override
+  String get addMcpNode => '添加 MCP 节点';
+
+  @override
+  String get saved => '已保存';
+
+  @override
+  String get inspector => '检查器';
+
+  @override
+  String get selectNodeToEdit => '选择一个节点以编辑其配置。';
+
+  @override
+  String get typeLabel => '类型';
+
+  @override
+  String get titleLabel => '标题';
+
+  @override
+  String get bodyTemplate => '内容模板';
+
+  @override
+  String get bodyTemplateHint => '使用占位符（双大括号）引用输入。';
+
+  @override
+  String get toolName => '工具名';
+
+  @override
+  String get toolNameHint => '请输入 MCP 工具名';
+
+  @override
+  String get debug => '调试';
+
+  @override
+  String get status => '状态';
+
+  @override
+  String get durationMs => '耗时（ms）';
+
+  @override
+  String get output => '输出';
+
+  @override
+  String get finalOutput => '最终结果';
+
+  @override
+  String get noOutputYet => '暂无输出。';
+
+  @override
+  String get skill => '技能';
+
+  @override
+  String get selectSkillHint => '选择一个技能';
+
+  @override
+  String get mcpServer => 'MCP 服务器';
+
+  @override
+  String get selectMcpServerHint => '选择一个 MCP 服务器';
+
+  @override
+  String get renamePort => '重命名端口';
+
+  @override
+  String get inputs => '输入';
+
+  @override
+  String get outputs => '输出';
+
+  @override
+  String get connections => '连接';
+
+  @override
+  String get inbound => '入边';
+
+  @override
+  String get outbound => '出边';
+
+  @override
+  String get noConnectionsYet => '暂无连接。';
 }
