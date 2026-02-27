@@ -164,15 +164,19 @@ class _PayloadConfigPanelState extends ConsumerState<PayloadConfigPanel> {
       "1:1",
       "2:3",
       "3:2",
+      "1:4",
+      "4:1",
       "3:4",
       "4:3",
       "4:5",
       "5:4",
+      "8:1",
+      "1:8",
       "9:16",
       "16:9",
       "21:9"
     ];
-    final sizes = ["1K", "2K", "4K"];
+    final sizes = ["0.5K","1K", "2K", "4K"];
 
     final String displayAspectRatio = imageConfig['aspect_ratio'] ?? l10n.auto;
 
@@ -211,10 +215,11 @@ class _PayloadConfigPanelState extends ConsumerState<PayloadConfigPanel> {
             children: [
               Expanded(
                 child: Slider(
-                  value: sizes.indexOf(currentSize).toDouble(),
+                  value:
+                      sizes.indexOf(currentSize).clamp(0, sizes.length - 1).toDouble(),
                   min: 0,
-                  max: 2,
-                  divisions: 2,
+                  max: (sizes.length - 1).toDouble(),
+                  divisions: sizes.length - 1,
                   label: currentSize,
                   onChanged: (v) {
                     final newSize = sizes[v.toInt()];

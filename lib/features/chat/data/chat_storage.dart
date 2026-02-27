@@ -130,25 +130,34 @@ class ChatStorage {
       entity.toolCallsJson =
           jsonEncode(message.toolCalls!.map((tc) => tc.toJson()).toList());
     }
-    await _isar.writeTxn(() async {
-      await _isar.messageEntitys.put(entity);
-      final session = await _isar.sessionEntitys.getBySessionId(sessionId);
-      if (session != null) {
-        var shouldPersistSession = false;
-        if (message.isUser) {
-          session.lastMessageTime = message.timestamp;
-          shouldPersistSession = true;
+    try {
+      await _isar.writeTxn(() async {
+        await _isar.messageEntitys.put(entity);
+        final session = await _isar.sessionEntitys.getBySessionId(sessionId);
+        if (session != null) {
+          var shouldPersistSession = false;
+          if (message.isUser) {
+            session.lastMessageTime = message.timestamp;
+            shouldPersistSession = true;
+          }
+          final msgTotal = _effectiveTokenTotalFromMessage(message);
+          if (msgTotal > 0) {
+            session.totalTokens += msgTotal;
+            shouldPersistSession = true;
+          }
+          if (shouldPersistSession) {
+            await _isar.sessionEntitys.put(session);
+          }
         }
-        final msgTotal = _effectiveTokenTotalFromMessage(message);
-        if (msgTotal > 0) {
-          session.totalTokens += msgTotal;
-          shouldPersistSession = true;
-        }
-        if (shouldPersistSession) {
-          await _isar.sessionEntitys.put(session);
-        }
-      }
-    });
+      });
+    } catch (e) {
+      debugPrint('[CHAT_STORAGE] saveMessage error: $e');
+      // 计算 message 大概大小以供参考
+      final contentSize = (message.content.length) + (message.reasoningContent?.length ?? 0);
+      final imagesSize = message.images.fold(0, (sum, img) => sum + img.length);
+      debugPrint('[CHAT_STORAGE] Message stats: content=$contentSize chars, images=$imagesSize chars (${message.images.length} images)');
+      rethrow;
+    }
     if (_messagesCache.containsKey(sessionId)) {
       final cachedMessage = message.copyWith(id: entity.id.toString());
       _messagesCache[sessionId]!.add(cachedMessage);

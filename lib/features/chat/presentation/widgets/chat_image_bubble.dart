@@ -6,6 +6,7 @@ import 'package:flutter/material.dart' as material
     show CircularProgressIndicator;
 import 'package:super_clipboard/super_clipboard.dart';
 import 'package:flutter/foundation.dart';
+import 'package:aurora/shared/utils/image_compression.dart';
 import 'package:aurora/shared/widgets/aurora_page_route.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 import 'windows_image_viewer.dart';
@@ -167,10 +168,12 @@ class _ChatImageBubbleState extends State<ChatImageBubble> {
   Future<void> _handleSave({required String imagesLabel}) async {
     final bytes = await _getImageBytes();
     if (bytes == null) return;
+    final mime = extractMimeFromDataUrl(widget.imageUrl);
+    final ext = extensionForMime(mime);
     final FileSaveLocation? result = await getSaveLocation(
-      suggestedName: 'image_${DateTime.now().millisecondsSinceEpoch}.png',
+      suggestedName: 'image_${DateTime.now().millisecondsSinceEpoch}.$ext',
       acceptedTypeGroups: [
-        XTypeGroup(label: imagesLabel, extensions: ['png']),
+        XTypeGroup(label: imagesLabel, extensions: [ext]),
       ],
     );
     if (result != null) {

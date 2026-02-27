@@ -8,6 +8,32 @@ import 'package:super_clipboard/super_clipboard.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 import 'package:aurora/shared/widgets/aurora_notice.dart';
 
+/// 通过文件头魔数检测图片格式，返回合适的扩展名。
+String _detectExtension(Uint8List bytes) {
+  if (bytes.length >= 2 && bytes[0] == 0xFF && bytes[1] == 0xD8) {
+    return 'jpg';
+  }
+  if (bytes.length >= 4 &&
+      bytes[0] == 0x89 &&
+      bytes[1] == 0x50 &&
+      bytes[2] == 0x4E &&
+      bytes[3] == 0x47) {
+    return 'png';
+  }
+  if (bytes.length >= 12 &&
+      bytes[0] == 0x52 &&
+      bytes[1] == 0x49 &&
+      bytes[2] == 0x46 &&
+      bytes[3] == 0x46 &&
+      bytes[8] == 0x57 &&
+      bytes[9] == 0x45 &&
+      bytes[10] == 0x42 &&
+      bytes[11] == 0x50) {
+    return 'webp';
+  }
+  return 'png';
+}
+
 class MobileImageViewer extends StatefulWidget {
   final Uint8List imageBytes;
   final VoidCallback? onClose;
@@ -89,9 +115,11 @@ class _MobileImageViewerState extends State<MobileImageViewer>
 
   Future<void> _handleSave(BuildContext context) async {
     try {
+      // 根据图片实际格式选择扩展名
+      final ext = _detectExtension(widget.imageBytes);
       final tempDir = await getTemporaryDirectory();
       final tempPath =
-          '${tempDir.path}/image_${DateTime.now().millisecondsSinceEpoch}.png';
+          '${tempDir.path}/image_${DateTime.now().millisecondsSinceEpoch}.$ext';
       final tempFile = File(tempPath);
       await tempFile.writeAsBytes(widget.imageBytes);
       await Gal.putImage(tempPath);
