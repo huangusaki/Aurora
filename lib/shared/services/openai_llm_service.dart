@@ -372,7 +372,10 @@ class OpenAILLMService implements LLMService {
               if (choicesRaw == null) continue;
               final choices = choicesRaw as List;
               if (choices.isNotEmpty) {
-                final delta = choices[0]['delta'];
+                // Some proxies return chat.completion format (with 'message'
+                // instead of 'delta') even when streaming is requested.
+                // Fall back to 'message' so content/reasoning/images still parse.
+                final delta = choices[0]['delta'] ?? choices[0]['message'];
                 if (delta != null) {
                   final finishReason = choices[0]['finish_reason'];
                   final dynamic rawContent = delta['content'];

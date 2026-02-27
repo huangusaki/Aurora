@@ -295,8 +295,10 @@ class _ChatImageBubbleState extends State<ChatImageBubble> {
                 child: Image.memory(
                   bytes,
                   fit: BoxFit.cover,
-                  errorBuilder: (ctx, err, stack) =>
-                      const Icon(FluentIcons.error),
+                  errorBuilder: (ctx, err, stack) {
+                    debugPrint('Image.memory render error: $err');
+                    return const Icon(FluentIcons.error);
+                  },
                 ),
               ),
             ),

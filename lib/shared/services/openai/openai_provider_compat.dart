@@ -7,6 +7,12 @@ enum _ModelFamily { gemini, gemini3, anthropic, openai, unknown }
 final RegExp _gemini3ImageModelPattern =
     RegExp(r'gemini.*3.*image.*', caseSensitive: false);
 
+/// Matches Gemini 3.1+ image models (e.g. gemini-3.1-flash-image-preview).
+/// These models support explicit thinking_level (High, etc.) unlike 3.0 image
+/// models that only accept auto.
+final RegExp _gemini31PlusImageModelPattern =
+    RegExp(r'gemini.*3\.([1-9]\d*).*image', caseSensitive: false);
+
 class _ThinkingInput {
   final String raw;
   final int? budgetTokens;
@@ -116,6 +122,12 @@ bool _isGemini3ImageModel(String model) {
   final normalized = _normalizeModelNameForPattern(model);
   if (normalized.isEmpty) return false;
   return _gemini3ImageModelPattern.hasMatch(normalized);
+}
+
+bool _isGemini31PlusImageModel(String model) {
+  final normalized = _normalizeModelNameForPattern(model);
+  if (normalized.isEmpty) return false;
+  return _gemini31PlusImageModelPattern.hasMatch(normalized);
 }
 
 bool _isThinkingUnsupportedModel(String model) {
@@ -466,25 +478,38 @@ void _applyThinkingConfigToRequest({
       (modelFamily == _ModelFamily.gemini ||
           modelFamily == _ModelFamily.gemini3);
   if (isGeminiImageModel) {
-    // Gemini image-generation models can expose thought summaries, but some
-    // backends reject explicit thinking level/effort controls for them.
+    _removeAnthropicThinkingConfigFromRequest(requestData);
     requestData.remove('reasoning_effort');
-    _mergeExtraBodyProvider(
-      requestData,
-      providerKey: 'google',
-      providerData: {
-        'thinking_config': {
-          'include_thoughts': true,
-          'includeThoughts': true,
+
+    // CLIProxyAPI automatically sets includeThoughts based on reasoning_effort:
+    //   effort != "none" → includeThoughts=true
+    //   effort == "auto" → thinkingBudget=-1 + includeThoughts=true
+    // So we only need to set reasoning_effort here; no extra_body needed.
+
+    if (_isGemini31PlusImageModel(selectedModel)) {
+      // Gemini 3.1+ image models support explicit thinking levels (high, etc.)
+      final thinkingConfig = activeParams['_aurora_thinking_config'];
+      String effort = 'high'; // sensible default for 3.1+
+      if (thinkingConfig is Map && thinkingConfig['enabled'] == true) {
+        final raw = thinkingConfig['budget']?.toString().trim() ?? '';
+        if (raw.isNotEmpty) {
+          final parsed = _parseThinkingInput(raw);
+          if (parsed.tier != null) {
+            effort = _thinkingTierToGeminiEffort(
+                _coerceTierForGemini3(parsed.tier!));
+          } else if (parsed.budgetTokens != null) {
+            effort = _thinkingTierToGeminiEffort(
+                _tierFromBudgetForGemini3(parsed.budgetTokens!));
+          } else {
+            effort = raw.toLowerCase();
+          }
         }
-      },
-    );
-    if (_isGemini3ImageModel(selectedModel)) {
-      // Gemini 3 image models: use auto by default to avoid unsupported
-      // thinking level errors while still enabling thought output.
+      }
+      requestData['reasoning_effort'] = effort;
+    } else if (_isGemini3ImageModel(selectedModel)) {
+      // Gemini 3.0 image models: only auto is safe.
       requestData['reasoning_effort'] = 'auto';
     }
-    _removeAnthropicThinkingConfigFromRequest(requestData);
     return;
   }
   if (_isThinkingUnsupportedModel(selectedModel)) {
