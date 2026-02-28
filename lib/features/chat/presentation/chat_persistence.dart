@@ -66,6 +66,16 @@ class _ChatPersistence {
         );
       }
 
+      // 保存前压缩图片：UI 保留原图显示，数据库存储压缩版本
+      if (!message.isUser && message.images.isNotEmpty) {
+        try {
+          final compressed = await compressImageDataUrls(message.images);
+          message = message.copyWith(images: compressed);
+        } catch (e) {
+          debugPrint('[IMAGE_COMPRESS] Persistence compression failed: $e');
+        }
+      }
+
       final dbId =
           await _notifier._storage.saveMessage(message, _notifier._sessionId);
       if (!_notifier.mounted) {

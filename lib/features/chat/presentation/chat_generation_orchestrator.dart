@@ -219,23 +219,7 @@ class _ChatGenerationOrchestrator {
         }
       }
 
-      var effectiveChunk = chunk;
-      if (chunk.images.isNotEmpty) {
-        final compressed = await compressImageDataUrls(chunk.images);
-        effectiveChunk = LLMResponseChunk(
-          content: chunk.content,
-          reasoning: chunk.reasoning,
-          images: compressed,
-          toolCalls: chunk.toolCalls,
-          usage: chunk.usage,
-          promptTokens: chunk.promptTokens,
-          completionTokens: chunk.completionTokens,
-          reasoningTokens: chunk.reasoningTokens,
-          finishReason: chunk.finishReason,
-        );
-      }
-
-      uiMsg = uiMsg.appendChunk(effectiveChunk);
+      uiMsg = uiMsg.appendChunk(chunk);
 
       if (chunk.finishReason == 'malformed_function_call') {
         uiMsg = uiMsg.replaceText(
@@ -343,7 +327,7 @@ class _ChatGenerationOrchestrator {
         isUser: false,
         timestamp: aiMsg.timestamp,
         attachments: aiMsg.attachments,
-        images: await compressImageDataUrls(response.images),
+        images: response.images,
         model: aiMsg.model,
         provider: aiMsg.provider,
         tokenCount: response.usage,
