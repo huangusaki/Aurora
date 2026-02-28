@@ -212,17 +212,16 @@ class _ReasoningDisplayState extends ConsumerState<ReasoningDisplay>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const SizedBox(height: 8),
-                        SelectableText(
-                          widget.content,
-                          style: TextStyle(
-                            fontSize: 13,
-                            height: 1.5,
-                            fontFamily: widget.isWindows ? 'Consolas' : null,
-                            color: isDark ? Colors.white60 : Colors.black54,
+                        SelectionArea(
+                          child: Text(
+                            widget.content,
+                            style: TextStyle(
+                              fontSize: 13,
+                              height: 1.5,
+                              fontFamily: widget.isWindows ? 'Consolas' : null,
+                              color: isDark ? Colors.white60 : Colors.black54,
+                            ),
                           ),
-                          selectionControls: widget.isWindows
-                              ? fluent.fluentTextSelectionControls
-                              : null,
                         ),
                       ],
                     ),
