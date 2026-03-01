@@ -202,7 +202,9 @@ class WorkflowNodeWidget extends StatelessWidget {
   ) {
     final color = status == AgentWorkflowNodeRunStatus.error
         ? const Color(0xFFE35D6A)
-        : theme.typography.caption?.color;
+        : status == AgentWorkflowNodeRunStatus.warning
+            ? (isDark ? const Color(0xFFF0D264) : const Color(0xFFD18B00))
+            : theme.typography.caption?.color;
     return Container(
       height: WorkflowLayout.footerHeight,
       padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -291,8 +293,12 @@ class WorkflowNodeWidget extends StatelessWidget {
         return '';
       case AgentWorkflowNodeRunStatus.running:
         return 'Running...';
+      case AgentWorkflowNodeRunStatus.waiting:
+        return 'Waiting...';
       case AgentWorkflowNodeRunStatus.success:
         return 'Done';
+      case AgentWorkflowNodeRunStatus.warning:
+        return 'Warning';
       case AgentWorkflowNodeRunStatus.error:
         return 'Error';
       case AgentWorkflowNodeRunStatus.stopped:
@@ -316,8 +322,12 @@ class WorkflowNodeWidget extends StatelessWidget {
     switch (status) {
       case AgentWorkflowNodeRunStatus.running:
         return accentColor;
+      case AgentWorkflowNodeRunStatus.waiting:
+        return accentColor.withValues(alpha: 0.75);
       case AgentWorkflowNodeRunStatus.success:
         return isDark ? const Color(0xFF3DDC84) : const Color(0xFF2EAD66);
+      case AgentWorkflowNodeRunStatus.warning:
+        return isDark ? const Color(0xFFF0D264) : const Color(0xFFD18B00);
       case AgentWorkflowNodeRunStatus.error:
         return const Color(0xFFE35D6A);
       case AgentWorkflowNodeRunStatus.stopped:
@@ -339,6 +349,8 @@ class WorkflowNodeWidget extends StatelessWidget {
         return AuroraIcons.skills;
       case AgentWorkflowNodeType.mcp:
         return AuroraIcons.mcp;
+      case AgentWorkflowNodeType.userInput:
+        return AuroraIcons.user;
     }
   }
 }

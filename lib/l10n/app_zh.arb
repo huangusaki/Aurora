@@ -1182,6 +1182,7 @@
   "addLlmNode": "添加 LLM 节点",
   "addSkillNode": "添加 Skill 节点",
   "addMcpNode": "添加 MCP 节点",
+  "addUserInputNode": "添加 User Input 节点",
   "saved": "已保存",
 
   "inspector": "检查器",
@@ -1192,6 +1193,50 @@
   "bodyTemplateHint": "使用占位符（双大括号）引用输入。",
   "toolName": "工具名",
   "toolNameHint": "请输入 MCP 工具名",
+  "selectMcpToolHint": "选择工具",
+  "mcpToolInputSchema": "工具输入 Schema",
+  "warnings": "警告",
+  "warning": "警告",
+  "rawOutput": "原始输出",
+  "outputJsonPretty": "输出（JSON）",
+  "validation": "校验",
+  "inputValidation": "输入校验",
+  "outputValidation": "输出校验",
+  "validationOff": "关闭",
+  "validationWarn": "告警",
+  "validationStrict": "严格",
+  "structuredOutput": "结构化输出",
+  "structuredOutputHint": "需要主输出端口为 JSON 且 Schema 顶层为 object。",
+  "autoRepairAttempts": "自动修复次数",
+  "structuredOutputMissingPrimaryPort": "缺少主输出端口。",
+  "structuredOutputRequiresJsonPort": "主输出端口“{port}”必须为 JSON。",
+  "@structuredOutputRequiresJsonPort": {
+    "placeholders": {
+      "port": {"type": "String"}
+    }
+  },
+  "structuredOutputRequiresSchema": "主输出端口“{port}”必须配置 JSON Schema。",
+  "@structuredOutputRequiresSchema": {
+    "placeholders": {
+      "port": {"type": "String"}
+    }
+  },
+  "structuredOutputRequiresObjectSchema": "主输出端口“{port}”的 Schema 顶层 type 必须为“object”。",
+  "@structuredOutputRequiresObjectSchema": {
+    "placeholders": {
+      "port": {"type": "String"}
+    }
+  },
+  "portConfig": "端口配置",
+  "name": "名称",
+  "valueType": "类型",
+  "valueTypeText": "文本",
+  "valueTypeJson": "JSON",
+  "schemaJson": "Schema JSON",
+  "schemaJsonHint": "在此粘贴 JSON Schema（Draft-7）",
+  "invalidJson": "JSON 不合法",
+  "invalidSchema": "JSON Schema 不合法",
+  "schemaMustBeObject": "Schema 必须是 JSON 对象。",
   "debug": "调试",
   "status": "状态",
   "durationMs": "耗时（ms）",

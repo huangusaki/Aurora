@@ -4,6 +4,9 @@ import 'package:aurora/features/studio/domain/agent_workflow/agent_workflow_mode
 import 'package:aurora/features/studio/domain/agent_workflow/agent_workflow_validator.dart';
 import 'package:uuid/uuid.dart';
 
+AgentWorkflowPort _out(AgentWorkflowNode node, String name) =>
+    node.outputs.firstWhere((p) => p.name.trim() == name);
+
 void main() {
   group('AgentWorkflowValidator', () {
     const validator = AgentWorkflowValidator();
@@ -34,7 +37,7 @@ void main() {
           AgentWorkflowEdge(
             id: const Uuid().v4(),
             fromNodeId: start.id,
-            fromPortId: start.outputs.single.id,
+            fromPortId: _out(start, 'start').id,
             toNodeId: mid.id,
             toPortId: mid.inputs.single.id,
           ),
@@ -89,21 +92,21 @@ void main() {
           AgentWorkflowEdge(
             id: const Uuid().v4(),
             fromNodeId: start.id,
-            fromPortId: start.outputs.single.id,
+            fromPortId: _out(start, 'start').id,
             toNodeId: a.id,
             toPortId: targetInputPortId,
           ),
           AgentWorkflowEdge(
             id: const Uuid().v4(),
             fromNodeId: b.id,
-            fromPortId: b.outputs.single.id,
+            fromPortId: _out(b, 'result').id,
             toNodeId: a.id,
             toPortId: targetInputPortId,
           ),
           AgentWorkflowEdge(
             id: const Uuid().v4(),
             fromNodeId: a.id,
-            fromPortId: a.outputs.single.id,
+            fromPortId: _out(a, 'result').id,
             toNodeId: end.id,
             toPortId: end.inputs.single.id,
           ),
@@ -132,28 +135,28 @@ void main() {
           AgentWorkflowEdge(
             id: const Uuid().v4(),
             fromNodeId: start.id,
-            fromPortId: start.outputs.single.id,
+            fromPortId: _out(start, 'start').id,
             toNodeId: a.id,
             toPortId: a.inputs.first.id,
           ),
           AgentWorkflowEdge(
             id: const Uuid().v4(),
             fromNodeId: a.id,
-            fromPortId: a.outputs.single.id,
+            fromPortId: _out(a, 'result').id,
             toNodeId: b.id,
             toPortId: b.inputs.single.id,
           ),
           AgentWorkflowEdge(
             id: const Uuid().v4(),
             fromNodeId: b.id,
-            fromPortId: b.outputs.single.id,
+            fromPortId: _out(b, 'result').id,
             toNodeId: a.id,
             toPortId: loopPort.id,
           ),
           AgentWorkflowEdge(
             id: const Uuid().v4(),
             fromNodeId: b.id,
-            fromPortId: b.outputs.single.id,
+            fromPortId: _out(b, 'result').id,
             toNodeId: end.id,
             toPortId: end.inputs.single.id,
           ),
@@ -163,6 +166,82 @@ void main() {
       final result = validator.validate(t);
       expect(result.isValid, isFalse);
       expect(result.toMultilineString(), contains('cycle'));
+    });
+
+    test('rejects invalid JSON Schema on a port', () {
+      final start = AgentWorkflowNode.createStart();
+      final end = AgentWorkflowNode.createEnd();
+      final llmBase = AgentWorkflowNode.createLlm().copyWith(title: 'LLM');
+      final llm = llmBase.copyWith(
+        inputs: [
+          llmBase.inputs.single.copyWith(
+            schema: {
+              'type': 123,
+            },
+          ),
+        ],
+      );
+
+      final t = AgentWorkflowTemplate(
+        id: const Uuid().v4(),
+        name: 'bad-schema',
+        nodes: [start, llm, end],
+        edges: [
+          AgentWorkflowEdge(
+            id: const Uuid().v4(),
+            fromNodeId: start.id,
+            fromPortId: _out(start, 'start').id,
+            toNodeId: llm.id,
+            toPortId: llm.inputs.single.id,
+          ),
+          AgentWorkflowEdge(
+            id: const Uuid().v4(),
+            fromNodeId: llm.id,
+            fromPortId: _out(llm, 'result').id,
+            toNodeId: end.id,
+            toPortId: end.inputs.single.id,
+          ),
+        ],
+      );
+
+      final result = validator.validate(t);
+      expect(result.isValid, isFalse);
+      expect(result.toMultilineString(), contains('invalid JSON Schema'));
+    });
+
+    test('structured output requires json primary output with object schema', () {
+      final start = AgentWorkflowNode.createStart();
+      final end = AgentWorkflowNode.createEnd();
+      final llm = AgentWorkflowNode.createLlm().copyWith(
+        title: 'LLM',
+        structuredOutput: true,
+      );
+
+      final t = AgentWorkflowTemplate(
+        id: const Uuid().v4(),
+        name: 'bad-structured',
+        nodes: [start, llm, end],
+        edges: [
+          AgentWorkflowEdge(
+            id: const Uuid().v4(),
+            fromNodeId: start.id,
+            fromPortId: _out(start, 'start').id,
+            toNodeId: llm.id,
+            toPortId: llm.inputs.single.id,
+          ),
+          AgentWorkflowEdge(
+            id: const Uuid().v4(),
+            fromNodeId: llm.id,
+            fromPortId: _out(llm, 'result').id,
+            toNodeId: end.id,
+            toPortId: end.inputs.single.id,
+          ),
+        ],
+      );
+
+      final result = validator.validate(t);
+      expect(result.isValid, isFalse);
+      expect(result.toMultilineString(), contains('structured output'));
     });
   });
 }

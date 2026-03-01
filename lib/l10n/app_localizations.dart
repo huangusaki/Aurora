@@ -4899,6 +4899,12 @@ abstract class AppLocalizations {
   /// **'添加 MCP 节点'**
   String get addMcpNode;
 
+  /// No description provided for @addUserInputNode.
+  ///
+  /// In zh, this message translates to:
+  /// **'添加 User Input 节点'**
+  String get addUserInputNode;
+
   /// No description provided for @saved.
   ///
   /// In zh, this message translates to:
@@ -4952,6 +4958,180 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'请输入 MCP 工具名'**
   String get toolNameHint;
+
+  /// No description provided for @selectMcpToolHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'选择工具'**
+  String get selectMcpToolHint;
+
+  /// No description provided for @mcpToolInputSchema.
+  ///
+  /// In zh, this message translates to:
+  /// **'工具输入 Schema'**
+  String get mcpToolInputSchema;
+
+  /// No description provided for @warnings.
+  ///
+  /// In zh, this message translates to:
+  /// **'警告'**
+  String get warnings;
+
+  /// No description provided for @warning.
+  ///
+  /// In zh, this message translates to:
+  /// **'警告'**
+  String get warning;
+
+  /// No description provided for @rawOutput.
+  ///
+  /// In zh, this message translates to:
+  /// **'原始输出'**
+  String get rawOutput;
+
+  /// No description provided for @outputJsonPretty.
+  ///
+  /// In zh, this message translates to:
+  /// **'输出（JSON）'**
+  String get outputJsonPretty;
+
+  /// No description provided for @validation.
+  ///
+  /// In zh, this message translates to:
+  /// **'校验'**
+  String get validation;
+
+  /// No description provided for @inputValidation.
+  ///
+  /// In zh, this message translates to:
+  /// **'输入校验'**
+  String get inputValidation;
+
+  /// No description provided for @outputValidation.
+  ///
+  /// In zh, this message translates to:
+  /// **'输出校验'**
+  String get outputValidation;
+
+  /// No description provided for @validationOff.
+  ///
+  /// In zh, this message translates to:
+  /// **'关闭'**
+  String get validationOff;
+
+  /// No description provided for @validationWarn.
+  ///
+  /// In zh, this message translates to:
+  /// **'告警'**
+  String get validationWarn;
+
+  /// No description provided for @validationStrict.
+  ///
+  /// In zh, this message translates to:
+  /// **'严格'**
+  String get validationStrict;
+
+  /// No description provided for @structuredOutput.
+  ///
+  /// In zh, this message translates to:
+  /// **'结构化输出'**
+  String get structuredOutput;
+
+  /// No description provided for @structuredOutputHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'需要主输出端口为 JSON 且 Schema 顶层为 object。'**
+  String get structuredOutputHint;
+
+  /// No description provided for @autoRepairAttempts.
+  ///
+  /// In zh, this message translates to:
+  /// **'自动修复次数'**
+  String get autoRepairAttempts;
+
+  /// No description provided for @structuredOutputMissingPrimaryPort.
+  ///
+  /// In zh, this message translates to:
+  /// **'缺少主输出端口。'**
+  String get structuredOutputMissingPrimaryPort;
+
+  /// No description provided for @structuredOutputRequiresJsonPort.
+  ///
+  /// In zh, this message translates to:
+  /// **'主输出端口“{port}”必须为 JSON。'**
+  String structuredOutputRequiresJsonPort(String port);
+
+  /// No description provided for @structuredOutputRequiresSchema.
+  ///
+  /// In zh, this message translates to:
+  /// **'主输出端口“{port}”必须配置 JSON Schema。'**
+  String structuredOutputRequiresSchema(String port);
+
+  /// No description provided for @structuredOutputRequiresObjectSchema.
+  ///
+  /// In zh, this message translates to:
+  /// **'主输出端口“{port}”的 Schema 顶层 type 必须为“object”。'**
+  String structuredOutputRequiresObjectSchema(String port);
+
+  /// No description provided for @portConfig.
+  ///
+  /// In zh, this message translates to:
+  /// **'端口配置'**
+  String get portConfig;
+
+  /// No description provided for @name.
+  ///
+  /// In zh, this message translates to:
+  /// **'名称'**
+  String get name;
+
+  /// No description provided for @valueType.
+  ///
+  /// In zh, this message translates to:
+  /// **'类型'**
+  String get valueType;
+
+  /// No description provided for @valueTypeText.
+  ///
+  /// In zh, this message translates to:
+  /// **'文本'**
+  String get valueTypeText;
+
+  /// No description provided for @valueTypeJson.
+  ///
+  /// In zh, this message translates to:
+  /// **'JSON'**
+  String get valueTypeJson;
+
+  /// No description provided for @schemaJson.
+  ///
+  /// In zh, this message translates to:
+  /// **'Schema JSON'**
+  String get schemaJson;
+
+  /// No description provided for @schemaJsonHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'在此粘贴 JSON Schema（Draft-7）'**
+  String get schemaJsonHint;
+
+  /// No description provided for @invalidJson.
+  ///
+  /// In zh, this message translates to:
+  /// **'JSON 不合法'**
+  String get invalidJson;
+
+  /// No description provided for @invalidSchema.
+  ///
+  /// In zh, this message translates to:
+  /// **'JSON Schema 不合法'**
+  String get invalidSchema;
+
+  /// No description provided for @schemaMustBeObject.
+  ///
+  /// In zh, this message translates to:
+  /// **'Schema 必须是 JSON 对象。'**
+  String get schemaMustBeObject;
 
   /// No description provided for @debug.
   ///

@@ -57,7 +57,11 @@ class WorkflowEdgesPainter extends CustomPainter {
 
       final status = runStates[fromNode.id]?.status ?? AgentWorkflowNodeRunStatus.idle;
       final color = _edgeColor(status);
-      final strokeWidth = status == AgentWorkflowNodeRunStatus.running ? 2.2 : 1.6;
+      final strokeWidth =
+          status == AgentWorkflowNodeRunStatus.running ||
+                  status == AgentWorkflowNodeRunStatus.waiting
+              ? 2.2
+              : 1.6;
       _drawBezier(canvas, p1, p2, color, strokeWidth);
     }
 
@@ -138,8 +142,12 @@ class WorkflowEdgesPainter extends CustomPainter {
     switch (status) {
       case AgentWorkflowNodeRunStatus.running:
         return accentColor;
+      case AgentWorkflowNodeRunStatus.waiting:
+        return accentColor.withValues(alpha: 0.65);
       case AgentWorkflowNodeRunStatus.success:
         return isDark ? const Color(0xFF3DDC84) : const Color(0xFF2EAD66);
+      case AgentWorkflowNodeRunStatus.warning:
+        return isDark ? const Color(0xFFF0D264) : const Color(0xFFD18B00);
       case AgentWorkflowNodeRunStatus.error:
         return const Color(0xFFE35D6A);
       case AgentWorkflowNodeRunStatus.stopped:

@@ -1,4 +1,5 @@
 import 'agent_workflow_models.dart';
+import 'agent_workflow_json_schema.dart';
 
 class AgentWorkflowValidationError {
   final String message;
@@ -54,6 +55,7 @@ class AgentWorkflowValidator {
       nodeById[id] = node;
 
       errors.addAll(_validateNodePorts(node));
+      errors.addAll(_validateNodeConfig(node));
       errors.addAll(_validateFixedNodeShape(node));
     }
 
@@ -220,6 +222,16 @@ class AgentWorkflowValidator {
         errors.add(AgentWorkflowValidationError(
             'Node "${node.title}" has duplicate input port name "$name".'));
       }
+
+      final schema = p.schema;
+      if (schema != null) {
+        try {
+          AgentWorkflowJsonSchema.validateInstance(schema: schema, instance: null);
+        } catch (e) {
+          errors.add(AgentWorkflowValidationError(
+              'Node "${node.title}" input port "${p.name}" has invalid JSON Schema: $e'));
+        }
+      }
     }
 
     for (final p in node.outputs) {
@@ -239,6 +251,79 @@ class AgentWorkflowValidator {
       } else if (!outputNames.add(name)) {
         errors.add(AgentWorkflowValidationError(
             'Node "${node.title}" has duplicate output port name "$name".'));
+      }
+
+      final schema = p.schema;
+      if (schema != null) {
+        try {
+          AgentWorkflowJsonSchema.validateInstance(schema: schema, instance: null);
+        } catch (e) {
+          errors.add(AgentWorkflowValidationError(
+              'Node "${node.title}" output port "${p.name}" has invalid JSON Schema: $e'));
+        }
+      }
+    }
+
+    return errors;
+  }
+
+  List<AgentWorkflowValidationError> _validateNodeConfig(AgentWorkflowNode node) {
+    final errors = <AgentWorkflowValidationError>[];
+
+    final isExecutable = node.type == AgentWorkflowNodeType.llm ||
+        node.type == AgentWorkflowNodeType.skill ||
+        node.type == AgentWorkflowNodeType.mcp ||
+        node.type == AgentWorkflowNodeType.userInput;
+
+    if (isExecutable) {
+      final hasErrorOutput =
+          node.outputs.any((p) => p.name.trim().toLowerCase() == 'error');
+      if (!hasErrorOutput) {
+        errors.add(AgentWorkflowValidationError(
+            'Node "${node.title}" must have an output port named "error".'));
+      }
+    }
+
+    if (node.type == AgentWorkflowNodeType.llm && node.structuredOutput) {
+      final primaryOutput = node.outputs
+          .where((p) => p.name.trim().toLowerCase() != 'error')
+          .firstOrNull;
+
+      if (primaryOutput == null) {
+        errors.add(AgentWorkflowValidationError(
+            'LLM node "${node.title}" structured output requires a primary output port.'));
+      } else {
+        if (primaryOutput.valueType != AgentWorkflowPortValueType.json) {
+          errors.add(AgentWorkflowValidationError(
+              'LLM node "${node.title}" structured output requires primary output port "${primaryOutput.name}" valueType=json.'));
+        }
+
+        final schema = primaryOutput.schema;
+        if (schema == null) {
+          errors.add(AgentWorkflowValidationError(
+              'LLM node "${node.title}" structured output requires a JSON Schema on output port "${primaryOutput.name}".'));
+        } else if (schema['type'] != 'object') {
+          errors.add(AgentWorkflowValidationError(
+              'LLM node "${node.title}" structured output requires top-level schema type "object" on output port "${primaryOutput.name}".'));
+        }
+      }
+
+      if (node.autoRepairAttempts < 0 || node.autoRepairAttempts > 5) {
+        errors.add(AgentWorkflowValidationError(
+            'LLM node "${node.title}" autoRepairAttempts must be between 0 and 5.'));
+      }
+    }
+
+    if (node.type == AgentWorkflowNodeType.mcp &&
+        node.mcpToolInputSchema != null) {
+      try {
+        AgentWorkflowJsonSchema.validateInstance(
+          schema: node.mcpToolInputSchema!,
+          instance: null,
+        );
+      } catch (e) {
+        errors.add(AgentWorkflowValidationError(
+            'Node "${node.title}" has invalid MCP tool input schema: $e'));
       }
     }
 
@@ -318,4 +403,8 @@ class AgentWorkflowValidator {
 
     return processed != nodeIds.length;
   }
+}
+
+extension _FirstOrNull<T> on Iterable<T> {
+  T? get firstOrNull => isEmpty ? null : first;
 }

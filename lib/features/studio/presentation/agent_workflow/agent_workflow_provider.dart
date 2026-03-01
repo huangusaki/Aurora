@@ -4,9 +4,11 @@ import 'package:aurora/features/mcp/presentation/mcp_connection_provider.dart';
 import 'package:aurora/features/mcp/presentation/mcp_server_provider.dart';
 import 'package:aurora/features/settings/presentation/settings_provider.dart';
 import 'package:aurora/features/skills/presentation/skill_provider.dart';
+import 'package:aurora/l10n/app_localizations.dart';
 import 'package:aurora/shared/riverpod_compat.dart';
 import 'package:aurora/shared/services/model_routed_llm_service.dart';
 import 'package:dio/dio.dart';
+import 'package:fluent_ui/fluent_ui.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../application/agent_workflow/agent_workflow_executor.dart';
@@ -20,7 +22,10 @@ class AgentWorkflowNodeRunState {
   final Map<String, String> inputsByName;
   final String renderedBody;
   final String? output;
+  final String? rawOutput;
+  final String? outputJsonPretty;
   final String? error;
+  final List<String> warnings;
   final int? durationMs;
 
   const AgentWorkflowNodeRunState({
@@ -28,7 +33,10 @@ class AgentWorkflowNodeRunState {
     this.inputsByName = const {},
     this.renderedBody = '',
     this.output,
+    this.rawOutput,
+    this.outputJsonPretty,
     this.error,
+    this.warnings = const [],
     this.durationMs,
   });
 
@@ -37,7 +45,10 @@ class AgentWorkflowNodeRunState {
     Map<String, String>? inputsByName,
     String? renderedBody,
     Object? output = _sentinel,
+    Object? rawOutput = _sentinel,
+    Object? outputJsonPretty = _sentinel,
     Object? error = _sentinel,
+    List<String>? warnings,
     Object? durationMs = _sentinel,
   }) {
     return AgentWorkflowNodeRunState(
@@ -45,7 +56,12 @@ class AgentWorkflowNodeRunState {
       inputsByName: inputsByName ?? this.inputsByName,
       renderedBody: renderedBody ?? this.renderedBody,
       output: output == _sentinel ? this.output : output as String?,
+      rawOutput: rawOutput == _sentinel ? this.rawOutput : rawOutput as String?,
+      outputJsonPretty: outputJsonPretty == _sentinel
+          ? this.outputJsonPretty
+          : outputJsonPretty as String?,
       error: error == _sentinel ? this.error : error as String?,
+      warnings: warnings ?? this.warnings,
       durationMs: durationMs == _sentinel ? this.durationMs : durationMs as int?,
     );
   }
@@ -66,7 +82,7 @@ class AgentWorkflowState {
   const AgentWorkflowState({
     this.isLoading = false,
     this.error,
-    this.document = const AgentWorkflowDocument(version: 1, templates: []),
+    this.document = const AgentWorkflowDocument(version: 2, templates: []),
     this.selectedTemplateId,
     this.selectedNodeId,
     this.startInput = '',
@@ -250,6 +266,8 @@ class AgentWorkflowNotifier extends StateNotifier<AgentWorkflowState> {
         node = AgentWorkflowNode.createSkill(x: x, y: y);
       case AgentWorkflowNodeType.mcp:
         node = AgentWorkflowNode.createMcp(x: x, y: y);
+      case AgentWorkflowNodeType.userInput:
+        node = AgentWorkflowNode.createUserInput(x: x, y: y);
       case AgentWorkflowNodeType.start:
       case AgentWorkflowNodeType.end:
         return;
@@ -341,6 +359,7 @@ class AgentWorkflowNotifier extends StateNotifier<AgentWorkflowState> {
     String nodeId, {
     String? serverId,
     String? toolName,
+    Map<String, dynamic>? toolInputSchema,
   }) {
     final template = state.selectedTemplate;
     if (template == null) return;
@@ -348,11 +367,114 @@ class AgentWorkflowNotifier extends StateNotifier<AgentWorkflowState> {
     final normalizedTool = (toolName ?? '').trim();
     final nodes = template.nodes.map((n) {
       if (n.id != nodeId) return n;
+      final nextServerId = normalizedServer.isEmpty ? null : normalizedServer;
+      final prevServerId = n.mcpServerId;
+      final shouldResetTool =
+          nextServerId != null && prevServerId != null && nextServerId != prevServerId;
+
+      final nextToolName = shouldResetTool
+          ? null
+          : (normalizedTool.isEmpty ? null : normalizedTool);
+      final toolNameChanged = nextToolName != n.mcpToolName;
+      final nextToolSchema = shouldResetTool
+          ? null
+          : (nextToolName == null
+              ? null
+              : (toolInputSchema ?? (toolNameChanged ? null : n.mcpToolInputSchema)));
+
       return n.copyWith(
-        mcpServerId: normalizedServer.isEmpty ? null : normalizedServer,
-        mcpToolName: normalizedTool.isEmpty ? null : normalizedTool,
+        mcpServerId: nextServerId,
+        mcpToolName: nextToolName,
+        mcpToolInputSchema: nextToolSchema,
       );
     }).toList(growable: false);
+    _updateTemplate(template.copyWith(nodes: nodes));
+  }
+
+  void updateNodeValidation(
+    String nodeId, {
+    AgentWorkflowValidationMode? inputValidation,
+    AgentWorkflowValidationMode? outputValidation,
+  }) {
+    final template = state.selectedTemplate;
+    if (template == null) return;
+    final nodes = template.nodes.map((n) {
+      if (n.id != nodeId) return n;
+      return n.copyWith(
+        inputValidation: inputValidation ?? n.inputValidation,
+        outputValidation: outputValidation ?? n.outputValidation,
+      );
+    }).toList(growable: false);
+    _updateTemplate(template.copyWith(nodes: nodes));
+  }
+
+  void updateNodeStructuredOutput(
+    String nodeId, {
+    bool? structuredOutput,
+    int? autoRepairAttempts,
+  }) {
+    final template = state.selectedTemplate;
+    if (template == null) return;
+    final nodes = template.nodes.map((n) {
+      if (n.id != nodeId) return n;
+      return n.copyWith(
+        structuredOutput: structuredOutput ?? n.structuredOutput,
+        autoRepairAttempts: autoRepairAttempts ?? n.autoRepairAttempts,
+      );
+    }).toList(growable: false);
+    _updateTemplate(template.copyWith(nodes: nodes));
+  }
+
+  void updatePortConfig({
+    required String nodeId,
+    required String portId,
+    required bool isInput,
+    String? name,
+    AgentWorkflowPortValueType? valueType,
+    Object? schema = _sentinel,
+  }) {
+    final template = state.selectedTemplate;
+    if (template == null) return;
+    final nodes = template.nodes.map((n) {
+      if (n.id != nodeId) return n;
+
+      final isErrorOutputPort = !isInput &&
+          n.outputs.any((p) => p.id == portId && p.name.trim() == 'error');
+      if (isErrorOutputPort) {
+        return n.copyWith(
+          outputs: n.outputs
+              .map((p) => p.id == portId
+                  ? p.copyWith(valueType: valueType ?? p.valueType, schema: schema)
+                  : p)
+              .toList(growable: false),
+        );
+      }
+
+      if (isInput) {
+        final inputs = n.inputs.map((p) {
+          if (p.id != portId) return p;
+          final nextName = n.isFixed ? p.name : (name ?? p.name);
+          return p.copyWith(
+            name: nextName,
+            valueType: valueType ?? p.valueType,
+            schema: schema,
+          );
+        }).toList(growable: false);
+        return n.copyWith(inputs: inputs);
+      }
+
+      final outputs = n.outputs.map((p) {
+        if (p.id != portId) return p;
+        final nextName = n.isFixed ? p.name : (name ?? p.name);
+        return p.copyWith(
+          name: nextName,
+          valueType: valueType ?? p.valueType,
+          schema: schema,
+        );
+      }).toList(growable: false);
+      return n.copyWith(outputs: outputs);
+    }).toList(growable: false);
+
     _updateTemplate(template.copyWith(nodes: nodes));
   }
 
@@ -392,6 +514,10 @@ class AgentWorkflowNotifier extends StateNotifier<AgentWorkflowState> {
     if (name.isEmpty) return;
     final nodes = template.nodes.map((n) {
       if (n.id != nodeId || n.isFixed) return n;
+      if (!isInput &&
+          n.outputs.any((p) => p.id == portId && p.name.trim() == 'error')) {
+        return n;
+      }
       if (isInput) {
         final inputs = n.inputs
             .map((p) => p.id == portId ? p.copyWith(name: name) : p)
@@ -416,6 +542,10 @@ class AgentWorkflowNotifier extends StateNotifier<AgentWorkflowState> {
     if (template == null) return;
     final node = template.nodes.where((n) => n.id == nodeId).firstOrNull;
     if (node == null || node.isFixed) return;
+    if (!isInput &&
+        node.outputs.any((p) => p.id == portId && p.name.trim() == 'error')) {
+      return;
+    }
 
     final nodes = template.nodes.map((n) {
       if (n.id != nodeId) return n;
@@ -504,7 +634,7 @@ class AgentWorkflowNotifier extends StateNotifier<AgentWorkflowState> {
     _cancelToken?.cancel('User requested stop');
   }
 
-  Future<void> runSelectedTemplate() async {
+  Future<void> runSelectedTemplate(BuildContext context) async {
     final template = state.selectedTemplate;
     if (template == null) return;
     if (state.isRunning) return;
@@ -550,11 +680,58 @@ class AgentWorkflowNotifier extends StateNotifier<AgentWorkflowState> {
       executor: executor.call,
     );
 
+    Future<String?> onRequestUserInput(AgentWorkflowNode node, String prompt) async {
+      if (!context.mounted) return null;
+      final l10n = AppLocalizations.of(context)!;
+      final controller = TextEditingController();
+      String? output;
+      await showDialog(
+        context: context,
+        builder: (ctx) => ContentDialog(
+          title: Text(node.title.trim().isEmpty ? l10n.startInput : node.title),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (prompt.trim().isNotEmpty) ...[
+                SelectableText(prompt),
+                const SizedBox(height: 10),
+              ],
+              TextBox(
+                controller: controller,
+                placeholder: l10n.startInputHint,
+                autofocus: true,
+                onSubmitted: (_) {
+                  output = controller.text;
+                  Navigator.pop(ctx);
+                },
+              ),
+            ],
+          ),
+          actions: [
+            Button(
+              child: Text(l10n.cancel),
+              onPressed: () => Navigator.pop(ctx),
+            ),
+            FilledButton(
+              child: Text(l10n.confirm),
+              onPressed: () {
+                output = controller.text;
+                Navigator.pop(ctx);
+              },
+            ),
+          ],
+        ),
+      );
+      return output;
+    }
+
     final result = await runner.run(
       template: template,
       startInput: state.startInput,
       cancelToken: _cancelToken,
       shouldStop: () => !mounted || state.isStopping,
+      onRequestUserInput: onRequestUserInput,
       onUpdate: (update) {
         final current = state.runStates[update.nodeId] ??
             const AgentWorkflowNodeRunState();
@@ -563,7 +740,10 @@ class AgentWorkflowNotifier extends StateNotifier<AgentWorkflowState> {
           inputsByName: update.inputsByName,
           renderedBody: update.renderedBody,
           output: update.output,
+          rawOutput: update.rawOutput,
+          outputJsonPretty: update.outputJsonPretty,
           error: update.error,
+          warnings: update.warnings,
           durationMs: update.durationMs,
         );
         final updatedMap = Map<String, AgentWorkflowNodeRunState>.from(state.runStates);

@@ -219,7 +219,7 @@ class _AgentWorkflowPageState extends ConsumerState<AgentWorkflowPage> {
           ),
           const SizedBox(width: 12),
           FilledButton(
-            onPressed: canRun ? notifier.runSelectedTemplate : null,
+            onPressed: canRun ? () => notifier.runSelectedTemplate(context) : null,
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -281,6 +281,12 @@ class _AgentWorkflowPageState extends ConsumerState<AgentWorkflowPage> {
                               text: Text(l10n.addMcpNode),
                               onPressed: () {
                                 notifier.addNode(AgentWorkflowNodeType.mcp);
+                              },
+                            ),
+                            MenuFlyoutItem(
+                              text: Text(l10n.addUserInputNode),
+                              onPressed: () {
+                                notifier.addNode(AgentWorkflowNodeType.userInput);
                               },
                             ),
                           ],

@@ -22,7 +22,7 @@ class OpenAILLMService implements LLMService {
   final SettingsState _settings;
   final Map<String, String> _imageThoughtSignatureByUrl = {};
   static final RegExp _markdownDataImageRegExp = RegExp(
-    r'!\[[^\]]*]\(\s*<?(data:image/[^)\s>]+)>?\s*\)',
+    r'!\[[^\]]*]\(\s*<?(data:image/[^)>]+)>?\s*\)',
     caseSensitive: false,
   );
   OpenAILLMService(this._settings)
@@ -433,20 +433,32 @@ class OpenAILLMService implements LLMService {
 
                   final imageUrls = <String>[];
                   final imageSignatures = <String, String?>{};
+
                   void addImageCandidate(String? rawUrl,
                       {String? signature, String? mimeType}) {
                     if (rawUrl == null) return;
                     final trimmed = rawUrl.trim();
                     if (trimmed.isEmpty) return;
                     var normalized = trimmed;
-                    if (!normalized.startsWith('http') &&
-                        !normalized.startsWith('data:')) {
+
+                    // 清洗 data URL，移除内部换行和空格（LLM 有时会格式化 base64）
+                    if (normalized.startsWith('data:')) {
+                      final parts = normalized.split(',');
+                      if (parts.length > 1) {
+                        final header = parts[0];
+                        final data =
+                            parts.sublist(1).join(',').replaceAll(RegExp(r'\s+'), '');
+                        normalized = '$header,$data';
+                      }
+                    } else if (!normalized.startsWith('http')) {
                       final resolvedMime =
                           (mimeType == null || mimeType.trim().isEmpty)
                               ? 'image/png'
                               : mimeType.trim();
-                      normalized = 'data:$resolvedMime;base64,$normalized';
+                      final data = normalized.replaceAll(RegExp(r'\s+'), '');
+                      normalized = 'data:$resolvedMime;base64,$data';
                     }
+
                     if (imageUrls.contains(normalized)) return;
                     imageUrls.add(normalized);
                     final normalizedSignature =

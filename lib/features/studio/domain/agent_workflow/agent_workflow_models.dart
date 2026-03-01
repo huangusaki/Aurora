@@ -7,12 +7,45 @@ enum AgentWorkflowNodeType {
   end,
   llm,
   skill,
-  mcp;
+  mcp,
+  userInput;
 
   static AgentWorkflowNodeType? tryParse(String? raw) {
     if (raw == null) return null;
     final normalized = raw.trim().toLowerCase();
+    if (normalized.isEmpty) return null;
+    final compact = normalized.replaceAll(RegExp(r'[\s_-]'), '');
     for (final value in AgentWorkflowNodeType.values) {
+      final name = value.name.toLowerCase();
+      if (name == normalized || name == compact) return value;
+    }
+    return null;
+  }
+}
+
+enum AgentWorkflowPortValueType {
+  text,
+  json;
+
+  static AgentWorkflowPortValueType? tryParse(String? raw) {
+    if (raw == null) return null;
+    final normalized = raw.trim().toLowerCase();
+    for (final value in AgentWorkflowPortValueType.values) {
+      if (value.name == normalized) return value;
+    }
+    return null;
+  }
+}
+
+enum AgentWorkflowValidationMode {
+  off,
+  warn,
+  strict;
+
+  static AgentWorkflowValidationMode? tryParse(String? raw) {
+    if (raw == null) return null;
+    final normalized = raw.trim().toLowerCase();
+    for (final value in AgentWorkflowValidationMode.values) {
       if (value.name == normalized) return value;
     }
     return null;
@@ -56,31 +89,53 @@ class AgentWorkflowModelRef {
 class AgentWorkflowPort {
   final String id;
   final String name;
+  final AgentWorkflowPortValueType valueType;
+
+  /// Optional JSON Schema describing the port value shape (Draft-7 compatible).
+  final Map<String, dynamic>? schema;
 
   const AgentWorkflowPort({
     required this.id,
     required this.name,
+    this.valueType = AgentWorkflowPortValueType.text,
+    this.schema,
   });
 
   AgentWorkflowPort copyWith({
     String? id,
     String? name,
+    AgentWorkflowPortValueType? valueType,
+    Object? schema = _sentinel,
   }) {
     return AgentWorkflowPort(
       id: id ?? this.id,
       name: name ?? this.name,
+      valueType: valueType ?? this.valueType,
+      schema: schema == _sentinel ? this.schema : schema as Map<String, dynamic>?,
     );
   }
 
   Map<String, dynamic> toJson() => {
         'id': id,
         'name': name,
+        'valueType': valueType.name,
+        'schema': schema,
       };
 
   factory AgentWorkflowPort.fromJson(Map<String, dynamic> json) {
+    final schemaRaw = json['schema'];
+    Map<String, dynamic>? schema;
+    if (schemaRaw is Map) {
+      schema = schemaRaw.map((k, v) => MapEntry('$k', v));
+    }
     return AgentWorkflowPort(
       id: (json['id'] as String?) ?? const Uuid().v4(),
       name: (json['name'] as String?) ?? '',
+      valueType: AgentWorkflowPortValueType.tryParse(
+            json['valueType']?.toString(),
+          ) ??
+          AgentWorkflowPortValueType.text,
+      schema: schema,
     );
   }
 }
@@ -97,6 +152,14 @@ class AgentWorkflowNode {
   /// Optional per-node model override. When null, the app's current model route is used.
   final AgentWorkflowModelRef? model;
 
+  /// Optional input/output validation policy for this node.
+  final AgentWorkflowValidationMode inputValidation;
+  final AgentWorkflowValidationMode outputValidation;
+
+  /// LLM structured output settings.
+  final bool structuredOutput;
+  final int autoRepairAttempts;
+
   /// Optional system prompt for LLM nodes.
   final String systemPrompt;
 
@@ -112,6 +175,7 @@ class AgentWorkflowNode {
   /// MCP node config.
   final String? mcpServerId;
   final String? mcpToolName;
+  final Map<String, dynamic>? mcpToolInputSchema;
 
   const AgentWorkflowNode({
     required this.id,
@@ -122,11 +186,16 @@ class AgentWorkflowNode {
     this.inputs = const [],
     this.outputs = const [],
     this.model,
+    this.inputValidation = AgentWorkflowValidationMode.strict,
+    this.outputValidation = AgentWorkflowValidationMode.strict,
+    this.structuredOutput = false,
+    this.autoRepairAttempts = 2,
     this.systemPrompt = '',
     this.bodyTemplate = '',
     this.skillId,
     this.mcpServerId,
     this.mcpToolName,
+    this.mcpToolInputSchema,
   });
 
   bool get isFixed =>
@@ -141,11 +210,16 @@ class AgentWorkflowNode {
     List<AgentWorkflowPort>? inputs,
     List<AgentWorkflowPort>? outputs,
     Object? model = _sentinel,
+    AgentWorkflowValidationMode? inputValidation,
+    AgentWorkflowValidationMode? outputValidation,
+    bool? structuredOutput,
+    int? autoRepairAttempts,
     String? systemPrompt,
     String? bodyTemplate,
     Object? skillId = _sentinel,
     Object? mcpServerId = _sentinel,
     Object? mcpToolName = _sentinel,
+    Object? mcpToolInputSchema = _sentinel,
   }) {
     return AgentWorkflowNode(
       id: id ?? this.id,
@@ -156,6 +230,10 @@ class AgentWorkflowNode {
       inputs: inputs ?? this.inputs,
       outputs: outputs ?? this.outputs,
       model: model == _sentinel ? this.model : model as AgentWorkflowModelRef?,
+      inputValidation: inputValidation ?? this.inputValidation,
+      outputValidation: outputValidation ?? this.outputValidation,
+      structuredOutput: structuredOutput ?? this.structuredOutput,
+      autoRepairAttempts: autoRepairAttempts ?? this.autoRepairAttempts,
       systemPrompt: systemPrompt ?? this.systemPrompt,
       bodyTemplate: bodyTemplate ?? this.bodyTemplate,
       skillId: skillId == _sentinel ? this.skillId : skillId as String?,
@@ -163,6 +241,9 @@ class AgentWorkflowNode {
           mcpServerId == _sentinel ? this.mcpServerId : mcpServerId as String?,
       mcpToolName:
           mcpToolName == _sentinel ? this.mcpToolName : mcpToolName as String?,
+      mcpToolInputSchema: mcpToolInputSchema == _sentinel
+          ? this.mcpToolInputSchema
+          : mcpToolInputSchema as Map<String, dynamic>?,
     );
   }
 
@@ -175,11 +256,16 @@ class AgentWorkflowNode {
         'inputs': inputs.map((p) => p.toJson()).toList(growable: false),
         'outputs': outputs.map((p) => p.toJson()).toList(growable: false),
         'model': model?.toJson(),
+        'inputValidation': inputValidation.name,
+        'outputValidation': outputValidation.name,
+        'structuredOutput': structuredOutput,
+        'autoRepairAttempts': autoRepairAttempts,
         'systemPrompt': systemPrompt,
         'bodyTemplate': bodyTemplate,
         'skillId': skillId,
         'mcpServerId': mcpServerId,
         'mcpToolName': mcpToolName,
+        'mcpToolInputSchema': mcpToolInputSchema,
       };
 
   factory AgentWorkflowNode.fromJson(Map<String, dynamic> json) {
@@ -198,6 +284,22 @@ class AgentWorkflowNode {
 
     final inputsRaw = json['inputs'];
     final outputsRaw = json['outputs'];
+
+    final inputValidation = AgentWorkflowValidationMode.tryParse(
+          json['inputValidation']?.toString(),
+        ) ??
+        AgentWorkflowValidationMode.strict;
+    final outputValidation = AgentWorkflowValidationMode.tryParse(
+          json['outputValidation']?.toString(),
+        ) ??
+        AgentWorkflowValidationMode.strict;
+
+    final mcpToolSchemaRaw = json['mcpToolInputSchema'];
+    Map<String, dynamic>? mcpToolInputSchema;
+    if (mcpToolSchemaRaw is Map) {
+      mcpToolInputSchema = mcpToolSchemaRaw.map((k, v) => MapEntry('$k', v));
+    }
+
     return AgentWorkflowNode(
       id: (json['id'] as String?) ?? const Uuid().v4(),
       type: type,
@@ -219,11 +321,16 @@ class AgentWorkflowNode {
               .toList(growable: false)
           : const [],
       model: model,
+      inputValidation: inputValidation,
+      outputValidation: outputValidation,
+      structuredOutput: (json['structuredOutput'] as bool?) ?? false,
+      autoRepairAttempts: (json['autoRepairAttempts'] as num?)?.toInt() ?? 2,
       systemPrompt: (json['systemPrompt'] as String?) ?? '',
       bodyTemplate: (json['bodyTemplate'] as String?) ?? '',
       skillId: json['skillId'] as String?,
       mcpServerId: json['mcpServerId'] as String?,
       mcpToolName: json['mcpToolName'] as String?,
+      mcpToolInputSchema: mcpToolInputSchema,
     );
   }
 
@@ -280,6 +387,7 @@ class AgentWorkflowNode {
       ],
       outputs: [
         AgentWorkflowPort(id: const Uuid().v4(), name: 'result'),
+        AgentWorkflowPort(id: const Uuid().v4(), name: 'error'),
       ],
       systemPrompt: '',
       bodyTemplate: '{{$defaultInputName}}',
@@ -303,6 +411,7 @@ class AgentWorkflowNode {
       ],
       outputs: [
         AgentWorkflowPort(id: const Uuid().v4(), name: 'result'),
+        AgentWorkflowPort(id: const Uuid().v4(), name: 'error'),
       ],
       bodyTemplate: '{{$defaultInputName}}',
       skillId: null,
@@ -325,11 +434,40 @@ class AgentWorkflowNode {
         AgentWorkflowPort(id: const Uuid().v4(), name: 'input'),
       ],
       outputs: [
-        AgentWorkflowPort(id: const Uuid().v4(), name: 'result'),
+        AgentWorkflowPort(
+          id: const Uuid().v4(),
+          name: 'result',
+          valueType: AgentWorkflowPortValueType.json,
+        ),
+        AgentWorkflowPort(id: const Uuid().v4(), name: 'error'),
       ],
       bodyTemplate: '{"input":"{{$defaultInputName}}"}',
       mcpServerId: null,
       mcpToolName: null,
+      mcpToolInputSchema: null,
+    );
+  }
+
+  static AgentWorkflowNode createUserInput({
+    String? id,
+    String title = 'User Input',
+    double x = 320,
+    double y = 220,
+  }) {
+    return AgentWorkflowNode(
+      id: id ?? const Uuid().v4(),
+      type: AgentWorkflowNodeType.userInput,
+      title: title,
+      x: x,
+      y: y,
+      inputs: [
+        AgentWorkflowPort(id: const Uuid().v4(), name: 'input'),
+      ],
+      outputs: [
+        AgentWorkflowPort(id: const Uuid().v4(), name: 'result'),
+        AgentWorkflowPort(id: const Uuid().v4(), name: 'error'),
+      ],
+      bodyTemplate: '{{$defaultInputName}}',
     );
   }
 

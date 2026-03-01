@@ -14,14 +14,37 @@ void main() {
         ],
       );
 
-      final doc = AgentWorkflowDocument(version: 1, templates: [t]);
+      final doc = AgentWorkflowDocument(version: 2, templates: [t]);
       final decoded = AgentWorkflowDocument.fromJson(doc.toJson());
 
-      expect(decoded.version, equals(1));
+      expect(decoded.version, equals(2));
       expect(decoded.templates, hasLength(1));
       expect(decoded.templates.first.name, equals('Demo'));
       expect(decoded.templates.first.nodes.map((n) => n.type).toList(),
           containsAll([AgentWorkflowNodeType.start, AgentWorkflowNodeType.end]));
+    });
+
+    test('port valueType and schema roundtrip', () {
+      final node = AgentWorkflowNode.createLlm().copyWith(
+        inputs: [
+          AgentWorkflowPort(
+            id: 'in-1',
+            name: 'input',
+            valueType: AgentWorkflowPortValueType.json,
+            schema: {
+              'type': 'object',
+              'properties': {
+                'x': {'type': 'string'}
+              },
+            },
+          ),
+        ],
+      );
+
+      final decoded = AgentWorkflowNode.fromJson(node.toJson());
+      expect(decoded.inputs.single.valueType, AgentWorkflowPortValueType.json);
+      expect(decoded.inputs.single.schema, isA<Map<String, dynamic>>());
+      expect(decoded.inputs.single.schema?['type'], 'object');
     });
 
     test('create() includes fixed Start/End nodes', () {
@@ -42,6 +65,24 @@ void main() {
       expect(end.outputs, isEmpty);
       expect(end.inputs.single.name, equals('result'));
     });
+
+    test('executable node factories include an error output port', () {
+      expect(
+        AgentWorkflowNode.createLlm().outputs.any((p) => p.name == 'error'),
+        isTrue,
+      );
+      expect(
+        AgentWorkflowNode.createSkill().outputs.any((p) => p.name == 'error'),
+        isTrue,
+      );
+      expect(
+        AgentWorkflowNode.createMcp().outputs.any((p) => p.name == 'error'),
+        isTrue,
+      );
+      expect(
+        AgentWorkflowNode.createUserInput().outputs.any((p) => p.name == 'error'),
+        isTrue,
+      );
+    });
   });
 }
-

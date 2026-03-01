@@ -2518,6 +2518,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get addMcpNode => '添加 MCP 节点';
 
   @override
+  String get addUserInputNode => '添加 User Input 节点';
+
+  @override
   String get saved => '已保存';
 
   @override
@@ -2543,6 +2546,99 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get toolNameHint => '请输入 MCP 工具名';
+
+  @override
+  String get selectMcpToolHint => '选择工具';
+
+  @override
+  String get mcpToolInputSchema => '工具输入 Schema';
+
+  @override
+  String get warnings => '警告';
+
+  @override
+  String get warning => '警告';
+
+  @override
+  String get rawOutput => '原始输出';
+
+  @override
+  String get outputJsonPretty => '输出（JSON）';
+
+  @override
+  String get validation => '校验';
+
+  @override
+  String get inputValidation => '输入校验';
+
+  @override
+  String get outputValidation => '输出校验';
+
+  @override
+  String get validationOff => '关闭';
+
+  @override
+  String get validationWarn => '告警';
+
+  @override
+  String get validationStrict => '严格';
+
+  @override
+  String get structuredOutput => '结构化输出';
+
+  @override
+  String get structuredOutputHint => '需要主输出端口为 JSON 且 Schema 顶层为 object。';
+
+  @override
+  String get autoRepairAttempts => '自动修复次数';
+
+  @override
+  String get structuredOutputMissingPrimaryPort => '缺少主输出端口。';
+
+  @override
+  String structuredOutputRequiresJsonPort(String port) {
+    return '主输出端口“$port”必须为 JSON。';
+  }
+
+  @override
+  String structuredOutputRequiresSchema(String port) {
+    return '主输出端口“$port”必须配置 JSON Schema。';
+  }
+
+  @override
+  String structuredOutputRequiresObjectSchema(String port) {
+    return '主输出端口“$port”的 Schema 顶层 type 必须为“object”。';
+  }
+
+  @override
+  String get portConfig => '端口配置';
+
+  @override
+  String get name => '名称';
+
+  @override
+  String get valueType => '类型';
+
+  @override
+  String get valueTypeText => '文本';
+
+  @override
+  String get valueTypeJson => 'JSON';
+
+  @override
+  String get schemaJson => 'Schema JSON';
+
+  @override
+  String get schemaJsonHint => '在此粘贴 JSON Schema（Draft-7）';
+
+  @override
+  String get invalidJson => 'JSON 不合法';
+
+  @override
+  String get invalidSchema => 'JSON Schema 不合法';
+
+  @override
+  String get schemaMustBeObject => 'Schema 必须是 JSON 对象。';
 
   @override
   String get debug => '调试';

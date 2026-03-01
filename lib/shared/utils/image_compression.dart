@@ -29,8 +29,10 @@ String _compressImageDataUrlSync(String dataUrl) {
 
   try {
     final sw = Stopwatch()..start();
-    final bytes = base64Decode(payload);
-    debugPrint('[IMAGE_COMPRESS] Decoded ${payload.length} chars to ${bytes.length} bytes');
+    // 清洗 Base64 数据：移除首尾空白以及内部可能的换行符/空格
+    final cleanPayload = payload.trim().replaceAll(RegExp(r'\s+'), '');
+    final bytes = base64Decode(cleanPayload);
+    debugPrint('[IMAGE_COMPRESS] Decoded ${cleanPayload.length} chars to ${bytes.length} bytes');
     
     final image = img.decodeImage(Uint8List.fromList(bytes));
     if (image == null) {

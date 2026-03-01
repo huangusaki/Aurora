@@ -9,6 +9,7 @@ import '../../domain/agent_workflow/agent_workflow_models.dart';
 
 class AgentWorkflowStorage {
   static const String fileName = 'agent_workflows.json';
+  static const int currentVersion = 2;
 
   Future<File> _getFile() async {
     final docsDir = await getApplicationDocumentsDirectory();
@@ -18,7 +19,7 @@ class AgentWorkflowStorage {
   Future<AgentWorkflowDocument> load() async {
     final file = await _getFile();
     if (!await file.exists()) {
-      return AgentWorkflowDocument(version: 1, templates: [
+      return AgentWorkflowDocument(version: currentVersion, templates: [
         AgentWorkflowTemplate.create(name: 'Default Workflow'),
       ]);
     }
@@ -33,12 +34,12 @@ class AgentWorkflowStorage {
       final doc = AgentWorkflowDocument.fromJson(map);
       final fixed = _fixupDocument(doc);
       return fixed.templates.isEmpty
-          ? AgentWorkflowDocument(version: 1, templates: [
+          ? AgentWorkflowDocument(version: currentVersion, templates: [
               AgentWorkflowTemplate.create(name: 'Default Workflow'),
             ])
           : fixed;
     } catch (_) {
-      return AgentWorkflowDocument(version: 1, templates: [
+      return AgentWorkflowDocument(version: currentVersion, templates: [
         AgentWorkflowTemplate.create(name: 'Default Workflow'),
       ]);
     }
@@ -60,13 +61,21 @@ class AgentWorkflowStorage {
       if (!idSet.add(id)) {
         continue;
       }
-      fixedTemplates.add(_fixupTemplate(template.copyWith(id: id)));
+      fixedTemplates.add(
+        _fixupTemplate(
+          template.copyWith(id: id),
+          documentVersion: document.version,
+        ),
+      );
     }
 
     return document.copyWith(templates: fixedTemplates);
   }
 
-  AgentWorkflowTemplate _fixupTemplate(AgentWorkflowTemplate template) {
+  AgentWorkflowTemplate _fixupTemplate(
+    AgentWorkflowTemplate template, {
+    required int documentVersion,
+  }) {
     var name = template.name.trim();
     if (name.isEmpty) {
       name = 'Workflow';
@@ -160,13 +169,50 @@ class AgentWorkflowStorage {
         final name = p.name.trim().isEmpty ? 'in${idx + 1}' : p.name;
         return p.copyWith(name: name);
       }).toList(growable: false);
-      final outputs = n.outputs.asMap().entries.map((entry) {
+      var outputs = n.outputs.asMap().entries.map((entry) {
         final idx = entry.key;
         final p = entry.value;
-        final name = p.name.trim().isEmpty ? 'out${idx + 1}' : p.name;
+        final rawName = p.name.trim();
+        final name = rawName.isEmpty ? 'out${idx + 1}' : rawName;
         return p.copyWith(name: name);
-      }).toList(growable: false);
-      return n.copyWith(title: title, inputs: inputs, outputs: outputs);
+      }).toList(growable: true);
+
+      final isExecutable = n.type == AgentWorkflowNodeType.llm ||
+          n.type == AgentWorkflowNodeType.skill ||
+          n.type == AgentWorkflowNodeType.mcp ||
+          n.type == AgentWorkflowNodeType.userInput;
+
+      if (isExecutable) {
+        final hasError =
+            outputs.any((p) => p.name.trim().toLowerCase() == 'error');
+        if (!hasError) {
+          outputs.add(AgentWorkflowPort(id: const Uuid().v4(), name: 'error'));
+        } else {
+          outputs = outputs
+              .map((p) => p.name.trim().toLowerCase() == 'error'
+                  ? p.copyWith(name: 'error')
+                  : p)
+              .toList(growable: true);
+        }
+      }
+
+      if (documentVersion < currentVersion &&
+          n.type == AgentWorkflowNodeType.mcp) {
+        outputs = outputs
+            .map((p) {
+              if (p.name.trim() == 'error') return p;
+              if (p.schema != null) return p;
+              if (p.valueType != AgentWorkflowPortValueType.text) return p;
+              return p.copyWith(valueType: AgentWorkflowPortValueType.json);
+            })
+            .toList(growable: true);
+      }
+
+      return n.copyWith(
+        title: title,
+        inputs: inputs,
+        outputs: outputs.toList(growable: false),
+      );
     }).toList(growable: false);
 
     // Drop edges that reference missing nodes/ports.
@@ -193,4 +239,3 @@ class AgentWorkflowStorage {
 extension _FirstOrNull<T> on Iterable<T> {
   T? get firstOrNull => isEmpty ? null : first;
 }
-

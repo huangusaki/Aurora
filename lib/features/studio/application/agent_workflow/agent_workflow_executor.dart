@@ -8,7 +8,9 @@ import 'package:aurora/shared/services/llm_service.dart';
 import 'package:aurora/shared/services/worker_service.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../domain/agent_workflow/agent_workflow_json_schema.dart';
 import '../../domain/agent_workflow/agent_workflow_models.dart';
+import 'agent_workflow_value.dart';
 import 'agent_workflow_runner.dart';
 
 class AgentWorkflowDefaultExecutor {
@@ -24,7 +26,7 @@ class AgentWorkflowDefaultExecutor {
     required this.mcpServers,
   });
 
-  Future<String> call(
+  Future<AgentWorkflowValue> call(
     AgentWorkflowNode node,
     AgentWorkflowNodeExecutionRequest request,
   ) async {
@@ -35,20 +37,21 @@ class AgentWorkflowDefaultExecutor {
         return _executeSkill(node, request);
       case AgentWorkflowNodeType.mcp:
         return _executeMcp(node, request);
+      case AgentWorkflowNodeType.userInput:
       case AgentWorkflowNodeType.start:
       case AgentWorkflowNodeType.end:
-        return '';
+        return AgentWorkflowValue.fromText('');
     }
   }
 
-  Future<String> _executeLlm(
+  Future<AgentWorkflowValue> _executeLlm(
     AgentWorkflowNode node,
     AgentWorkflowNodeExecutionRequest request,
   ) async {
-    final messages = <Message>[];
+    final baseMessages = <Message>[];
     final systemPrompt = node.systemPrompt.trim();
     if (systemPrompt.isNotEmpty) {
-      messages.add(Message(
+      baseMessages.add(Message(
         id: const Uuid().v4(),
         content: systemPrompt,
         isUser: false,
@@ -56,18 +59,94 @@ class AgentWorkflowDefaultExecutor {
         role: 'system',
       ));
     }
-    messages.add(Message.user(request.renderedBody));
+    baseMessages.add(Message.user(request.renderedBody));
 
-    final response = await llmService.getResponse(
-      messages,
-      model: node.model?.modelId,
-      providerId: node.model?.providerId,
-      cancelToken: request.cancelToken,
-    );
-    return response.content ?? '';
+    final primaryOutput = node.outputs
+        .where((p) => p.name.trim() != 'error')
+        .cast<AgentWorkflowPort?>()
+        .firstOrNull;
+    final schema = primaryOutput?.schema;
+    final shouldUseStructured = node.structuredOutput &&
+        primaryOutput != null &&
+        primaryOutput.valueType == AgentWorkflowPortValueType.json &&
+        schema != null;
+
+    if (!shouldUseStructured) {
+      final response = await llmService.getResponse(
+        baseMessages,
+        model: node.model?.modelId,
+        providerId: node.model?.providerId,
+        cancelToken: request.cancelToken,
+      );
+      return AgentWorkflowValue.fromText(response.content ?? '');
+    }
+
+    final tool = <String, dynamic>{
+      'type': 'function',
+      'function': {
+        'name': 'workflow_output',
+        'description': 'Return structured output for this workflow node.',
+        'parameters': schema,
+      },
+    };
+
+    final maxAttempts = node.autoRepairAttempts.clamp(0, 5);
+    final messages = <Message>[...baseMessages];
+    for (var attempt = 0; attempt <= maxAttempts; attempt += 1) {
+      final response = await llmService.getResponse(
+        messages,
+        tools: [tool],
+        toolChoice: 'function:workflow_output',
+        model: node.model?.modelId,
+        providerId: node.model?.providerId,
+        cancelToken: request.cancelToken,
+      );
+
+      final toolCall = (response.toolCalls ?? const [])
+          .where((c) => (c.name ?? '').trim() == 'workflow_output')
+          .cast<Object?>()
+          .firstOrNull;
+      if (toolCall is ToolCallChunk) {
+        final argsText = toolCall.arguments ?? '';
+        dynamic decoded;
+        try {
+          decoded = jsonDecode(argsText);
+        } catch (e) {
+          decoded = null;
+        }
+        if (decoded is Map) {
+          final args = decoded.map((k, v) => MapEntry('$k', v));
+          final errors = AgentWorkflowJsonSchema.validateInstance(
+            schema: schema,
+            instance: args,
+          );
+          if (errors.isEmpty) {
+            return AgentWorkflowValue.fromJson(args, raw: response.content);
+          }
+          if (attempt >= maxAttempts) {
+            throw StateError(
+                'Structured output validation failed: ${errors.join('; ')}');
+          }
+
+          messages.add(Message.user(
+              'Your previous `workflow_output` arguments were invalid.\n'
+              'Errors:\n${errors.join('\n')}\n\n'
+              'Call `workflow_output` again with corrected arguments only.'));
+          continue;
+        }
+      }
+
+      if (attempt >= maxAttempts) {
+        throw StateError('Model did not call `workflow_output`.');
+      }
+      messages.add(Message.user(
+          'You must call the `workflow_output` tool with JSON arguments that match the schema.'));
+    }
+
+    throw StateError('Structured output failed.');
   }
 
-  Future<String> _executeSkill(
+  Future<AgentWorkflowValue> _executeSkill(
     AgentWorkflowNode node,
     AgentWorkflowNodeExecutionRequest request,
   ) async {
@@ -83,16 +162,17 @@ class AgentWorkflowDefaultExecutor {
     );
 
     final worker = WorkerService(llmService);
-    return worker.executeSkillTask(
+    final output = await worker.executeSkillTask(
       skill,
       request.renderedBody,
       model: node.model?.modelId,
       providerId: node.model?.providerId,
       cancelToken: request.cancelToken,
     );
+    return AgentWorkflowValue.fromText(output);
   }
 
-  Future<String> _executeMcp(
+  Future<AgentWorkflowValue> _executeMcp(
     AgentWorkflowNode node,
     AgentWorkflowNodeExecutionRequest request,
   ) async {
@@ -119,13 +199,33 @@ class AgentWorkflowDefaultExecutor {
     }
     final args = decoded.map((k, v) => MapEntry('$k', v));
 
+    final schema = node.mcpToolInputSchema;
+    if (schema != null) {
+      final errors = AgentWorkflowJsonSchema.validateInstance(
+        schema: schema,
+        instance: args,
+      );
+      if (errors.isNotEmpty) {
+        throw StateError('MCP args validation failed: ${errors.join('; ')}');
+      }
+    }
+
     final result = await mcpConnection.callTool(
       server,
       name: toolName,
       arguments: args,
     );
 
-    return jsonEncode(result);
+    try {
+      final encoded = jsonEncode(result);
+      final jsonValue = jsonDecode(encoded);
+      return AgentWorkflowValue.fromJson(jsonValue, raw: encoded);
+    } catch (_) {
+      return AgentWorkflowValue.fromText(result.toString());
+    }
   }
 }
 
+extension _FirstOrNull<T> on Iterable<T> {
+  T? get firstOrNull => isEmpty ? null : first;
+}

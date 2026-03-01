@@ -283,16 +283,38 @@ class UiMessage {
     }
 
     if (chunk.images.isNotEmpty) {
-      final knownImageUrls = nextParts
-          .whereType<UiImagePart>()
-          .map((p) => p.url.trim())
-          .where((u) => u.isNotEmpty)
-          .toSet();
       for (final img in chunk.images) {
         final trimmed = img.trim();
-        if (trimmed.isEmpty || knownImageUrls.contains(trimmed)) continue;
-        knownImageUrls.add(trimmed);
-        nextParts.add(UiImagePart(url: trimmed));
+        if (trimmed.isEmpty) continue;
+
+        // 智能合并逻辑：如果是 data-URL 且是现有图片的延伸，则替换现有图片
+        bool merged = false;
+        if (trimmed.startsWith('data:')) {
+          for (int i = 0; i < nextParts.length; i++) {
+            final part = nextParts[i];
+            if (part is UiImagePart && part.url.startsWith('data:')) {
+              // 如果新 URL 以旧 URL 为前缀，或者旧 URL 以新 URL 为前缀（针对某些重复包的情况）
+              if (trimmed.startsWith(part.url)) {
+                nextParts[i] = UiImagePart(url: trimmed);
+                merged = true;
+                break;
+              } else if (part.url.startsWith(trimmed)) {
+                merged = true;
+                break;
+              }
+            }
+          }
+        }
+
+        if (!merged) {
+          // 只有当不是现有图片的重复或延伸时才添加
+          final exists = nextParts
+              .whereType<UiImagePart>()
+              .any((p) => p.url.trim() == trimmed);
+          if (!exists) {
+            nextParts.add(UiImagePart(url: trimmed));
+          }
+        }
       }
     }
 

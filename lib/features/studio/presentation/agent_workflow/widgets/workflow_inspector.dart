@@ -1,13 +1,18 @@
+import 'dart:convert';
+
 import 'package:aurora/features/mcp/domain/mcp_server_config.dart';
+import 'package:aurora/features/mcp/presentation/mcp_connection_provider.dart';
 import 'package:aurora/features/mcp/presentation/mcp_server_provider.dart';
 import 'package:aurora/features/settings/presentation/settings_provider.dart';
 import 'package:aurora/features/skills/domain/skill_entity.dart';
 import 'package:aurora/features/skills/presentation/skill_provider.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 import 'package:aurora/shared/riverpod_compat.dart';
+import 'package:aurora/shared/services/mcp/mcp_client_session.dart';
 import 'package:aurora/shared/theme/aurora_icons.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 
+import '../../../domain/agent_workflow/agent_workflow_json_schema.dart';
 import '../../../domain/agent_workflow/agent_workflow_models.dart';
 import '../agent_workflow_provider.dart';
 
@@ -232,17 +237,138 @@ class _WorkflowInspectorState extends ConsumerState<WorkflowInspector> {
                         notifier.updateMcpNodeConfig(node.id, serverId: id),
                   ),
                   const SizedBox(height: 10),
-                  InfoLabel(
-                    label: l10n.toolName,
-                    child: TextBox(
-                      controller: _mcpToolController,
-                      placeholder: l10n.toolNameHint,
-                      onChanged: (v) {
-                        if (_syncing) return;
-                        notifier.updateMcpNodeConfig(node.id, toolName: v);
+                  Builder(builder: (context) {
+                    final serverId = node.mcpServerId;
+                    final selectedServer = serverId == null
+                        ? null
+                        : mcpServers.where((s) => s.id == serverId).firstOrNull;
+                    if (selectedServer == null) {
+                      return InfoLabel(
+                        label: l10n.toolName,
+                        child: TextBox(
+                          controller: _mcpToolController,
+                          enabled: false,
+                          placeholder: l10n.selectMcpServerHint,
+                        ),
+                      );
+                    }
+
+                    return FutureBuilder<List<McpTool>>(
+                      future: ref
+                          .read(mcpConnectionProvider.notifier)
+                          .listTools(selectedServer),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState != ConnectionState.done) {
+                          return InfoLabel(
+                            label: l10n.toolName,
+                            child: const ProgressBar(),
+                          );
+                        }
+
+                        if (snapshot.hasError) {
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              InfoBar(
+                                title: Text(l10n.error),
+                                content: Text(snapshot.error.toString()),
+                                severity: InfoBarSeverity.error,
+                                isLong: true,
+                              ),
+                              const SizedBox(height: 8),
+                              InfoLabel(
+                                label: l10n.toolName,
+                                child: TextBox(
+                                  controller: _mcpToolController,
+                                  placeholder: l10n.toolNameHint,
+                                  onChanged: (v) {
+                                    if (_syncing) return;
+                                    notifier.updateMcpNodeConfig(
+                                      node.id,
+                                      toolName: v,
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
+                          );
+                        }
+
+                        final tools = (snapshot.data ?? const <McpTool>[])
+                            .where((t) => t.name.trim().isNotEmpty)
+                            .toList(growable: false)
+                          ..sort((a, b) => a.name.compareTo(b.name));
+
+                        final items = <ComboBoxItem<String?>>[
+                          ComboBoxItem(
+                            value: null,
+                            child: Text(
+                              l10n.selectMcpToolHint,
+                              style: theme.typography.caption,
+                            ),
+                          ),
+                          for (final t in tools)
+                            ComboBoxItem(
+                              value: t.name,
+                              child: Text(t.name),
+                            ),
+                        ];
+
+                        final currentName = node.mcpToolName;
+                        final selectedName = tools.any((t) => t.name == currentName)
+                            ? currentName
+                            : null;
+                        final selectedTool = selectedName == null
+                            ? null
+                            : tools.firstWhere((t) => t.name == selectedName);
+                        final schemaPretty = selectedTool != null
+                            ? const JsonEncoder.withIndent('  ')
+                                .convert(selectedTool.inputSchema)
+                            : (node.mcpToolInputSchema != null
+                                ? const JsonEncoder.withIndent('  ')
+                                    .convert(node.mcpToolInputSchema)
+                                : null);
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            InfoLabel(
+                              label: l10n.toolName,
+                              child: ComboBox<String?>(
+                                isExpanded: true,
+                                value: selectedName,
+                                items: items,
+                                onChanged: (val) {
+                                  if (val == null) {
+                                    notifier.updateMcpNodeConfig(
+                                      node.id,
+                                      toolName: null,
+                                      toolInputSchema: null,
+                                    );
+                                    return;
+                                  }
+
+                                  final tool = tools.firstWhere(
+                                    (t) => t.name == val,
+                                    orElse: () => tools.first,
+                                  );
+                                  notifier.updateMcpNodeConfig(
+                                    node.id,
+                                    toolName: tool.name,
+                                    toolInputSchema: tool.inputSchema,
+                                  );
+                                },
+                              ),
+                            ),
+                            if (schemaPretty != null) ...[
+                              const SizedBox(height: 10),
+                              readonlyBlock(l10n.mcpToolInputSchema, schemaPretty),
+                            ],
+                          ],
+                        );
                       },
-                    ),
-                  ),
+                    );
+                  }),
                 ],
                 if (node.type != AgentWorkflowNodeType.start &&
                     node.type != AgentWorkflowNodeType.end) ...[
@@ -260,9 +386,15 @@ class _WorkflowInspectorState extends ConsumerState<WorkflowInspector> {
                     ),
                   ),
                 ],
+                const SizedBox(height: 10),
+                _buildValidationSection(context, node),
+                if (node.type == AgentWorkflowNodeType.llm) ...[
+                  const SizedBox(height: 10),
+                  _buildStructuredOutputSection(context, node),
+                ],
+                const SizedBox(height: 8),
+                _buildPortsSection(context, node),
                 if (!node.isFixed) ...[
-                  const SizedBox(height: 8),
-                  _buildPortsSection(context, node),
                   const SizedBox(height: 8),
                   _buildEdgesSection(context, node),
                 ],
@@ -272,10 +404,24 @@ class _WorkflowInspectorState extends ConsumerState<WorkflowInspector> {
                   kv(l10n.status, nodeRun.status.name),
                   if (nodeRun.durationMs != null)
                     kv(l10n.durationMs, '${nodeRun.durationMs}'),
+                  if (nodeRun.warnings.isNotEmpty)
+                    InfoBar(
+                      title: Text(l10n.warnings),
+                      content: Text(nodeRun.warnings.join('\n')),
+                      severity: InfoBarSeverity.warning,
+                      isLong: true,
+                    ),
                   if (nodeRun.error != null && nodeRun.error!.trim().isNotEmpty)
                     readonlyBlock(l10n.error, nodeRun.error ?? ''),
                   if (nodeRun.output != null && nodeRun.output!.trim().isNotEmpty)
                     readonlyBlock(l10n.output, nodeRun.output ?? ''),
+                  if (nodeRun.outputJsonPretty != null &&
+                      nodeRun.outputJsonPretty!.trim().isNotEmpty)
+                    readonlyBlock(
+                        l10n.outputJsonPretty, nodeRun.outputJsonPretty ?? ''),
+                  if (nodeRun.rawOutput != null &&
+                      nodeRun.rawOutput!.trim().isNotEmpty)
+                    readonlyBlock(l10n.rawOutput, nodeRun.rawOutput ?? ''),
                 ],
               ],
               const SizedBox(height: 12),
@@ -424,40 +570,322 @@ class _WorkflowInspectorState extends ConsumerState<WorkflowInspector> {
     );
   }
 
+  Widget _buildValidationSection(BuildContext context, AgentWorkflowNode node) {
+    final theme = FluentTheme.of(context);
+    final l10n = AppLocalizations.of(context)!;
+    final notifier = ref.read(agentWorkflowProvider.notifier);
+
+    String modeLabel(AgentWorkflowValidationMode mode) {
+      switch (mode) {
+        case AgentWorkflowValidationMode.off:
+          return l10n.validationOff;
+        case AgentWorkflowValidationMode.warn:
+          return l10n.validationWarn;
+        case AgentWorkflowValidationMode.strict:
+          return l10n.validationStrict;
+      }
+    }
+
+    List<ComboBoxItem<AgentWorkflowValidationMode>> modeItems() {
+      return [
+        for (final mode in AgentWorkflowValidationMode.values)
+          ComboBoxItem(
+            value: mode,
+            child: Text(modeLabel(mode), style: theme.typography.caption),
+          ),
+      ];
+    }
+
+    final showInput = node.inputs.isNotEmpty;
+    final showOutput = node.outputs.isNotEmpty;
+    if (!showInput && !showOutput) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(l10n.validation, style: theme.typography.bodyStrong),
+        if (showInput) ...[
+          const SizedBox(height: 6),
+          InfoLabel(
+            label: l10n.inputValidation,
+            child: ComboBox<AgentWorkflowValidationMode>(
+              isExpanded: true,
+              value: node.inputValidation,
+              items: modeItems(),
+              onChanged: (val) {
+                if (val == null) return;
+                notifier.updateNodeValidation(node.id, inputValidation: val);
+              },
+            ),
+          ),
+        ],
+        if (showOutput) ...[
+          const SizedBox(height: 10),
+          InfoLabel(
+            label: l10n.outputValidation,
+            child: ComboBox<AgentWorkflowValidationMode>(
+              isExpanded: true,
+              value: node.outputValidation,
+              items: modeItems(),
+              onChanged: (val) {
+                if (val == null) return;
+                notifier.updateNodeValidation(node.id, outputValidation: val);
+              },
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildStructuredOutputSection(BuildContext context, AgentWorkflowNode node) {
+    final theme = FluentTheme.of(context);
+    final l10n = AppLocalizations.of(context)!;
+    final notifier = ref.read(agentWorkflowProvider.notifier);
+
+    final primaryOutput = node.outputs
+        .where((p) => p.name.trim().toLowerCase() != 'error')
+        .firstOrNull;
+    final schema = primaryOutput?.schema;
+
+    final issues = <String>[];
+    if (primaryOutput == null) {
+      issues.add(l10n.structuredOutputMissingPrimaryPort);
+    } else {
+      if (primaryOutput.valueType != AgentWorkflowPortValueType.json) {
+        issues.add(l10n.structuredOutputRequiresJsonPort(primaryOutput.name));
+      }
+      if (schema == null) {
+        issues.add(l10n.structuredOutputRequiresSchema(primaryOutput.name));
+      } else if (schema['type'] != 'object') {
+        issues.add(l10n.structuredOutputRequiresObjectSchema(primaryOutput.name));
+      }
+    }
+
+    final attempts = node.autoRepairAttempts.clamp(0, 5).toInt();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(l10n.structuredOutput, style: theme.typography.bodyStrong),
+        const SizedBox(height: 6),
+        ToggleSwitch(
+          checked: node.structuredOutput,
+          content: Text(l10n.structuredOutput),
+          onChanged: (val) {
+            notifier.updateNodeStructuredOutput(
+              node.id,
+              structuredOutput: val,
+            );
+          },
+        ),
+        if (node.structuredOutput) ...[
+          const SizedBox(height: 10),
+          InfoLabel(
+            label: l10n.autoRepairAttempts,
+            child: Row(
+              children: [
+                IconButton(
+                  icon: const Icon(AuroraIcons.minus, size: 14),
+                  onPressed: attempts <= 0
+                      ? null
+                      : () => notifier.updateNodeStructuredOutput(
+                            node.id,
+                            autoRepairAttempts: attempts - 1,
+                          ),
+                ),
+                const SizedBox(width: 6),
+                Text('$attempts', style: theme.typography.body),
+                const SizedBox(width: 6),
+                IconButton(
+                  icon: const Icon(AuroraIcons.add, size: 14),
+                  onPressed: attempts >= 5
+                      ? null
+                      : () => notifier.updateNodeStructuredOutput(
+                            node.id,
+                            autoRepairAttempts: attempts + 1,
+                          ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(l10n.structuredOutputHint, style: theme.typography.caption),
+          if (issues.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            InfoBar(
+              title: Text(l10n.warning),
+              content: Text(issues.join('\n')),
+              severity: InfoBarSeverity.warning,
+              isLong: true,
+            ),
+          ],
+        ],
+      ],
+    );
+  }
+
   Widget _buildPortsSection(BuildContext context, AgentWorkflowNode node) {
     final theme = FluentTheme.of(context);
     final l10n = AppLocalizations.of(context)!;
     final notifier = ref.read(agentWorkflowProvider.notifier);
 
-    Future<void> renamePort({
-      required String portId,
+    String valueTypeLabel(AgentWorkflowPortValueType type) {
+      switch (type) {
+        case AgentWorkflowPortValueType.text:
+          return l10n.valueTypeText;
+        case AgentWorkflowPortValueType.json:
+          return l10n.valueTypeJson;
+      }
+    }
+
+    Future<void> editPort({
+      required AgentWorkflowPort port,
       required bool isInput,
-      required String current,
     }) async {
-      final controller = TextEditingController(text: current);
+      final isErrorOutput = !isInput && port.name.trim() == 'error';
+      if (isErrorOutput) return;
+
+      final canEditName = !node.isFixed;
+      final nameController = TextEditingController(text: port.name);
+      final schemaController = TextEditingController(
+        text: port.schema == null
+            ? ''
+            : const JsonEncoder.withIndent('  ').convert(port.schema),
+      );
+
+      var valueType = port.valueType;
+      Map<String, dynamic>? parsedSchema = port.schema;
+      String? schemaError;
+
+      void validateSchema(String text) {
+        final raw = text.trim();
+        if (raw.isEmpty) {
+          parsedSchema = null;
+          schemaError = null;
+          return;
+        }
+
+        dynamic decoded;
+        try {
+          decoded = jsonDecode(raw);
+        } catch (e) {
+          schemaError = '${l10n.invalidJson}: $e';
+          return;
+        }
+        if (decoded is! Map) {
+          schemaError = l10n.schemaMustBeObject;
+          return;
+        }
+        final schema = decoded.map((k, v) => MapEntry('$k', v));
+        try {
+          AgentWorkflowJsonSchema.validateInstance(schema: schema, instance: null);
+        } catch (e) {
+          schemaError = '${l10n.invalidSchema}: $e';
+          return;
+        }
+
+        parsedSchema = schema;
+        schemaError = null;
+      }
+
+      validateSchema(schemaController.text);
+
       await showDialog(
         context: context,
-        builder: (ctx) => ContentDialog(
-          title: Text(l10n.renamePort),
-          content: TextBox(controller: controller, autofocus: true),
-          actions: [
-            Button(
-              child: Text(l10n.cancel),
-              onPressed: () => Navigator.pop(ctx),
-            ),
-            FilledButton(
-              child: Text(l10n.confirm),
-              onPressed: () {
-                notifier.renamePort(
-                  nodeId: node.id,
-                  portId: portId,
-                  isInput: isInput,
-                  newName: controller.text,
-                );
-                Navigator.pop(ctx);
-              },
-            ),
-          ],
+        builder: (ctx) => StatefulBuilder(
+          builder: (ctx, setState) {
+            final nameOk = !canEditName || nameController.text.trim().isNotEmpty;
+            final canSave = nameOk && schemaError == null;
+
+            return ContentDialog(
+              title: Text(l10n.portConfig),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  InfoLabel(
+                    label: l10n.name,
+                    child: TextBox(
+                      controller: nameController,
+                      enabled: canEditName,
+                      placeholder: l10n.name,
+                      onChanged: (_) => setState(() {}),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  InfoLabel(
+                    label: l10n.valueType,
+                    child: ComboBox<AgentWorkflowPortValueType>(
+                      isExpanded: true,
+                      value: valueType,
+                      items: [
+                        ComboBoxItem(
+                          value: AgentWorkflowPortValueType.text,
+                          child: Text(l10n.valueTypeText),
+                        ),
+                        ComboBoxItem(
+                          value: AgentWorkflowPortValueType.json,
+                          child: Text(l10n.valueTypeJson),
+                        ),
+                      ],
+                      onChanged: (val) {
+                        if (val == null) return;
+                        setState(() {
+                          valueType = val;
+                        });
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  InfoLabel(
+                    label: l10n.schemaJson,
+                    child: TextBox(
+                      controller: schemaController,
+                      maxLines: 8,
+                      placeholder: l10n.schemaJsonHint,
+                      onChanged: (v) {
+                        setState(() {
+                          validateSchema(v);
+                        });
+                      },
+                    ),
+                  ),
+                  if (schemaError != null) ...[
+                    const SizedBox(height: 10),
+                    InfoBar(
+                      title: Text(l10n.error),
+                      content: Text(schemaError!),
+                      severity: InfoBarSeverity.error,
+                      isLong: true,
+                    ),
+                  ],
+                ],
+              ),
+              actions: [
+                Button(
+                  child: Text(l10n.cancel),
+                  onPressed: () => Navigator.pop(ctx),
+                ),
+                FilledButton(
+                  onPressed: canSave
+                      ? () {
+                          notifier.updatePortConfig(
+                            nodeId: node.id,
+                            portId: port.id,
+                            isInput: isInput,
+                            name: nameController.text.trim(),
+                            valueType: valueType,
+                            schema: parsedSchema,
+                          );
+                          Navigator.pop(ctx);
+                        }
+                      : null,
+                  child: Text(l10n.confirm),
+                ),
+              ],
+            );
+          },
         ),
       );
     }
@@ -474,13 +902,15 @@ class _WorkflowInspectorState extends ConsumerState<WorkflowInspector> {
                 const Spacer(),
                 IconButton(
                   icon: const Icon(AuroraIcons.add, size: 14),
-                  onPressed: () {
-                    if (isInput) {
-                      notifier.addInputPort(node.id);
-                    } else {
-                      notifier.addOutputPort(node.id);
-                    }
-                  },
+                  onPressed: node.isFixed
+                      ? null
+                      : () {
+                          if (isInput) {
+                            notifier.addInputPort(node.id);
+                          } else {
+                            notifier.addOutputPort(node.id);
+                          }
+                        },
                 )
               ],
             ),
@@ -498,23 +928,46 @@ class _WorkflowInspectorState extends ConsumerState<WorkflowInspector> {
                       style: theme.typography.caption,
                     ),
                   ),
+                  Text(
+                    valueTypeLabel(p.valueType),
+                    style: (theme.typography.caption ?? const TextStyle())
+                        .copyWith(
+                      color: theme.resources.textFillColorSecondary
+                          .withValues(alpha: 0.9),
+                    ),
+                  ),
+                  if (p.schema != null) ...[
+                    const SizedBox(width: 6),
+                    Tooltip(
+                      message: l10n.schemaJson,
+                      child: Icon(
+                        AuroraIcons.parameter,
+                        size: 12,
+                        color: theme.resources.textFillColorSecondary
+                            .withValues(alpha: 0.9),
+                      ),
+                    ),
+                  ],
                   Tooltip(
-                    message: l10n.renamePort,
+                    message: l10n.portConfig,
                     child: IconButton(
                       icon: const Icon(AuroraIcons.edit, size: 14),
-                      onPressed: () => renamePort(
-                        portId: p.id,
-                        isInput: isInput,
-                        current: p.name,
-                      ),
+                      onPressed: (!isInput && p.name.trim() == 'error')
+                          ? null
+                          : () => editPort(port: p, isInput: isInput),
                     ),
                   ),
                   Tooltip(
                     message: l10n.delete,
                     child: IconButton(
                       icon: const Icon(AuroraIcons.delete, size: 14),
-                      onPressed: () =>
-                          notifier.deletePort(nodeId: node.id, portId: p.id, isInput: isInput),
+                      onPressed: node.isFixed || (!isInput && p.name.trim() == 'error')
+                          ? null
+                          : () => notifier.deletePort(
+                                nodeId: node.id,
+                                portId: p.id,
+                                isInput: isInput,
+                              ),
                     ),
                   ),
                 ],

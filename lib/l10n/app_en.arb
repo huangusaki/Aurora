@@ -1182,6 +1182,7 @@
   "addLlmNode": "Add LLM Node",
   "addSkillNode": "Add Skill Node",
   "addMcpNode": "Add MCP Node",
+  "addUserInputNode": "Add User Input Node",
   "saved": "Saved",
 
   "inspector": "Inspector",
@@ -1192,6 +1193,50 @@
   "bodyTemplateHint": "Use placeholders (double curly braces) to reference inputs.",
   "toolName": "Tool name",
   "toolNameHint": "Enter MCP tool name",
+  "selectMcpToolHint": "Select a tool",
+  "mcpToolInputSchema": "Tool input schema",
+  "warnings": "Warnings",
+  "warning": "Warning",
+  "rawOutput": "Raw output",
+  "outputJsonPretty": "Output (JSON)",
+  "validation": "Validation",
+  "inputValidation": "Input validation",
+  "outputValidation": "Output validation",
+  "validationOff": "Off",
+  "validationWarn": "Warn",
+  "validationStrict": "Strict",
+  "structuredOutput": "Structured output",
+  "structuredOutputHint": "Requires the primary output port to be JSON with an object schema.",
+  "autoRepairAttempts": "Auto-repair attempts",
+  "structuredOutputMissingPrimaryPort": "Missing primary output port.",
+  "structuredOutputRequiresJsonPort": "Primary output port \"{port}\" must be JSON.",
+  "@structuredOutputRequiresJsonPort": {
+    "placeholders": {
+      "port": {"type": "String"}
+    }
+  },
+  "structuredOutputRequiresSchema": "Primary output port \"{port}\" must have a JSON Schema.",
+  "@structuredOutputRequiresSchema": {
+    "placeholders": {
+      "port": {"type": "String"}
+    }
+  },
+  "structuredOutputRequiresObjectSchema": "Primary output port \"{port}\" schema top-level type must be \"object\".",
+  "@structuredOutputRequiresObjectSchema": {
+    "placeholders": {
+      "port": {"type": "String"}
+    }
+  },
+  "portConfig": "Port config",
+  "name": "Name",
+  "valueType": "Value type",
+  "valueTypeText": "Text",
+  "valueTypeJson": "JSON",
+  "schemaJson": "Schema JSON",
+  "schemaJsonHint": "Paste JSON Schema (Draft-7) here",
+  "invalidJson": "Invalid JSON",
+  "invalidSchema": "Invalid JSON Schema",
+  "schemaMustBeObject": "Schema must be a JSON object.",
   "debug": "Debug",
   "status": "Status",
   "durationMs": "Duration (ms)",

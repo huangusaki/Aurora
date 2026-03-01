@@ -2599,6 +2599,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addMcpNode => 'Add MCP Node';
 
   @override
+  String get addUserInputNode => 'Add User Input Node';
+
+  @override
   String get saved => 'Saved';
 
   @override
@@ -2625,6 +2628,101 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get toolNameHint => 'Enter MCP tool name';
+
+  @override
+  String get selectMcpToolHint => 'Select a tool';
+
+  @override
+  String get mcpToolInputSchema => 'Tool input schema';
+
+  @override
+  String get warnings => 'Warnings';
+
+  @override
+  String get warning => 'Warning';
+
+  @override
+  String get rawOutput => 'Raw output';
+
+  @override
+  String get outputJsonPretty => 'Output (JSON)';
+
+  @override
+  String get validation => 'Validation';
+
+  @override
+  String get inputValidation => 'Input validation';
+
+  @override
+  String get outputValidation => 'Output validation';
+
+  @override
+  String get validationOff => 'Off';
+
+  @override
+  String get validationWarn => 'Warn';
+
+  @override
+  String get validationStrict => 'Strict';
+
+  @override
+  String get structuredOutput => 'Structured output';
+
+  @override
+  String get structuredOutputHint =>
+      'Requires the primary output port to be JSON with an object schema.';
+
+  @override
+  String get autoRepairAttempts => 'Auto-repair attempts';
+
+  @override
+  String get structuredOutputMissingPrimaryPort =>
+      'Missing primary output port.';
+
+  @override
+  String structuredOutputRequiresJsonPort(String port) {
+    return 'Primary output port \"$port\" must be JSON.';
+  }
+
+  @override
+  String structuredOutputRequiresSchema(String port) {
+    return 'Primary output port \"$port\" must have a JSON Schema.';
+  }
+
+  @override
+  String structuredOutputRequiresObjectSchema(String port) {
+    return 'Primary output port \"$port\" schema top-level type must be \"object\".';
+  }
+
+  @override
+  String get portConfig => 'Port config';
+
+  @override
+  String get name => 'Name';
+
+  @override
+  String get valueType => 'Value type';
+
+  @override
+  String get valueTypeText => 'Text';
+
+  @override
+  String get valueTypeJson => 'JSON';
+
+  @override
+  String get schemaJson => 'Schema JSON';
+
+  @override
+  String get schemaJsonHint => 'Paste JSON Schema (Draft-7) here';
+
+  @override
+  String get invalidJson => 'Invalid JSON';
+
+  @override
+  String get invalidSchema => 'Invalid JSON Schema';
+
+  @override
+  String get schemaMustBeObject => 'Schema must be a JSON object.';
 
   @override
   String get debug => 'Debug';
