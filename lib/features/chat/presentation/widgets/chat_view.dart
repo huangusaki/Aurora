@@ -188,102 +188,148 @@ class ChatViewState extends ConsumerState<ChatView> {
   Future<void> _handlePaste() async {
     final clipboard = SystemClipboard.instance;
     if (clipboard == null) return;
-    final reader = await clipboard.read();
-    if (!reader.canProvide(Formats.png) &&
-        !reader.canProvide(Formats.jpeg) &&
-        !reader.canProvide(Formats.fileUri) &&
-        !reader.canProvide(Formats.plainText)) {
-      for (int i = 0; i < 5; i++) {
-        await Future.delayed(const Duration(milliseconds: 200));
-        final newReader = await clipboard.read();
-        if (newReader.canProvide(Formats.png) ||
-            newReader.canProvide(Formats.jpeg) ||
-            newReader.canProvide(Formats.fileUri)) {
-          await _processReader(newReader);
+    const maxAttempts = 10;
+    for (int attempt = 0; attempt < maxAttempts; attempt++) {
+      ClipboardReader reader;
+      try {
+        reader = await clipboard.read();
+      } catch (e) {
+        if (attempt == maxAttempts - 1) {
+          debugPrint('Failed to read clipboard: $e');
           return;
         }
+        await Future.delayed(const Duration(milliseconds: 200));
+        continue;
       }
-      await _processReader(reader);
-    } else {
-      await _processReader(reader);
+
+      bool handled = false;
+      try {
+        handled = await _processReader(reader);
+      } catch (e) {
+        debugPrint('Failed to process clipboard: $e');
+      }
+
+      if (handled) return;
+      if (attempt < maxAttempts - 1) {
+        await Future.delayed(const Duration(milliseconds: 200));
+      }
     }
   }
 
-  Future<void> _processReader(ClipboardReader reader) async {
-    if (reader.canProvide(Formats.png)) {
-      final completer = Completer<String?>();
-      reader.getFile(Formats.png, (file) async {
-        try {
-          final attachDir = await getAttachmentsDir();
-          final path =
-              '${attachDir.path}${Platform.pathSeparator}paste_${DateTime.now().millisecondsSinceEpoch}.png';
-          final stream = file.getStream();
-          final bytes = await stream.toList();
-          final allBytes = bytes.expand((x) => x).toList();
-          if (allBytes.isNotEmpty) {
-            await File(path).writeAsBytes(allBytes);
-            completer.complete(path);
-          } else {
-            completer.complete(null);
-          }
-        } catch (e) {
-          completer.complete(null);
+  Future<String?> _saveClipboardFileAsAttachment(
+    ClipboardReader reader,
+    FileFormat format,
+    String extension,
+  ) async {
+    final completer = Completer<String?>();
+    reader.getFile(format, (file) async {
+      try {
+        final attachDir = await getAttachmentsDir();
+        final path =
+            '${attachDir.path}${Platform.pathSeparator}paste_${DateTime.now().millisecondsSinceEpoch}.$extension';
+        final stream = file.getStream();
+        final bytes = <int>[];
+        await for (final chunk in stream) {
+          bytes.addAll(chunk);
         }
-      });
-      final imagePath = await completer.future;
+        if (bytes.isEmpty) {
+          completer.complete(null);
+          return;
+        }
+        await File(path).writeAsBytes(bytes);
+        completer.complete(path);
+      } catch (_) {
+        completer.complete(null);
+      }
+    });
+
+    try {
+      return await completer.future.timeout(const Duration(seconds: 2));
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<bool> _processReader(ClipboardReader reader) async {
+    if (reader.canProvide(Formats.png)) {
+      final imagePath =
+          await _saveClipboardFileAsAttachment(reader, Formats.png, 'png');
       if (imagePath != null && mounted) {
         if (!_attachments.contains(imagePath)) {
-          setState(() {
-            _attachments.add(imagePath);
-          });
+          setState(() => _attachments.add(imagePath));
         }
-        return;
+        return true;
       }
     }
     if (reader.canProvide(Formats.jpeg)) {
-      final completer = Completer<String?>();
-      reader.getFile(Formats.jpeg, (file) async {
-        try {
-          final attachDir = await getAttachmentsDir();
-          final path =
-              '${attachDir.path}${Platform.pathSeparator}paste_${DateTime.now().millisecondsSinceEpoch}.jpg';
-          final stream = file.getStream();
-          final bytes = await stream.toList();
-          final allBytes = bytes.expand((x) => x).toList();
-          if (allBytes.isNotEmpty) {
-            await File(path).writeAsBytes(allBytes);
-            completer.complete(path);
-          } else {
-            completer.complete(null);
-          }
-        } catch (e) {
-          completer.complete(null);
-        }
-      });
-      final imagePath = await completer.future;
+      final imagePath =
+          await _saveClipboardFileAsAttachment(reader, Formats.jpeg, 'jpg');
       if (imagePath != null && mounted) {
         if (!_attachments.contains(imagePath)) {
-          setState(() {
-            _attachments.add(imagePath);
-          });
+          setState(() => _attachments.add(imagePath));
         }
-        return;
+        return true;
+      }
+    }
+    if (reader.canProvide(Formats.gif)) {
+      final imagePath =
+          await _saveClipboardFileAsAttachment(reader, Formats.gif, 'gif');
+      if (imagePath != null && mounted) {
+        if (!_attachments.contains(imagePath)) {
+          setState(() => _attachments.add(imagePath));
+        }
+        return true;
+      }
+    }
+    if (reader.canProvide(Formats.webp)) {
+      final imagePath =
+          await _saveClipboardFileAsAttachment(reader, Formats.webp, 'webp');
+      if (imagePath != null && mounted) {
+        if (!_attachments.contains(imagePath)) {
+          setState(() => _attachments.add(imagePath));
+        }
+        return true;
+      }
+    }
+    if (reader.canProvide(Formats.bmp)) {
+      final imagePath =
+          await _saveClipboardFileAsAttachment(reader, Formats.bmp, 'bmp');
+      if (imagePath != null && mounted) {
+        if (!_attachments.contains(imagePath)) {
+          setState(() => _attachments.add(imagePath));
+        }
+        return true;
+      }
+    }
+    if (reader.canProvide(Formats.tiff)) {
+      final imagePath =
+          await _saveClipboardFileAsAttachment(reader, Formats.tiff, 'tiff');
+      if (imagePath != null && mounted) {
+        if (!_attachments.contains(imagePath)) {
+          setState(() => _attachments.add(imagePath));
+        }
+        return true;
       }
     }
     if (reader.canProvide(Formats.fileUri)) {
       final uri = await reader.readValue(Formats.fileUri);
       if (uri != null) {
         final path = uri.toFilePath();
-        if (path.toLowerCase().endsWith('.png') ||
-            path.toLowerCase().endsWith('.jpg') ||
-            path.toLowerCase().endsWith('.jpeg') ||
-            path.toLowerCase().endsWith('.webp')) {
-          if (!_attachments.contains(path)) {
-            setState(() {
-              _attachments.add(path);
-            });
+        final lower = path.toLowerCase();
+        if (lower.endsWith('.png') ||
+            lower.endsWith('.jpg') ||
+            lower.endsWith('.jpeg') ||
+            lower.endsWith('.webp') ||
+            lower.endsWith('.gif') ||
+            lower.endsWith('.bmp') ||
+            lower.endsWith('.tif') ||
+            lower.endsWith('.tiff')) {
+          if (mounted) {
+            if (!_attachments.contains(path)) {
+              setState(() => _attachments.add(path));
+            }
+            return true;
           }
-          return;
         }
       }
     }
@@ -300,12 +346,12 @@ class ChatViewState extends ConsumerState<ChatView> {
               Uri fileUri = Uri.parse(src);
               String filePath = fileUri.toFilePath();
               if (File(filePath).existsSync()) {
-                if (!_attachments.contains(filePath)) {
-                  setState(() {
-                    _attachments.add(filePath);
-                  });
+                if (mounted) {
+                  if (!_attachments.contains(filePath)) {
+                    setState(() => _attachments.add(filePath));
+                  }
+                  return true;
                 }
-                return;
               }
             }
           }
@@ -333,8 +379,10 @@ class ChatViewState extends ConsumerState<ChatView> {
           text: newText,
           selection: TextSelection.collapsed(offset: newSelectionIndex),
         );
+        return true;
       }
     }
+    return false;
   }
 
   Future<void> _sendMessage() async {
@@ -480,7 +528,8 @@ class ChatViewState extends ConsumerState<ChatView> {
         if (displayItems.isEmpty && !isLoadingHistory)
           Positioned.fill(
             child: Container(
-              padding: EdgeInsets.only(bottom: PlatformUtils.isDesktop ? 120 : 100),
+              padding:
+                  EdgeInsets.only(bottom: PlatformUtils.isDesktop ? 120 : 100),
               child: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -498,8 +547,8 @@ class ChatViewState extends ConsumerState<ChatView> {
                                 ?.color
                                 ?.withValues(alpha: 0.5) ??
                             Colors.grey.withValues(alpha: 0.5),
-                       ),
-                     ),
+                      ),
+                    ),
                   ],
                 ),
               ),

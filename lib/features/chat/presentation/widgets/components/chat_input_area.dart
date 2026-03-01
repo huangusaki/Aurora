@@ -945,7 +945,8 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
                 }
 
                 // Handle Shortcuts
-                if ((isControl &&
+                if (event.logicalKey == LogicalKeyboardKey.paste ||
+                    (isControl &&
                         event.logicalKey == LogicalKeyboardKey.keyV) ||
                     (isShift &&
                         event.logicalKey == LogicalKeyboardKey.insert)) {
@@ -992,27 +993,42 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
 
                 return KeyEventResult.ignored;
               },
-              child: fluent.TextBox(
-                controller: widget.controller,
-                focusNode: _focusNode,
-                placeholder: l10n.desktopInputHint,
-                maxLines: 5,
-                minLines: 1,
-                decoration:
-                    const fluent.WidgetStatePropertyAll(fluent.BoxDecoration(
-                  color: Colors.transparent,
-                  border: Border.fromBorderSide(BorderSide.none),
-                )),
-                highlightColor: Colors.transparent,
-                unfocusedColor: Colors.transparent,
-                cursorColor: theme.accentColor,
-                style: const TextStyle(fontSize: 14),
-                foregroundDecoration:
-                    const fluent.WidgetStatePropertyAll(fluent.BoxDecoration(
-                  border: Border.fromBorderSide(BorderSide.none),
-                )),
-                // Close overlay if user clicks away or types something else (simple version)
-                onTap: _removeOverlay,
+              child: Actions(
+                actions: <Type, Action<Intent>>{
+                  PasteTextIntent: CallbackAction<PasteTextIntent>(
+                    onInvoke: (intent) {
+                      unawaited(
+                        widget.onPaste().whenComplete(() {
+                          // Restore focus after paste
+                          _focusNode.requestFocus();
+                        }),
+                      );
+                      return null;
+                    },
+                  ),
+                },
+                child: fluent.TextBox(
+                  controller: widget.controller,
+                  focusNode: _focusNode,
+                  placeholder: l10n.desktopInputHint,
+                  maxLines: 5,
+                  minLines: 1,
+                  decoration:
+                      const fluent.WidgetStatePropertyAll(fluent.BoxDecoration(
+                    color: Colors.transparent,
+                    border: Border.fromBorderSide(BorderSide.none),
+                  )),
+                  highlightColor: Colors.transparent,
+                  unfocusedColor: Colors.transparent,
+                  cursorColor: theme.accentColor,
+                  style: const TextStyle(fontSize: 14),
+                  foregroundDecoration:
+                      const fluent.WidgetStatePropertyAll(fluent.BoxDecoration(
+                    border: Border.fromBorderSide(BorderSide.none),
+                  )),
+                  // Close overlay if user clicks away or types something else (simple version)
+                  onTap: _removeOverlay,
+                ),
               ),
             ),
           ),

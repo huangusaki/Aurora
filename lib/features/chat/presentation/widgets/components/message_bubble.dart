@@ -101,96 +101,195 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
       if (clipboard == null) {
         return;
       }
-      final reader = await clipboard.read();
-      if (reader.canProvide(Formats.png) ||
-          reader.canProvide(Formats.jpeg) ||
-          reader.canProvide(Formats.fileUri)) {
-        await _processReader(reader);
-        return;
-      }
-      if (reader.canProvide(Formats.plainText)) {
-        final text = await reader.readValue(Formats.plainText);
-        if (text != null && text.isNotEmpty) {
-          final selection = _editController.selection;
-          final currentText = _editController.text;
-          if (selection.isValid) {
-            final newText =
-                currentText.replaceRange(selection.start, selection.end, text);
-            _editController.value = TextEditingValue(
-              text: newText,
-              selection: TextSelection.collapsed(
-                  offset: selection.start + text.length),
-            );
-          } else {
-            _editController.text += text;
+      const maxAttempts = 10;
+      for (int attempt = 0; attempt < maxAttempts; attempt++) {
+        ClipboardReader reader;
+        try {
+          reader = await clipboard.read();
+        } catch (e) {
+          if (attempt == maxAttempts - 1) {
+            debugPrint('Failed to read clipboard: $e');
+            return;
           }
+          await Future.delayed(const Duration(milliseconds: 200));
+          continue;
         }
-        return;
+
+        bool handled = false;
+        try {
+          handled = await _processReader(reader);
+        } catch (e) {
+          debugPrint('Failed to process clipboard: $e');
+        }
+
+        if (handled) return;
+        if (attempt < maxAttempts - 1) {
+          await Future.delayed(const Duration(milliseconds: 200));
+        }
       }
     } finally {
       _isPasting = false;
     }
   }
 
-  Future<void> _processReader(ClipboardReader reader) async {
-    final completer = Completer<void>();
+  Future<String?> _saveClipboardFileAsAttachment(
+    ClipboardReader reader,
+    FileFormat format,
+    String extension,
+  ) async {
+    final completer = Completer<String?>();
+    reader.getFile(format, (file) async {
+      try {
+        final attachDir = await getAttachmentsDir();
+        final path =
+            '${attachDir.path}${Platform.pathSeparator}paste_${DateTime.now().millisecondsSinceEpoch}.$extension';
+        final stream = file.getStream();
+        final bytes = <int>[];
+        await for (final chunk in stream) {
+          bytes.addAll(chunk);
+        }
+        if (bytes.isEmpty) {
+          completer.complete(null);
+          return;
+        }
+        await File(path).writeAsBytes(bytes);
+        completer.complete(path);
+      } catch (_) {
+        completer.complete(null);
+      }
+    });
+
+    try {
+      return await completer.future.timeout(const Duration(seconds: 2));
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<bool> _processReader(ClipboardReader reader) async {
     if (reader.canProvide(Formats.png)) {
-      reader.getFile(Formats.png, (file) async {
-        await _saveClipImage(file);
-        if (!completer.isCompleted) completer.complete();
-      });
-    } else if (reader.canProvide(Formats.jpeg)) {
-      reader.getFile(Formats.jpeg, (file) async {
-        await _saveClipImage(file);
-        if (!completer.isCompleted) completer.complete();
-      });
-    } else if (reader.canProvide(Formats.fileUri)) {
+      final imagePath =
+          await _saveClipboardFileAsAttachment(reader, Formats.png, 'png');
+      if (imagePath != null && mounted) {
+        if (!_newAttachments.contains(imagePath)) {
+          setState(() => _newAttachments.add(imagePath));
+        }
+        return true;
+      }
+    }
+    if (reader.canProvide(Formats.jpeg)) {
+      final imagePath =
+          await _saveClipboardFileAsAttachment(reader, Formats.jpeg, 'jpg');
+      if (imagePath != null && mounted) {
+        if (!_newAttachments.contains(imagePath)) {
+          setState(() => _newAttachments.add(imagePath));
+        }
+        return true;
+      }
+    }
+    if (reader.canProvide(Formats.gif)) {
+      final imagePath =
+          await _saveClipboardFileAsAttachment(reader, Formats.gif, 'gif');
+      if (imagePath != null && mounted) {
+        if (!_newAttachments.contains(imagePath)) {
+          setState(() => _newAttachments.add(imagePath));
+        }
+        return true;
+      }
+    }
+    if (reader.canProvide(Formats.webp)) {
+      final imagePath =
+          await _saveClipboardFileAsAttachment(reader, Formats.webp, 'webp');
+      if (imagePath != null && mounted) {
+        if (!_newAttachments.contains(imagePath)) {
+          setState(() => _newAttachments.add(imagePath));
+        }
+        return true;
+      }
+    }
+    if (reader.canProvide(Formats.bmp)) {
+      final imagePath =
+          await _saveClipboardFileAsAttachment(reader, Formats.bmp, 'bmp');
+      if (imagePath != null && mounted) {
+        if (!_newAttachments.contains(imagePath)) {
+          setState(() => _newAttachments.add(imagePath));
+        }
+        return true;
+      }
+    }
+    if (reader.canProvide(Formats.tiff)) {
+      final imagePath =
+          await _saveClipboardFileAsAttachment(reader, Formats.tiff, 'tiff');
+      if (imagePath != null && mounted) {
+        if (!_newAttachments.contains(imagePath)) {
+          setState(() => _newAttachments.add(imagePath));
+        }
+        return true;
+      }
+    }
+    if (reader.canProvide(Formats.fileUri)) {
       final uri = await reader.readValue(Formats.fileUri);
       if (uri != null) {
         final path = uri.toFilePath();
         final ext = path.split('.').last.toLowerCase();
-        if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].contains(ext)) {
-          if (mounted && !_newAttachments.contains(path)) {
-            setState(() {
-              _newAttachments.add(path);
-            });
-          } else {}
+        if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'tif', 'tiff']
+            .contains(ext)) {
+          if (mounted) {
+            if (!_newAttachments.contains(path)) {
+              setState(() => _newAttachments.add(path));
+            }
+            return true;
+          }
         }
       }
-      if (!completer.isCompleted) completer.complete();
-    } else {
-      if (!completer.isCompleted) completer.complete();
     }
-    try {
-      await completer.future.timeout(const Duration(seconds: 2));
-    } catch (e) {
-      debugPrint('Paste completion timeout: $e');
-    }
-  }
-
-  Future<void> _saveClipImage(file) async {
-    try {
-      final attachDir = await getAttachmentsDir();
-      final path =
-          '${attachDir.path}${Platform.pathSeparator}paste_${DateTime.now().millisecondsSinceEpoch}.png';
-      final stream = file.getStream();
-      final List<int> bytes = [];
-      await for (final chunk in stream) {
-        bytes.addAll(chunk as List<int>);
-      }
-      if (bytes.isNotEmpty) {
-        await File(path).writeAsBytes(bytes);
-        if (mounted) {
-          if (!_newAttachments.contains(path)) {
-            setState(() {
-              _newAttachments.add(path);
-            });
-          } else {}
+    if (reader.canProvide(Formats.htmlText)) {
+      try {
+        final html = await reader.readValue(Formats.htmlText);
+        if (html != null) {
+          final RegExp imgRegex =
+              RegExp(r'<img[^>]+src="([^"]+)"', caseSensitive: false);
+          final match = imgRegex.firstMatch(html);
+          if (match != null) {
+            final src = match.group(1) ?? '';
+            if (src.startsWith('file:///')) {
+              final fileUri = Uri.parse(src);
+              final filePath = fileUri.toFilePath();
+              if (File(filePath).existsSync()) {
+                if (mounted) {
+                  if (!_newAttachments.contains(filePath)) {
+                    setState(() => _newAttachments.add(filePath));
+                  }
+                  return true;
+                }
+              }
+            }
+          }
         }
+      } catch (e) {
+        debugPrint('Error parsing HTML clipboard: $e');
       }
-    } catch (e) {
-      debugPrint('Paste Error: $e');
     }
+    if (reader.canProvide(Formats.plainText)) {
+      final text = await reader.readValue(Formats.plainText);
+      if (text != null && text.isNotEmpty) {
+        final selection = _editController.selection;
+        final currentText = _editController.text;
+        if (selection.isValid) {
+          final newText =
+              currentText.replaceRange(selection.start, selection.end, text);
+          _editController.value = TextEditingValue(
+            text: newText,
+            selection:
+                TextSelection.collapsed(offset: selection.start + text.length),
+          );
+        } else {
+          _editController.text += text;
+        }
+        return true;
+      }
+    }
+    return false;
   }
 
   @override
@@ -392,7 +491,7 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
+                            children: [
                               if (!message.isUser &&
                                   widget.isGenerating &&
                                   contentText.isEmpty &&
@@ -433,7 +532,8 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
                                   child: ReasoningDisplay(
                                     content: reasoningText,
                                     isRunning: widget.isGenerating,
-                                    duration: uiMessage.reasoningDurationSeconds,
+                                    duration:
+                                        uiMessage.reasoningDurationSeconds,
                                     startTime: message.timestamp,
                                   ),
                                 ),
@@ -459,80 +559,108 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
                                               const SingleActivator(
                                                   LogicalKeyboardKey.keyV,
                                                   control: true): _handlePaste,
+                                              const SingleActivator(
+                                                  LogicalKeyboardKey.insert,
+                                                  shift: true): _handlePaste,
+                                              const SingleActivator(
+                                                      LogicalKeyboardKey.paste):
+                                                  _handlePaste,
                                             },
-                                            child: Focus(
-                                              onKeyEvent: (node, event) {
-                                                if (event is! KeyDownEvent) {
-                                                  return KeyEventResult.ignored;
-                                                }
-                                                if (event.logicalKey ==
-                                                    LogicalKeyboardKey.enter) {
-                                                  if (HardwareKeyboard.instance
-                                                      .isShiftPressed) {
-                                                    // Shift+Enter: Insert newline
+                                            child: Actions(
+                                              actions: <Type, Action<Intent>>{
+                                                PasteTextIntent: CallbackAction<
+                                                    PasteTextIntent>(
+                                                  onInvoke: (intent) {
+                                                    unawaited(
+                                                      _handlePaste()
+                                                          .whenComplete(() {
+                                                        _focusNode
+                                                            .requestFocus();
+                                                      }),
+                                                    );
+                                                    return null;
+                                                  },
+                                                ),
+                                              },
+                                              child: Focus(
+                                                onKeyEvent: (node, event) {
+                                                  if (event is! KeyDownEvent) {
                                                     return KeyEventResult
                                                         .ignored;
-                                                  } else {
-                                                    // Enter: Save edit (and regenerate if user)
-                                                    _saveEdit();
-                                                    if (widget.message.isUser) {
-                                                      ref
-                                                          .read(
-                                                              historyChatProvider)
-                                                          .regenerateResponse(
-                                                              widget
-                                                                  .message.id);
-                                                    }
-                                                    return KeyEventResult
-                                                        .handled;
                                                   }
-                                                }
-                                                return KeyEventResult.ignored;
-                                              },
-                                              child: SizedBox(
-                                                width: double.infinity,
-                                                child: fluent.TextBox(
-                                                  key: ValueKey(
-                                                      'edit_box_${widget.message.id}'),
-                                                  controller: _editController,
-                                                  scrollController:
-                                                      _editScrollController,
-                                                  focusNode: _focusNode,
-                                                  maxLines: 15,
-                                                  minLines: 1,
-                                                  placeholder: l10n
-                                                      .editMessagePlaceholder,
-                                                  decoration: const fluent
-                                                      .WidgetStatePropertyAll(
-                                                      fluent.BoxDecoration(
-                                                    color: Colors.transparent,
-                                                    border:
-                                                        Border.fromBorderSide(
-                                                            BorderSide.none),
-                                                  )),
-                                                  highlightColor:
-                                                      fluent.Colors.transparent,
-                                                  unfocusedColor:
-                                                      fluent.Colors.transparent,
-                                                  foregroundDecoration:
-                                                      const fluent
-                                                          .WidgetStatePropertyAll(
-                                                          fluent.BoxDecoration(
-                                                    border:
-                                                        Border.fromBorderSide(
-                                                            BorderSide.none),
-                                                  )),
-                                                  style: TextStyle(
-                                                      fontSize: 14,
-                                                      height: 1.5,
-                                                      color: theme.typography
-                                                          .body?.color),
-                                                  cursorColor:
-                                                      theme.accentColor,
-                                                  textInputAction:
-                                                      TextInputAction.send,
-                                                  // onSubmitted removed as we handle it in Focus manually now for finer control
-                                                  // onSubmitted: (_) => _saveEdit(),
+                                                  if (event.logicalKey ==
+                                                      LogicalKeyboardKey
+                                                          .enter) {
+                                                    if (HardwareKeyboard
+                                                        .instance
+                                                        .isShiftPressed) {
+                                                      // Shift+Enter: Insert newline
+                                                      return KeyEventResult
+                                                          .ignored;
+                                                    } else {
+                                                      // Enter: Save edit (and regenerate if user)
+                                                      _saveEdit();
+                                                      if (widget
+                                                          .message.isUser) {
+                                                        ref
+                                                            .read(
+                                                                historyChatProvider)
+                                                            .regenerateResponse(
+                                                                widget.message
+                                                                    .id);
+                                                      }
+                                                      return KeyEventResult
+                                                          .handled;
+                                                    }
+                                                  }
+                                                  return KeyEventResult.ignored;
+                                                },
+                                                child: SizedBox(
+                                                  width: double.infinity,
+                                                  child: fluent.TextBox(
+                                                    key: ValueKey(
+                                                        'edit_box_${widget.message.id}'),
+                                                    controller: _editController,
+                                                    scrollController:
+                                                        _editScrollController,
+                                                    focusNode: _focusNode,
+                                                    maxLines: 15,
+                                                    minLines: 1,
+                                                    placeholder: l10n
+                                                        .editMessagePlaceholder,
+                                                    decoration: const fluent
+                                                        .WidgetStatePropertyAll(
+                                                        fluent.BoxDecoration(
+                                                      color: Colors.transparent,
+                                                      border:
+                                                          Border.fromBorderSide(
+                                                              BorderSide.none),
+                                                    )),
+                                                    highlightColor: fluent
+                                                        .Colors.transparent,
+                                                    unfocusedColor: fluent
+                                                        .Colors.transparent,
+                                                    foregroundDecoration:
+                                                        const fluent
+                                                            .WidgetStatePropertyAll(
+                                                            fluent
+                                                                .BoxDecoration(
+                                                      border:
+                                                          Border.fromBorderSide(
+                                                              BorderSide.none),
+                                                    )),
+                                                    style: TextStyle(
+                                                        fontSize: 14,
+                                                        height: 1.5,
+                                                        color: theme.typography
+                                                            .body?.color),
+                                                    cursorColor:
+                                                        theme.accentColor,
+                                                    textInputAction:
+                                                        TextInputAction.send,
+                                                    // onSubmitted removed as we handle it in Focus manually now for finer control
+                                                    // onSubmitted: (_) => _saveEdit(),
+                                                  ),
                                                 ),
                                               ),
                                             ),
