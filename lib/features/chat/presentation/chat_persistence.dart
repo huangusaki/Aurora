@@ -66,25 +66,31 @@ class _ChatPersistence {
         );
       }
 
+      final uiMessage = message;
+      var messageToPersist = message;
+
       // 保存前压缩图片：UI 保留原图显示，数据库存储压缩版本
       if (!message.isUser && message.images.isNotEmpty) {
         try {
           final compressed = await compressImageDataUrls(message.images);
-          message = message.copyWith(images: compressed);
+          messageToPersist = messageToPersist.copyWith(images: compressed);
         } catch (e) {
           debugPrint('[IMAGE_COMPRESS] Persistence compression failed: $e');
         }
       }
 
-      final dbId =
-          await _notifier._storage.saveMessage(message, _notifier._sessionId);
+      final dbId = await _notifier._storage.saveMessage(
+        messageToPersist,
+        _notifier._sessionId,
+        cacheOverride: uiMessage,
+      );
       if (!_notifier.mounted) {
         break;
       }
 
       final stateIndex = startSaveIndex + i;
       if (stateIndex < updatedMessages.length) {
-        final savedMessage = message.copyWith(id: dbId);
+        final savedMessage = uiMessage.copyWith(id: dbId);
         updatedMessages[stateIndex] = savedMessage;
         if (!message.isUser &&
             message.role != 'tool' &&

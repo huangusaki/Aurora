@@ -104,7 +104,11 @@ class ChatStorage {
         '(total=${sessions.length}${limit != null ? ', limit=$limit' : ''})');
   }
 
-  Future<String> saveMessage(Message message, String sessionId) async {
+  Future<String> saveMessage(
+    Message message,
+    String sessionId, {
+    Message? cacheOverride,
+  }) async {
     final entity = MessageEntity()
       ..timestamp = message.timestamp
       ..isUser = message.isUser
@@ -159,7 +163,8 @@ class ChatStorage {
       rethrow;
     }
     if (_messagesCache.containsKey(sessionId)) {
-      final cachedMessage = message.copyWith(id: entity.id.toString());
+      final cachedMessage =
+          (cacheOverride ?? message).copyWith(id: entity.id.toString());
       _messagesCache[sessionId]!.add(cachedMessage);
     }
     return entity.id.toString();

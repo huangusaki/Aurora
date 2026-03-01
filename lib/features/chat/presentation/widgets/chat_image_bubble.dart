@@ -1,5 +1,5 @@
-import 'dart:convert';
 import 'dart:io';
+import 'dart:isolate';
 import 'package:file_selector/file_selector.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/material.dart' as material
@@ -7,6 +7,7 @@ import 'package:flutter/material.dart' as material
 import 'package:super_clipboard/super_clipboard.dart';
 import 'package:flutter/foundation.dart';
 import 'package:aurora/shared/utils/image_compression.dart';
+import 'package:aurora/shared/utils/base64_utils.dart';
 import 'package:aurora/shared/widgets/aurora_page_route.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 import 'windows_image_viewer.dart';
@@ -17,12 +18,9 @@ void clearImageCache() {
   _imageCache.clear();
 }
 
-Uint8List? _decodeBase64Isolate(String imageUrl) {
-  final commaIndex = imageUrl.indexOf(',');
-  if (commaIndex != -1) {
-    return base64Decode(imageUrl.substring(commaIndex + 1));
-  }
-  return null;
+TransferableTypedData _decodeBase64Isolate(String imageUrl) {
+  final bytes = decodeDataUrlBytesLenient(imageUrl);
+  return TransferableTypedData.fromList([bytes]);
 }
 
 class ChatImageBubble extends StatefulWidget {
@@ -73,20 +71,17 @@ class _ChatImageBubbleState extends State<ChatImageBubble> {
       }
       if (mounted) {
         try {
-          Uint8List? bytes;
+          final Uint8List bytes;
           if (widget.imageUrl.length > 50 * 1024) {
-            bytes = await compute(_decodeBase64Isolate, widget.imageUrl);
+            final transferable =
+                await compute(_decodeBase64Isolate, widget.imageUrl);
+            bytes = transferable.materialize().asUint8List();
           } else {
-            final commaIndex = widget.imageUrl.indexOf(',');
-            bytes = (commaIndex != -1)
-                ? base64Decode(widget.imageUrl.substring(commaIndex + 1))
-                : base64Decode(widget.imageUrl);
+            bytes = decodeDataUrlBytesLenient(widget.imageUrl);
           }
-          if (bytes != null) {
-            _imageCache[cacheKey] = bytes;
-            if (mounted) {
-              setState(() => _cachedBytes = bytes);
-            }
+          _imageCache[cacheKey] = bytes;
+          if (mounted) {
+            setState(() => _cachedBytes = bytes);
           }
         } catch (e) {
           debugPrint('Failed to decode base64 image: $e');

@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:image/image.dart' as img;
+import 'package:aurora/shared/utils/base64_utils.dart';
 
 String _compressImageDataUrlSync(String dataUrl) {
   if (!dataUrl.startsWith('data:')) return dataUrl;
@@ -21,20 +22,18 @@ String _compressImageDataUrlSync(String dataUrl) {
   // 只处理图片
   if (!mimeType.startsWith('image/')) return dataUrl;
 
-  // 已是 JPEG 且体积合理，跳过
-  if ((mimeType == 'image/jpeg' || mimeType == 'image/jpg') &&
-      payload.length < 10 * 1024 * 1024) {
+  // 体积合理，跳过（避免不必要的转码/降质）
+  if (payload.length < 10 * 1024 * 1024) {
     return dataUrl;
   }
 
   try {
     final sw = Stopwatch()..start();
-    // 清洗 Base64 数据：移除首尾空白以及内部可能的换行符/空格
-    final cleanPayload = payload.trim().replaceAll(RegExp(r'\s+'), '');
+    final cleanPayload = normalizeBase64Payload(payload);
     final bytes = base64Decode(cleanPayload);
     debugPrint('[IMAGE_COMPRESS] Decoded ${cleanPayload.length} chars to ${bytes.length} bytes');
     
-    final image = img.decodeImage(Uint8List.fromList(bytes));
+    final image = img.decodeImage(bytes);
     if (image == null) {
       debugPrint('[IMAGE_COMPRESS] Decode failed, returning original');
       return dataUrl;
@@ -52,9 +51,9 @@ String _compressImageDataUrlSync(String dataUrl) {
   }
 }
 Future<String> compressImageDataUrl(String dataUrl) {
-  // 小图片同步处理更高效，大图片才走 Isolate
-  if (dataUrl.length < 50 * 1024) {
-    return Future.value(_compressImageDataUrlSync(dataUrl));
+  // 绝大多数图片无需压缩（避免不必要的 Isolate 序列化/拷贝开销）
+  if (dataUrl.length < 10 * 1024 * 1024) {
+    return Future.value(dataUrl);
   }
   return compute(_compressImageDataUrlSync, dataUrl);
 }

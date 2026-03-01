@@ -318,26 +318,26 @@ class OpenAILLMService implements LLMService {
         }
       }
       final stream = response.data!.stream as Stream<List<int>>;
-      String lineBuffer = '';
+      final lines = stream
+          .cast<List<int>>()
+          .transform(utf8.decoder)
+          .transform(const LineSplitter());
       bool isInThoughtTag = false;
 
-      await for (final chunk
-          in stream.cast<List<int>>().transform(utf8.decoder)) {
-        lineBuffer += chunk;
-        while (lineBuffer.contains('\n')) {
-          final nlIndex = lineBuffer.indexOf('\n');
-          final line = lineBuffer.substring(0, nlIndex).trim();
-          lineBuffer = lineBuffer.substring(nlIndex + 1);
-          if (line.isEmpty) continue;
-          if (line.startsWith('data: ')) {
-            final data = line.substring(6).trim();
-            if (data == '[DONE]') {
-              _debugLog('DONE', category: 'STREAM');
-              return;
-            }
-            try {
-              final json = jsonDecode(data);
-              _logResponse(json);
+      await for (final rawLine in lines) {
+        final line = rawLine.trim();
+        if (line.isEmpty) continue;
+        if (!line.startsWith('data:')) continue;
+
+        final data = line.substring(5).trimLeft();
+        if (data == '[DONE]') {
+          _debugLog('DONE', category: 'STREAM');
+          return;
+        }
+
+        try {
+          final json = jsonDecode(data);
+          _logResponse(json);
               if (json['usage'] != null) {
                 final usage = json['usage'];
                 final int? completionTokens = usage['completion_tokens'];
@@ -441,22 +441,14 @@ class OpenAILLMService implements LLMService {
                     if (trimmed.isEmpty) return;
                     var normalized = trimmed;
 
-                    // 清洗 data URL，移除内部换行和空格（LLM 有时会格式化 base64）
-                    if (normalized.startsWith('data:')) {
-                      final parts = normalized.split(',');
-                      if (parts.length > 1) {
-                        final header = parts[0];
-                        final data =
-                            parts.sublist(1).join(',').replaceAll(RegExp(r'\s+'), '');
-                        normalized = '$header,$data';
-                      }
-                    } else if (!normalized.startsWith('http')) {
+                    // 兼容：部分后端直接返回 raw base64（无 data: 头）
+                    if (!normalized.startsWith('data:') &&
+                        !normalized.startsWith('http')) {
                       final resolvedMime =
                           (mimeType == null || mimeType.trim().isEmpty)
                               ? 'image/png'
                               : mimeType.trim();
-                      final data = normalized.replaceAll(RegExp(r'\s+'), '');
-                      normalized = 'data:$resolvedMime;base64,$data';
+                      normalized = 'data:$resolvedMime;base64,$normalized';
                     }
 
                     if (imageUrls.contains(normalized)) return;
@@ -612,10 +604,8 @@ class OpenAILLMService implements LLMService {
                   }
                 }
               }
-            } catch (e) {
-              _debugLog('LLM Stream Parse Error: $e');
-            }
-          }
+        } catch (e) {
+          _debugLog('LLM Stream Parse Error: $e');
         }
       }
     } on DioException catch (e) {
