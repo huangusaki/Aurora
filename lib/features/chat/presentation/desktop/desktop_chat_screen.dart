@@ -314,7 +314,7 @@ class _DesktopChatScreenState extends ConsumerState<DesktopChatScreen>
                     ),
                   ),
                   const SizedBox(width: 3),
-                  const ModelSelector(isWindows: true),
+                  const ModelSelector(),
                   if (currentSessionId.isNotEmpty &&
                       currentSessionId != 'translation') ...[
                     const SizedBox(width: 8),

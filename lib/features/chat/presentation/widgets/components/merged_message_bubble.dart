@@ -5,6 +5,7 @@ import 'package:aurora/shared/theme/aurora_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:aurora/shared/riverpod_compat.dart';
+import 'package:aurora/shared/utils/platform_utils.dart';
 
 import '../selectable_markdown/animated_streaming_markdown.dart';
 import '../../chat_provider.dart';
@@ -256,7 +257,7 @@ class _MergedMessageBubbleState extends ConsumerState<MergedMessageBubble>
                                 SizedBox(
                                   width: 16,
                                   height: 16,
-                                  child: Platform.isWindows
+                                  child: PlatformUtils.isDesktop
                                       ? const fluent.ProgressRing(
                                           strokeWidth: 2)
                                       : const CircularProgressIndicator(
@@ -336,7 +337,7 @@ class _MergedMessageBubbleState extends ConsumerState<MergedMessageBubble>
                     ],
                   ),
                 ),
-                Platform.isWindows
+                PlatformUtils.isDesktop
                     ? Visibility(
                         visible: !_isEditing && !widget.isGenerating,
                         child: Padding(
@@ -344,7 +345,7 @@ class _MergedMessageBubbleState extends ConsumerState<MergedMessageBubble>
                           child: Row(
                             children: [
                               ActionButton(
-                                  icon: AuroraIcons.refresh,
+                                  icon: AuroraIcons.retry,
                                   tooltip: l10n?.retry ?? 'Retry',
                                   onPressed: () => _handleAction('retry')),
                               const SizedBox(width: 4),
@@ -378,7 +379,7 @@ class _MergedMessageBubbleState extends ConsumerState<MergedMessageBubble>
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 MobileActionButton(
-                                  icon: AuroraIcons.refresh,
+                                  icon: AuroraIcons.retry,
                                   color: (settingsState.useCustomTheme &&
                                           settingsState.backgroundImagePath !=
                                               null &&
@@ -480,7 +481,6 @@ class _MergedMessageBubbleState extends ConsumerState<MergedMessageBubble>
         padding: const EdgeInsets.only(bottom: 8.0),
         child: ReasoningDisplay(
           content: allReasoning.toString(),
-          isWindows: Platform.isWindows,
           isRunning: hasActiveReasoning,
           duration: totalReasoningDuration > 0 ? totalReasoningDuration : null,
           startTime: firstReasoningTimestamp,

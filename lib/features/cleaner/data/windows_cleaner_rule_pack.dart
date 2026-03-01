@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:aurora/shared/utils/platform_utils.dart';
+
 import '../domain/cleaner_models.dart';
 
 class WindowsCleanerRuleMatch {
@@ -15,12 +17,12 @@ class WindowsCleanerRuleMatch {
 class WindowsCleanerRulePack {
   const WindowsCleanerRulePack._();
 
-  static bool get isSupported => Platform.isWindows;
+  static bool get isSupported => PlatformUtils.isWindows;
 
   static List<String> defaultRootPaths() {
     return buildDefaultRootPathsFromEnvironment(
       Platform.environment,
-      isWindows: Platform.isWindows,
+      isWindows: PlatformUtils.isWindows,
     );
   }
 

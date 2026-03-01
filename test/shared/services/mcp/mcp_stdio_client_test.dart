@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:aurora/shared/services/mcp/mcp_client_session.dart';
+import 'package:aurora/shared/utils/platform_utils.dart';
 
 String _resolveDartExecutable() {
   final exe = Platform.resolvedExecutable;
@@ -25,7 +26,7 @@ void main() {
     final session = await McpClientSession.connect(
       command: _resolveDartExecutable(),
       args: [scriptPath],
-      runInShell: Platform.isWindows,
+      runInShell: PlatformUtils.isWindows,
     );
     addTearDown(() async {
       await session.close();

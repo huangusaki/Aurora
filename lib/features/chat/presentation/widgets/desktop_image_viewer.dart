@@ -8,19 +8,19 @@ import 'package:flutter/gestures.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:super_clipboard/super_clipboard.dart';
 
-class WindowsImageViewer extends StatefulWidget {
+class DesktopImageViewer extends StatefulWidget {
   final Uint8List imageBytes;
   final VoidCallback? onClose;
-  const WindowsImageViewer({
+  const DesktopImageViewer({
     super.key,
     required this.imageBytes,
     this.onClose,
   });
   @override
-  State<WindowsImageViewer> createState() => _WindowsImageViewerState();
+  State<DesktopImageViewer> createState() => _DesktopImageViewerState();
 }
 
-class _WindowsImageViewerState extends State<WindowsImageViewer> {
+class _DesktopImageViewerState extends State<DesktopImageViewer> {
   double _scale = 1.0;
   double _rotation = 0.0;
   bool _flipHorizontal = false;

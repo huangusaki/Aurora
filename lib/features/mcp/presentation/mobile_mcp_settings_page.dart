@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:aurora/l10n/app_localizations.dart';
 import 'package:aurora/shared/riverpod_compat.dart';
@@ -107,7 +106,7 @@ class _MobileMcpSettingsPageState extends ConsumerState<MobileMcpSettingsPage> {
 
     final nameController = TextEditingController(text: server?.name ?? '');
     McpServerTransport transport =
-        server?.transport ?? (Platform.isWindows ? McpServerTransport.stdio : McpServerTransport.http);
+        server?.transport ?? McpServerTransport.http;
     final commandController = TextEditingController(text: server?.command ?? '');
     final argsController =
         TextEditingController(text: (server?.args ?? const []).join('\n'));
@@ -125,7 +124,7 @@ class _MobileMcpSettingsPageState extends ConsumerState<MobileMcpSettingsPage> {
     );
 
     bool enabled = server?.enabled ?? true;
-    bool runInShell = server?.runInShell ?? Platform.isWindows;
+    bool runInShell = server?.runInShell ?? false;
 
     Map<String, String> parseKeyValue(String raw) {
       final result = <String, String>{};

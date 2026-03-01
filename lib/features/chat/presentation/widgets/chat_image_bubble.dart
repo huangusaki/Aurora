@@ -6,11 +6,12 @@ import 'package:flutter/material.dart' as material
     show CircularProgressIndicator;
 import 'package:super_clipboard/super_clipboard.dart';
 import 'package:flutter/foundation.dart';
+import 'package:aurora/shared/utils/platform_utils.dart';
 import 'package:aurora/shared/utils/image_compression.dart';
 import 'package:aurora/shared/utils/base64_utils.dart';
 import 'package:aurora/shared/widgets/aurora_page_route.dart';
 import 'package:aurora/l10n/app_localizations.dart';
-import 'windows_image_viewer.dart';
+import 'desktop_image_viewer.dart';
 import 'mobile_image_viewer.dart';
 
 final Map<int, Uint8List> _imageCache = {};
@@ -196,11 +197,11 @@ class _ChatImageBubbleState extends State<ChatImageBubble> {
     }
     if (bytes == null) return;
     if (!context.mounted) return;
-    if (Platform.isWindows) {
+    if (PlatformUtils.isDesktop) {
       Navigator.of(context).push(
         AuroraFadePageRoute(
           opaque: false,
-          builder: (context) => WindowsImageViewer(
+          builder: (context) => DesktopImageViewer(
             imageBytes: bytes!,
             onClose: () => Navigator.pop(context),
           ),
@@ -234,7 +235,7 @@ class _ChatImageBubbleState extends State<ChatImageBubble> {
             child: SizedBox(
               width: 24,
               height: 24,
-              child: Platform.isWindows
+              child: PlatformUtils.isDesktop
                   ? const ProgressRing(strokeWidth: 2)
                   : const material.CircularProgressIndicator(strokeWidth: 2),
             ),

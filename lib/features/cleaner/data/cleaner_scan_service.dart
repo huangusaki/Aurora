@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:aurora/shared/utils/platform_utils.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
@@ -590,7 +591,7 @@ class CleanerScanService implements CleanerScanner {
       return null;
     }
 
-    if (Platform.isWindows) {
+    if (PlatformUtils.isWindows) {
       final home = env('USERPROFILE');
       final systemDrive = env('SystemDrive');
       addJoin(home, const ['Downloads']);
@@ -599,7 +600,7 @@ class CleanerScanService implements CleanerScanner {
       }
     }
 
-    if (Platform.isMacOS) {
+    if (PlatformUtils.isMacOS) {
       final home = env('HOME');
       addJoin(home, const ['Downloads']);
       addJoin(home, const ['Library', 'Caches']);
@@ -609,7 +610,7 @@ class CleanerScanService implements CleanerScanner {
       addPath('/private/var/tmp');
     }
 
-    if (Platform.isLinux) {
+    if (PlatformUtils.isLinux) {
       final home = env('HOME');
       addJoin(home, const ['Downloads']);
       addJoin(home, const ['.cache']);
@@ -618,7 +619,7 @@ class CleanerScanService implements CleanerScanner {
       addPath('/var/tmp');
     }
 
-    if (Platform.isAndroid) {
+    if (PlatformUtils.isAndroid) {
       try {
         final external = await getExternalStorageDirectory();
         if (external != null) {

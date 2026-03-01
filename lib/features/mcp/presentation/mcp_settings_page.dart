@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:aurora/l10n/app_localizations.dart';
 import 'package:aurora/shared/riverpod_compat.dart';
 import 'package:aurora/shared/theme/aurora_icons.dart';
+import 'package:aurora/shared/utils/platform_utils.dart';
 import 'package:aurora/shared/widgets/aurora_notice.dart';
 import 'package:fluent_ui/fluent_ui.dart' as fluent;
 import 'package:flutter/material.dart';
@@ -671,7 +671,7 @@ class _McpSettingsPageState extends ConsumerState<McpSettingsPage> {
             .join('\n'));
 
     bool enabled = server?.enabled ?? true;
-    bool runInShell = server?.runInShell ?? Platform.isWindows;
+    bool runInShell = server?.runInShell ?? PlatformUtils.isWindows;
 
     await showDialog(
       context: context,

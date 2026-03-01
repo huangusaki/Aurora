@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:fluent_ui/fluent_ui.dart' as fluent;
 import 'package:flutter/material.dart';
 import 'package:aurora/shared/riverpod_compat.dart';
+import 'package:aurora/shared/utils/platform_utils.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 import 'package:aurora/shared/widgets/aurora_bottom_sheet.dart';
@@ -502,9 +503,9 @@ class _SkillSettingsPageState extends ConsumerState<SkillSettingsPage> {
   Future<void> _showDeleteConfirmDialog(
       BuildContext context, WidgetRef ref, Skill skill) async {
     final l10n = AppLocalizations.of(context)!;
-    final isWindows = Theme.of(context).platform == TargetPlatform.windows;
+    final isDesktop = PlatformUtils.isDesktop;
 
-    if (isWindows) {
+    if (isDesktop) {
       await fluent.showDialog(
         context: context,
         builder: (context) => fluent.ContentDialog(
@@ -545,7 +546,7 @@ class _SkillSettingsPageState extends ConsumerState<SkillSettingsPage> {
   Future<void> _showEditSkillDialog(
       BuildContext context, WidgetRef ref, Skill skill) async {
     final l10n = AppLocalizations.of(context)!;
-    final isWindows = Theme.of(context).platform == TargetPlatform.windows;
+    final isDesktop = PlatformUtils.isDesktop;
 
     // Initial fetch of content
     final content =
@@ -553,7 +554,7 @@ class _SkillSettingsPageState extends ConsumerState<SkillSettingsPage> {
     if (!context.mounted) return;
     final controller = TextEditingController(text: content);
 
-    if (isWindows) {
+    if (isDesktop) {
       await fluent.showDialog(
         context: context,
         builder: (context) => fluent.ContentDialog(
@@ -685,9 +686,9 @@ class _SkillSettingsPageState extends ConsumerState<SkillSettingsPage> {
   Future<void> _showAddSkillDialog(BuildContext context, WidgetRef ref) async {
     final l10n = AppLocalizations.of(context)!;
     final controller = TextEditingController();
-    final isWindows = Theme.of(context).platform == TargetPlatform.windows;
+    final isDesktop = PlatformUtils.isDesktop;
 
-    if (isWindows) {
+    if (isDesktop) {
       await fluent.showDialog(
         context: context,
         builder: (context) => fluent.ContentDialog(

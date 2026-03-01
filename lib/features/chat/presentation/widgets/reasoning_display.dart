@@ -1,4 +1,5 @@
 import 'package:aurora/shared/theme/aurora_icons.dart';
+import 'package:aurora/shared/utils/platform_utils.dart';
 import 'package:fluent_ui/fluent_ui.dart' as fluent;
 import 'package:flutter/material.dart';
 import 'dart:async';
@@ -9,14 +10,12 @@ import 'package:aurora/features/settings/presentation/settings_provider.dart';
 
 class ReasoningDisplay extends ConsumerStatefulWidget {
   final String content;
-  final bool isWindows;
   final bool isRunning;
   final double? duration;
   final DateTime? startTime;
   const ReasoningDisplay({
     super.key,
     required this.content,
-    required this.isWindows,
     this.isRunning = false,
     this.duration,
     this.startTime,
@@ -218,7 +217,8 @@ class _ReasoningDisplayState extends ConsumerState<ReasoningDisplay>
                             style: TextStyle(
                               fontSize: 13,
                               height: 1.5,
-                              fontFamily: widget.isWindows ? 'Consolas' : null,
+                              fontFamily:
+                                  PlatformUtils.isWindows ? 'Consolas' : null,
                               color: isDark ? Colors.white60 : Colors.black54,
                             ),
                           ),

@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:aurora/features/mcp/domain/mcp_server_config.dart';
 import 'package:aurora/features/mcp/presentation/mcp_connection_provider.dart';
 import 'package:aurora/shared/services/tool_manager.dart';
+import 'package:aurora/shared/utils/platform_utils.dart';
 
 String _resolveDartExecutable() {
   final exe = Platform.resolvedExecutable;
@@ -32,7 +33,7 @@ void main() {
       transport: McpServerTransport.stdio,
       command: _resolveDartExecutable(),
       args: [scriptPath],
-      runInShell: Platform.isWindows,
+      runInShell: PlatformUtils.isWindows,
     );
 
     final mcpConnection = McpConnectionNotifier();

@@ -432,7 +432,6 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
                                       : const EdgeInsets.only(bottom: 8.0),
                                   child: ReasoningDisplay(
                                     content: reasoningText,
-                                    isWindows: PlatformUtils.isDesktop,
                                     isRunning: widget.isGenerating,
                                     duration: uiMessage.reasoningDurationSeconds,
                                     startTime: message.timestamp,

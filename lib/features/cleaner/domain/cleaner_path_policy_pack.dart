@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:aurora/shared/utils/platform_utils.dart';
+
 class CleanerPathPolicy {
   final List<String> protectedPathPrefixes;
   final List<String> excludedPathPrefixes;
@@ -18,7 +20,7 @@ class CleanerPathPolicyPack {
   const CleanerPathPolicyPack._();
 
   static CleanerPathPolicy defaultsForCurrentPlatform() {
-    if (Platform.isWindows) {
+    if (PlatformUtils.isWindows) {
       final systemRoot = _env('SystemRoot') ?? r'C:\Windows';
       final programFiles = _env('ProgramFiles') ?? r'C:\Program Files';
       final programFilesX86 =
@@ -71,7 +73,7 @@ class CleanerPathPolicyPack {
       );
     }
 
-    if (Platform.isMacOS) {
+    if (PlatformUtils.isMacOS) {
       final home = _env('HOME');
       final userDataPrefixes = _normalizePrefixes([
         if (_hasText(home)) _joinPosix(home!, 'Desktop'),
@@ -105,7 +107,7 @@ class CleanerPathPolicyPack {
       );
     }
 
-    if (Platform.isLinux) {
+    if (PlatformUtils.isLinux) {
       final home = _env('HOME');
       final userDataPrefixes = _normalizePrefixes([
         if (_hasText(home)) _joinPosix(home!, 'Desktop'),
@@ -143,7 +145,7 @@ class CleanerPathPolicyPack {
       );
     }
 
-    if (Platform.isAndroid) {
+    if (PlatformUtils.isAndroid) {
       const sharedMediaPrefixes = <String>[
         '/storage/emulated/0/DCIM',
         '/storage/emulated/0/Pictures',
@@ -190,7 +192,7 @@ class CleanerPathPolicyPack {
       );
     }
 
-    if (Platform.isIOS) {
+    if (PlatformUtils.isIOS) {
       final home = _env('HOME');
       final userDataPrefixes = _normalizePrefixes([
         if (_hasText(home)) _joinPosix(home!, 'Documents'),

@@ -1,6 +1,7 @@
 import 'package:aurora/shared/theme/aurora_icons.dart';
 import 'package:fluent_ui/fluent_ui.dart' as fluent;
 import 'package:aurora/shared/widgets/aurora_bottom_sheet.dart';
+import 'package:aurora/shared/utils/platform_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:aurora/shared/riverpod_compat.dart';
 import '../../../settings/presentation/settings_provider.dart';
@@ -8,8 +9,7 @@ import 'custom_dropdown_overlay.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 
 class ModelSelector extends ConsumerStatefulWidget {
-  final bool isWindows;
-  const ModelSelector({super.key, this.isWindows = true});
+  const ModelSelector({super.key});
   @override
   ConsumerState<ModelSelector> createState() => _ModelSelectorState();
 }
@@ -138,7 +138,7 @@ class _ModelSelectorState extends ConsumerState<ModelSelector> {
       await ref.read(settingsProvider.notifier).setSelectedModel(model);
     }
 
-    if (widget.isWindows) {
+    if (PlatformUtils.isDesktop) {
       final theme = fluent.FluentTheme.of(context);
       final textStyle = theme.typography.body?.copyWith(
         fontSize: 13,

@@ -28,7 +28,7 @@ class _WindowButtonsState extends State<WindowButtons> with WindowListener {
       return Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _WindowsCaptionButton(
+          _CaptionButton(
             icon: Icons.remove,
             onTap: windowManager.minimize,
           ),
@@ -36,7 +36,7 @@ class _WindowButtonsState extends State<WindowButtons> with WindowListener {
             future: windowManager.isMaximized(),
             builder: (context, snapshot) {
               final isMaximized = snapshot.data ?? false;
-              return _WindowsCaptionButton(
+              return _CaptionButton(
                 icon: isMaximized ? Icons.filter_none : Icons.crop_square,
                 onTap: () {
                   if (isMaximized) {
@@ -49,7 +49,7 @@ class _WindowButtonsState extends State<WindowButtons> with WindowListener {
               );
             },
           ),
-          _WindowsCaptionButton(
+          _CaptionButton(
             icon: Icons.close,
             isClose: true,
             onTap: windowManager.close,
@@ -149,22 +149,22 @@ class _TrafficLightButton extends StatelessWidget {
   }
 }
 
-class _WindowsCaptionButton extends StatefulWidget {
+class _CaptionButton extends StatefulWidget {
   final IconData icon;
   final bool isClose;
   final VoidCallback onTap;
 
-  const _WindowsCaptionButton({
+  const _CaptionButton({
     required this.icon,
     required this.onTap,
     this.isClose = false,
   });
 
   @override
-  State<_WindowsCaptionButton> createState() => _WindowsCaptionButtonState();
+  State<_CaptionButton> createState() => _CaptionButtonState();
 }
 
-class _WindowsCaptionButtonState extends State<_WindowsCaptionButton> {
+class _CaptionButtonState extends State<_CaptionButton> {
   bool _hovering = false;
 
   @override

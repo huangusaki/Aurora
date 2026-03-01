@@ -732,25 +732,16 @@ class SettingsStorage {
 
   Future<void> _migrateFromExampleIfNeeded(Directory newDir) async {
     try {
-      final List<Directory> potentialOldDirs = [];
-
-      if (Platform.isWindows) {
-        // Gen 1: com.example\Aurora
-        // Gen 2: Aurora\Aurora
-        final roamingDir = newDir.parent;
-        potentialOldDirs.add(Directory(
-            '${roamingDir.path}${Platform.pathSeparator}com.example${Platform.pathSeparator}Aurora'));
-        potentialOldDirs
-            .add(Directory('${newDir.path}${Platform.pathSeparator}Aurora'));
-      } else if (Platform.isMacOS) {
-        final supportDir = newDir.parent;
-        potentialOldDirs.add(Directory(
-            '${supportDir.path}${Platform.pathSeparator}com.aurora.aurora'));
-      } else if (Platform.isLinux) {
-        final shareDir = newDir.parent;
-        potentialOldDirs.add(Directory(
-            '${shareDir.path}${Platform.pathSeparator}com.aurora.aurora'));
-      }
+      final parentDir = newDir.parent;
+      final sep = Platform.pathSeparator;
+      final potentialOldDirs = <Directory>[
+        // Windows Gen 1: com.example\Aurora
+        Directory('${parentDir.path}${sep}com.example${sep}Aurora'),
+        // Windows Gen 2: Aurora\Aurora
+        Directory('${newDir.path}${sep}Aurora'),
+        // macOS/Linux legacy bundle: com.aurora.aurora
+        Directory('${parentDir.path}${sep}com.aurora.aurora'),
+      ];
 
       for (var oldDir in potentialOldDirs) {
         if (!await oldDir.exists() || oldDir.path == newDir.path) continue;
