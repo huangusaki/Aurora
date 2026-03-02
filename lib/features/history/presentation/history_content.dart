@@ -11,6 +11,7 @@ import 'package:aurora/features/settings/presentation/settings_provider.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 import 'package:aurora/shared/utils/number_format_utils.dart';
 import 'package:aurora/shared/utils/platform_utils.dart';
+import 'package:aurora/shared/widgets/aurora_bottom_sheet.dart';
 import 'package:aurora/features/chat/data/session_entity.dart';
 
 class _SessionTreeItem {
@@ -488,10 +489,12 @@ class _SessionListState extends ConsumerState<_SessionList> {
               ? const Center(child: fluent.ProgressRing())
               : LayoutBuilder(
                   builder: (context, constraints) {
-                    final proxyWidth =
-                        constraints.maxWidth.isFinite ? constraints.maxWidth : null;
-                    final stableDefaultTextStyle =
-                        DefaultTextStyle.of(context).style.copyWith(inherit: true);
+                    final proxyWidth = constraints.maxWidth.isFinite
+                        ? constraints.maxWidth
+                        : null;
+                    final stableDefaultTextStyle = DefaultTextStyle.of(context)
+                        .style
+                        .copyWith(inherit: true);
                     return ReorderableListView.builder(
                       buildDefaultDragHandles: false,
                       proxyDecorator: (child, index, animation) {
@@ -510,7 +513,9 @@ class _SessionListState extends ConsumerState<_SessionList> {
                         final visibleIds = visibleSessionItems
                             .map((item) => item.session.sessionId)
                             .toList();
-                        if (oldIndex < 0 || oldIndex >= visibleIds.length) return;
+                        if (oldIndex < 0 || oldIndex >= visibleIds.length) {
+                          return;
+                        }
                         final draggedId = visibleIds.removeAt(oldIndex);
                         if (oldIndex < newIndex) {
                           newIndex -= 1;
@@ -533,8 +538,10 @@ class _SessionListState extends ConsumerState<_SessionList> {
                         final session = treeItem.session;
                         final isSelected =
                             session.sessionId == widget.selectedSessionId;
-                        final sessionState = manager.getState(session.sessionId);
-                        final statusColor = _resolveSessionStatusColor(sessionState);
+                        final sessionState =
+                            manager.getState(session.sessionId);
+                        final statusColor =
+                            _resolveSessionStatusColor(sessionState);
                         return ReorderableDragStartListener(
                           key: Key(session.sessionId),
                           index: index,
@@ -557,7 +564,8 @@ class _SessionListState extends ConsumerState<_SessionList> {
                                     .read(sessionsProvider.notifier)
                                     .ensureSessionVisible(session.sessionId);
                                 ref
-                                    .read(selectedHistorySessionIdProvider.notifier)
+                                    .read(selectedHistorySessionIdProvider
+                                        .notifier)
                                     .state = session.sessionId;
                               },
                               onRename: (newTitle) {
@@ -571,9 +579,10 @@ class _SessionListState extends ConsumerState<_SessionList> {
                                     .deleteSession(session.sessionId);
                                 if (isSelected) {
                                   ref
-                                      .read(selectedHistorySessionIdProvider
-                                          .notifier)
-                                      .state = widget.isMobile ? null : 'new_chat';
+                                          .read(selectedHistorySessionIdProvider
+                                              .notifier)
+                                          .state =
+                                      widget.isMobile ? null : 'new_chat';
                                 }
                               },
                               depth: treeItem.depth,
@@ -581,16 +590,18 @@ class _SessionListState extends ConsumerState<_SessionList> {
                               isCollapsed: treeItem.isCollapsed,
                               onToggleCollapse: treeItem.hasChildren
                                   ? () {
-                                      final nextCollapsed = Set<String>.from(ref
-                                          .read(collapsedHistorySessionIdsProvider));
+                                      final nextCollapsed = Set<String>.from(
+                                          ref.read(
+                                              collapsedHistorySessionIdsProvider));
                                       if (treeItem.isCollapsed) {
                                         nextCollapsed.remove(session.sessionId);
                                       } else {
                                         nextCollapsed.add(session.sessionId);
                                       }
                                       ref
-                                          .read(collapsedHistorySessionIdsProvider
-                                              .notifier)
+                                          .read(
+                                              collapsedHistorySessionIdsProvider
+                                                  .notifier)
                                           .state = nextCollapsed;
                                     }
                                   : null,
@@ -856,6 +867,7 @@ class SessionListWidget extends ConsumerWidget {
         final isSelected = session.sessionId == selectedSessionId;
         final sessionState = manager.getState(session.sessionId);
         final statusColor = _resolveSessionStatusColor(sessionState);
+        final l10n = AppLocalizations.of(context)!;
         return ReorderableDelayedDragStartListener(
           key: Key(session.sessionId),
           index: index,
@@ -928,9 +940,35 @@ class SessionListWidget extends ConsumerWidget {
                         : ''),
                 style: const TextStyle(fontSize: 12),
               ),
-              trailing: IconButton(
-                icon: const Icon(Icons.delete_outline, size: 20),
-                onPressed: () => onSessionDeleted(session.sessionId),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    tooltip: l10n.renameSession,
+                    icon: const Icon(AuroraIcons.edit, size: 20),
+                    onPressed: () async {
+                      final newTitle = await AuroraBottomSheet.showInput(
+                        context: context,
+                        title: l10n.renameSession,
+                        hintText: l10n.renameSessionHint,
+                        initialValue: session.title,
+                      );
+                      if (newTitle == null ||
+                          newTitle.isEmpty ||
+                          newTitle == session.title) {
+                        return;
+                      }
+                      ref
+                          .read(sessionsProvider.notifier)
+                          .renameSession(session.sessionId, newTitle);
+                    },
+                  ),
+                  IconButton(
+                    tooltip: l10n.delete,
+                    icon: const Icon(Icons.delete_outline, size: 20),
+                    onPressed: () => onSessionDeleted(session.sessionId),
+                  ),
+                ],
               ),
             ),
           ),
@@ -939,4 +977,3 @@ class SessionListWidget extends ConsumerWidget {
     );
   }
 }
-
