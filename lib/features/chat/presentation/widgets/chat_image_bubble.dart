@@ -7,7 +7,7 @@ import 'package:flutter/material.dart' as material
 import 'package:super_clipboard/super_clipboard.dart';
 import 'package:flutter/foundation.dart';
 import 'package:aurora/shared/utils/platform_utils.dart';
-import 'package:aurora/shared/utils/image_compression.dart';
+import 'package:aurora/shared/utils/image_format_utils.dart';
 import 'package:aurora/shared/utils/base64_utils.dart';
 import 'package:aurora/shared/widgets/aurora_page_route.dart';
 import 'package:aurora/l10n/app_localizations.dart';
@@ -126,7 +126,30 @@ class _ChatImageBubbleState extends State<ChatImageBubble> {
       final clipboard = SystemClipboard.instance;
       if (clipboard == null) return;
       final item = DataWriterItem();
-      item.add(Formats.png(bytes));
+      final ext = detectImageExtension(bytes);
+      switch (ext) {
+        case 'jpg':
+        case 'jpeg':
+          item.add(Formats.jpeg(bytes));
+          break;
+        case 'gif':
+          item.add(Formats.gif(bytes));
+          break;
+        case 'webp':
+          item.add(Formats.webp(bytes));
+          break;
+        case 'bmp':
+          item.add(Formats.bmp(bytes));
+          break;
+        case 'tif':
+        case 'tiff':
+          item.add(Formats.tiff(bytes));
+          break;
+        case 'png':
+        default:
+          item.add(Formats.png(bytes));
+          break;
+      }
       await clipboard.write([item]);
       if (context.mounted) {
         displayInfoBar(context, builder: (context, close) {
@@ -164,8 +187,7 @@ class _ChatImageBubbleState extends State<ChatImageBubble> {
   Future<void> _handleSave({required String imagesLabel}) async {
     final bytes = await _getImageBytes();
     if (bytes == null) return;
-    final mime = extractMimeFromDataUrl(widget.imageUrl);
-    final ext = extensionForMime(mime);
+    final ext = detectImageExtension(bytes);
     final FileSaveLocation? result = await getSaveLocation(
       suggestedName: 'image_${DateTime.now().millisecondsSinceEpoch}.$ext',
       acceptedTypeGroups: [

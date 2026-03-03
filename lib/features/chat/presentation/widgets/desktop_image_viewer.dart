@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'dart:math' as math;
 import 'package:aurora/shared/theme/aurora_icons.dart';
+import 'package:aurora/shared/utils/image_format_utils.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/gestures.dart';
@@ -77,7 +78,30 @@ class _DesktopImageViewerState extends State<DesktopImageViewer> {
       final clipboard = SystemClipboard.instance;
       if (clipboard == null) return;
       final item = DataWriterItem();
-      item.add(Formats.png(widget.imageBytes));
+      final ext = detectImageExtension(widget.imageBytes);
+      switch (ext) {
+        case 'jpg':
+        case 'jpeg':
+          item.add(Formats.jpeg(widget.imageBytes));
+          break;
+        case 'gif':
+          item.add(Formats.gif(widget.imageBytes));
+          break;
+        case 'webp':
+          item.add(Formats.webp(widget.imageBytes));
+          break;
+        case 'bmp':
+          item.add(Formats.bmp(widget.imageBytes));
+          break;
+        case 'tif':
+        case 'tiff':
+          item.add(Formats.tiff(widget.imageBytes));
+          break;
+        case 'png':
+        default:
+          item.add(Formats.png(widget.imageBytes));
+          break;
+      }
       await clipboard.write([item]);
       if (mounted) {
         displayInfoBar(context, builder: (context, close) {
@@ -98,10 +122,11 @@ class _DesktopImageViewerState extends State<DesktopImageViewer> {
 
   Future<void> _handleSave() async {
     final l10n = AppLocalizations.of(context)!;
+    final ext = detectImageExtension(widget.imageBytes);
     final FileSaveLocation? result = await getSaveLocation(
-      suggestedName: 'image_${DateTime.now().millisecondsSinceEpoch}.png',
+      suggestedName: 'image_${DateTime.now().millisecondsSinceEpoch}.$ext',
       acceptedTypeGroups: [
-        XTypeGroup(label: l10n.images, extensions: const ['png']),
+        XTypeGroup(label: l10n.images, extensions: [ext]),
       ],
     );
     if (result != null) {

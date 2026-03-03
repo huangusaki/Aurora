@@ -6,33 +6,8 @@ import 'package:gal/gal.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:super_clipboard/super_clipboard.dart';
 import 'package:aurora/l10n/app_localizations.dart';
+import 'package:aurora/shared/utils/image_format_utils.dart';
 import 'package:aurora/shared/widgets/aurora_notice.dart';
-
-/// 通过文件头魔数检测图片格式，返回合适的扩展名。
-String _detectExtension(Uint8List bytes) {
-  if (bytes.length >= 2 && bytes[0] == 0xFF && bytes[1] == 0xD8) {
-    return 'jpg';
-  }
-  if (bytes.length >= 4 &&
-      bytes[0] == 0x89 &&
-      bytes[1] == 0x50 &&
-      bytes[2] == 0x4E &&
-      bytes[3] == 0x47) {
-    return 'png';
-  }
-  if (bytes.length >= 12 &&
-      bytes[0] == 0x52 &&
-      bytes[1] == 0x49 &&
-      bytes[2] == 0x46 &&
-      bytes[3] == 0x46 &&
-      bytes[8] == 0x57 &&
-      bytes[9] == 0x45 &&
-      bytes[10] == 0x42 &&
-      bytes[11] == 0x50) {
-    return 'webp';
-  }
-  return 'png';
-}
 
 class MobileImageViewer extends StatefulWidget {
   final Uint8List imageBytes;
@@ -98,7 +73,30 @@ class _MobileImageViewerState extends State<MobileImageViewer>
       final clipboard = SystemClipboard.instance;
       if (clipboard == null) return;
       final item = DataWriterItem();
-      item.add(Formats.png(widget.imageBytes));
+      final ext = detectImageExtension(widget.imageBytes);
+      switch (ext) {
+        case 'jpg':
+        case 'jpeg':
+          item.add(Formats.jpeg(widget.imageBytes));
+          break;
+        case 'gif':
+          item.add(Formats.gif(widget.imageBytes));
+          break;
+        case 'webp':
+          item.add(Formats.webp(widget.imageBytes));
+          break;
+        case 'bmp':
+          item.add(Formats.bmp(widget.imageBytes));
+          break;
+        case 'tif':
+        case 'tiff':
+          item.add(Formats.tiff(widget.imageBytes));
+          break;
+        case 'png':
+        default:
+          item.add(Formats.png(widget.imageBytes));
+          break;
+      }
       await clipboard.write([item]);
       if (context.mounted) {
         final l10n = AppLocalizations.of(context)!;
@@ -116,7 +114,7 @@ class _MobileImageViewerState extends State<MobileImageViewer>
   Future<void> _handleSave(BuildContext context) async {
     try {
       // 根据图片实际格式选择扩展名
-      final ext = _detectExtension(widget.imageBytes);
+      final ext = detectImageExtension(widget.imageBytes);
       final tempDir = await getTemporaryDirectory();
       final tempPath =
           '${tempDir.path}/image_${DateTime.now().millisecondsSinceEpoch}.$ext';
