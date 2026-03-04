@@ -5,6 +5,7 @@ import 'package:fluent_ui/fluent_ui.dart' as fluent;
 import 'package:flutter/material.dart';
 
 import 'package:aurora/shared/riverpod_compat.dart';
+import 'package:aurora/features/settings/presentation/settings_provider.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 
@@ -104,6 +105,12 @@ class ChatViewState extends ConsumerState<ChatView> {
 
   bool _hasRestoredPosition = false;
   bool _wasLoading = false;
+
+  // Used to keep the visible content stable while a response is streaming in a
+  // reversed ListView (where new content grows from the bottom).
+  double? _prevMaxScrollExtent;
+  double? _prevScrollPixels;
+
   ChatNotifier? _notifier;
   @override
   void initState() {
@@ -146,6 +153,38 @@ class ChatViewState extends ConsumerState<ChatView> {
     final currentScroll = _scrollController.position.pixels;
     final autoScroll = currentScroll < 100;
     _notifier!.setAutoScrollEnabled(autoScroll);
+
+    // Keep baselines fresh in case the user scrolls while generation is idle.
+    _prevMaxScrollExtent = _scrollController.position.maxScrollExtent;
+    _prevScrollPixels = currentScroll;
+  }
+
+  void _scheduleScrollPositionCompensation() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (!_scrollController.hasClients) return;
+      final prevMax = _prevMaxScrollExtent;
+      final prevPixels = _prevScrollPixels;
+      if (prevMax == null || prevPixels == null) return;
+
+      final pos = _scrollController.position;
+      final deltaMax = pos.maxScrollExtent - prevMax;
+      if (deltaMax.abs() < 0.5) return;
+
+      final target =
+          (prevPixels + deltaMax).clamp(pos.minScrollExtent, pos.maxScrollExtent);
+      if ((target - pos.pixels).abs() < 0.5) return;
+      _scrollController.jumpTo(target);
+    });
+  }
+
+  void _scheduleScrollMetricsCapture() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (!_scrollController.hasClients) return;
+      _prevMaxScrollExtent = _scrollController.position.maxScrollExtent;
+      _prevScrollPixels = _scrollController.position.pixels;
+    });
   }
 
   @override
@@ -431,6 +470,10 @@ class ChatViewState extends ConsumerState<ChatView> {
       _notifier = notifier;
       _notifier!.addLocalListener(_onNotifierStateChanged);
     }
+    final keepChatScrollPositionOnResponse = ref.watch(
+      settingsProvider
+          .select((value) => value.keepChatScrollPositionOnResponse),
+    );
     final chatState = notifier.currentState;
     final messages = chatState.messages;
     final isLoading = chatState.isLoading;
@@ -448,6 +491,18 @@ class ChatViewState extends ConsumerState<ChatView> {
         }
       });
     }
+
+    // When the list is reversed, new content grows from the bottom (offset=0).
+    // If the user is reading older content (auto-scroll off), keep the viewport
+    // stable while streaming/generating.
+    if (keepChatScrollPositionOnResponse &&
+        _hasRestoredPosition &&
+        isLoading &&
+        !chatState.isAutoScrollEnabled) {
+      _scheduleScrollPositionCompensation();
+    }
+    _scheduleScrollMetricsCapture();
+
     _wasLoading = isLoading;
     if (hasUnreadResponse) {
       WidgetsBinding.instance.addPostFrameCallback((_) {

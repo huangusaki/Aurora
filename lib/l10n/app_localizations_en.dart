@@ -127,6 +127,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'When enabled, the app opens the conversation you were using before you quit.';
 
   @override
+  String get keepChatScrollPositionOnResponse =>
+      'Keep scroll position while responding';
+
+  @override
+  String get keepChatScrollPositionOnResponseHint =>
+      'When enabled, the chat won\'t auto-scroll to the bottom while the assistant is generating a response (streaming, etc.).';
+
+  @override
   String get smartTopicGeneration => 'Smart Topic Generation';
 
   @override

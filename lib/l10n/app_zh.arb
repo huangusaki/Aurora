@@ -47,6 +47,8 @@
   "chatExperience": "对话体验",
   "restoreLastChatOnLaunch": "启动时恢复上次对话",
   "restoreLastChatOnLaunchHint": "开启后，应用启动时会回到上次退出前使用的对话。",
+  "keepChatScrollPositionOnResponse": "回复时保持当前窗口位置",
+  "keepChatScrollPositionOnResponseHint": "开启后，模型在生成回复（流式输出等）时会保持你当前的滚动位置不变。",
   "smartTopicGeneration": "智能话题生成",
   "smartTopicDescription": "使用 LLM 自动总结作为话题标题",
   "generationModel": "生成模型",

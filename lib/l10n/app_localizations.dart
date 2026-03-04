@@ -326,6 +326,18 @@ abstract class AppLocalizations {
   /// **'开启后，应用启动时会回到上次退出前使用的对话。'**
   String get restoreLastChatOnLaunchHint;
 
+  /// No description provided for @keepChatScrollPositionOnResponse.
+  ///
+  /// In zh, this message translates to:
+  /// **'回复时保持当前窗口位置'**
+  String get keepChatScrollPositionOnResponse;
+
+  /// No description provided for @keepChatScrollPositionOnResponseHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'开启后，模型在生成回复（流式输出等）时会保持你当前的滚动位置不变。'**
+  String get keepChatScrollPositionOnResponseHint;
+
   /// No description provided for @smartTopicGeneration.
   ///
   /// In zh, this message translates to:

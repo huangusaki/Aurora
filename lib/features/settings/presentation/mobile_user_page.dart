@@ -137,6 +137,25 @@ class _MobileUserPageState extends ConsumerState<MobileUserPage> {
                           !settingsState.restoreLastSessionOnLaunch);
                 },
               ),
+              MobileSettingsTile(
+                leading: const Icon(Icons.lock_outline),
+                title: l10n.keepChatScrollPositionOnResponse,
+                subtitle: l10n.keepChatScrollPositionOnResponseHint,
+                trailing: Switch.adaptive(
+                  value: settingsState.keepChatScrollPositionOnResponse,
+                  onChanged: (bool value) {
+                    ref
+                        .read(settingsProvider.notifier)
+                        .toggleKeepChatScrollPositionOnResponse(value);
+                  },
+                ),
+                onTap: () {
+                  ref
+                      .read(settingsProvider.notifier)
+                      .toggleKeepChatScrollPositionOnResponse(
+                          !settingsState.keepChatScrollPositionOnResponse);
+                },
+              ),
             ],
           ),
         ],

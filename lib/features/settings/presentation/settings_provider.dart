@@ -222,6 +222,7 @@ class SettingsState {
   final bool enableSmartTopic;
   final String? topicGenerationModel;
   final bool restoreLastSessionOnLaunch;
+  final bool keepChatScrollPositionOnResponse;
   final String language;
   final List<ChatPreset> presets;
   final String? lastPresetId;
@@ -268,6 +269,7 @@ class SettingsState {
     this.enableSmartTopic = true,
     this.topicGenerationModel,
     this.restoreLastSessionOnLaunch = true,
+    this.keepChatScrollPositionOnResponse = true,
     this.language = 'zh',
     this.presets = const [],
     this.lastPresetId,
@@ -322,6 +324,7 @@ class SettingsState {
     bool? enableSmartTopic,
     String? topicGenerationModel,
     bool? restoreLastSessionOnLaunch,
+    bool? keepChatScrollPositionOnResponse,
     String? language,
     List<ChatPreset>? presets,
     Object? lastPresetId = _settingsSentinel,
@@ -384,6 +387,8 @@ class SettingsState {
       topicGenerationModel: topicGenerationModel ?? this.topicGenerationModel,
       restoreLastSessionOnLaunch:
           restoreLastSessionOnLaunch ?? this.restoreLastSessionOnLaunch,
+      keepChatScrollPositionOnResponse: keepChatScrollPositionOnResponse ??
+          this.keepChatScrollPositionOnResponse,
       language: language ?? this.language,
       presets: presets ?? this.presets,
       lastPresetId: lastPresetId == _settingsSentinel
@@ -536,6 +541,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     bool enableSmartTopic = true,
     String? topicGenerationModel,
     bool restoreLastSessionOnLaunch = true,
+    bool keepChatScrollPositionOnResponse = true,
     String language = 'zh',
     String themeColor = 'teal',
     String backgroundColor = 'default',
@@ -579,6 +585,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
           enableSmartTopic: enableSmartTopic,
           topicGenerationModel: topicGenerationModel,
           restoreLastSessionOnLaunch: restoreLastSessionOnLaunch,
+          keepChatScrollPositionOnResponse: keepChatScrollPositionOnResponse,
           language: language,
           presets: [],
           themeColor: themeColor,
@@ -648,6 +655,9 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
       activeKnowledgeBaseIds: appSettings?.activeKnowledgeBaseIds ?? const [],
       enableSmartTopic: appSettings?.enableSmartTopic ?? true,
       topicGenerationModel: appSettings?.topicGenerationModel,
+      restoreLastSessionOnLaunch: appSettings?.restoreLastSessionOnLaunch ?? true,
+      keepChatScrollPositionOnResponse:
+          appSettings?.keepChatScrollPositionOnResponse ?? true,
       language: appSettings?.language ?? 'zh',
       themeColor: appSettings?.themeColor ?? 'teal',
       backgroundColor: appSettings?.backgroundColor ?? 'default',
@@ -1232,6 +1242,14 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     await _storage.saveAppSettings(
       activeProviderId: state.activeProviderId,
       restoreLastSessionOnLaunch: enabled,
+    );
+  }
+
+  Future<void> toggleKeepChatScrollPositionOnResponse(bool enabled) async {
+    state = state.copyWith(keepChatScrollPositionOnResponse: enabled);
+    await _storage.saveAppSettings(
+      activeProviderId: state.activeProviderId,
+      keepChatScrollPositionOnResponse: enabled,
     );
   }
 

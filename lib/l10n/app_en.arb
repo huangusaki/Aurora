@@ -47,6 +47,8 @@
   "chatExperience": "Chat Experience",
   "restoreLastChatOnLaunch": "Restore last chat on launch",
   "restoreLastChatOnLaunchHint": "When enabled, the app opens the conversation you were using before you quit.",
+  "keepChatScrollPositionOnResponse": "Keep scroll position while responding",
+  "keepChatScrollPositionOnResponseHint": "When enabled, the chat won't auto-scroll to the bottom while the assistant is generating a response (streaming, etc.).",
   "smartTopicGeneration": "Smart Topic Generation",
   "smartTopicDescription": "Use LLM to automatically summarize chat titles",
   "generationModel": "Generation Model",

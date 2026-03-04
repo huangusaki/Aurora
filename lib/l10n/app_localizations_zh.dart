@@ -125,6 +125,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get restoreLastChatOnLaunchHint => '开启后，应用启动时会回到上次退出前使用的对话。';
 
   @override
+  String get keepChatScrollPositionOnResponse => '回复时保持当前窗口位置';
+
+  @override
+  String get keepChatScrollPositionOnResponseHint =>
+      '开启后，模型在生成回复（流式输出等）时会保持你当前的滚动位置不变。';
+
+  @override
   String get smartTopicGeneration => '智能话题生成';
 
   @override

@@ -211,6 +211,7 @@ class SettingsStorage {
     bool? enableSmartTopic,
     String? topicGenerationModel,
     bool? restoreLastSessionOnLaunch,
+    bool? keepChatScrollPositionOnResponse,
     String? lastSessionId,
     String? lastTopicId,
     String? language,
@@ -269,6 +270,9 @@ class SettingsStorage {
           topicGenerationModel ?? existing?.topicGenerationModel
       ..restoreLastSessionOnLaunch = restoreLastSessionOnLaunch ??
           existing?.restoreLastSessionOnLaunch ??
+          true
+      ..keepChatScrollPositionOnResponse = keepChatScrollPositionOnResponse ??
+          existing?.keepChatScrollPositionOnResponse ??
           true
       ..lastSessionId = lastSessionId ?? existing?.lastSessionId
       ..lastTopicId = lastTopicId ?? existing?.lastTopicId

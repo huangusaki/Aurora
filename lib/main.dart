@@ -223,6 +223,8 @@ void main() async {
                 topicGenerationModel: appSettings?.topicGenerationModel,
                 restoreLastSessionOnLaunch:
                     appSettings?.restoreLastSessionOnLaunch ?? true,
+                keepChatScrollPositionOnResponse:
+                    appSettings?.keepChatScrollPositionOnResponse ?? true,
                 language: appSettings?.language ??
                     (Platform.localeName.startsWith('zh') ? 'zh' : 'en'),
                 themeColor: appSettings?.themeColor ?? 'teal',

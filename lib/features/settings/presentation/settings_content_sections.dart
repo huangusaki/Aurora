@@ -882,6 +882,39 @@ extension _SettingsContentSections on _SettingsContentState {
           _buildSectionCard(
             context,
             child: fluent.InfoLabel(
+              label: l10n.keepChatScrollPositionOnResponse,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l10n.keepChatScrollPositionOnResponseHint,
+                    style: const TextStyle(
+                      color: fluent.Colors.grey,
+                      fontSize: 12,
+                      height: 1.35,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  fluent.ToggleSwitch(
+                    checked: settingsState.keepChatScrollPositionOnResponse,
+                    onChanged: (v) {
+                      ref
+                          .read(settingsProvider.notifier)
+                          .toggleKeepChatScrollPositionOnResponse(v);
+                    },
+                    content: fluent.Text(
+                        settingsState.keepChatScrollPositionOnResponse
+                            ? l10n.enabled
+                            : l10n.disabled),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          _buildSectionCard(
+            context,
+            child: fluent.InfoLabel(
               label: l10n.smartTopicGeneration,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

@@ -53,6 +53,7 @@ class AppSettingsEntity {
   bool enableSmartTopic = true;
   String? topicGenerationModel;
   bool? restoreLastSessionOnLaunch;
+  bool? keepChatScrollPositionOnResponse;
   String? lastSessionId;
   String? lastTopicId;
   String language = 'zh';
