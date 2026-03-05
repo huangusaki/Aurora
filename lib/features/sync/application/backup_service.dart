@@ -6,6 +6,8 @@ import 'package:flutter/foundation.dart';
 import 'package:isar_community/isar.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import 'package:aurora/shared/utils/image_compression.dart';
+import 'package:aurora/shared/utils/message_meta_sanitizer.dart';
 
 import '../../assistant/data/assistant_entity.dart';
 import '../../assistant/data/assistant_memory_item_entity.dart';
@@ -248,15 +250,15 @@ class BackupService {
               content: m.content,
               reasoningContent: m.reasoningContent,
               attachments: m.attachments,
-              images: m.images,
+              images: sanitizeImageUrls(m.images),
               sessionId: m.sessionId,
-              assistantId: m.assistantId,
-              requestId: m.requestId,
-              model: m.model,
-              provider: m.provider,
+              assistantId: sanitizeMessageAssistantId(m.assistantId),
+              requestId: sanitizeMessageRequestId(m.requestId),
+              model: sanitizeMessageModel(m.model),
+              provider: sanitizeMessageProvider(m.provider),
               reasoningDurationSeconds: m.reasoningDurationSeconds,
-              role: m.role,
-              toolCallId: m.toolCallId,
+              role: sanitizeMessageRole(m.role),
+              toolCallId: sanitizeMessageToolCallId(m.toolCallId),
               toolCallsJson: m.toolCallsJson,
               tokenCount: m.tokenCount,
               promptTokens: m.promptTokens,
@@ -510,15 +512,15 @@ class BackupService {
             ..content = m.content
             ..reasoningContent = m.reasoningContent
             ..attachments = m.attachments
-            ..images = m.images
+            ..images = sanitizeImageUrls(m.images)
             ..sessionId = m.sessionId
-            ..assistantId = m.assistantId
-            ..requestId = m.requestId
-            ..model = m.model
-            ..provider = m.provider
+            ..assistantId = sanitizeMessageAssistantId(m.assistantId)
+            ..requestId = sanitizeMessageRequestId(m.requestId)
+            ..model = sanitizeMessageModel(m.model)
+            ..provider = sanitizeMessageProvider(m.provider)
             ..reasoningDurationSeconds = m.reasoningDurationSeconds
-            ..role = m.role
-            ..toolCallId = m.toolCallId
+            ..role = sanitizeMessageRole(m.role)
+            ..toolCallId = sanitizeMessageToolCallId(m.toolCallId)
             ..toolCallsJson = m.toolCallsJson
             ..tokenCount = m.tokenCount
             ..promptTokens = m.promptTokens

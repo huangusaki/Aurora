@@ -35,9 +35,9 @@ class _ChatPersistence {
 
     final unsaved = messages.sublist(startSaveIndex);
     final updatedMessages = List<Message>.from(_notifier.currentState.messages);
-    var finalAiMessage = aiMessage;
+      var finalAiMessage = aiMessage;
 
-    for (var i = 0; i < unsaved.length; i++) {
+      for (var i = 0; i < unsaved.length; i++) {
       if (_notifier._currentGenerationId != generationId) {
         break;
       }
@@ -66,13 +66,18 @@ class _ChatPersistence {
         );
       }
 
-      final uiMessage = message;
+      var uiMessage = message;
       var messageToPersist = message;
 
       // 保存前压缩图片：UI 保留原图显示，数据库存储压缩版本
       if (!message.isUser && message.images.isNotEmpty) {
         try {
-          final compressed = await compressImageDataUrls(message.images);
+          final sanitized = sanitizeImageUrls(message.images);
+          if (sanitized.length != message.images.length) {
+            uiMessage = uiMessage.copyWith(images: sanitized);
+            messageToPersist = messageToPersist.copyWith(images: sanitized);
+          }
+          final compressed = await compressImageDataUrls(sanitized);
           messageToPersist = messageToPersist.copyWith(images: compressed);
         } catch (e) {
           debugPrint('[IMAGE_COMPRESS] Persistence compression failed: $e');

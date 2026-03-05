@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:aurora/shared/utils/image_compression.dart';
+import 'package:aurora/shared/utils/message_meta_sanitizer.dart';
 import 'package:flutter/foundation.dart';
 import 'package:isar_community/isar.dart';
 import 'package:path_provider/path_provider.dart';
@@ -22,6 +24,12 @@ import '../../assistant/data/assistant_memory_state_entity.dart';
 class SettingsStorage {
   late Isar _isar;
   Isar get isar => _isar;
+
+  static const CompactCondition _compactOnLaunch = CompactCondition(
+    minFileSize: 256 * 1024 * 1024,
+    minBytes: 128 * 1024 * 1024,
+    minRatio: 2.0,
+  );
   Future<void> init() async {
     final supportDir = await getApplicationSupportDirectory();
     final documentsDir = await getApplicationDocumentsDirectory();
@@ -30,29 +38,38 @@ class SettingsStorage {
     await _migrateFromExampleIfNeeded(supportDir);
     await _migrateIfNeeded(documentsDir, supportDir);
 
+    final schemas = [
+      ProviderConfigEntitySchema,
+      AppSettingsEntitySchema,
+      MessageEntitySchema,
+      SessionEntitySchema,
+      UsageStatsEntitySchema,
+      DailyUsageStatsEntitySchema,
+      TopicEntitySchema,
+      ChatPresetEntitySchema,
+      AssistantEntitySchema,
+      AssistantMemoryItemEntitySchema,
+      AssistantMemoryStateEntitySchema,
+      AssistantMemoryJobEntitySchema,
+      KnowledgeBaseEntitySchema,
+      KnowledgeDocumentEntitySchema,
+      KnowledgeChunkEntitySchema,
+    ];
+
     _isar = await Isar.open(
-      [
-        ProviderConfigEntitySchema,
-        AppSettingsEntitySchema,
-        MessageEntitySchema,
-        SessionEntitySchema,
-        UsageStatsEntitySchema,
-        DailyUsageStatsEntitySchema,
-        TopicEntitySchema,
-        ChatPresetEntitySchema,
-        AssistantEntitySchema,
-        AssistantMemoryItemEntitySchema,
-        AssistantMemoryStateEntitySchema,
-        AssistantMemoryJobEntitySchema,
-        KnowledgeBaseEntitySchema,
-        KnowledgeDocumentEntitySchema,
-        KnowledgeChunkEntitySchema,
-      ],
+      schemas,
       directory: supportDir.path,
+      compactOnLaunch: _compactOnLaunch,
     );
 
     // Fix legacy absolute paths inside the database content
     await _fixLegacyPaths(supportDir.path);
+
+    // Repair and compact bloated / polluted DB (MessageEntity metadata bloat, file holes)
+    await _repairAndCompactIsarIfNeeded(
+      directoryPath: supportDir.path,
+      schemas: schemas,
+    );
   }
 
   Future<void> _migrateIfNeeded(Directory oldDir, Directory newDir) async {
@@ -799,6 +816,328 @@ class SettingsStorage {
     } catch (e) {
       debugPrint('Critical error during aggressive migration: $e');
     }
+  }
+
+  Future<void> _repairAndCompactIsarIfNeeded({
+    required String directoryPath,
+    required List<CollectionSchema<dynamic>> schemas,
+  }) async {
+    final isarFilePath =
+        '$directoryPath${Platform.pathSeparator}${Isar.defaultName}.isar';
+    final initialPhysicalBytes = await _safeFileLength(isarFilePath);
+    var repairedAny = false;
+
+    // Only do expensive scanning when the on-disk file is clearly abnormal.
+    // Typical Aurora text history should be far below this threshold.
+    var shouldRepairMessageMeta = initialPhysicalBytes >= 128 * 1024 * 1024;
+    if (shouldRepairMessageMeta && initialPhysicalBytes < 512 * 1024 * 1024) {
+      try {
+        shouldRepairMessageMeta = await _likelyHasPollutedMessageMetadata();
+      } catch (e) {
+        // If the quick check fails, prefer repairing (safer default for huge files).
+        debugPrint('[DB_REPAIR] Quick check failed, will repair: $e');
+        shouldRepairMessageMeta = true;
+      }
+    }
+    if (shouldRepairMessageMeta) {
+      try {
+        final stats = await _repairMessageEntityMetadata();
+        if (stats.updated > 0) {
+          repairedAny = true;
+          debugPrint('[DB_REPAIR] MessageEntity metadata sanitized: '
+              'scanned=${stats.scanned}, updated=${stats.updated}, '
+              'droppedChars=${stats.droppedChars}, '
+              'maxOffenderChars=${stats.maxOffenderChars}');
+        }
+      } catch (e) {
+        debugPrint('[DB_REPAIR] MessageEntity metadata repair failed: $e');
+      }
+    }
+
+    final physicalBytesAfter = await _safeFileLength(isarFilePath);
+    final logicalBytesAfter = await _safeIsarSizeBytes();
+    final shouldCompact = (repairedAny &&
+            physicalBytesAfter >= (_compactOnLaunch.minFileSize ?? 0)) ||
+        _shouldCompactIsarFile(
+          physicalBytes: physicalBytesAfter,
+          logicalBytes: logicalBytesAfter,
+        );
+    if (shouldCompact) {
+      try {
+        await _compactIsarDatabaseFile(
+          directoryPath: directoryPath,
+          schemas: schemas,
+        );
+      } catch (e) {
+        debugPrint('[DB_REPAIR] Isar compaction failed: $e');
+      }
+    }
+  }
+
+  Future<bool> _likelyHasPollutedMessageMetadata() async {
+    const sampleSize = 120;
+    final sampleHead =
+        await _isar.messageEntitys.where().limit(sampleSize).findAll();
+    final sampleTail = await _isar.messageEntitys
+        .where()
+        .sortByTimestampDesc()
+        .limit(sampleSize)
+        .findAll();
+
+    for (final msg in [...sampleHead, ...sampleTail]) {
+      if (_isMessageMetadataSuspicious(msg)) return true;
+    }
+    return false;
+  }
+
+  bool _isMessageMetadataSuspicious(MessageEntity msg) {
+    bool differs(String? value, String? sanitized) => value != sanitized;
+
+    if (differs(msg.requestId, sanitizeMessageRequestId(msg.requestId))) {
+      return true;
+    }
+    if (differs(msg.model, sanitizeMessageModel(msg.model))) return true;
+    if (differs(msg.provider, sanitizeMessageProvider(msg.provider))) return true;
+    if (differs(msg.role, sanitizeMessageRole(msg.role))) return true;
+    if (differs(msg.assistantId, sanitizeMessageAssistantId(msg.assistantId))) {
+      return true;
+    }
+    if (differs(msg.toolCallId, sanitizeMessageToolCallId(msg.toolCallId))) {
+      return true;
+    }
+
+    final sanitizedImages = sanitizeImageUrls(msg.images);
+    if (!listEquals(sanitizedImages, msg.images)) return true;
+
+    return false;
+  }
+
+  Future<int> _safeFileLength(String path) async {
+    try {
+      final file = File(path);
+      if (!await file.exists()) return 0;
+      return await file.length();
+    } catch (_) {
+      return 0;
+    }
+  }
+
+  Future<int?> _safeIsarSizeBytes() async {
+    try {
+      return await _isar.getSize(includeIndexes: true, includeLinks: true);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  bool _shouldCompactIsarFile({
+    required int physicalBytes,
+    required int? logicalBytes,
+  }) {
+    final minFileSize = _compactOnLaunch.minFileSize ?? 0;
+    final minBytes = _compactOnLaunch.minBytes ?? 0;
+    final minRatio = _compactOnLaunch.minRatio ?? 0;
+
+    if (physicalBytes < minFileSize) return false;
+
+    final logical = logicalBytes ?? 0;
+    if (logical <= 0) {
+      // If we can't measure the logical size, only compact when the file is
+      // extremely large.
+      return physicalBytes >= minFileSize * 2;
+    }
+    if (physicalBytes <= logical) return false;
+
+    final freeBytes = physicalBytes - logical;
+    final ratio = physicalBytes / logical;
+    return freeBytes >= minBytes && ratio >= minRatio;
+  }
+
+  Future<({int scanned, int updated, int droppedChars, int maxOffenderChars})>
+      _repairMessageEntityMetadata() async {
+    const chunkSize = 20;
+    var lastId = Isar.minId;
+
+    var scanned = 0;
+    var updated = 0;
+    var droppedChars = 0;
+    var maxOffenderChars = 0;
+
+    while (true) {
+      final chunk = await _isar.messageEntitys
+          .where()
+          .idGreaterThan(lastId)
+          .limit(chunkSize)
+          .findAll();
+      if (chunk.isEmpty) break;
+
+      final toUpdate = <MessageEntity>[];
+
+      for (final msg in chunk) {
+        if (msg.id > lastId) lastId = msg.id;
+        scanned++;
+        var dirty = false;
+
+        void sanitizeString(
+          String? oldValue,
+          String? newValue,
+          void Function(String? value) apply,
+        ) {
+          if (oldValue == newValue) return;
+          final oldLen = oldValue?.length ?? 0;
+          final newLen = newValue?.length ?? 0;
+          if (oldLen > maxOffenderChars) maxOffenderChars = oldLen;
+          if (oldLen > newLen) droppedChars += (oldLen - newLen);
+          apply(newValue);
+          dirty = true;
+        }
+
+        sanitizeString(
+          msg.requestId,
+          sanitizeMessageRequestId(msg.requestId),
+          (v) => msg.requestId = v,
+        );
+        sanitizeString(
+          msg.model,
+          sanitizeMessageModel(msg.model),
+          (v) => msg.model = v,
+        );
+        sanitizeString(
+          msg.provider,
+          sanitizeMessageProvider(msg.provider),
+          (v) => msg.provider = v,
+        );
+        sanitizeString(
+          msg.role,
+          sanitizeMessageRole(msg.role),
+          (v) => msg.role = v,
+        );
+        sanitizeString(
+          msg.assistantId,
+          sanitizeMessageAssistantId(msg.assistantId),
+          (v) => msg.assistantId = v,
+        );
+        sanitizeString(
+          msg.toolCallId,
+          sanitizeMessageToolCallId(msg.toolCallId),
+          (v) => msg.toolCallId = v,
+        );
+
+        final sanitizedImages = sanitizeImageUrls(msg.images);
+        if (!listEquals(sanitizedImages, msg.images)) {
+          msg.images = sanitizedImages;
+          dirty = true;
+        }
+
+        if (dirty) {
+          toUpdate.add(msg);
+        }
+      }
+
+      if (toUpdate.isNotEmpty) {
+        await _isar.writeTxn(() async {
+          await _isar.messageEntitys.putAll(toUpdate);
+        });
+        updated += toUpdate.length;
+      }
+
+      await Future<void>.delayed(Duration.zero);
+    }
+
+    return (
+      scanned: scanned,
+      updated: updated,
+      droppedChars: droppedChars,
+      maxOffenderChars: maxOffenderChars,
+    );
+  }
+
+  Future<void> _compactIsarDatabaseFile({
+    required String directoryPath,
+    required List<CollectionSchema<dynamic>> schemas,
+  }) async {
+    final isarFilePath =
+        '$directoryPath${Platform.pathSeparator}${Isar.defaultName}.isar';
+    final lockFilePath = '$isarFilePath.lock';
+    final tempPath = '$isarFilePath.compact';
+    final backupPath = '$isarFilePath.bak';
+
+    final tempFile = File(tempPath);
+    try {
+      if (await tempFile.exists()) {
+        await tempFile.delete();
+      }
+    } catch (_) {}
+
+    debugPrint('[DB_REPAIR] Compacting Isar database file...');
+    await _isar.copyToFile(tempPath);
+
+    // Close before swapping files.
+    await _isar.close();
+
+    try {
+      // Best-effort cleanup of the lock file (must not exist for swapping).
+      try {
+        final lockFile = File(lockFilePath);
+        if (await lockFile.exists()) {
+          await lockFile.delete();
+        }
+      } catch (_) {}
+
+      final original = File(isarFilePath);
+      final backup = File(backupPath);
+      try {
+        if (await backup.exists()) {
+          await backup.delete();
+        }
+      } catch (_) {}
+
+      if (await original.exists()) {
+        await original.rename(backupPath);
+      }
+
+      await tempFile.rename(isarFilePath);
+
+      _isar = await Isar.open(
+        schemas,
+        directory: directoryPath,
+        compactOnLaunch: _compactOnLaunch,
+      );
+
+      // Compaction succeeded; remove backup to reclaim disk space.
+      try {
+        if (await backup.exists()) {
+          await backup.delete();
+        }
+      } catch (_) {}
+    } catch (e) {
+      // Ensure the DB is usable even if compaction fails mid-flight.
+      debugPrint('[DB_REPAIR] Compaction swap failed, restoring: $e');
+
+      // Try to restore the backup DB file if we created one.
+      final backup = File(backupPath);
+      try {
+        if (await backup.exists()) {
+          final current = File(isarFilePath);
+          if (await current.exists()) {
+            await current.delete();
+          }
+          await backup.rename(isarFilePath);
+        }
+      } catch (_) {}
+
+      // Reopen (best effort) so callers don't end up with a closed instance.
+      _isar = await Isar.open(
+        schemas,
+        directory: directoryPath,
+        compactOnLaunch: _compactOnLaunch,
+      );
+      rethrow;
+    }
+
+    final newSize = await _safeFileLength(isarFilePath);
+    debugPrint('[DB_REPAIR] Compaction done. New default.isar size: '
+        '${(newSize / (1024 * 1024)).toStringAsFixed(1)} MiB');
   }
 
   Future<void> _fixLegacyPaths(String currentSupportPath) async {

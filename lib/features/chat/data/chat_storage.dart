@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:aurora/shared/utils/image_compression.dart';
+import 'package:aurora/shared/utils/message_meta_sanitizer.dart';
 import 'package:aurora/shared/utils/translation_prompt_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:isar_community/isar.dart';
@@ -115,15 +117,15 @@ class ChatStorage {
       ..content = message.content
       ..reasoningContent = message.reasoningContent
       ..attachments = message.attachments
-      ..images = message.images
-      ..model = message.model
-      ..provider = message.provider
+      ..images = sanitizeImageUrls(message.images)
+      ..model = sanitizeMessageModel(message.model)
+      ..provider = sanitizeMessageProvider(message.provider)
       ..reasoningDurationSeconds = message.reasoningDurationSeconds
       ..sessionId = sessionId
-      ..assistantId = message.assistantId
-      ..requestId = message.requestId
-      ..role = message.role
-      ..toolCallId = message.toolCallId
+      ..assistantId = sanitizeMessageAssistantId(message.assistantId)
+      ..requestId = sanitizeMessageRequestId(message.requestId)
+      ..role = sanitizeMessageRole(message.role)
+      ..toolCallId = sanitizeMessageToolCallId(message.toolCallId)
       ..tokenCount = message.tokenCount
       ..firstTokenMs = message.firstTokenMs
       ..durationMs = message.durationMs
@@ -183,15 +185,15 @@ class ChatStorage {
           ..content = m.content
           ..reasoningContent = m.reasoningContent
           ..attachments = m.attachments
-          ..images = m.images
-          ..model = m.model
-          ..provider = m.provider
+          ..images = sanitizeImageUrls(m.images)
+          ..model = sanitizeMessageModel(m.model)
+          ..provider = sanitizeMessageProvider(m.provider)
           ..reasoningDurationSeconds = m.reasoningDurationSeconds
           ..sessionId = sessionId
-          ..assistantId = m.assistantId
-          ..requestId = m.requestId
-          ..role = m.role
-          ..toolCallId = m.toolCallId
+          ..assistantId = sanitizeMessageAssistantId(m.assistantId)
+          ..requestId = sanitizeMessageRequestId(m.requestId)
+          ..role = sanitizeMessageRole(m.role)
+          ..toolCallId = sanitizeMessageToolCallId(m.toolCallId)
           ..tokenCount = m.tokenCount
           ..firstTokenMs = m.firstTokenMs
           ..durationMs = m.durationMs
@@ -387,15 +389,15 @@ class ChatStorage {
         existing.timestamp = message.timestamp;
         existing.isUser = message.isUser;
         existing.reasoningContent = message.reasoningContent;
-        existing.images = message.images;
+        existing.images = sanitizeImageUrls(message.images);
         existing.attachments = message.attachments;
-        existing.model = message.model;
-        existing.provider = message.provider;
+        existing.model = sanitizeMessageModel(message.model);
+        existing.provider = sanitizeMessageProvider(message.provider);
         existing.reasoningDurationSeconds = message.reasoningDurationSeconds;
-        existing.assistantId = message.assistantId;
-        existing.requestId = message.requestId;
-        existing.role = message.role;
-        existing.toolCallId = message.toolCallId;
+        existing.assistantId = sanitizeMessageAssistantId(message.assistantId);
+        existing.requestId = sanitizeMessageRequestId(message.requestId);
+        existing.role = sanitizeMessageRole(message.role);
+        existing.toolCallId = sanitizeMessageToolCallId(message.toolCallId);
         existing.tokenCount = message.tokenCount;
         existing.promptTokens = message.promptTokens;
         existing.completionTokens = message.completionTokens;

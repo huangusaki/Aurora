@@ -287,13 +287,55 @@ class UiMessage {
         final trimmed = img.trim();
         if (trimmed.isEmpty) continue;
 
-        // 智能合并逻辑：如果是 data-URL 且是现有图片的延伸，则替换现有图片
         bool merged = false;
         if (trimmed.startsWith('data:')) {
+          // Some backends stream base64 images in chunks (not as cumulative prefixes).
+          // If we get a non-starting chunk (base64 payload doesn't look like a new image),
+          // append it to the latest matching data-URL image to avoid exploding the images list.
+          final commaIndex = trimmed.indexOf(',');
+          if (commaIndex > 0) {
+            final incomingHeader = trimmed.substring(0, commaIndex);
+            final incomingPayload = trimmed.substring(commaIndex + 1);
+            if (incomingPayload.isNotEmpty) {
+              final startsLikeImage = incomingPayload.startsWith('iVBORw0KGgo') ||
+                  incomingPayload.startsWith('iVBOR') ||
+                  incomingPayload.startsWith('/9j/') ||
+                  incomingPayload.startsWith('R0lGOD') ||
+                  incomingPayload.startsWith('UklGR') ||
+                  incomingPayload.startsWith('Qk') ||
+                  incomingPayload.startsWith('SUkq') ||
+                  incomingPayload.startsWith('TU0AK');
+              if (!startsLikeImage) {
+                for (int i = nextParts.length - 1; i >= 0; i--) {
+                  final part = nextParts[i];
+                  if (part is! UiImagePart) continue;
+                  final existingUrl = part.url;
+                  if (!existingUrl.startsWith('data:')) continue;
+                  final existingComma = existingUrl.indexOf(',');
+                  if (existingComma <= 0) continue;
+                  final existingHeader = existingUrl.substring(0, existingComma);
+                  if (existingHeader != incomingHeader) continue;
+                  final existingPayload = existingUrl.substring(existingComma + 1);
+                  if (existingPayload.endsWith(incomingPayload)) {
+                    merged = true;
+                  } else {
+                    nextParts[i] = UiImagePart(
+                      url: '$existingHeader,${existingPayload + incomingPayload}',
+                    );
+                    merged = true;
+                  }
+                  break;
+                }
+              }
+            }
+          }
+        }
+
+        // Prefix-based merge (cumulative streaming or duplicate packets).
+        if (!merged && trimmed.startsWith('data:')) {
           for (int i = 0; i < nextParts.length; i++) {
             final part = nextParts[i];
             if (part is UiImagePart && part.url.startsWith('data:')) {
-              // 如果新 URL 以旧 URL 为前缀，或者旧 URL 以新 URL 为前缀（针对某些重复包的情况）
               if (trimmed.startsWith(part.url)) {
                 nextParts[i] = UiImagePart(url: trimmed);
                 merged = true;

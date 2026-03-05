@@ -19,6 +19,7 @@ release_output/
 *.ipr
 *.iws
 .idea/
+tools
 
 # VS Code settings (personal project)
 .vscode/
