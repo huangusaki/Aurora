@@ -59,7 +59,7 @@ class _MobileSettingsPageState extends ConsumerState<MobileSettingsPage> {
   @override
   Widget build(BuildContext context) {
     final settingsState = ref.watch(settingsProvider);
-    final activeProvider = settingsState.activeProvider;
+    final viewingProvider = settingsState.viewingProvider;
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
@@ -85,52 +85,52 @@ class _MobileSettingsPageState extends ConsumerState<MobileSettingsPage> {
               MobileSettingsTile(
                 leading: const Icon(Icons.business),
                 title: l10n.currentProvider,
-                subtitle: activeProvider.name.isNotEmpty
-                    ? activeProvider.name
+                subtitle: viewingProvider.name.isNotEmpty
+                    ? viewingProvider.name
                     : l10n.notConfigured,
-                onTap: () => _showProviderPicker(context, settingsState),
+                onTap: () => _showProviderPicker(context),
               ),
               MobileSettingsTile(
                 leading: const Icon(Icons.key),
                 title: l10n.apiKeys,
-                subtitle: activeProvider.apiKeys.isNotEmpty
-                    ? l10n.apiKeysCount(activeProvider.apiKeys.length)
+                subtitle: viewingProvider.apiKeys.isNotEmpty
+                    ? l10n.apiKeysCount(viewingProvider.apiKeys.length)
                     : l10n.notConfigured,
-                trailing: (activeProvider.apiKeys.length > 1)
+                trailing: (viewingProvider.apiKeys.length > 1)
                     ? SizedBox(
                         height: 32,
                         child: FittedBox(
                           child: Switch.adaptive(
-                            value: activeProvider.autoRotateKeys,
+                            value: viewingProvider.autoRotateKeys,
                             onChanged: (v) => ref
                                 .read(settingsProvider.notifier)
-                                .setAutoRotateKeys(activeProvider.id, v),
+                                .setAutoRotateKeys(viewingProvider.id, v),
                           ),
                         ),
                       )
                     : null,
-                onTap: () => _showApiKeysManager(context, activeProvider),
+                onTap: () => _showApiKeysManager(context, viewingProvider),
               ),
               MobileSettingsTile(
                 leading: const Icon(Icons.link),
                 title: l10n.apiBaseUrl,
-                subtitle: activeProvider.baseUrl.isNotEmpty
-                    ? activeProvider.baseUrl
+                subtitle: viewingProvider.baseUrl.isNotEmpty
+                    ? viewingProvider.baseUrl
                     : l10n.baseUrlPlaceholder,
-                onTap: () => _showBaseUrlEditor(context, activeProvider),
+                onTap: () => _showBaseUrlEditor(context, viewingProvider),
               ),
               MobileSettingsTile(
                 leading: const Icon(Icons.power_settings_new),
                 title: l10n.enabledStatus,
-                subtitle: activeProvider.isEnabled == true
+                subtitle: viewingProvider.isEnabled == true
                     ? l10n.enabled
                     : l10n.disabled,
                 trailing: Switch.adaptive(
-                  value: activeProvider.isEnabled == true,
+                  value: viewingProvider.isEnabled == true,
                   onChanged: (v) {
                     ref
                         .read(settingsProvider.notifier)
-                        .toggleProviderEnabled(activeProvider.id);
+                        .toggleProviderEnabled(viewingProvider.id);
                   },
                 ),
               ),
@@ -138,7 +138,7 @@ class _MobileSettingsPageState extends ConsumerState<MobileSettingsPage> {
                 leading: const Icon(Icons.settings_applications),
                 title: l10n.globalConfig,
                 onTap: () {
-                  _showGlobalConfigDialog(context, activeProvider);
+                  _showGlobalConfigDialog(context, viewingProvider);
                 },
               ),
             ],
@@ -175,7 +175,7 @@ class _MobileSettingsPageState extends ConsumerState<MobileSettingsPage> {
               ),
             ),
             children: [
-              if (activeProvider.models.isNotEmpty)
+              if (viewingProvider.models.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.all(12),
                   child: Row(
@@ -186,7 +186,7 @@ class _MobileSettingsPageState extends ConsumerState<MobileSettingsPage> {
                           child: FilledButton.tonal(
                             onPressed: () => ref
                                 .read(settingsProvider.notifier)
-                                .setAllModelsEnabled(activeProvider.id, true),
+                                .setAllModelsEnabled(viewingProvider.id, true),
                             style: FilledButton.styleFrom(
                               padding: EdgeInsets.zero,
                               shape: RoundedRectangleBorder(
@@ -204,7 +204,8 @@ class _MobileSettingsPageState extends ConsumerState<MobileSettingsPage> {
                           child: OutlinedButton(
                             onPressed: () => ref
                                 .read(settingsProvider.notifier)
-                                .setAllModelsEnabled(activeProvider.id, false),
+                                .setAllModelsEnabled(
+                                    viewingProvider.id, false),
                             style: OutlinedButton.styleFrom(
                               padding: EdgeInsets.zero,
                               shape: RoundedRectangleBorder(
@@ -222,10 +223,10 @@ class _MobileSettingsPageState extends ConsumerState<MobileSettingsPage> {
                     ],
                   ),
                 ),
-              if (activeProvider.models.isNotEmpty)
+              if (viewingProvider.models.isNotEmpty)
                 ...(() {
                   final displayNameCounts =
-                      buildModelDisplayNameCounts(activeProvider.models);
+                      buildModelDisplayNameCounts(viewingProvider.models);
 
                   MobileSettingsTile buildModelTile(
                     String model, {
@@ -248,12 +249,13 @@ class _MobileSettingsPageState extends ConsumerState<MobileSettingsPage> {
                             ),
                             onPressed: () => ref
                                 .read(settingsProvider.notifier)
-                                .toggleModelDisabled(activeProvider.id, model),
+                                .toggleModelDisabled(
+                                    viewingProvider.id, model),
                           ),
                           IconButton(
                             icon: const Icon(Icons.settings_outlined, size: 20),
                             onPressed: () => _showModelConfigDialog(
-                                context, activeProvider, model),
+                                context, viewingProvider, model),
                           ),
                         ],
                       ),
@@ -317,15 +319,15 @@ class _MobileSettingsPageState extends ConsumerState<MobileSettingsPage> {
 
                   final enabledModels = <String>[];
                   final disabledModels = <String>[];
-                  for (final model in activeProvider.models) {
-                    if (activeProvider.isModelEnabled(model)) {
+                  for (final model in viewingProvider.models) {
+                    if (viewingProvider.isModelEnabled(model)) {
                       enabledModels.add(model);
                     } else {
                       disabledModels.add(model);
                     }
                   }
 
-                  final providerId = activeProvider.id;
+                  final providerId = viewingProvider.id;
                   final enabledExpanded =
                       _enabledModelsExpandedByProvider[providerId] ?? true;
                   final disabledExpanded =
@@ -384,7 +386,7 @@ class _MobileSettingsPageState extends ConsumerState<MobileSettingsPage> {
     );
   }
 
-  void _showProviderPicker(BuildContext context, SettingsState paramState) {
+  void _showProviderPicker(BuildContext context) {
     AuroraBottomSheet.show(
       context: context,
       builder: (ctx) {
@@ -400,10 +402,10 @@ class _MobileSettingsPageState extends ConsumerState<MobileSettingsPage> {
                 ...state.providers.map((p) => AuroraBottomSheet.buildListItem(
                       context: context,
                       leading: Icon(
-                        p.id == state.activeProviderId
+                        p.id == state.viewingProviderId
                             ? Icons.check_circle
                             : Icons.circle_outlined,
-                        color: p.id == state.activeProviderId
+                        color: p.id == state.viewingProviderId
                             ? Theme.of(scopedContext).primaryColor
                             : null,
                       ),
@@ -442,7 +444,7 @@ class _MobileSettingsPageState extends ConsumerState<MobileSettingsPage> {
                       onTap: () {
                         ref
                             .read(settingsProvider.notifier)
-                            .selectProvider(p.id);
+                            .viewProvider(p.id);
                         Navigator.pop(ctx);
                       },
                     )),

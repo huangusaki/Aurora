@@ -1064,6 +1064,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
 
   Future<bool> fetchModels() async {
     final provider = state.viewingProvider;
+    final isActiveProvider = provider.id == state.activeProviderId;
     if (provider.apiKey.isEmpty) {
       state = state.copyWith(error: 'Please enter API Key');
       return false;
@@ -1093,11 +1094,13 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
         await updateProvider(
             id: provider.id, models: models, selectedModel: newSelectedModel);
         state = state.copyWith(isLoadingModels: false);
-        await _storage.saveAppSettings(
-          activeProviderId: provider.id,
-          selectedModel: newSelectedModel,
-          availableModels: models,
-        );
+        if (isActiveProvider) {
+          await _storage.saveAppSettings(
+            activeProviderId: provider.id,
+            selectedModel: newSelectedModel,
+            availableModels: models,
+          );
+        }
         return true;
       } else {
         state = state.copyWith(
