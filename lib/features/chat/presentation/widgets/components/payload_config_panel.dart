@@ -98,41 +98,68 @@ class _PayloadConfigPanelState extends ConsumerState<PayloadConfigPanel> {
         normalized == 'on';
   }
 
+  /// 构建统一的卡片式配置区块，与 GlobalConfigDialog 风格一致
   Widget _buildSectionCard({
+    required String title,
     required IconData icon,
-    required Widget child,
     Widget? headerAction,
+    Widget? child,
   }) {
     final theme = FluentTheme.of(context);
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: theme.scaffoldBackgroundColor,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: theme.resources.dividerStrokeColorDefault),
-      ),
-      padding: const EdgeInsets.all(12),
+    return Card(
+      padding: const EdgeInsets.all(14),
+      borderRadius: BorderRadius.circular(8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          if (headerAction == null)
-            Row(
-              children: [
-                Icon(icon, size: 14, color: theme.accentColor),
-                const SizedBox(width: 8),
-                Expanded(child: child),
-              ],
-            )
-          else ...[
-            Row(
-              children: [
-                Icon(icon, size: 14, color: theme.accentColor),
-                const SizedBox(width: 8),
-                Expanded(child: child),
-                headerAction,
-              ],
-            ),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: theme.accentColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Icon(icon, color: theme.accentColor, size: 16),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(title, style: theme.typography.bodyStrong),
+              ),
+              if (headerAction != null) headerAction,
+            ],
+          ),
+          if (child != null) ...[
+            const SizedBox(height: 12),
+            child,
           ],
+        ],
+      ),
+    );
+  }
+
+  /// 构建行内开关控件，用于 Gemini 原生工具等场景
+  Widget _buildToggleRow({
+    required String label,
+    required bool checked,
+    required ValueChanged<bool> onChanged,
+  }) {
+    final theme = FluentTheme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                color: theme.resources.textFillColorPrimary,
+              ),
+            ),
+          ),
+          ToggleSwitch(checked: checked, onChanged: onChanged),
         ],
       ),
     );
@@ -176,7 +203,7 @@ class _PayloadConfigPanelState extends ConsumerState<PayloadConfigPanel> {
       "16:9",
       "21:9"
     ];
-    final sizes = ["0.5K","1K", "2K", "4K"];
+    final sizes = ["0.5K", "1K", "2K", "4K"];
 
     final String displayAspectRatio = imageConfig['aspect_ratio'] ?? l10n.auto;
 
@@ -184,39 +211,45 @@ class _PayloadConfigPanelState extends ConsumerState<PayloadConfigPanel> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        AuroraAdaptiveDropdownField<String>(
-          label: l10n.aspectRatio,
-          value: displayAspectRatio,
-          options: aspectRatios
-              .map((ratio) => AuroraDropdownOption<String>(
-                    value: ratio,
-                    label: ratio,
-                  ))
-              .toList(),
-          onChanged: (v) {
-            if (v != null) {
-              if (v == l10n.auto) {
-                imageConfig.remove('aspect_ratio');
-              } else {
-                imageConfig['aspect_ratio'] = v;
+        _buildSectionCard(
+          title: l10n.aspectRatio,
+          icon: AuroraIcons.settings,
+          child: AuroraAdaptiveDropdownField<String>(
+            label: l10n.aspectRatio,
+            value: displayAspectRatio,
+            options: aspectRatios
+                .map((ratio) => AuroraDropdownOption<String>(
+                      value: ratio,
+                      label: ratio,
+                    ))
+                .toList(),
+            onChanged: (v) {
+              if (v != null) {
+                if (v == l10n.auto) {
+                  imageConfig.remove('aspect_ratio');
+                } else {
+                  imageConfig['aspect_ratio'] = v;
+                }
+                final newSettings = Map<String, dynamic>.from(_modelSettings);
+                newSettings.remove('image_config');
+                newSettings['_aurora_image_config'] = imageConfig;
+                _saveSettings(newSettings);
               }
-              final newSettings = Map<String, dynamic>.from(_modelSettings);
-              // Remove old key if present to migrate
-              newSettings.remove('image_config');
-              newSettings['_aurora_image_config'] = imageConfig;
-              _saveSettings(newSettings);
-            }
-          },
+            },
+          ),
         ),
-        const SizedBox(height: 16),
-        InfoLabel(
-          label: l10n.imageSize,
+        const SizedBox(height: 8),
+        _buildSectionCard(
+          title: l10n.imageSize,
+          icon: AuroraIcons.settings,
           child: Row(
             children: [
               Expanded(
                 child: Slider(
-                  value:
-                      sizes.indexOf(currentSize).clamp(0, sizes.length - 1).toDouble(),
+                  value: sizes
+                      .indexOf(currentSize)
+                      .clamp(0, sizes.length - 1)
+                      .toDouble(),
                   min: 0,
                   max: (sizes.length - 1).toDouble(),
                   divisions: sizes.length - 1,
@@ -226,7 +259,6 @@ class _PayloadConfigPanelState extends ConsumerState<PayloadConfigPanel> {
                     imageConfig['image_size'] = newSize;
                     final newSettings =
                         Map<String, dynamic>.from(_modelSettings);
-                    // Remove old key if present to migrate
                     newSettings.remove('image_config');
                     newSettings['_aurora_image_config'] = imageConfig;
                     _saveSettings(newSettings);
@@ -295,93 +327,80 @@ class _PayloadConfigPanelState extends ConsumerState<PayloadConfigPanel> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // ── 传输模式 ──
         _buildSectionCard(
+          title: l10n.transportMode,
           icon: AuroraIcons.globe,
-          child: Text(l10n.transportMode,
-              style: const TextStyle(fontWeight: FontWeight.w600)),
+          child: AuroraAdaptiveDropdownField<LlmTransportMode>(
+            label: l10n.transportModeType,
+            value: transportMode,
+            options: LlmTransportMode.values
+                .map((mode) => AuroraDropdownOption<LlmTransportMode>(
+                      value: mode,
+                      label: transportModeLabel(mode),
+                    ))
+                .toList(),
+            onChanged: (mode) {
+              if (mode == null) return;
+              final newSettings = withTransportMode(_modelSettings, mode);
+              _saveSettings(newSettings);
+            },
+          ),
         ),
-        const SizedBox(height: 8),
-        AuroraAdaptiveDropdownField<LlmTransportMode>(
-          label: l10n.transportModeType,
-          value: transportMode,
-          options: LlmTransportMode.values
-              .map((mode) => AuroraDropdownOption<LlmTransportMode>(
-                    value: mode,
-                    label: transportModeLabel(mode),
-                  ))
-              .toList(),
-          onChanged: (mode) {
-            if (mode == null) return;
-            final newSettings = withTransportMode(_modelSettings, mode);
-            _saveSettings(newSettings);
-          },
-        ),
+
+        // ── Gemini 原生工具（仅当传输模式为 geminiNative 时显示）──
         if (transportMode == LlmTransportMode.geminiNative) ...[
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
           _buildSectionCard(
+            title: l10n.geminiNativeTools,
             icon: AuroraIcons.skills,
-            child: Text(l10n.geminiNativeTools,
-                style: const TextStyle(fontWeight: FontWeight.w600)),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: Text(l10n.geminiNativeGoogleSearch),
-              ),
-              ToggleSwitch(
-                checked: nativeGoogleSearch,
-                onChanged: (v) => saveNativeTools(googleSearch: v),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: Text(l10n.geminiNativeUrlContext),
-              ),
-              ToggleSwitch(
-                checked: nativeUrlContext,
-                onChanged: (v) => saveNativeTools(urlContext: v),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: Text(l10n.geminiNativeCodeExecution),
-              ),
-              ToggleSwitch(
-                checked: nativeCodeExecution,
-                onChanged: (v) => saveNativeTools(codeExecution: v),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-            decoration: BoxDecoration(
-              color: theme.resources.subtleFillColorSecondary,
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Text(
-              l10n.geminiNativeSearchDisablesLegacySearch,
-              style: TextStyle(
-                fontSize: 12,
-                color: theme.resources.textFillColorPrimary.withValues(
-                  alpha: 0.82,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildToggleRow(
+                  label: l10n.geminiNativeGoogleSearch,
+                  checked: nativeGoogleSearch,
+                  onChanged: (v) => saveNativeTools(googleSearch: v),
                 ),
-              ),
+                _buildToggleRow(
+                  label: l10n.geminiNativeUrlContext,
+                  checked: nativeUrlContext,
+                  onChanged: (v) => saveNativeTools(urlContext: v),
+                ),
+                _buildToggleRow(
+                  label: l10n.geminiNativeCodeExecution,
+                  checked: nativeCodeExecution,
+                  onChanged: (v) => saveNativeTools(codeExecution: v),
+                ),
+                const SizedBox(height: 6),
+                Container(
+                  width: double.infinity,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: theme.resources.subtleFillColorSecondary,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    l10n.geminiNativeSearchDisablesLegacySearch,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: theme.resources.textFillColorPrimary
+                          .withValues(alpha: 0.7),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
-        const SizedBox(height: 16),
+
+        const SizedBox(height: 8),
+
+        // ── 思考配置 ──
         _buildSectionCard(
+          title: l10n.thinkingConfig,
           icon: AuroraIcons.lightbulb,
-          child: Text(l10n.thinkingConfig,
-              style: const TextStyle(fontWeight: FontWeight.w600)),
           headerAction: ToggleSwitch(
             checked: thinkingEnabled,
             onChanged: (v) {
@@ -391,79 +410,96 @@ class _PayloadConfigPanelState extends ConsumerState<PayloadConfigPanel> {
               _saveSettings(newSettings);
             },
           ),
+          child: thinkingEnabled
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    InfoLabel(
+                      label: l10n.thinkingBudget,
+                      child: TextBox(
+                        controller: _budgetController,
+                        placeholder: l10n.thinkingBudgetHint,
+                        onChanged: (v) {
+                          thinkingConfig['budget'] = v;
+                          final newSettings =
+                              Map<String, dynamic>.from(_modelSettings);
+                          newSettings['_aurora_thinking_config'] =
+                              thinkingConfig;
+                          _saveSettings(newSettings);
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    AuroraAdaptiveDropdownField<String>(
+                      label: l10n.transmissionMode,
+                      value: thinkingMode,
+                      options: [
+                        AuroraDropdownOption(
+                            value: 'auto', label: l10n.modeAuto),
+                        AuroraDropdownOption(
+                          value: 'extra_body',
+                          label: l10n.modeExtraBody,
+                        ),
+                        AuroraDropdownOption(
+                          value: 'reasoning_effort',
+                          label: l10n.modeReasoningEffort,
+                        ),
+                      ],
+                      onChanged: (v) {
+                        if (v != null) {
+                          thinkingConfig['mode'] = v;
+                          final newSettings =
+                              Map<String, dynamic>.from(_modelSettings);
+                          newSettings['_aurora_thinking_config'] =
+                              thinkingConfig;
+                          _saveSettings(newSettings);
+                        }
+                      },
+                    ),
+                  ],
+                )
+              : null,
         ),
-        if (thinkingEnabled) ...[
-          const SizedBox(height: 8),
-          InfoLabel(
-            label: l10n.thinkingBudget,
-            child: TextBox(
-              controller: _budgetController,
-              placeholder: l10n.thinkingBudgetHint,
-              onChanged: (v) {
-                thinkingConfig['budget'] = v;
-                final newSettings = Map<String, dynamic>.from(_modelSettings);
-                newSettings['_aurora_thinking_config'] = thinkingConfig;
-                _saveSettings(newSettings);
-              },
-            ),
-          ),
-          const SizedBox(height: 8),
-          AuroraAdaptiveDropdownField<String>(
-            label: l10n.transmissionMode,
-            value: thinkingMode,
-            options: [
-              AuroraDropdownOption(value: 'auto', label: l10n.modeAuto),
-              AuroraDropdownOption(
-                value: 'extra_body',
-                label: l10n.modeExtraBody,
+
+        const SizedBox(height: 8),
+
+        // ── 生成配置 ──
+        _buildSectionCard(
+          title: l10n.generationConfig,
+          icon: AuroraIcons.settings,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              InfoLabel(
+                label: l10n.temperature,
+                child: TextBox(
+                  controller: _tempController,
+                  placeholder: l10n.temperatureHint,
+                  onChanged: (v) {
+                    generationConfig['temperature'] = v;
+                    final newSettings =
+                        Map<String, dynamic>.from(_modelSettings);
+                    newSettings['_aurora_generation_config'] = generationConfig;
+                    _saveSettings(newSettings);
+                  },
+                ),
               ),
-              AuroraDropdownOption(
-                value: 'reasoning_effort',
-                label: l10n.modeReasoningEffort,
+              const SizedBox(height: 8),
+              InfoLabel(
+                label: l10n.contextLength,
+                child: TextBox(
+                  controller: _ctxLenController,
+                  placeholder: l10n.contextLengthHint,
+                  onChanged: (v) {
+                    generationConfig['context_length'] = v;
+                    final newSettings =
+                        Map<String, dynamic>.from(_modelSettings);
+                    newSettings['_aurora_generation_config'] = generationConfig;
+                    _saveSettings(newSettings);
+                  },
+                ),
               ),
             ],
-            onChanged: (v) {
-              if (v != null) {
-                thinkingConfig['mode'] = v;
-                final newSettings = Map<String, dynamic>.from(_modelSettings);
-                newSettings['_aurora_thinking_config'] = thinkingConfig;
-                _saveSettings(newSettings);
-              }
-            },
-          ),
-        ],
-        const SizedBox(height: 16),
-        _buildSectionCard(
-          icon: AuroraIcons.settings,
-          child: Text(l10n.generationConfig,
-              style: const TextStyle(fontWeight: FontWeight.w600)),
-        ),
-        const SizedBox(height: 8),
-        InfoLabel(
-          label: l10n.temperature,
-          child: TextBox(
-            controller: _tempController,
-            placeholder: l10n.temperatureHint,
-            onChanged: (v) {
-              generationConfig['temperature'] = v;
-              final newSettings = Map<String, dynamic>.from(_modelSettings);
-              newSettings['_aurora_generation_config'] = generationConfig;
-              _saveSettings(newSettings);
-            },
-          ),
-        ),
-        const SizedBox(height: 8),
-        InfoLabel(
-          label: l10n.contextLength,
-          child: TextBox(
-            controller: _ctxLenController,
-            placeholder: l10n.contextLengthHint,
-            onChanged: (v) {
-              generationConfig['context_length'] = v;
-              final newSettings = Map<String, dynamic>.from(_modelSettings);
-              newSettings['_aurora_generation_config'] = generationConfig;
-              _saveSettings(newSettings);
-            },
           ),
         ),
       ],

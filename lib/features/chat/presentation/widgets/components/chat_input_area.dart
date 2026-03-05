@@ -1189,35 +1189,17 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
                         return fluent.FlyoutContent(
                           child: ConstrainedBox(
                             constraints: BoxConstraints(
-                              maxWidth: 320,
+                              maxWidth: 360,
                               maxHeight:
                                   MediaQuery.of(context).size.height * 0.8,
                             ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  isImageModel
-                                      ? l10n.imagePayload
-                                      : l10n.requestConfig,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-                                Flexible(
-                                  child: SingleChildScrollView(
-                                    padding: const EdgeInsets.only(right: 12.0),
-                                    child: PayloadConfigPanel(
-                                      providerId: settings.activeProviderId,
-                                      modelName: selectedModel ?? '',
-                                      forceImageConfig: isImageModel,
-                                    ),
-                                  ),
-                                ),
-                              ],
+                            child: SingleChildScrollView(
+                              padding: const EdgeInsets.only(right: 4.0),
+                              child: PayloadConfigPanel(
+                                providerId: settings.activeProviderId,
+                                modelName: selectedModel ?? '',
+                                forceImageConfig: isImageModel,
+                              ),
                             ),
                           ),
                         );
