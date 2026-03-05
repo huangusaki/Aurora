@@ -135,6 +135,18 @@ class AppLocalizationsEn extends AppLocalizations {
       'When enabled, the chat won\'t auto-scroll to the bottom while the assistant is generating a response (streaming, etc.).';
 
   @override
+  String get chatJumpToTop => 'Jump to top';
+
+  @override
+  String get chatJumpToPrevMessage => 'Jump to previous message';
+
+  @override
+  String get chatJumpToNextMessage => 'Jump to next message';
+
+  @override
+  String get chatJumpToBottom => 'Jump to bottom';
+
+  @override
   String get smartTopicGeneration => 'Smart Topic Generation';
 
   @override

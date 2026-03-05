@@ -39,6 +39,8 @@ class AuroraIcons {
   static const IconData chevronLeft = LucideIcons.chevronLeft;
   static const IconData chevronDown = LucideIcons.chevronDown;
   static const IconData chevronUp = LucideIcons.chevronUp;
+  static const IconData chevronsDown = LucideIcons.chevronsDown;
+  static const IconData chevronsUp = LucideIcons.chevronsUp;
   static const IconData globalNav = LucideIcons.menu;
   static const IconData check = LucideIcons.check;
   static const IconData print = LucideIcons.printer;

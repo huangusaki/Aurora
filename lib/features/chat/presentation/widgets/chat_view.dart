@@ -23,6 +23,7 @@ import 'components/message_bubble.dart';
 import 'components/merged_message_bubble.dart';
 import 'components/chat_input_area.dart';
 import 'components/chat_attachment_menu.dart';
+import 'components/chat_scroll_navigator.dart';
 
 class ChatView extends ConsumerStatefulWidget {
   final String sessionId;
@@ -35,6 +36,12 @@ class ChatViewState extends ConsumerState<ChatView> {
   final TextEditingController _controller = TextEditingController();
   late final ScrollController _scrollController;
   final List<String> _attachments = [];
+  final GlobalKey _messageViewportKey = GlobalKey();
+  final Map<String, BuildContext> _builtItemContexts = {};
+  List<String> _displayOrderIds = const [];
+  Map<String, int> _displayIndexById = {};
+  bool _isNavAnimating = false;
+  String _lastSessionId = '';
   String get _sessionId => widget.sessionId;
 
   void _showPillToast(String message, IconData icon) {
@@ -115,6 +122,7 @@ class ChatViewState extends ConsumerState<ChatView> {
   @override
   void initState() {
     super.initState();
+    _lastSessionId = widget.sessionId;
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
   }
@@ -185,6 +193,216 @@ class ChatViewState extends ConsumerState<ChatView> {
       _prevMaxScrollExtent = _scrollController.position.maxScrollExtent;
       _prevScrollPixels = _scrollController.position.pixels;
     });
+  }
+
+  void _registerBuiltItemContext(String itemId, BuildContext ctx) {
+    _builtItemContexts[itemId] = ctx;
+  }
+
+  void _unregisterBuiltItemContext(String itemId) {
+    _builtItemContexts.remove(itemId);
+  }
+
+  Rect? _rectForContext(BuildContext? ctx) {
+    final renderObject = ctx?.findRenderObject();
+    if (renderObject is! RenderBox) return null;
+    if (!renderObject.hasSize) return null;
+    final offset = renderObject.localToGlobal(Offset.zero);
+    return offset & renderObject.size;
+  }
+
+  Rect? _messageViewportRect() => _rectForContext(_messageViewportKey.currentContext);
+
+  int _computeAnchorIndex() {
+    final count = _displayOrderIds.length;
+    if (count == 0) return 0;
+
+    final viewportRect = _messageViewportRect();
+    if (viewportRect != null && viewportRect.height > 0) {
+      final anchorY = viewportRect.top + viewportRect.height * 0.25;
+      String? bestId;
+      double bestDist = double.infinity;
+
+      double distanceToRectY(Rect rect, double y) {
+        if (y < rect.top) return rect.top - y;
+        if (y > rect.bottom) return y - rect.bottom;
+        return 0;
+      }
+
+      for (final entry in _builtItemContexts.entries) {
+        final rect = _rectForContext(entry.value);
+        if (rect == null) continue;
+        if (!rect.overlaps(viewportRect)) continue;
+        final dist = distanceToRectY(rect, anchorY);
+        if (dist < bestDist) {
+          bestDist = dist;
+          bestId = entry.key;
+        }
+      }
+      if (bestId != null) {
+        final idx = _displayIndexById[bestId];
+        if (idx != null) {
+          return idx.clamp(0, count - 1);
+        }
+      }
+    }
+
+    if (_scrollController.hasClients) {
+      final pos = _scrollController.position;
+      final maxScroll = pos.maxScrollExtent;
+      if (maxScroll > 0) {
+        final ratio = (pos.pixels / maxScroll).clamp(0.0, 1.0);
+        final idx = (ratio * (count - 1)).round();
+        return idx.clamp(0, count - 1);
+      }
+    }
+
+    return 0;
+  }
+
+  Future<void> _runNavAction(Future<void> Function() action) async {
+    if (_isNavAnimating) return;
+    _isNavAnimating = true;
+    try {
+      await action();
+    } finally {
+      _isNavAnimating = false;
+    }
+  }
+
+  Future<void> _jumpToBottom() async {
+    await _runNavAction(() async {
+      if (!_scrollController.hasClients) return;
+      await _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 350),
+        curve: Curves.easeOutCubic,
+      );
+    });
+  }
+
+  Future<void> _jumpToTop() async {
+    await _runNavAction(() async {
+      if (!_scrollController.hasClients) return;
+      final pos = _scrollController.position;
+      await _scrollController.animateTo(
+        pos.maxScrollExtent,
+        duration: const Duration(milliseconds: 450),
+        curve: Curves.easeOutCubic,
+      );
+    });
+  }
+
+  Future<void> _jumpToPrevMessage() async {
+    await _runNavAction(() async {
+      final count = _displayOrderIds.length;
+      if (count <= 1) return;
+      final anchorIndex = _computeAnchorIndex();
+      final targetIndex = (anchorIndex + 1).clamp(0, count - 1);
+      if (targetIndex == anchorIndex) return;
+      await _scrollToDisplayIndex(targetIndex, anchorIndex: anchorIndex);
+    });
+  }
+
+  Future<void> _jumpToNextMessage() async {
+    await _runNavAction(() async {
+      final count = _displayOrderIds.length;
+      if (count <= 1) return;
+      final anchorIndex = _computeAnchorIndex();
+      final targetIndex = (anchorIndex - 1).clamp(0, count - 1);
+      if (targetIndex == anchorIndex) return;
+      await _scrollToDisplayIndex(targetIndex, anchorIndex: anchorIndex);
+    });
+  }
+
+  Future<void> _scrollToDisplayIndex(int targetIndex,
+      {required int anchorIndex}) async {
+    if (!_scrollController.hasClients) return;
+    if (targetIndex < 0 || targetIndex >= _displayOrderIds.length) return;
+
+    final pos = _scrollController.position;
+    // NOTE: `alignment` is applied to the target's full paint bounds.
+    // For very tall bubbles (e.g. long Markdown, agent output, reasoning blocks),
+    // using a fractional alignment like 0.9 can still leave the bubble header
+    // off-screen. Align to the physical top deterministically.
+    final alignToTop = pos.axisDirection == AxisDirection.up ? 1.0 : 0.0;
+
+    final targetId = _displayOrderIds[targetIndex];
+    final targetCtx = _builtItemContexts[targetId];
+    if (targetCtx != null) {
+      try {
+        await Scrollable.ensureVisible(
+          targetCtx,
+          alignment: alignToTop,
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
+        );
+      } catch (_) {}
+      return;
+    }
+
+    final direction = targetIndex > anchorIndex ? 1.0 : -1.0;
+    double delta = direction * pos.viewportDimension * 0.8;
+    final viewportRect = _messageViewportRect();
+    if (viewportRect != null &&
+        anchorIndex >= 0 &&
+        anchorIndex < _displayOrderIds.length) {
+      final anchorId = _displayOrderIds[anchorIndex];
+      final anchorCtx = _builtItemContexts[anchorId];
+      final anchorRect = _rectForContext(anchorCtx);
+      if (anchorRect != null) {
+        const edgePaddingFactor = 0.15;
+        if (direction > 0) {
+          // Move current item down to create space above it for the previous (older) item.
+          final desiredTop =
+              viewportRect.top + viewportRect.height * edgePaddingFactor;
+          final needed = desiredTop - anchorRect.top;
+          if (needed > 0) {
+            delta = needed;
+          }
+        } else {
+          // Move current item up to create space below it for the next (newer) item.
+          final desiredBottom =
+              viewportRect.bottom - viewportRect.height * edgePaddingFactor;
+          final needed = desiredBottom - anchorRect.bottom;
+          if (needed < 0) {
+            delta = needed;
+          }
+        }
+      }
+    }
+
+    final roughOffset = (pos.pixels + delta)
+        .clamp(pos.minScrollExtent, pos.maxScrollExtent)
+        .toDouble();
+
+    try {
+      final distance = (roughOffset - pos.pixels).abs();
+      final normalized = pos.viewportDimension > 0
+          ? (distance / pos.viewportDimension).clamp(0.0, 4.0)
+          : 1.0;
+      final durationMs = (180 + normalized * 90).round().clamp(180, 450);
+      await _scrollController.animateTo(
+        roughOffset,
+        duration: Duration(milliseconds: durationMs),
+        curve: Curves.easeOutCubic,
+      );
+    } catch (_) {
+      return;
+    }
+
+    await WidgetsBinding.instance.endOfFrame;
+    if (!mounted) return;
+    final retryCtx = _builtItemContexts[targetId];
+    if (retryCtx == null || !retryCtx.mounted) return;
+    try {
+      await Scrollable.ensureVisible(
+        retryCtx,
+        alignment: alignToTop,
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+      );
+    } catch (_) {}
   }
 
   @override
@@ -464,6 +682,16 @@ class ChatViewState extends ConsumerState<ChatView> {
 
   @override
   Widget build(BuildContext context) {
+    if (_lastSessionId != widget.sessionId) {
+      _lastSessionId = widget.sessionId;
+      _hasRestoredPosition = false;
+      _wasLoading = false;
+      _prevMaxScrollExtent = null;
+      _prevScrollPixels = null;
+      _builtItemContexts.clear();
+      _displayOrderIds = const [];
+      _displayIndexById = {};
+    }
     final notifier = ref.watch(chatSessionNotifierProvider(widget.sessionId));
     if (_notifier != notifier) {
       _notifier?.removeLocalListener(_onNotifierStateChanged);
@@ -578,6 +806,15 @@ class ChatViewState extends ConsumerState<ChatView> {
     if (currentGroup != null) {
       displayItems.add(currentGroup);
     }
+
+    _displayOrderIds =
+        displayItems.reversed.map((e) => e.id).toList(growable: false);
+    _displayIndexById = {
+      for (int i = 0; i < _displayOrderIds.length; i++) _displayOrderIds[i]: i,
+    };
+    final showScrollNavigator =
+        !chatState.isAutoScrollEnabled && displayItems.isNotEmpty;
+
     return Stack(
       children: [
         if (displayItems.isEmpty && !isLoadingHistory)
@@ -613,36 +850,136 @@ class ChatViewState extends ConsumerState<ChatView> {
           child: Column(
             children: [
               Expanded(
-                child: NotificationListener<ScrollNotification>(
-                  onNotification: (notification) {
-                    if (notification is ScrollEndNotification) {
-                      if (_scrollController.hasClients) {
-                        ref
-                            .read(chatSessionManagerProvider)
-                            .getOrCreate(_sessionId)
-                            .saveScrollOffset(_scrollController.offset);
-                      }
-                    }
-                    return false;
-                  },
-                  child: PlatformUtils.isDesktop
-                      ? Padding(
-                          padding: const EdgeInsets.only(
-                              right: 4.0, top: 2.0, bottom: 2.0),
-                          child: fluent.Scrollbar(
-                            controller: _scrollController,
-                            thumbVisibility: true,
-                            style: const fluent.ScrollbarThemeData(
-                              thickness: 6,
-                              hoveringThickness: 10,
-                            ),
-                            child: ScrollConfiguration(
-                              behavior: ScrollConfiguration.of(context)
-                                  .copyWith(scrollbars: false),
-                              child: ListView.builder(
-                                cacheExtent: 20000,
-                                key: ValueKey(ref
-                                    .watch(selectedHistorySessionIdProvider)),
+                child: Stack(
+                  key: _messageViewportKey,
+                  children: [
+                    Positioned.fill(
+                      child: NotificationListener<ScrollNotification>(
+                        onNotification: (notification) {
+                          if (notification is ScrollEndNotification) {
+                            if (_scrollController.hasClients) {
+                              ref
+                                  .read(chatSessionManagerProvider)
+                                  .getOrCreate(_sessionId)
+                                  .saveScrollOffset(_scrollController.offset);
+                            }
+                          }
+                          return false;
+                        },
+                        child: PlatformUtils.isDesktop
+                            ? Padding(
+                                padding: const EdgeInsets.only(
+                                    right: 4.0, top: 2.0, bottom: 2.0),
+                                child: fluent.Scrollbar(
+                                  controller: _scrollController,
+                                  thumbVisibility: true,
+                                  style: const fluent.ScrollbarThemeData(
+                                    thickness: 6,
+                                    hoveringThickness: 10,
+                                  ),
+                                  child: ScrollConfiguration(
+                                    behavior: ScrollConfiguration.of(context)
+                                        .copyWith(scrollbars: false),
+                                    child: ListView.builder(
+                                      cacheExtent: 20000,
+                                      key: ValueKey(ref.watch(
+                                          selectedHistorySessionIdProvider)),
+                                      controller: _scrollController,
+                                      reverse: true,
+                                      padding: const EdgeInsets.all(16),
+                                      itemCount: displayItems.length,
+                                      itemBuilder: (context, index) {
+                                        final reversedIndex =
+                                            displayItems.length - 1 - index;
+                                        final item =
+                                            displayItems[reversedIndex];
+                                        final isLatest = index == 0;
+                                        final isGenerating =
+                                            isLatest && isLoading;
+
+                                        Widget child;
+                                        if (item is MergedGroupItem) {
+                                          child = MergedMessageBubble(
+                                            key: ValueKey(item.id),
+                                            group: item,
+                                            isLast: isLatest,
+                                            isGenerating: isGenerating,
+                                          );
+                                        } else if (item is SingleMessageItem) {
+                                          final msg = item.message;
+                                          bool mergeTop = false;
+                                          if (reversedIndex > 0) {
+                                            final prevItem =
+                                                displayItems[reversedIndex - 1];
+                                            if (prevItem is SingleMessageItem &&
+                                                prevItem.message.isUser) {
+                                              mergeTop = true;
+                                            }
+                                          }
+                                          bool mergeBottom = false;
+                                          if (reversedIndex <
+                                              displayItems.length - 1) {
+                                            final nextItem =
+                                                displayItems[reversedIndex + 1];
+                                            if (nextItem is SingleMessageItem &&
+                                                nextItem.message.isUser) {
+                                              mergeBottom = true;
+                                            }
+                                          }
+                                          bool showAvatar = !mergeTop;
+                                          final bubble = MessageBubble(
+                                            key: ValueKey(msg.id),
+                                            message: msg,
+                                            isLast: isLatest,
+                                            isGenerating: false,
+                                            showAvatar: showAvatar,
+                                            mergeTop: mergeTop,
+                                            mergeBottom: mergeBottom,
+                                          );
+                                          if (isLatest) {
+                                            child =
+                                                TweenAnimationBuilder<double>(
+                                              tween:
+                                                  Tween(begin: 0.0, end: 1.0),
+                                              duration: const Duration(
+                                                  milliseconds: 300),
+                                              curve: Curves.easeOutCubic,
+                                              builder:
+                                                  (context, value, child) {
+                                                return Opacity(
+                                                  opacity: value,
+                                                  child: Transform.translate(
+                                                    offset: Offset(
+                                                        0, 20 * (1 - value)),
+                                                    child: child,
+                                                  ),
+                                                );
+                                              },
+                                              child: bubble,
+                                            );
+                                          } else {
+                                            child = bubble;
+                                          }
+                                        } else {
+                                          return const SizedBox.shrink();
+                                        }
+
+                                        return _ChatItemAnchor(
+                                          key: ValueKey(item.id),
+                                          itemId: item.id,
+                                          onMount: _registerBuiltItemContext,
+                                          onUnmount: _unregisterBuiltItemContext,
+                                          child: child,
+                                        );
+                                      },
+                                      physics: const ClampingScrollPhysics(),
+                                    ),
+                                  ),
+                                ),
+                              )
+                            : ListView.builder(
+                                key: ValueKey(
+                                    ref.watch(selectedHistorySessionIdProvider)),
                                 controller: _scrollController,
                                 reverse: true,
                                 padding: const EdgeInsets.all(16),
@@ -653,13 +990,37 @@ class ChatViewState extends ConsumerState<ChatView> {
                                   final item = displayItems[reversedIndex];
                                   final isLatest = index == 0;
                                   final isGenerating = isLatest && isLoading;
+
+                                  Widget child;
                                   if (item is MergedGroupItem) {
-                                    return MergedMessageBubble(
+                                    final bubble = MergedMessageBubble(
                                       key: ValueKey(item.id),
                                       group: item,
                                       isLast: isLatest,
                                       isGenerating: isGenerating,
                                     );
+                                    if (isLatest) {
+                                      child = TweenAnimationBuilder<double>(
+                                        key: ValueKey(item.id),
+                                        tween: Tween(begin: 0.0, end: 1.0),
+                                        duration:
+                                            const Duration(milliseconds: 300),
+                                        curve: Curves.easeOutCubic,
+                                        builder: (context, value, child) {
+                                          return Opacity(
+                                            opacity: value,
+                                            child: Transform.translate(
+                                              offset:
+                                                  Offset(0, 20 * (1 - value)),
+                                              child: child,
+                                            ),
+                                          );
+                                        },
+                                        child: bubble,
+                                      );
+                                    } else {
+                                      child = bubble;
+                                    }
                                   } else if (item is SingleMessageItem) {
                                     final msg = item.message;
                                     bool mergeTop = false;
@@ -683,15 +1044,17 @@ class ChatViewState extends ConsumerState<ChatView> {
                                     }
                                     bool showAvatar = !mergeTop;
                                     final bubble = MessageBubble(
-                                        key: ValueKey(msg.id),
-                                        message: msg,
-                                        isLast: isLatest,
-                                        isGenerating: false,
-                                        showAvatar: showAvatar,
-                                        mergeTop: mergeTop,
-                                        mergeBottom: mergeBottom);
+                                      key: ValueKey(msg.id),
+                                      message: msg,
+                                      isLast: isLatest,
+                                      isGenerating: false,
+                                      showAvatar: showAvatar,
+                                      mergeTop: mergeTop,
+                                      mergeBottom: mergeBottom,
+                                    );
                                     if (isLatest) {
-                                      return TweenAnimationBuilder<double>(
+                                      child = TweenAnimationBuilder<double>(
+                                        key: ValueKey(msg.id),
                                         tween: Tween(begin: 0.0, end: 1.0),
                                         duration:
                                             const Duration(milliseconds: 300),
@@ -708,111 +1071,38 @@ class ChatViewState extends ConsumerState<ChatView> {
                                         },
                                         child: bubble,
                                       );
+                                    } else {
+                                      child = bubble;
                                     }
-                                    return bubble;
+                                  } else {
+                                    return const SizedBox.shrink();
                                   }
-                                  return const SizedBox.shrink();
-                                },
-                                physics: const ClampingScrollPhysics(),
-                              ),
-                            ),
-                          ),
-                        )
-                      : ListView.builder(
-                          key: ValueKey(
-                              ref.watch(selectedHistorySessionIdProvider)),
-                          controller: _scrollController,
-                          reverse: true,
-                          padding: const EdgeInsets.all(16),
-                          itemCount: displayItems.length,
-                          itemBuilder: (context, index) {
-                            final reversedIndex =
-                                displayItems.length - 1 - index;
-                            final item = displayItems[reversedIndex];
-                            final isLatest = index == 0;
-                            final isGenerating = isLatest && isLoading;
 
-                            if (item is MergedGroupItem) {
-                              final bubble = MergedMessageBubble(
-                                key: ValueKey(item.id),
-                                group: item,
-                                isLast: isLatest,
-                                isGenerating: isGenerating,
-                              );
-                              if (isLatest) {
-                                return TweenAnimationBuilder<double>(
-                                  key: ValueKey(item.id),
-                                  tween: Tween(begin: 0.0, end: 1.0),
-                                  duration: const Duration(milliseconds: 300),
-                                  curve: Curves.easeOutCubic,
-                                  builder: (context, value, child) {
-                                    return Opacity(
-                                      opacity: value,
-                                      child: Transform.translate(
-                                        offset: Offset(0, 20 * (1 - value)),
-                                        child: child,
-                                      ),
-                                    );
-                                  },
-                                  child: bubble,
-                                );
-                              }
-                              return bubble;
-                            } else if (item is SingleMessageItem) {
-                              final msg = item.message;
-                              bool mergeTop = false;
-                              if (reversedIndex > 0) {
-                                final prevItem =
-                                    displayItems[reversedIndex - 1];
-                                if (prevItem is SingleMessageItem &&
-                                    prevItem.message.isUser) {
-                                  mergeTop = true;
-                                }
-                              }
-                              bool mergeBottom = false;
-                              if (reversedIndex < displayItems.length - 1) {
-                                final nextItem =
-                                    displayItems[reversedIndex + 1];
-                                if (nextItem is SingleMessageItem &&
-                                    nextItem.message.isUser) {
-                                  mergeBottom = true;
-                                }
-                              }
-                              bool showAvatar = !mergeTop;
-                              final bubble = MessageBubble(
-                                key: ValueKey(msg.id),
-                                message: msg,
-                                isLast: isLatest,
-                                isGenerating: false,
-                                showAvatar: showAvatar,
-                                mergeTop: mergeTop,
-                                mergeBottom: mergeBottom,
-                              );
-                              if (isLatest) {
-                                return TweenAnimationBuilder<double>(
-                                  key: ValueKey(msg.id),
-                                  tween: Tween(begin: 0.0, end: 1.0),
-                                  duration: const Duration(milliseconds: 300),
-                                  curve: Curves.easeOutCubic,
-                                  builder: (context, value, child) {
-                                    return Opacity(
-                                      opacity: value,
-                                      child: Transform.translate(
-                                        offset: Offset(0, 20 * (1 - value)),
-                                        child: child,
-                                      ),
-                                    );
-                                  },
-                                  child: bubble,
-                                );
-                              }
-                              return bubble;
-                            }
-                            return const SizedBox.shrink();
-                          },
-                          physics: const AlwaysScrollableScrollPhysics(
-                              parent: BouncingScrollPhysics()),
-                        ),
+                                  return _ChatItemAnchor(
+                                    key: ValueKey(item.id),
+                                    itemId: item.id,
+                                    onMount: _registerBuiltItemContext,
+                                    onUnmount: _unregisterBuiltItemContext,
+                                    child: child,
+                                  );
+                                },
+                                physics: const AlwaysScrollableScrollPhysics(
+                                    parent: BouncingScrollPhysics()),
+                              ),
+                      ),
+                    ),
+                    Positioned(
+                      right: PlatformUtils.isDesktop ? 20 : 12,
+                      bottom: 12,
+                      child: ChatScrollNavigator(
+                        visible: showScrollNavigator,
+                        onJumpToTop: _jumpToTop,
+                        onJumpToPrev: _jumpToPrevMessage,
+                        onJumpToNext: _jumpToNextMessage,
+                        onJumpToBottom: _jumpToBottom,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               // Always render attachments container to prevent widget tree structure change
@@ -904,5 +1194,51 @@ class ChatViewState extends ConsumerState<ChatView> {
         ),
       ],
     );
+  }
+}
+
+class _ChatItemAnchor extends StatefulWidget {
+  final String itemId;
+  final Widget child;
+  final void Function(String itemId, BuildContext ctx) onMount;
+  final void Function(String itemId) onUnmount;
+
+  const _ChatItemAnchor({
+    super.key,
+    required this.itemId,
+    required this.child,
+    required this.onMount,
+    required this.onUnmount,
+  });
+
+  @override
+  State<_ChatItemAnchor> createState() => _ChatItemAnchorState();
+}
+
+class _ChatItemAnchorState extends State<_ChatItemAnchor> {
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    widget.onMount(widget.itemId, context);
+  }
+
+  @override
+  void didUpdateWidget(covariant _ChatItemAnchor oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.itemId != widget.itemId) {
+      widget.onUnmount(oldWidget.itemId);
+    }
+    widget.onMount(widget.itemId, context);
+  }
+
+  @override
+  void dispose() {
+    widget.onUnmount(widget.itemId);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return RepaintBoundary(child: widget.child);
   }
 }

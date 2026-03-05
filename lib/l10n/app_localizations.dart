@@ -338,6 +338,30 @@ abstract class AppLocalizations {
   /// **'开启后，模型在生成回复（流式输出等）时会保持你当前的滚动位置不变。'**
   String get keepChatScrollPositionOnResponseHint;
 
+  /// No description provided for @chatJumpToTop.
+  ///
+  /// In zh, this message translates to:
+  /// **'跳至最顶端'**
+  String get chatJumpToTop;
+
+  /// No description provided for @chatJumpToPrevMessage.
+  ///
+  /// In zh, this message translates to:
+  /// **'跳至上一条消息'**
+  String get chatJumpToPrevMessage;
+
+  /// No description provided for @chatJumpToNextMessage.
+  ///
+  /// In zh, this message translates to:
+  /// **'跳至下一条消息'**
+  String get chatJumpToNextMessage;
+
+  /// No description provided for @chatJumpToBottom.
+  ///
+  /// In zh, this message translates to:
+  /// **'跳至最底端'**
+  String get chatJumpToBottom;
+
   /// No description provided for @smartTopicGeneration.
   ///
   /// In zh, this message translates to:

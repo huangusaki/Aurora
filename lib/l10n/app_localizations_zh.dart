@@ -132,6 +132,18 @@ class AppLocalizationsZh extends AppLocalizations {
       '开启后，模型在生成回复（流式输出等）时会保持你当前的滚动位置不变。';
 
   @override
+  String get chatJumpToTop => '跳至最顶端';
+
+  @override
+  String get chatJumpToPrevMessage => '跳至上一条消息';
+
+  @override
+  String get chatJumpToNextMessage => '跳至下一条消息';
+
+  @override
+  String get chatJumpToBottom => '跳至最底端';
+
+  @override
   String get smartTopicGeneration => '智能话题生成';
 
   @override
