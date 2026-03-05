@@ -289,11 +289,42 @@ class SettingsState {
     this.backgroundBlur = 0.0,
     this.useCustomTheme = false,
   });
-  ProviderConfig get activeProvider =>
-      providers.firstWhere((p) => p.id == activeProviderId);
-  ProviderConfig get viewingProvider =>
-      providers.firstWhere((p) => p.id == viewingProviderId,
-          orElse: () => activeProvider);
+  ProviderConfig get activeProvider {
+    if (providers.isEmpty) {
+      return ProviderConfig(id: 'custom', name: 'Custom', isCustom: true);
+    }
+
+    final normalizedId = activeProviderId.trim();
+    final index = normalizedId.isEmpty
+        ? -1
+        : providers.indexWhere((p) => p.id == normalizedId);
+    if (index != -1) {
+      return providers[index];
+    }
+
+    final customIndex = providers.indexWhere((p) => p.id == 'custom');
+    if (customIndex != -1) {
+      return providers[customIndex];
+    }
+
+    return providers.first;
+  }
+
+  ProviderConfig get viewingProvider {
+    if (providers.isEmpty) {
+      return activeProvider;
+    }
+
+    final normalizedId = viewingProviderId.trim();
+    final index = normalizedId.isEmpty
+        ? -1
+        : providers.indexWhere((p) => p.id == normalizedId);
+    if (index != -1) {
+      return providers[index];
+    }
+
+    return activeProvider;
+  }
   String? get selectedModel => activeProvider.selectedModel;
   List<String> get availableModels => activeProvider.models;
   SettingsState copyWith({
@@ -433,6 +464,26 @@ int _clampInt(int value, int min, int max) {
   return value;
 }
 
+String _normalizeProviderId({
+  required List<ProviderConfig> providers,
+  required String? desiredId,
+}) {
+  final normalized = desiredId?.trim() ?? '';
+  if (normalized.isNotEmpty && providers.any((p) => p.id == normalized)) {
+    return normalized;
+  }
+
+  if (providers.any((p) => p.id == 'custom')) {
+    return 'custom';
+  }
+
+  if (providers.isNotEmpty) {
+    return providers.first.id;
+  }
+
+  return 'custom';
+}
+
 String _normalizeSearchEngine(String engine) {
   final normalized = engine.trim().toLowerCase();
   return normalized.isEmpty ? 'duckduckgo' : normalized;
@@ -561,8 +612,14 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
   })  : _storage = storage,
         super(SettingsState(
           providers: initialProviders,
-          activeProviderId: initialActiveId,
-          viewingProviderId: initialActiveId,
+          activeProviderId: _normalizeProviderId(
+            providers: initialProviders,
+            desiredId: initialActiveId,
+          ),
+          viewingProviderId: _normalizeProviderId(
+            providers: initialProviders,
+            desiredId: initialActiveId,
+          ),
           userName: userName,
           userAvatar: userAvatar,
           llmName: llmName,
@@ -616,7 +673,11 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
 
     final newProviders = ProviderConfig.fromEntities(providerEntities);
 
-    final activeProviderId = appSettings?.activeProviderId ?? 'custom';
+    final rawActiveProviderId = appSettings?.activeProviderId ?? '';
+    final normalizedActiveProviderId = _normalizeProviderId(
+      providers: newProviders,
+      desiredId: rawActiveProviderId,
+    );
     final rawThemeMode = appSettings?.themeMode ?? 'system';
     final rawUseCustomTheme = appSettings?.useCustomTheme ?? false;
     final rawBackgroundImagePath = appSettings?.backgroundImagePath;
@@ -628,8 +689,8 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
 
     state = state.copyWith(
       providers: newProviders,
-      activeProviderId: activeProviderId,
-      viewingProviderId: activeProviderId,
+      activeProviderId: normalizedActiveProviderId,
+      viewingProviderId: normalizedActiveProviderId,
       userName: appSettings?.userName ?? 'User',
       userAvatar: appSettings?.userAvatar,
       llmName: appSettings?.llmName ?? 'Assistant',
@@ -681,6 +742,18 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
       useCustomTheme: resolvedThemeState.useCustomTheme,
     );
 
+    if (appSettings != null && rawActiveProviderId != normalizedActiveProviderId) {
+      final fixedProvider = state.activeProvider;
+      await _storage.saveAppSettings(
+        activeProviderId: fixedProvider.id,
+        selectedModel: fixedProvider.selectedModel,
+        availableModels: fixedProvider.models,
+      );
+      debugPrint(
+        'Normalized invalid active provider id from "$rawActiveProviderId" to "${fixedProvider.id}".',
+      );
+    }
+
     if (appSettings != null &&
         resolvedThemeState.differsFrom(
           themeMode: rawThemeMode,
@@ -688,7 +761,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
           backgroundImagePath: rawBackgroundImagePath,
         )) {
       await _storage.saveAppSettings(
-        activeProviderId: state.activeProviderId,
+        activeProviderId: state.activeProvider.id,
         themeMode: resolvedThemeState.themeMode,
         useCustomTheme: resolvedThemeState.useCustomTheme,
         backgroundImagePath: resolvedThemeState.backgroundImagePath,
@@ -796,10 +869,10 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
   }
 
   Future<void> setSelectedModel(String model) async {
-    await updateProvider(id: state.activeProviderId, selectedModel: model);
+    await updateProvider(id: state.activeProvider.id, selectedModel: model);
     final provider = state.activeProvider;
     await _storage.saveAppSettings(
-      activeProviderId: state.activeProviderId,
+      activeProviderId: state.activeProvider.id,
       selectedModel: model,
       availableModels: provider.models,
     );
@@ -1069,7 +1142,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
       backgroundImagePath: resolvedThemeState.backgroundImagePath,
     );
     await _storage.saveAppSettings(
-      activeProviderId: state.activeProviderId,
+      activeProviderId: state.activeProvider.id,
       themeMode: resolvedThemeState.themeMode,
       useCustomTheme: resolvedThemeState.useCustomTheme,
       backgroundImagePath: resolvedThemeState.backgroundImagePath,
@@ -1094,7 +1167,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     final newValue = !state.isStreamEnabled;
     state = state.copyWith(isStreamEnabled: newValue);
     await _storage.saveAppSettings(
-      activeProviderId: state.activeProviderId,
+      activeProviderId: state.activeProvider.id,
       isStreamEnabled: newValue,
     );
   }
@@ -1103,7 +1176,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     if (state.isSearchEnabled == enabled) return;
     state = state.copyWith(isSearchEnabled: enabled);
     await _storage.saveAppSettings(
-      activeProviderId: state.activeProviderId,
+      activeProviderId: state.activeProvider.id,
       isSearchEnabled: enabled,
     );
   }
@@ -1116,7 +1189,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     if (state.isKnowledgeEnabled == enabled) return;
     state = state.copyWith(isKnowledgeEnabled: enabled);
     await _storage.saveAppSettings(
-      activeProviderId: state.activeProviderId,
+      activeProviderId: state.activeProvider.id,
       isKnowledgeEnabled: enabled,
     );
   }
@@ -1125,7 +1198,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     final clamped = topK.clamp(1, 12);
     state = state.copyWith(knowledgeTopK: clamped);
     await _storage.saveAppSettings(
-      activeProviderId: state.activeProviderId,
+      activeProviderId: state.activeProvider.id,
       knowledgeTopK: clamped,
     );
   }
@@ -1133,7 +1206,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
   Future<void> setKnowledgeUseEmbedding(bool enabled) async {
     state = state.copyWith(knowledgeUseEmbedding: enabled);
     await _storage.saveAppSettings(
-      activeProviderId: state.activeProviderId,
+      activeProviderId: state.activeProvider.id,
       knowledgeUseEmbedding: enabled,
     );
   }
@@ -1144,7 +1217,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     final selected = allowed.contains(normalized) ? normalized : 'off';
     state = state.copyWith(knowledgeLlmEnhanceMode: selected);
     await _storage.saveAppSettings(
-      activeProviderId: state.activeProviderId,
+      activeProviderId: state.activeProvider.id,
       knowledgeLlmEnhanceMode: selected,
     );
   }
@@ -1154,7 +1227,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     final next = normalized.isEmpty ? null : normalized;
     state = state.copyWith(knowledgeEmbeddingModel: next);
     await _storage.saveAppSettings(
-      activeProviderId: state.activeProviderId,
+      activeProviderId: state.activeProvider.id,
       knowledgeEmbeddingModel: next,
     );
   }
@@ -1164,7 +1237,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     final next = normalized.isEmpty ? null : normalized;
     state = state.copyWith(knowledgeEmbeddingProviderId: next);
     await _storage.saveAppSettings(
-      activeProviderId: state.activeProviderId,
+      activeProviderId: state.activeProvider.id,
       knowledgeEmbeddingProviderId: next,
     );
   }
@@ -1178,7 +1251,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
       ..sort();
     state = state.copyWith(activeKnowledgeBaseIds: deduped);
     await _storage.saveAppSettings(
-      activeProviderId: state.activeProviderId,
+      activeProviderId: state.activeProvider.id,
       activeKnowledgeBaseIds: deduped,
     );
   }
@@ -1186,7 +1259,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
   Future<void> setSearchEngine(String engine) async {
     state = state.copyWith(searchEngine: engine);
     await _storage.saveAppSettings(
-      activeProviderId: state.activeProviderId,
+      activeProviderId: state.activeProvider.id,
       searchEngine: engine,
     );
   }
@@ -1196,7 +1269,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     if (normalized.isEmpty) return;
     state = state.copyWith(searchRegion: normalized);
     await _storage.saveAppSettings(
-      activeProviderId: state.activeProviderId,
+      activeProviderId: state.activeProvider.id,
       searchRegion: normalized,
     );
   }
@@ -1206,7 +1279,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     if (normalized.isEmpty) return;
     state = state.copyWith(searchSafeSearch: normalized);
     await _storage.saveAppSettings(
-      activeProviderId: state.activeProviderId,
+      activeProviderId: state.activeProvider.id,
       searchSafeSearch: normalized,
     );
   }
@@ -1215,7 +1288,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     final clamped = maxResults.clamp(1, 50);
     state = state.copyWith(searchMaxResults: clamped);
     await _storage.saveAppSettings(
-      activeProviderId: state.activeProviderId,
+      activeProviderId: state.activeProvider.id,
       searchMaxResults: clamped,
     );
   }
@@ -1224,7 +1297,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     final clamped = seconds.clamp(5, 60);
     state = state.copyWith(searchTimeoutSeconds: clamped);
     await _storage.saveAppSettings(
-      activeProviderId: state.activeProviderId,
+      activeProviderId: state.activeProvider.id,
       searchTimeoutSeconds: clamped,
     );
   }
@@ -1232,7 +1305,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
   Future<void> toggleSmartTopicEnabled(bool enabled) async {
     state = state.copyWith(enableSmartTopic: enabled);
     await _storage.saveAppSettings(
-      activeProviderId: state.activeProviderId,
+      activeProviderId: state.activeProvider.id,
       enableSmartTopic: enabled,
     );
   }
@@ -1240,7 +1313,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
   Future<void> toggleRestoreLastSessionOnLaunch(bool enabled) async {
     state = state.copyWith(restoreLastSessionOnLaunch: enabled);
     await _storage.saveAppSettings(
-      activeProviderId: state.activeProviderId,
+      activeProviderId: state.activeProvider.id,
       restoreLastSessionOnLaunch: enabled,
     );
   }
@@ -1248,7 +1321,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
   Future<void> toggleKeepChatScrollPositionOnResponse(bool enabled) async {
     state = state.copyWith(keepChatScrollPositionOnResponse: enabled);
     await _storage.saveAppSettings(
-      activeProviderId: state.activeProviderId,
+      activeProviderId: state.activeProvider.id,
       keepChatScrollPositionOnResponse: enabled,
     );
   }
@@ -1272,7 +1345,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
 
     state = state.copyWith(topicGenerationModel: normalized);
     await _storage.saveAppSettings(
-      activeProviderId: state.activeProviderId,
+      activeProviderId: state.activeProvider.id,
       topicGenerationModel: normalized,
     );
   }
@@ -1281,7 +1354,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     final clamped = _clampInt(value, 1, 200);
     state = state.copyWith(memoryMinNewUserMessages: clamped);
     await _storage.saveAppSettings(
-      activeProviderId: state.activeProviderId,
+      activeProviderId: state.activeProvider.id,
       memoryMinNewUserMessages: clamped,
     );
   }
@@ -1290,7 +1363,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     final clamped = _clampInt(value, 30, 7200);
     state = state.copyWith(memoryIdleSeconds: clamped);
     await _storage.saveAppSettings(
-      activeProviderId: state.activeProviderId,
+      activeProviderId: state.activeProvider.id,
       memoryIdleSeconds: clamped,
     );
   }
@@ -1299,7 +1372,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     final clamped = _clampInt(value, 20, 500);
     state = state.copyWith(memoryMaxBufferedMessages: clamped);
     await _storage.saveAppSettings(
-      activeProviderId: state.activeProviderId,
+      activeProviderId: state.activeProvider.id,
       memoryMaxBufferedMessages: clamped,
     );
   }
@@ -1308,7 +1381,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     final clamped = _clampInt(value, 1, 30);
     state = state.copyWith(memoryMaxRunsPerDay: clamped);
     await _storage.saveAppSettings(
-      activeProviderId: state.activeProviderId,
+      activeProviderId: state.activeProvider.id,
       memoryMaxRunsPerDay: clamped,
     );
   }
@@ -1317,7 +1390,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     final clamped = _clampInt(value, 20, 240);
     state = state.copyWith(memoryContextWindowSize: clamped);
     await _storage.saveAppSettings(
-      activeProviderId: state.activeProviderId,
+      activeProviderId: state.activeProvider.id,
       memoryContextWindowSize: clamped,
     );
   }
@@ -1325,7 +1398,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
   Future<void> setLanguage(String lang) async {
     state = state.copyWith(language: lang);
     await _storage.saveAppSettings(
-      activeProviderId: state.activeProviderId,
+      activeProviderId: state.activeProvider.id,
       language: lang,
     );
   }
@@ -1367,7 +1440,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
       backgroundImagePath: resolvedThemeState.backgroundImagePath,
     );
     await _storage.saveAppSettings(
-      activeProviderId: state.activeProviderId,
+      activeProviderId: state.activeProvider.id,
       useCustomTheme: resolvedThemeState.useCustomTheme,
       themeMode: resolvedThemeState.themeMode,
       backgroundImagePath: resolvedThemeState.backgroundImagePath,
@@ -1398,7 +1471,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
   Future<void> setThemeColor(String color) async {
     state = state.copyWith(themeColor: color);
     await _storage.saveAppSettings(
-      activeProviderId: state.activeProviderId,
+      activeProviderId: state.activeProvider.id,
       themeColor: color,
     );
   }
@@ -1406,7 +1479,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
   Future<void> setBackgroundColor(String color) async {
     state = state.copyWith(backgroundColor: color);
     await _storage.saveAppSettings(
-      activeProviderId: state.activeProviderId,
+      activeProviderId: state.activeProvider.id,
       backgroundColor: color,
     );
   }
@@ -1475,7 +1548,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
       useCustomTheme: resolvedThemeState.useCustomTheme,
     );
     await _storage.saveAppSettings(
-      activeProviderId: state.activeProviderId,
+      activeProviderId: state.activeProvider.id,
       backgroundImagePath: resolvedThemeState.backgroundImagePath,
       clearBackgroundImage: resolvedThemeState.backgroundImagePath == null,
       themeMode: resolvedThemeState.themeMode,
@@ -1486,7 +1559,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
   Future<void> setBackgroundBrightness(double brightness) async {
     state = state.copyWith(backgroundBrightness: brightness);
     await _storage.saveAppSettings(
-      activeProviderId: state.activeProviderId,
+      activeProviderId: state.activeProvider.id,
       backgroundBrightness: brightness,
     );
   }
@@ -1494,7 +1567,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
   Future<void> setBackgroundBlur(double blur) async {
     state = state.copyWith(backgroundBlur: blur);
     await _storage.saveAppSettings(
-      activeProviderId: state.activeProviderId,
+      activeProviderId: state.activeProvider.id,
       backgroundBlur: blur,
     );
   }
@@ -1502,7 +1575,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
   Future<void> setFontSize(double size) async {
     state = state.copyWith(fontSize: size);
     await _storage.saveAppSettings(
-      activeProviderId: state.activeProviderId,
+      activeProviderId: state.activeProvider.id,
       fontSize: size,
     );
   }
@@ -1510,7 +1583,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
   Future<void> setCloseBehavior(int behavior) async {
     state = state.copyWith(closeBehavior: behavior);
     await _storage.saveAppSettings(
-      activeProviderId: state.activeProviderId,
+      activeProviderId: state.activeProvider.id,
       closeBehavior: behavior,
     );
   }
@@ -1521,7 +1594,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
       executionProviderId: providerId,
     );
     await _storage.saveAppSettings(
-      activeProviderId: state.activeProviderId,
+      activeProviderId: state.activeProvider.id,
       executionModel: model,
       executionProviderId: providerId,
     );

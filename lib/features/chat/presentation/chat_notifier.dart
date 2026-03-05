@@ -48,7 +48,7 @@ class ChatNotifier extends StateNotifier<ChatState> {
 
   String get currentProvider {
     // Assistant specific provider config removed per user request
-    return _ref.read(settingsProvider).activeProviderId;
+    return _ref.read(settingsProvider).activeProvider.id;
   }
 
   @override
