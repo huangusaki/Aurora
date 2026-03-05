@@ -10,6 +10,12 @@ class ChatNotifier extends StateNotifier<ChatState> {
   CancelToken? _currentCancelToken;
   double? _savedScrollOffset;
   final List<VoidCallback> _listeners = [];
+
+  static const Duration _streamUiFlushInterval =
+      Duration(milliseconds: 60); // ~16fps (good enough for streaming text)
+  Timer? _pendingTrailingFlushTimer;
+  Message? _pendingTrailingMessage;
+  DateTime? _lastTrailingFlushAt;
   ChatNotifier({
     required Ref ref,
     required ChatStorage storage,
@@ -64,6 +70,9 @@ class ChatNotifier extends StateNotifier<ChatState> {
     _isDisposed = true;
     _currentCancelToken?.cancel();
     _currentCancelToken = null;
+    _pendingTrailingFlushTimer?.cancel();
+    _pendingTrailingFlushTimer = null;
+    _pendingTrailingMessage = null;
     super.dispose();
   }
 
@@ -83,6 +92,7 @@ class ChatNotifier extends StateNotifier<ChatState> {
     _currentGenerationId = '';
     _currentCancelToken?.cancel('User aborted generation');
     _currentCancelToken = null;
+    _flushPendingTrailingMessage();
     state = state.copyWith(isLoading: false);
   }
 
@@ -264,6 +274,7 @@ class ChatNotifier extends StateNotifier<ChatState> {
       );
     } finally {
       requestContext?.toolManager.close();
+      _flushPendingTrailingMessage();
       if (mounted) state = state.copyWith(isLoading: false);
     }
 
@@ -398,14 +409,69 @@ class ChatNotifier extends StateNotifier<ChatState> {
   }
 
   void _upsertTrailingMessage(Message message) {
+    if (!mounted) return;
+
+    // During streaming/generation, this method can be called many times per
+    // second. Updating state on every chunk causes O(n) list copies + excessive
+    // widget rebuilds. Batch updates to a small fixed rate instead.
+    if (state.isLoading) {
+      final pending = _pendingTrailingMessage;
+      if (pending != null && pending.id != message.id) {
+        // Turn boundary: flush the previous pending message before switching ids
+        // (e.g. Agent loop: assistant message -> tool message -> next assistant).
+        _flushPendingTrailingMessage();
+      }
+      _pendingTrailingMessage = message;
+      _scheduleTrailingMessageFlush();
+      return;
+    }
+
+    _applyTrailingMessage(message);
+  }
+
+  void _scheduleTrailingMessageFlush() {
+    if (!mounted) return;
+    if (_pendingTrailingFlushTimer?.isActive == true) return;
+
+    final now = DateTime.now();
+    final last = _lastTrailingFlushAt;
+    final elapsed = last == null ? _streamUiFlushInterval : now.difference(last);
+    final remainingUs =
+        _streamUiFlushInterval.inMicroseconds - elapsed.inMicroseconds;
+    final delay = remainingUs <= 0
+        ? Duration.zero
+        : Duration(microseconds: remainingUs);
+
+    _pendingTrailingFlushTimer = Timer(delay, _flushPendingTrailingMessage);
+  }
+
+  void _flushPendingTrailingMessage() {
+    _pendingTrailingFlushTimer?.cancel();
+    _pendingTrailingFlushTimer = null;
+
+    if (!mounted) return;
+    final pending = _pendingTrailingMessage;
+    if (pending == null) return;
+    _pendingTrailingMessage = null;
+    _lastTrailingFlushAt = DateTime.now();
+
+    _applyTrailingMessage(pending);
+  }
+
+  void _applyTrailingMessage(Message message) {
     final newMessages = List<Message>.from(state.messages);
     if (newMessages.isNotEmpty && newMessages.last.id == message.id) {
-      newMessages.removeLast();
+      newMessages[newMessages.length - 1] = message;
+    } else {
+      final idx = newMessages.indexWhere((m) => m.id == message.id);
+      if (idx == -1) {
+        newMessages.add(message);
+      } else {
+        newMessages[idx] = message;
+      }
     }
-    newMessages.add(message);
-    if (mounted) {
-      state = state.copyWith(messages: newMessages);
-    }
+    if (!mounted) return;
+    state = state.copyWith(messages: newMessages);
   }
 
   void _setMessages(List<Message> messages) {
@@ -466,6 +532,10 @@ class ChatNotifier extends StateNotifier<ChatState> {
     required DateTime startTime,
   }) {
     if (_currentGenerationId != generationId || !mounted) return;
+
+    _pendingTrailingFlushTimer?.cancel();
+    _pendingTrailingFlushTimer = null;
+    _pendingTrailingMessage = null;
 
     var errorMessage = error.toString();
     if (errorMessage.startsWith('Exception: ')) {

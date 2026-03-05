@@ -51,3 +51,4 @@ build_output.txt
 *.bak
 build_release.ps1
 
+check.md
