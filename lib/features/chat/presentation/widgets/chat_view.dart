@@ -230,6 +230,7 @@ class ChatViewState extends ConsumerState<ChatView> {
       }
 
       for (final entry in _builtItemContexts.entries) {
+        if (!entry.value.mounted) continue;
         final rect = _rectForContext(entry.value);
         if (rect == null) continue;
         if (!rect.overlaps(viewportRect)) continue;
@@ -293,11 +294,30 @@ class ChatViewState extends ConsumerState<ChatView> {
     });
   }
 
+  (int?, int?) _findVisibleBoundaryIndices() {
+    final viewportRect = _messageViewportRect();
+    if (viewportRect == null) return (null, null);
+    int? topmostIdx; 
+    int? bottommostIdx; 
+    for (final entry in _builtItemContexts.entries) {
+      if (!entry.value.mounted) continue;
+      final rect = _rectForContext(entry.value);
+      if (rect == null) continue;
+      if (!rect.overlaps(viewportRect)) continue;
+      final idx = _displayIndexById[entry.key];
+      if (idx == null) continue;
+      if (topmostIdx == null || idx > topmostIdx) topmostIdx = idx;
+      if (bottommostIdx == null || idx < bottommostIdx) bottommostIdx = idx;
+    }
+    return (topmostIdx, bottommostIdx);
+  }
+
   Future<void> _jumpToPrevMessage() async {
     await _runNavAction(() async {
       final count = _displayOrderIds.length;
       if (count <= 1) return;
-      final anchorIndex = _computeAnchorIndex();
+      final (topmostIdx, _) = _findVisibleBoundaryIndices();
+      final anchorIndex = topmostIdx ?? _computeAnchorIndex();
       final targetIndex = (anchorIndex + 1).clamp(0, count - 1);
       if (targetIndex == anchorIndex) return;
       await _scrollToDisplayIndex(targetIndex, anchorIndex: anchorIndex);
@@ -308,7 +328,8 @@ class ChatViewState extends ConsumerState<ChatView> {
     await _runNavAction(() async {
       final count = _displayOrderIds.length;
       if (count <= 1) return;
-      final anchorIndex = _computeAnchorIndex();
+      final (_, bottommostIdx) = _findVisibleBoundaryIndices();
+      final anchorIndex = bottommostIdx ?? _computeAnchorIndex();
       final targetIndex = (anchorIndex - 1).clamp(0, count - 1);
       if (targetIndex == anchorIndex) return;
       await _scrollToDisplayIndex(targetIndex, anchorIndex: anchorIndex);
@@ -978,6 +999,7 @@ class ChatViewState extends ConsumerState<ChatView> {
                                 ),
                               )
                             : ListView.builder(
+                                cacheExtent: 2000,
                                 key: ValueKey(
                                     ref.watch(selectedHistorySessionIdProvider)),
                                 controller: _scrollController,
