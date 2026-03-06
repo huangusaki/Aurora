@@ -1004,7 +1004,7 @@ class ChatViewState extends ConsumerState<ChatView> {
                                     ref.watch(selectedHistorySessionIdProvider)),
                                 controller: _scrollController,
                                 reverse: true,
-                                padding: const EdgeInsets.all(16),
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
                                 itemCount: displayItems.length,
                                 itemBuilder: (context, index) {
                                   final reversedIndex =

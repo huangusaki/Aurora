@@ -89,6 +89,17 @@ class ChatNotifier extends StateNotifier<ChatState> {
   }
 
   void abortGeneration() {
+    if (_currentGenerationId.isNotEmpty) {
+      AppLogger.warn(
+        'CHAT',
+        'Request cancelled by user',
+        category: 'REQUEST_CANCELLED',
+        data: {
+          'session_id': _sessionId,
+          'request_id': _currentGenerationId,
+        },
+      );
+    }
     _currentGenerationId = '';
     _currentCancelToken?.cancel('User aborted generation');
     _currentCancelToken = null;
@@ -185,6 +196,21 @@ class ChatNotifier extends StateNotifier<ChatState> {
     _ChatRequestContext? requestContext;
 
     try {
+      AppLogger.info(
+        'CHAT',
+        'Request started',
+        category: 'REQUEST',
+        data: {
+          'session_id': _sessionId,
+          'request_id': generationId,
+          'has_text': text?.trim().isNotEmpty ?? false,
+          'text_length': text?.length ?? 0,
+          'attachment_count': attachments.length,
+          'stream_enabled': _ref.read(settingsProvider).isStreamEnabled,
+          'assistant_id': assistantIdForRequest,
+        },
+      );
+
       requestContext = await _ChatRequestContextBuilder(notifier: this)
           .build(text: text, apiContent: apiContent, assistant: assistant);
       if (!mounted || _currentGenerationId != generationId) {
@@ -245,6 +271,26 @@ class ChatNotifier extends StateNotifier<ChatState> {
         reasoningTokens: generationResult.reasoningTokens,
         aiMessage: generationResult.aiMessage,
       );
+
+      if (_currentGenerationId == generationId) {
+        AppLogger.info(
+          'CHAT',
+          'Request completed',
+          category: 'REQUEST',
+          data: {
+            'session_id': _sessionId,
+            'request_id': generationId,
+            'provider': context.currentProviderName,
+            'model': context.currentModel,
+            'turns': generationResult.turns,
+            'duration_ms': DateTime.now().difference(startTime).inMilliseconds,
+            'prompt_tokens': generationResult.promptTokens,
+            'completion_tokens': generationResult.completionTokens,
+            'reasoning_tokens': generationResult.reasoningTokens,
+            'response_length': persistedAiMessage.content.length,
+          },
+        );
+      }
 
       if (_currentGenerationId == generationId &&
           assistant != null &&
@@ -573,6 +619,20 @@ class ChatNotifier extends StateNotifier<ChatState> {
     if (error is AppException) {
       errorType = error.type;
     }
+
+    AppLogger.error(
+      'CHAT',
+      'Request failed',
+      category: 'REQUEST',
+      data: {
+        'session_id': _sessionId,
+        'request_id': generationId,
+        'model': currentModel,
+        'duration_ms': duration,
+        'error_type': errorType.name,
+        'error': errorMessage,
+      },
+    );
 
     _ref.read(usageStatsProvider.notifier).incrementUsage(
           currentModel,

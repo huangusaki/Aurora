@@ -38,6 +38,7 @@ import 'package:uuid/uuid.dart';
 import 'package:aurora/core/error/app_error_type.dart';
 import 'package:aurora/core/error/app_exception.dart';
 import 'package:aurora/shared/utils/image_compression.dart';
+import 'package:aurora/shared/utils/app_logger.dart';
 
 part 'chat_state.dart';
 part 'chat_notifier.dart';

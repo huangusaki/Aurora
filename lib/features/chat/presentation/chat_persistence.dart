@@ -21,6 +21,10 @@ class _ChatPersistence {
       return aiMessage;
     }
 
+    // Persistence must snapshot the latest assistant state, not a batched
+    // placeholder that is still waiting in the trailing-message buffer.
+    _notifier._flushPendingTrailingMessage();
+
     final messages = _notifier.currentState.messages;
     final durationMs = DateTime.now().difference(startTime).inMilliseconds;
     final firstTokenMs = firstContentTime?.difference(startTime).inMilliseconds;
@@ -35,9 +39,9 @@ class _ChatPersistence {
 
     final unsaved = messages.sublist(startSaveIndex);
     final updatedMessages = List<Message>.from(_notifier.currentState.messages);
-      var finalAiMessage = aiMessage;
+    var finalAiMessage = aiMessage;
 
-      for (var i = 0; i < unsaved.length; i++) {
+    for (var i = 0; i < unsaved.length; i++) {
       if (_notifier._currentGenerationId != generationId) {
         break;
       }

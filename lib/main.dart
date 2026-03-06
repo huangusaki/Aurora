@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:ui' show PlatformDispatcher;
 import 'package:fluent_ui/fluent_ui.dart' as fluent;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -25,7 +26,10 @@ import 'package:flutter_displaymode/flutter_displaymode.dart';
 import 'features/chat/presentation/widgets/chat_image_bubble.dart'
     show clearImageCache;
 
+import 'features/settings/presentation/app_log_provider.dart';
 import 'shared/utils/app_logger.dart';
+import 'shared/utils/app_log_repository.dart';
+import 'shared/utils/crash_log_writer.dart';
 import 'shared/utils/platform_utils.dart';
 
 void _bootLog(String message) {
@@ -69,6 +73,8 @@ class StartupErrorApp extends StatelessWidget {
 }
 
 void main() async {
+  final crashLogWriter = CrashLogWriter();
+
   AppLogger.install(
     useColor: true,
     prettyJson: true,
@@ -79,6 +85,25 @@ void main() async {
     FlutterError.presentError(details);
     _bootError(
         'flutter_error', details.exception, details.stack ?? StackTrace.empty);
+    unawaited(
+      crashLogWriter.writeCrashSnapshot(
+        source: 'flutter_error',
+        error: details.exception,
+        stackTrace: details.stack ?? StackTrace.empty,
+      ),
+    );
+  };
+
+  PlatformDispatcher.instance.onError = (error, stackTrace) {
+    _bootError('platform_dispatcher', error, stackTrace);
+    unawaited(
+      crashLogWriter.writeCrashSnapshot(
+        source: 'platform_dispatcher',
+        error: error,
+        stackTrace: stackTrace,
+      ),
+    );
+    return true;
   };
 
   runZonedGuarded(
@@ -87,6 +112,10 @@ void main() async {
         _bootLog('main start');
         WidgetsFlutterBinding.ensureInitialized();
         _bootLog('binding initialized');
+
+        final appLogRepository = AppLogRepository(autoInit: false);
+        await appLogRepository.init();
+        _bootLog('app log repository initialized');
 
         if (PlatformUtils.isDesktop) {
           _bootLog('desktop initialization start');
@@ -172,6 +201,7 @@ void main() async {
         runApp(ProviderScope(
           overrides: [
             settingsStorageProvider.overrideWithValue(storage),
+            appLogRepositoryProvider.overrideWith((ref) => appLogRepository),
             selectedHistorySessionIdProvider
                 .overrideWith((ref) => initialSelectedHistorySessionId),
             settingsProvider.overrideWith((ref) {
@@ -245,6 +275,11 @@ void main() async {
         _bootLog('runApp done');
       } catch (error, stackTrace) {
         _bootError('startup', error, stackTrace);
+        await crashLogWriter.writeCrashSnapshot(
+          source: 'startup',
+          error: error,
+          stackTrace: stackTrace,
+        );
         runApp(StartupErrorApp(
           title: 'Aurora startup failed',
           detail: '$error\n\n$stackTrace',
@@ -253,6 +288,13 @@ void main() async {
     },
     (error, stackTrace) {
       _bootError('uncaught_zone', error, stackTrace);
+      unawaited(
+        crashLogWriter.writeCrashSnapshot(
+          source: 'uncaught_zone',
+          error: error,
+          stackTrace: stackTrace,
+        ),
+      );
     },
     zoneSpecification: AppLogger.zoneSpecification(),
   );
@@ -263,7 +305,9 @@ class MyApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.listen(mcpServerProvider, (prev, next) {
-      ref.read(mcpConnectionProvider.notifier).syncConfiguredServers(next.servers);
+      ref
+          .read(mcpConnectionProvider.notifier)
+          .syncConfiguredServers(next.servers);
     });
     ref.listen<String?>(selectedHistorySessionIdProvider, (prev, next) {
       if (prev != next) {

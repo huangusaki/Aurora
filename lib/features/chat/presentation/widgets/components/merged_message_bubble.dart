@@ -148,7 +148,7 @@ class _MergedMessageBubbleState extends ConsumerState<MergedMessageBubble>
       providerName: headerMsg.provider ?? settingsState.activeProvider.name,
     );
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 10),
+      margin: EdgeInsets.symmetric(vertical: 4, horizontal: PlatformUtils.isDesktop ? 10 : 2),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.start,

@@ -228,14 +228,14 @@ class _ChatGenerationOrchestrator {
         uiMsg = uiMsg.copyWith(
           reasoningDurationSeconds: reasoningDuration,
           tokenCount: chunk.usage ?? uiMsg.tokenCount,
-          promptTokens:
-              _promptTokens > 0 ? _promptTokens : uiMsg.promptTokens,
+          promptTokens: _promptTokens > 0 ? _promptTokens : uiMsg.promptTokens,
           completionTokens: _completionTokens > 0
               ? _completionTokens
               : uiMsg.completionTokens,
           reasoningTokens:
               _reasoningTokens > 0 ? _reasoningTokens : uiMsg.reasoningTokens,
-          firstTokenMs: _firstContentTime?.difference(_startTime).inMilliseconds,
+          firstTokenMs:
+              _firstContentTime?.difference(_startTime).inMilliseconds,
         );
         aiMsg = uiMsg.toLegacy();
         _notifier._upsertTrailingMessage(aiMsg);
@@ -246,9 +246,8 @@ class _ChatGenerationOrchestrator {
         reasoningDurationSeconds: reasoningDuration,
         tokenCount: chunk.usage ?? uiMsg.tokenCount,
         promptTokens: _promptTokens > 0 ? _promptTokens : uiMsg.promptTokens,
-        completionTokens: _completionTokens > 0
-            ? _completionTokens
-            : uiMsg.completionTokens,
+        completionTokens:
+            _completionTokens > 0 ? _completionTokens : uiMsg.completionTokens,
         reasoningTokens:
             _reasoningTokens > 0 ? _reasoningTokens : uiMsg.reasoningTokens,
         firstTokenMs: _firstContentTime?.difference(_startTime).inMilliseconds,
@@ -345,6 +344,9 @@ class _ChatGenerationOrchestrator {
         durationMs: turnDurationMs,
       );
       _notifier._upsertTrailingMessage(aiMsg);
+      // Non-streaming turns produce the full assistant message at once.
+      // Flush immediately so later persistence reads the updated state.
+      _notifier._flushPendingTrailingMessage();
     }
 
     return _ChatTurnResult(

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:aurora/core/error/app_exception.dart';
 import 'package:aurora/features/chat/domain/ui_message.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:aurora/features/chat/domain/message.dart';
@@ -54,9 +55,118 @@ void main() {
       expect(response.content, contains('API key is empty'));
     });
 
-    test(
-        'uses reasoning_effort=auto for gemini 3.0 image models',
+    test('parses non-streaming JSON string payloads from text/plain proxies',
         () async {
+      final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      final sub = server.listen((request) async {
+        request.response.statusCode = 200;
+        request.response.headers.contentType =
+            ContentType('text', 'plain', charset: 'utf-8');
+        request.response.write(jsonEncode({
+          'id': 'resp_123',
+          'object': 'chat.completion',
+          'created': 1772789718,
+          'model': 'gpt-5.2-2025-12-11',
+          'choices': [
+            {
+              'index': 0,
+              'message': {
+                'role': 'assistant',
+                'content': '谢谢你，我很开心听到你这么说。',
+                'reasoning_content': 'warm and helpful reply',
+                'tool_calls': null,
+              },
+              'finish_reason': 'stop',
+              'native_finish_reason': 'stop',
+            }
+          ],
+          'usage': {
+            'completion_tokens': 83,
+            'total_tokens': 107,
+            'prompt_tokens': 24,
+            'completion_tokens_details': {
+              'reasoning_tokens': 37,
+            }
+          }
+        }));
+        await request.response.close();
+      });
+      addTearDown(() async {
+        await sub.cancel();
+        await server.close(force: true);
+      });
+
+      final settings = SettingsState(
+        providers: [
+          ProviderConfig(
+            id: 'openai',
+            name: 'OpenAI',
+            apiKeys: const ['test-key'],
+            selectedModel: 'gpt-5.2',
+            baseUrl: 'http://${server.address.host}:${server.port}/v1',
+          ),
+        ],
+        activeProviderId: 'openai',
+        viewingProviderId: 'openai',
+        language: 'zh',
+      );
+      final service = OpenAILLMService(settings);
+
+      final response = await service.getResponse([Message.user('我喜欢你')]);
+
+      expect(response.content, '谢谢你，我很开心听到你这么说。');
+      expect(response.reasoning, 'warm and helpful reply');
+      expect(response.promptTokens, 24);
+      expect(response.completionTokens, 83);
+      expect(response.reasoningTokens, 37);
+      expect(response.usage, 144);
+      expect(response.finishReason, 'stop');
+    });
+
+    test('fails clearly when non-streaming payload is not valid JSON',
+        () async {
+      final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      final sub = server.listen((request) async {
+        request.response.statusCode = 200;
+        request.response.headers.contentType =
+            ContentType('text', 'plain', charset: 'utf-8');
+        request.response.write('this is not json');
+        await request.response.close();
+      });
+      addTearDown(() async {
+        await sub.cancel();
+        await server.close(force: true);
+      });
+
+      final settings = SettingsState(
+        providers: [
+          ProviderConfig(
+            id: 'openai',
+            name: 'OpenAI',
+            apiKeys: const ['test-key'],
+            selectedModel: 'gpt-5.2',
+            baseUrl: 'http://${server.address.host}:${server.port}/v1',
+          ),
+        ],
+        activeProviderId: 'openai',
+        viewingProviderId: 'openai',
+        language: 'zh',
+      );
+      final service = OpenAILLMService(settings);
+
+      await expectLater(
+        service.getResponse([Message.user('你好')]),
+        throwsA(
+          isA<AppException>().having(
+            (e) => e.message,
+            'message',
+            contains('not a valid JSON object'),
+          ),
+        ),
+      );
+    });
+
+    test('uses reasoning_effort=auto for gemini 3.0 image models', () async {
       final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
       final payloadCompleter = Completer<Map<String, dynamic>>();
       final sub = server.listen((request) async {
@@ -116,9 +226,7 @@ void main() {
       expect(payload.containsKey('extra_body'), isFalse);
     });
 
-    test(
-        'uses reasoning_effort=high for gemini 3.1+ image models',
-        () async {
+    test('uses reasoning_effort=high for gemini 3.1+ image models', () async {
       final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
       final payloadCompleter = Completer<Map<String, dynamic>>();
       final sub = server.listen((request) async {

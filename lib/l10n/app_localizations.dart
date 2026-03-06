@@ -218,6 +218,12 @@ abstract class AppLocalizations {
   /// **'历史'**
   String get history;
 
+  /// No description provided for @debugTools.
+  ///
+  /// In zh, this message translates to:
+  /// **'调试'**
+  String get debugTools;
+
   /// No description provided for @modelNotSelected.
   ///
   /// In zh, this message translates to:
@@ -619,6 +625,54 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'加载中...'**
   String get loadingEllipsis;
+
+  /// No description provided for @logRecords.
+  ///
+  /// In zh, this message translates to:
+  /// **'日志记录'**
+  String get logRecords;
+
+  /// No description provided for @logRecordsHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'查看最近 2000 条运行日志'**
+  String get logRecordsHint;
+
+  /// No description provided for @logFilterHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'显示最近 2000 条日志，可按级别筛选。'**
+  String get logFilterHint;
+
+  /// No description provided for @noLogRecords.
+  ///
+  /// In zh, this message translates to:
+  /// **'暂无日志记录'**
+  String get noLogRecords;
+
+  /// No description provided for @logLevelDebug.
+  ///
+  /// In zh, this message translates to:
+  /// **'Debug'**
+  String get logLevelDebug;
+
+  /// No description provided for @logLevelInfo.
+  ///
+  /// In zh, this message translates to:
+  /// **'Info'**
+  String get logLevelInfo;
+
+  /// No description provided for @logLevelWarning.
+  ///
+  /// In zh, this message translates to:
+  /// **'Warning'**
+  String get logLevelWarning;
+
+  /// No description provided for @logLevelError.
+  ///
+  /// In zh, this message translates to:
+  /// **'Error'**
+  String get logLevelError;
 
   /// No description provided for @error.
   ///

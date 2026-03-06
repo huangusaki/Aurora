@@ -100,6 +100,93 @@ class OpenAILLMService implements LLMService {
     return stripped.isEmpty ? null : stripped;
   }
 
+  Map<String, dynamic> _normalizeNonStreamingResponsePayload(
+    dynamic payload, {
+    required String context,
+  }) {
+    if (payload is Map<String, dynamic>) {
+      return payload;
+    }
+    if (payload is Map) {
+      return payload.map(
+        (key, value) => MapEntry(key.toString(), value),
+      );
+    }
+    if (payload is List<int>) {
+      return _normalizeNonStreamingResponsePayload(
+        utf8.decode(payload, allowMalformed: true),
+        context: context,
+      );
+    }
+    if (payload is String) {
+      final trimmed = payload.trim();
+      if (trimmed.isEmpty) {
+        throw AppException(
+          type: AppErrorType.unknown,
+          message: '$context is empty.',
+        );
+      }
+      try {
+        final decoded = jsonDecode(trimmed);
+        return _normalizeNonStreamingResponsePayload(
+          decoded,
+          context: context,
+        );
+      } catch (e) {
+        throw AppException(
+          type: AppErrorType.unknown,
+          message:
+              '$context is not a valid JSON object. Body preview: ${_payloadPreview(trimmed)}',
+        );
+      }
+    }
+    throw AppException(
+      type: AppErrorType.unknown,
+      message:
+          '$context has unsupported payload type ${payload.runtimeType}. Body preview: ${_payloadPreview(payload)}',
+    );
+  }
+
+  Map<String, dynamic> _requireJsonObject(
+    dynamic payload, {
+    required String context,
+  }) {
+    final normalized = _normalizeNonStreamingResponsePayload(
+      payload,
+      context: context,
+    );
+    if (normalized.isNotEmpty) return normalized;
+    if (payload is Map && payload.isEmpty) return normalized;
+    throw AppException(
+      type: AppErrorType.unknown,
+      message: '$context is empty.',
+    );
+  }
+
+  int? _asInt(dynamic value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value.trim());
+    return null;
+  }
+
+  String _payloadPreview(dynamic payload, {int maxLength = 240}) {
+    String text;
+    try {
+      final sanitized = _sanitizeForLog(payload);
+      if (sanitized is String) {
+        text = sanitized;
+      } else {
+        text = jsonEncode(sanitized);
+      }
+    } catch (_) {
+      text = payload?.toString() ?? 'null';
+    }
+    final normalized = text.replaceAll(RegExp(r'\s+'), ' ').trim();
+    if (normalized.length <= maxLength) return normalized;
+    return '${normalized.substring(0, maxLength)}...';
+  }
+
   void _debugLog(String message,
       {String level = 'DEBUG', String category = 'GENERAL'}) {
     assert(() {
@@ -338,272 +425,268 @@ class OpenAILLMService implements LLMService {
         try {
           final json = jsonDecode(data);
           _logResponse(json);
-              if (json['usage'] != null) {
-                final usage = json['usage'];
-                final int? completionTokens = usage['completion_tokens'];
-                final int? promptTokens = usage['prompt_tokens'];
-                final int? totalTokens = usage['total_tokens'];
-                int? reasoningTokens;
-                if (usage['completion_tokens_details'] != null) {
-                  reasoningTokens = usage['completion_tokens_details']
-                      ['reasoning_tokens'] as int?;
-                } else if (usage['reasoning_tokens'] != null) {
-                  reasoningTokens = usage['reasoning_tokens'] as int?;
+          if (json['usage'] != null) {
+            final usage = json['usage'];
+            final int? completionTokens = usage['completion_tokens'];
+            final int? promptTokens = usage['prompt_tokens'];
+            final int? totalTokens = usage['total_tokens'];
+            int? reasoningTokens;
+            if (usage['completion_tokens_details'] != null) {
+              reasoningTokens = usage['completion_tokens_details']
+                  ['reasoning_tokens'] as int?;
+            } else if (usage['reasoning_tokens'] != null) {
+              reasoningTokens = usage['reasoning_tokens'] as int?;
+            }
+
+            // Total generated = completion + reasoning (hidden or visible)
+            final int totalGenerated =
+                (completionTokens ?? 0) + (reasoningTokens ?? 0);
+            // Absolute total consumption for tokenCount display
+            final int totalConsume = (promptTokens ?? 0) + totalGenerated;
+
+            if (completionTokens != null || totalTokens != null) {
+              yield LLMResponseChunk(
+                usage: totalConsume > 0
+                    ? totalConsume
+                    : (totalTokens ?? completionTokens),
+                promptTokens: promptTokens,
+                completionTokens: completionTokens,
+                reasoningTokens: reasoningTokens,
+              );
+            }
+          }
+          final choicesRaw = json['choices'];
+          if (choicesRaw == null) continue;
+          final choices = choicesRaw as List;
+          if (choices.isNotEmpty) {
+            // Some proxies return chat.completion format (with 'message'
+            // instead of 'delta') even when streaming is requested.
+            // Fall back to 'message' so content/reasoning/images still parse.
+            final delta = choices[0]['delta'] ?? choices[0]['message'];
+            if (delta != null) {
+              final finishReason = choices[0]['finish_reason'];
+              final dynamic rawContent = delta['content'];
+              String? content = rawContent is String ? rawContent : null;
+              String? reasoning =
+                  delta['reasoning_content'] ?? delta['reasoning'];
+
+              // 1. Handle Gemini Google Thinking Metadata
+              final bool isGoogleThought =
+                  delta['extra_content']?['google']?['thought'] == true;
+              if (isGoogleThought && content != null) {
+                reasoning = (reasoning ?? '') + content;
+                content = null;
+              }
+
+              // 2. Handle XML-style tags (<thought> or <think>)
+              if (content != null) {
+                // Check for start tags
+                if (content.contains('<thought>')) {
+                  isInThoughtTag = true;
+                  final parts = content.split('<thought>');
+                  final before = parts[0];
+                  final after = parts.sublist(1).join('<thought>');
+                  content = before.isEmpty ? null : before;
+                  reasoning = (reasoning ?? '') + after;
+                } else if (content.contains('<think>')) {
+                  isInThoughtTag = true;
+                  final parts = content.split('<think>');
+                  final before = parts[0];
+                  final after = parts.sublist(1).join('<think>');
+                  content = before.isEmpty ? null : before;
+                  reasoning = (reasoning ?? '') + after;
                 }
 
-                // Total generated = completion + reasoning (hidden or visible)
-                final int totalGenerated =
-                    (completionTokens ?? 0) + (reasoningTokens ?? 0);
-                // Absolute total consumption for tokenCount display
-                final int totalConsume = (promptTokens ?? 0) + totalGenerated;
+                // Check for end tags
+                if (content != null &&
+                    (content.contains('</thought>') ||
+                        content.contains('</think>'))) {
+                  final isEndThought = content.contains('</thought>');
+                  final tag = isEndThought ? '</thought>' : '</think>';
+                  final parts = content.split(tag);
+                  final inside = parts[0];
+                  final outside = parts.sublist(1).join(tag);
 
-                if (completionTokens != null || totalTokens != null) {
-                  yield LLMResponseChunk(
-                    usage: totalConsume > 0
-                        ? totalConsume
-                        : (totalTokens ?? completionTokens),
-                    promptTokens: promptTokens,
-                    completionTokens: completionTokens,
-                    reasoningTokens: reasoningTokens,
-                  );
+                  reasoning = (reasoning ?? '') + inside;
+                  content = outside.isEmpty ? null : outside;
+                  isInThoughtTag = false;
+                } else if (isInThoughtTag) {
+                  // If we are currently inside a tag, all content goes to reasoning
+                  reasoning = (reasoning ?? '') + content!;
+                  content = null;
                 }
               }
-              final choicesRaw = json['choices'];
-              if (choicesRaw == null) continue;
-              final choices = choicesRaw as List;
-              if (choices.isNotEmpty) {
-                // Some proxies return chat.completion format (with 'message'
-                // instead of 'delta') even when streaming is requested.
-                // Fall back to 'message' so content/reasoning/images still parse.
-                final delta = choices[0]['delta'] ?? choices[0]['message'];
-                if (delta != null) {
-                  final finishReason = choices[0]['finish_reason'];
-                  final dynamic rawContent = delta['content'];
-                  String? content = rawContent is String ? rawContent : null;
-                  String? reasoning =
-                      delta['reasoning_content'] ?? delta['reasoning'];
+              final toolCalls = delta['tool_calls'];
 
-                  // 1. Handle Gemini Google Thinking Metadata
-                  final bool isGoogleThought =
-                      delta['extra_content']?['google']?['thought'] == true;
-                  if (isGoogleThought && content != null) {
-                    reasoning = (reasoning ?? '') + content;
-                    content = null;
-                  }
+              final imageUrls = <String>[];
+              final imageSignatures = <String, String?>{};
 
-                  // 2. Handle XML-style tags (<thought> or <think>)
-                  if (content != null) {
-                    // Check for start tags
-                    if (content.contains('<thought>')) {
-                      isInThoughtTag = true;
-                      final parts = content.split('<thought>');
-                      final before = parts[0];
-                      final after = parts.sublist(1).join('<thought>');
-                      content = before.isEmpty ? null : before;
-                      reasoning = (reasoning ?? '') + after;
-                    } else if (content.contains('<think>')) {
-                      isInThoughtTag = true;
-                      final parts = content.split('<think>');
-                      final before = parts[0];
-                      final after = parts.sublist(1).join('<think>');
-                      content = before.isEmpty ? null : before;
-                      reasoning = (reasoning ?? '') + after;
-                    }
+              void addImageCandidate(String? rawUrl,
+                  {String? signature, String? mimeType}) {
+                if (rawUrl == null) return;
+                final trimmed = rawUrl.trim();
+                if (trimmed.isEmpty) return;
+                var normalized = trimmed;
 
-                    // Check for end tags
-                    if (content != null &&
-                        (content.contains('</thought>') ||
-                            content.contains('</think>'))) {
-                      final isEndThought = content.contains('</thought>');
-                      final tag = isEndThought ? '</thought>' : '</think>';
-                      final parts = content.split(tag);
-                      final inside = parts[0];
-                      final outside = parts.sublist(1).join(tag);
+                // 兼容：部分后端直接返回 raw base64（无 data: 头）
+                if (!normalized.startsWith('data:') &&
+                    !normalized.startsWith('http')) {
+                  final resolvedMime =
+                      (mimeType == null || mimeType.trim().isEmpty)
+                          ? 'image/png'
+                          : mimeType.trim();
+                  normalized = 'data:$resolvedMime;base64,$normalized';
+                }
 
-                      reasoning = (reasoning ?? '') + inside;
-                      content = outside.isEmpty ? null : outside;
-                      isInThoughtTag = false;
-                    } else if (isInThoughtTag) {
-                      // If we are currently inside a tag, all content goes to reasoning
-                      reasoning = (reasoning ?? '') + content!;
-                      content = null;
-                    }
-                  }
-                  final toolCalls = delta['tool_calls'];
+                if (imageUrls.contains(normalized)) return;
+                imageUrls.add(normalized);
+                final normalizedSignature =
+                    _normalizeThoughtSignature(signature);
+                if (normalizedSignature != null) {
+                  imageSignatures[normalized] = normalizedSignature;
+                }
+              }
 
-                  final imageUrls = <String>[];
-                  final imageSignatures = <String, String?>{};
-
-                  void addImageCandidate(String? rawUrl,
-                      {String? signature, String? mimeType}) {
-                    if (rawUrl == null) return;
-                    final trimmed = rawUrl.trim();
-                    if (trimmed.isEmpty) return;
-                    var normalized = trimmed;
-
-                    // 兼容：部分后端直接返回 raw base64（无 data: 头）
-                    if (!normalized.startsWith('data:') &&
-                        !normalized.startsWith('http')) {
-                      final resolvedMime =
-                          (mimeType == null || mimeType.trim().isEmpty)
-                              ? 'image/png'
-                              : mimeType.trim();
-                      normalized = 'data:$resolvedMime;base64,$normalized';
-                    }
-
-                    if (imageUrls.contains(normalized)) return;
-                    imageUrls.add(normalized);
-                    final normalizedSignature =
-                        _normalizeThoughtSignature(signature);
-                    if (normalizedSignature != null) {
-                      imageSignatures[normalized] = normalizedSignature;
-                    }
-                  }
-
-                  if (choices[0]['b64_json'] != null) {
-                    addImageCandidate(choices[0]['b64_json'].toString(),
-                        mimeType: 'image/png');
-                  }
-                  if (choices[0]['url'] != null) {
-                    addImageCandidate(choices[0]['url'].toString());
-                  }
-                  if (delta['b64_json'] != null) {
-                    addImageCandidate(delta['b64_json'].toString(),
-                        mimeType: 'image/png');
-                  }
-                  if (delta['url'] != null) {
-                    addImageCandidate(delta['url'].toString());
-                  }
-                  if (delta['image'] != null) {
-                    addImageCandidate(delta['image'].toString(),
-                        mimeType: 'image/png');
-                  }
-                  final inlineData = delta['inline_data'];
-                  if (inlineData is Map) {
-                    final mimeType = inlineData['mime_type']?.toString();
-                    final data = inlineData['data']?.toString();
-                    addImageCandidate(data, mimeType: mimeType);
-                  }
-                  if (delta['parts'] is List) {
-                    final parts = delta['parts'] as List;
-                    for (final part in parts) {
-                      if (part is! Map) continue;
-                      final partInlineData = part['inline_data'];
-                      if (partInlineData is! Map) continue;
-                      final mimeType = partInlineData['mime_type']?.toString();
-                      final data = partInlineData['data']?.toString();
-                      addImageCandidate(data, mimeType: mimeType);
+              if (choices[0]['b64_json'] != null) {
+                addImageCandidate(choices[0]['b64_json'].toString(),
+                    mimeType: 'image/png');
+              }
+              if (choices[0]['url'] != null) {
+                addImageCandidate(choices[0]['url'].toString());
+              }
+              if (delta['b64_json'] != null) {
+                addImageCandidate(delta['b64_json'].toString(),
+                    mimeType: 'image/png');
+              }
+              if (delta['url'] != null) {
+                addImageCandidate(delta['url'].toString());
+              }
+              if (delta['image'] != null) {
+                addImageCandidate(delta['image'].toString(),
+                    mimeType: 'image/png');
+              }
+              final inlineData = delta['inline_data'];
+              if (inlineData is Map) {
+                final mimeType = inlineData['mime_type']?.toString();
+                final data = inlineData['data']?.toString();
+                addImageCandidate(data, mimeType: mimeType);
+              }
+              if (delta['parts'] is List) {
+                final parts = delta['parts'] as List;
+                for (final part in parts) {
+                  if (part is! Map) continue;
+                  final partInlineData = part['inline_data'];
+                  if (partInlineData is! Map) continue;
+                  final mimeType = partInlineData['mime_type']?.toString();
+                  final data = partInlineData['data']?.toString();
+                  addImageCandidate(data, mimeType: mimeType);
+                }
+              }
+              if (delta['images'] is List) {
+                final images = delta['images'] as List;
+                for (final imgData in images) {
+                  String? candidateUrl;
+                  String? candidateMimeType;
+                  String? candidateSignature =
+                      _extractThoughtSignatureFromImageItem(imgData);
+                  if (imgData is String) {
+                    candidateUrl = imgData;
+                  } else if (imgData is Map) {
+                    if (imgData['url'] != null) {
+                      candidateUrl = imgData['url'].toString();
+                    } else if (imgData['data'] != null) {
+                      candidateUrl = imgData['data'].toString();
+                      candidateMimeType =
+                          imgData['mime_type']?.toString() ?? 'image/png';
+                    } else if (imgData['image_url'] != null) {
+                      final imgUrlObj = imgData['image_url'];
+                      if (imgUrlObj is Map && imgUrlObj['url'] != null) {
+                        candidateUrl = imgUrlObj['url'].toString();
+                        candidateSignature ??=
+                            _extractThoughtSignatureFromImageItem(imgUrlObj);
+                      } else if (imgUrlObj is String) {
+                        candidateUrl = imgUrlObj;
+                      }
                     }
                   }
-                  if (delta['images'] is List) {
-                    final images = delta['images'] as List;
-                    for (final imgData in images) {
-                      String? candidateUrl;
-                      String? candidateMimeType;
-                      String? candidateSignature =
-                          _extractThoughtSignatureFromImageItem(imgData);
-                      if (imgData is String) {
-                        candidateUrl = imgData;
-                      } else if (imgData is Map) {
-                        if (imgData['url'] != null) {
-                          candidateUrl = imgData['url'].toString();
-                        } else if (imgData['data'] != null) {
-                          candidateUrl = imgData['data'].toString();
-                          candidateMimeType =
-                              imgData['mime_type']?.toString() ?? 'image/png';
-                        } else if (imgData['image_url'] != null) {
-                          final imgUrlObj = imgData['image_url'];
-                          if (imgUrlObj is Map && imgUrlObj['url'] != null) {
-                            candidateUrl = imgUrlObj['url'].toString();
-                            candidateSignature ??=
-                                _extractThoughtSignatureFromImageItem(
-                                    imgUrlObj);
-                          } else if (imgUrlObj is String) {
-                            candidateUrl = imgUrlObj;
+                  addImageCandidate(candidateUrl,
+                      signature: candidateSignature,
+                      mimeType: candidateMimeType);
+                }
+              }
+              if (rawContent is List) {
+                final contentList = rawContent;
+                for (final item in contentList) {
+                  if (item is Map && item['type'] == 'image_url') {
+                    final url = item['image_url']?['url'];
+                    if (url != null) {
+                      addImageCandidate(
+                        url.toString(),
+                        signature: _extractThoughtSignatureFromImageItem(item),
+                      );
+                    }
+                  }
+                }
+              }
+              if (content != null && content.isNotEmpty) {
+                final markdownDataImages =
+                    _extractMarkdownDataImageUrls(content);
+                if (markdownDataImages.isNotEmpty) {
+                  for (final markdownImage in markdownDataImages) {
+                    addImageCandidate(markdownImage);
+                  }
+                  content = _removeMarkdownDataImageTags(content);
+                }
+              }
+
+              if (imageUrls.isNotEmpty) {
+                for (final url in imageUrls) {
+                  _rememberImageThoughtSignature(url, imageSignatures[url]);
+                }
+                yield LLMResponseChunk(
+                    content: '', images: imageUrls, finishReason: finishReason);
+              } else if (content != null ||
+                  reasoning != null ||
+                  (toolCalls != null && toolCalls is List) ||
+                  finishReason != null) {
+                // Yield chunk if we have content, reasoning, tools, OR a finish reason
+                List<ToolCallChunk>? parsedToolCalls;
+                if (toolCalls != null && toolCalls is List) {
+                  try {
+                    parsedToolCalls = (toolCalls)
+                        .map((toolCall) {
+                          final int? index = toolCall['index'];
+                          final String? id = toolCall['id'];
+                          final String? type = toolCall['type'];
+                          final Map? function = toolCall['function'];
+                          String? name;
+                          String? arguments;
+                          if (function != null) {
+                            name = function['name'];
+                            arguments = function['arguments'];
                           }
-                        }
-                      }
-                      addImageCandidate(candidateUrl,
-                          signature: candidateSignature,
-                          mimeType: candidateMimeType);
-                    }
-                  }
-                  if (rawContent is List) {
-                    final contentList = rawContent;
-                    for (final item in contentList) {
-                      if (item is Map && item['type'] == 'image_url') {
-                        final url = item['image_url']?['url'];
-                        if (url != null) {
-                          addImageCandidate(
-                            url.toString(),
-                            signature:
-                                _extractThoughtSignatureFromImageItem(item),
-                          );
-                        }
-                      }
-                    }
-                  }
-                  if (content != null && content.isNotEmpty) {
-                    final markdownDataImages =
-                        _extractMarkdownDataImageUrls(content);
-                    if (markdownDataImages.isNotEmpty) {
-                      for (final markdownImage in markdownDataImages) {
-                        addImageCandidate(markdownImage);
-                      }
-                      content = _removeMarkdownDataImageTags(content);
-                    }
-                  }
-
-                  if (imageUrls.isNotEmpty) {
-                    for (final url in imageUrls) {
-                      _rememberImageThoughtSignature(url, imageSignatures[url]);
-                    }
-                    yield LLMResponseChunk(
-                        content: '',
-                        images: imageUrls,
-                        finishReason: finishReason);
-                  } else if (content != null ||
-                      reasoning != null ||
-                      (toolCalls != null && toolCalls is List) ||
-                      finishReason != null) {
-                    // Yield chunk if we have content, reasoning, tools, OR a finish reason
-                    List<ToolCallChunk>? parsedToolCalls;
-                    if (toolCalls != null && toolCalls is List) {
-                      try {
-                        parsedToolCalls = (toolCalls)
-                            .map((toolCall) {
-                              final int? index = toolCall['index'];
-                              final String? id = toolCall['id'];
-                              final String? type = toolCall['type'];
-                              final Map? function = toolCall['function'];
-                              String? name;
-                              String? arguments;
-                              if (function != null) {
-                                name = function['name'];
-                                arguments = function['arguments'];
-                              }
-                              return ToolCallChunk(
-                                  index: index,
-                                  id: id,
-                                  type: type,
-                                  name: name,
-                                  arguments: arguments);
-                            })
-                            .toList()
-                            .cast<ToolCallChunk>();
-                      } catch (e) {
-                        _debugLog('Tool call parse error: $e');
-                        parsedToolCalls = null;
-                      }
-                    }
-                    yield LLMResponseChunk(
-                        content: content,
-                        reasoning: reasoning,
-                        toolCalls: parsedToolCalls,
-                        finishReason: finishReason);
+                          return ToolCallChunk(
+                              index: index,
+                              id: id,
+                              type: type,
+                              name: name,
+                              arguments: arguments);
+                        })
+                        .toList()
+                        .cast<ToolCallChunk>();
+                  } catch (e) {
+                    _debugLog('Tool call parse error: $e');
+                    parsedToolCalls = null;
                   }
                 }
+                yield LLMResponseChunk(
+                    content: content,
+                    reasoning: reasoning,
+                    toolCalls: parsedToolCalls,
+                    finishReason: finishReason);
               }
+            }
+          }
         } catch (e) {
           _debugLog('LLM Stream Parse Error: $e');
         }
@@ -1009,46 +1092,72 @@ class OpenAILLMService implements LLMService {
           headers: {
             'Authorization': 'Bearer $apiKey',
             'Content-Type': 'application/json',
+            'Accept': 'application/json',
           },
         ),
         data: requestData,
         cancelToken: cancelToken,
       );
-      final data = response.data;
+      final data = _normalizeNonStreamingResponsePayload(
+        response.data,
+        context: 'chat.completions non-stream response',
+      );
       _logResponse(data);
       int? usage;
       int? promptTokens;
       int? completionTokens;
 
       int? reasoningTokens;
-      if (data['usage'] != null) {
-        final usageData = data['usage'];
-        promptTokens = usageData['prompt_tokens'] as int?;
-        completionTokens = usageData['completion_tokens'] as int?;
+      final usageData = _safeStringKeyedMap(data['usage']);
+      if (usageData.isNotEmpty) {
+        promptTokens = _asInt(usageData['prompt_tokens']);
+        completionTokens = _asInt(usageData['completion_tokens']);
 
-        if (usageData['completion_tokens_details'] != null) {
-          reasoningTokens = usageData['completion_tokens_details']
-              ['reasoning_tokens'] as int?;
+        final completionDetails =
+            _safeStringKeyedMap(usageData['completion_tokens_details']);
+        if (completionDetails.isNotEmpty) {
+          reasoningTokens = _asInt(completionDetails['reasoning_tokens']);
         } else if (usageData['reasoning_tokens'] != null) {
-          reasoningTokens = usageData['reasoning_tokens'] as int?;
+          reasoningTokens = _asInt(usageData['reasoning_tokens']);
         }
       }
-      final choices = data['choices'] as List;
+      final choicesRaw = data['choices'];
+      if (choicesRaw is! List) {
+        throw AppException(
+          type: AppErrorType.unknown,
+          message:
+              'chat.completions non-stream response is missing a valid choices array.',
+        );
+      }
+      final choices = choicesRaw;
       if (choices.isNotEmpty) {
-        final message = choices[0]['message'];
+        final choice = _requireJsonObject(
+          choices[0],
+          context: 'chat.completions non-stream response choices[0]',
+        );
+        final message = _requireJsonObject(
+          choice['message'] ?? choice['delta'],
+          context: 'chat.completions non-stream response choices[0].message',
+        );
         final dynamic rawMessageContent = message['content'];
         String? content =
             rawMessageContent is String ? rawMessageContent : null;
         final String? reasoning =
             (message['reasoning_content'] ?? message['reasoning'])?.toString();
         List<ToolCallChunk>? toolCalls;
-        if (message['tool_calls'] != null) {
+        if (message['tool_calls'] is List) {
           toolCalls = (message['tool_calls'] as List).map((tc) {
+            final toolCall = _requireJsonObject(
+              tc,
+              context:
+                  'chat.completions non-stream response choices[0].message.tool_calls[]',
+            );
+            final function = _safeStringKeyedMap(toolCall['function']);
             return ToolCallChunk(
-              id: tc['id'],
-              type: tc['type'],
-              name: tc['function']['name'],
-              arguments: tc['function']['arguments'],
+              id: toolCall['id']?.toString(),
+              type: toolCall['type']?.toString(),
+              name: function['name']?.toString(),
+              arguments: function['arguments']?.toString(),
             );
           }).toList();
         }
@@ -1096,14 +1205,14 @@ class OpenAILLMService implements LLMService {
             content = _removeMarkdownDataImageTags(content);
           }
         }
-        final String? finishReason = choices[0]['finish_reason'];
+        final String? finishReason = choice['finish_reason']?.toString();
 
         // Final token calculation
         final int totalGenerated =
             (completionTokens ?? 0) + (reasoningTokens ?? 0);
         usage = (promptTokens ?? 0) + totalGenerated;
-        if (usage == 0 && data['usage'] != null) {
-          usage = data['usage']['total_tokens'] as int?;
+        if (usage == 0 && usageData.isNotEmpty) {
+          usage = _asInt(usageData['total_tokens']);
         }
 
         return LLMResponseChunk(

@@ -69,6 +69,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get history => '历史';
 
   @override
+  String get debugTools => '调试';
+
+  @override
   String get modelNotSelected => '未选择模型';
 
   @override
@@ -277,6 +280,30 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get loadingEllipsis => '加载中...';
+
+  @override
+  String get logRecords => '日志记录';
+
+  @override
+  String get logRecordsHint => '查看最近 2000 条运行日志';
+
+  @override
+  String get logFilterHint => '显示最近 2000 条日志，可按级别筛选。';
+
+  @override
+  String get noLogRecords => '暂无日志记录';
+
+  @override
+  String get logLevelDebug => 'Debug';
+
+  @override
+  String get logLevelInfo => 'Info';
+
+  @override
+  String get logLevelWarning => 'Warning';
+
+  @override
+  String get logLevelError => 'Error';
 
   @override
   String get error => '错误';

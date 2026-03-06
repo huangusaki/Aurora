@@ -69,6 +69,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get history => 'History';
 
   @override
+  String get debugTools => 'Debug';
+
+  @override
   String get modelNotSelected => 'Model Not Selected';
 
   @override
@@ -282,6 +285,31 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get loadingEllipsis => 'Loading...';
+
+  @override
+  String get logRecords => 'Log Records';
+
+  @override
+  String get logRecordsHint => 'View the latest 2000 runtime log records';
+
+  @override
+  String get logFilterHint =>
+      'Showing the latest 2000 logs. Filter by level below.';
+
+  @override
+  String get noLogRecords => 'No log records yet';
+
+  @override
+  String get logLevelDebug => 'Debug';
+
+  @override
+  String get logLevelInfo => 'Info';
+
+  @override
+  String get logLevelWarning => 'Warning';
+
+  @override
+  String get logLevelError => 'Error';
 
   @override
   String get error => 'Error';

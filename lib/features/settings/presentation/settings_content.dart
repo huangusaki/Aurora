@@ -15,6 +15,8 @@ import 'model_display_name.dart';
 import 'usage_stats_view.dart';
 import 'preset_settings_page.dart';
 import 'knowledge_settings_panel.dart';
+import 'log_records_page.dart';
+import 'widgets/deferred_fluent_slider.dart';
 
 import '../../../shared/utils/avatar_cropper.dart';
 import '../../../shared/utils/avatar_storage.dart';
@@ -139,6 +141,7 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
         (icon: AuroraIcons.edit, label: l10n.promptPresets),
         (icon: AuroraIcons.image, label: l10n.displaySettings),
         (icon: AuroraIcons.backup, label: l10n.dataSettings),
+        (icon: AuroraIcons.terminal, label: l10n.logRecords),
         (icon: AuroraIcons.stats, label: l10n.usageStats),
       ];
       return Container(
@@ -183,14 +186,17 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
                                     color:
                                         isSelected ? theme.accentColor : null),
                                 const SizedBox(width: 12),
-                                Text(
-                                  page.label,
-                                  style: TextStyle(
-                                    color:
-                                        isSelected ? theme.accentColor : null,
-                                    fontWeight: isSelected
-                                        ? FontWeight.w600
-                                        : FontWeight.normal,
+                                Expanded(
+                                  child: Text(
+                                    page.label,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color:
+                                          isSelected ? theme.accentColor : null,
+                                      fontWeight: isSelected
+                                          ? FontWeight.w600
+                                          : FontWeight.normal,
+                                    ),
                                   ),
                                 ),
                               ],
@@ -233,6 +239,7 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
                       const PresetSettingsPage(),
                       _buildDisplaySettings(),
                       _buildDataSettings(),
+                      const LogRecordsView(),
                       const UsageStatsView(),
                     ],
                   ),

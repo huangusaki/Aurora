@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/painting.dart';
 import 'package:aurora/shared/riverpod_compat.dart';
 import 'package:dio/dio.dart';
+import 'package:aurora/shared/utils/app_logger.dart';
 import '../data/settings_storage.dart';
 import '../data/provider_config_entity.dart';
 import '../domain/chat_preset.dart';
@@ -325,6 +326,7 @@ class SettingsState {
 
     return activeProvider;
   }
+
   String? get selectedModel => activeProvider.selectedModel;
   List<String> get availableModels => activeProvider.models;
   SettingsState copyWith({
@@ -716,7 +718,8 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
       activeKnowledgeBaseIds: appSettings?.activeKnowledgeBaseIds ?? const [],
       enableSmartTopic: appSettings?.enableSmartTopic ?? true,
       topicGenerationModel: appSettings?.topicGenerationModel,
-      restoreLastSessionOnLaunch: appSettings?.restoreLastSessionOnLaunch ?? true,
+      restoreLastSessionOnLaunch:
+          appSettings?.restoreLastSessionOnLaunch ?? true,
       keepChatScrollPositionOnResponse:
           appSettings?.keepChatScrollPositionOnResponse ?? true,
       language: appSettings?.language ?? 'zh',
@@ -742,7 +745,8 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
       useCustomTheme: resolvedThemeState.useCustomTheme,
     );
 
-    if (appSettings != null && rawActiveProviderId != normalizedActiveProviderId) {
+    if (appSettings != null &&
+        rawActiveProviderId != normalizedActiveProviderId) {
       final fixedProvider = state.activeProvider;
       await _storage.saveAppSettings(
         activeProviderId: fixedProvider.id,
@@ -1065,7 +1069,26 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
   Future<bool> fetchModels() async {
     final provider = state.viewingProvider;
     final isActiveProvider = provider.id == state.activeProviderId;
+    AppLogger.info(
+      'SETTINGS',
+      'Model fetch started',
+      category: 'MODEL_FETCH',
+      data: {
+        'provider_id': provider.id,
+        'provider_name': provider.name,
+        'base_url': provider.baseUrl,
+      },
+    );
     if (provider.apiKey.isEmpty) {
+      AppLogger.warn(
+        'SETTINGS',
+        'Model fetch skipped because API key is empty',
+        category: 'MODEL_FETCH',
+        data: {
+          'provider_id': provider.id,
+          'provider_name': provider.name,
+        },
+      );
       state = state.copyWith(error: 'Please enter API Key');
       return false;
     }
@@ -1101,13 +1124,44 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
             availableModels: models,
           );
         }
+        AppLogger.info(
+          'SETTINGS',
+          'Model fetch completed',
+          category: 'MODEL_FETCH',
+          data: {
+            'provider_id': provider.id,
+            'provider_name': provider.name,
+            'model_count': models.length,
+            'selected_model': newSelectedModel,
+          },
+        );
         return true;
       } else {
+        AppLogger.error(
+          'SETTINGS',
+          'Model fetch failed',
+          category: 'MODEL_FETCH',
+          data: {
+            'provider_id': provider.id,
+            'provider_name': provider.name,
+            'status_code': response.statusCode,
+          },
+        );
         state = state.copyWith(
             isLoadingModels: false, error: 'Failed: ${response.statusCode}');
         return false;
       }
     } catch (e) {
+      AppLogger.error(
+        'SETTINGS',
+        'Model fetch failed',
+        category: 'MODEL_FETCH',
+        data: {
+          'provider_id': provider.id,
+          'provider_name': provider.name,
+          'error': e.toString(),
+        },
+      );
       state = state.copyWith(isLoadingModels: false, error: 'Error: $e');
       return false;
     }

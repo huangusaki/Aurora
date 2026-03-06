@@ -7,6 +7,7 @@ import 'package:aurora/shared/widgets/aurora_dropdown.dart';
 
 import '../../knowledge/presentation/knowledge_provider.dart';
 import 'settings_provider.dart';
+import 'widgets/deferred_fluent_slider.dart';
 
 class KnowledgeSettingsPanel extends ConsumerStatefulWidget {
   const KnowledgeSettingsPanel({super.key});
@@ -119,11 +120,12 @@ class _KnowledgeSettingsPanelState
           const SizedBox(height: 12),
           fluent.InfoLabel(
             label: '${l10n.knowledgeTopKChunks} (${settings.knowledgeTopK})',
-            child: fluent.Slider(
+            child: DeferredFluentSlider(
               min: 1,
               max: 12,
+              divisions: 11,
               value: settings.knowledgeTopK.toDouble(),
-              onChanged: (v) => ref
+              onChangeCommitted: (v) => ref
                   .read(settingsProvider.notifier)
                   .setKnowledgeTopK(v.round()),
             ),

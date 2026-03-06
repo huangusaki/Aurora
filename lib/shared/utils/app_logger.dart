@@ -6,8 +6,77 @@ import 'package:flutter/foundation.dart';
 
 enum AppLogLevel { debug, info, warn, error }
 
+typedef AppLogListener = void Function(AppLogEntry entry);
+
+@immutable
+class AppLogEntry {
+  final DateTime timestamp;
+  final AppLogLevel level;
+  final String channel;
+  final String? category;
+  final String message;
+  final String? details;
+
+  const AppLogEntry({
+    required this.timestamp,
+    required this.level,
+    required this.channel,
+    this.category,
+    required this.message,
+    this.details,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'timestamp': timestamp.toIso8601String(),
+      'level': AppLogger._levelStorageName(level),
+      'channel': channel,
+      'category': category,
+      'message': message,
+      'details': details,
+    };
+  }
+
+  factory AppLogEntry.fromJson(Map<String, dynamic> json) {
+    final rawTimestamp = json['timestamp']?.toString();
+    final parsedTimestamp = rawTimestamp == null
+        ? null
+        : DateTime.tryParse(rawTimestamp)?.toLocal();
+
+    return AppLogEntry(
+      timestamp: parsedTimestamp ?? DateTime.now(),
+      level: AppLogger._levelFromStorage(json['level']?.toString()),
+      channel: json['channel']?.toString() ?? 'APP',
+      category: json['category']?.toString(),
+      message: json['message']?.toString() ?? '',
+      details: json['details']?.toString(),
+    );
+  }
+
+  String toPlainText() {
+    final header = StringBuffer();
+    header.write('[${AppLogger._formatTimestamp(timestamp)}]');
+    header.write('[${AppLogger._levelName(level)}]');
+    header.write('[$channel]');
+    if (category != null && category!.isNotEmpty) {
+      header.write('[$category]');
+    }
+    if (message.trim().isNotEmpty) {
+      header.write(' ${message.trim()}');
+    }
+
+    final detailsText = details?.trim();
+    if (detailsText == null || detailsText.isEmpty) {
+      return header.toString();
+    }
+    return '${header.toString()}\n${AppLogger._indent(detailsText, 2)}';
+  }
+}
+
 class AppLogger {
   AppLogger._();
+
+  static const int maxBufferedEntries = 2000;
 
   static void _emit(String? message, {int? wrapWidth}) {
     if (message == null || message.isEmpty) return;
@@ -19,6 +88,10 @@ class AppLogger {
   static bool _prettyJson = true;
   static AppLogLevel _minLevel = AppLogLevel.debug;
   static bool _showRawLlmPayload = !kReleaseMode;
+
+  static final List<AppLogEntry> _buffer = <AppLogEntry>[];
+  static final Map<int, AppLogListener> _listeners = <int, AppLogListener>{};
+  static int _nextListenerId = 0;
 
   static const String _reset = '\x1B[0m';
   static const String _dim = '\x1B[90m';
@@ -60,6 +133,29 @@ class AppLogger {
 
   static void setMinLevel(AppLogLevel level) {
     _minLevel = level;
+  }
+
+  static List<AppLogEntry> bufferedEntriesSnapshot() {
+    return List<AppLogEntry>.unmodifiable(_buffer);
+  }
+
+  static VoidCallback addListener(
+    AppLogListener listener, {
+    bool replayBuffered = false,
+  }) {
+    final id = _nextListenerId++;
+    _listeners[id] = listener;
+
+    if (replayBuffered) {
+      final snapshot = List<AppLogEntry>.from(_buffer);
+      for (final entry in snapshot) {
+        listener(entry);
+      }
+    }
+
+    return () {
+      _listeners.remove(id);
+    };
   }
 
   static ZoneSpecification zoneSpecification() {
@@ -154,33 +250,48 @@ class AppLogger {
     String? category,
     required String message,
     Object? data,
+    String? details,
     String? colorOverride,
     int? wrapWidth,
   }) {
-    if (!_shouldLog(level)) return;
-
     final sanitizedMessage = _sanitizeText(message).trim();
     final redactContent = _shouldRedactContent(channel: channel);
     final sanitizedData = _sanitizeData(data, redactContent: redactContent);
 
-    final header = StringBuffer();
-    header.write('[${_timestamp()}]');
-    header.write('[${_levelName(level)}]');
-    header.write('[$channel]');
-    if (category != null && category.isNotEmpty) {
-      header.write('[$category]');
-    }
-    if (sanitizedMessage.isNotEmpty) {
-      header.write(' $sanitizedMessage');
-    }
+    final formattedDetails = (details ?? _formatData(sanitizedData)).trim();
+    final entry = AppLogEntry(
+      timestamp: DateTime.now(),
+      level: level,
+      channel: channel,
+      category: category,
+      message: sanitizedMessage,
+      details: formattedDetails.isEmpty ? null : formattedDetails,
+    );
 
-    final dataText = _formatData(sanitizedData);
-    final text = dataText.isEmpty
-        ? header.toString()
-        : '${header.toString()}\n${_indent(dataText, 2)}';
+    _recordEntry(entry);
+
+    if (!_shouldLog(level)) return;
 
     final color = colorOverride ?? _colorFor(level, channel, category);
-    _emit(_applyColor(text, color), wrapWidth: wrapWidth);
+    _emit(_applyColor(entry.toPlainText(), color), wrapWidth: wrapWidth);
+  }
+
+  static void _recordEntry(AppLogEntry entry) {
+    _buffer.add(entry);
+    if (_buffer.length > maxBufferedEntries) {
+      _buffer.removeAt(0);
+    }
+
+    final listeners = List<AppLogListener>.from(_listeners.values);
+    for (final listener in listeners) {
+      try {
+        listener(entry);
+      } catch (error) {
+        try {
+          stderr.writeln('[AURORA_LOG_LISTENER_ERROR] $error');
+        } catch (_) {}
+      }
+    }
   }
 
   static _ParsedLog _parseLegacy(String raw) {
@@ -293,6 +404,34 @@ class AppLogger {
     }
   }
 
+  static AppLogLevel _levelFromStorage(String? value) {
+    switch ((value ?? '').trim().toLowerCase()) {
+      case 'debug':
+        return AppLogLevel.debug;
+      case 'warn':
+      case 'warning':
+        return AppLogLevel.warn;
+      case 'error':
+        return AppLogLevel.error;
+      case 'info':
+      default:
+        return AppLogLevel.info;
+    }
+  }
+
+  static String _levelStorageName(AppLogLevel level) {
+    switch (level) {
+      case AppLogLevel.debug:
+        return 'debug';
+      case AppLogLevel.info:
+        return 'info';
+      case AppLogLevel.warn:
+        return 'warn';
+      case AppLogLevel.error:
+        return 'error';
+    }
+  }
+
   static String _formatData(Object? data) {
     if (data == null) return '';
     if (data is String) {
@@ -327,8 +466,8 @@ class AppLogger {
     return jsonEncode(value);
   }
 
-  static String _timestamp() {
-    final now = DateTime.now();
+  static String _formatTimestamp(DateTime value) {
+    final now = value.toLocal();
     return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')} '
         '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}';
   }
@@ -449,7 +588,6 @@ class AppLogger {
     if (value is String) {
       if (keyHint != null) {
         if (_isSensitiveKey(keyHint)) return '[REDACTED]';
-        // Keep backend error messages visible for troubleshooting.
         if (_isErrorMessagePath(path)) return _sanitizeText(value);
         if (redactContent &&
             _isContentKey(keyHint) &&
@@ -501,7 +639,6 @@ class AppLogger {
 
   static bool _isContentKey(String key) {
     final lower = key.toLowerCase();
-    // Only redact actual payload text fields, not metadata like content_type.
     if (lower == 'content' ||
         lower == 'text' ||
         lower == 'prompt' ||
@@ -512,8 +649,6 @@ class AppLogger {
     if (lower.endsWith('_content') && !lower.endsWith('content_type')) {
       return true;
     }
-    // Keep generic message fields redacted by default unless they are under
-    // error objects (handled in _sanitizeData).
     return lower == 'message' || lower == 'messages';
   }
 
@@ -558,6 +693,19 @@ class AppLogger {
   static String _indent(String text, int spaces) {
     final pad = ' ' * spaces;
     return text.split('\n').map((line) => '$pad$line').join('\n');
+  }
+
+  @visibleForTesting
+  static void resetForTest() {
+    _buffer.clear();
+    _listeners.clear();
+    _nextListenerId = 0;
+    _installed = false;
+    _useColor = false;
+    _prettyJson = true;
+    _minLevel = AppLogLevel.debug;
+    _showRawLlmPayload = !kReleaseMode;
+    debugPrint = debugPrintSynchronously;
   }
 }
 

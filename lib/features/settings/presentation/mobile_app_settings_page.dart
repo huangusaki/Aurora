@@ -13,11 +13,12 @@ import 'package:permission_handler/permission_handler.dart';
 import 'dart:io';
 import 'mobile_search_settings_page.dart';
 import 'mobile_knowledge_settings_page.dart';
+import 'log_records_page.dart';
 import '../../knowledge/presentation/knowledge_provider.dart';
 import 'package:aurora/shared/widgets/aurora_page_route.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
-final _packageInfoProvider = FutureProvider<PackageInfo>((ref) async {
+final packageInfoProvider = FutureProvider<PackageInfo>((ref) async {
   return PackageInfo.fromPlatform();
 });
 
@@ -40,7 +41,7 @@ class MobileAppSettingsPage extends ConsumerWidget {
         !isDarkMode && settingsState.backgroundColor == 'pure_black'
             ? 'default'
             : settingsState.backgroundColor;
-    final versionSubtitle = ref.watch(_packageInfoProvider).maybeWhen(
+    final versionSubtitle = ref.watch(packageInfoProvider).maybeWhen(
           data: (info) {
             final buildSuffix =
                 info.buildNumber.isNotEmpty ? '+${info.buildNumber}' : '';
@@ -247,6 +248,22 @@ class MobileAppSettingsPage extends ConsumerWidget {
                     await launchUrl(uri, mode: LaunchMode.externalApplication);
                   }
                 },
+              ),
+            ],
+          ),
+          MobileSettingsSection(
+            title: l10n.debugTools,
+            children: [
+              MobileSettingsTile(
+                leading: const Icon(AuroraIcons.terminal),
+                title: l10n.logRecords,
+                subtitle: l10n.logRecordsHint,
+                onTap: () => Navigator.push(
+                  context,
+                  AuroraMobilePageRoute(
+                    builder: (_) => const MobileLogPage(),
+                  ),
+                ),
               ),
             ],
           ),

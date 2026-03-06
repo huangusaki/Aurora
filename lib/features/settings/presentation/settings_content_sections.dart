@@ -1007,114 +1007,86 @@ extension _SettingsContentSections on _SettingsContentState {
                 const SizedBox(height: 16),
                 fluent.InfoLabel(
                   label: l10n.assistantMemoryMinNewUserTurns,
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: fluent.Slider(
-                          value:
-                              settingsState.memoryMinNewUserMessages.toDouble(),
-                          min: 1,
-                          max: 200,
-                          onChanged: (v) {
-                            ref
-                                .read(settingsProvider.notifier)
-                                .setMemoryMinNewUserMessages(v.round());
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Text('${settingsState.memoryMinNewUserMessages}'),
-                    ],
+                  child: DeferredFluentSlider(
+                    value: settingsState.memoryMinNewUserMessages.toDouble(),
+                    min: 1,
+                    max: 200,
+                    onChangeCommitted: (v) {
+                      ref
+                          .read(settingsProvider.notifier)
+                          .setMemoryMinNewUserMessages(v.round());
+                    },
+                    trailingBuilder: (context, value) {
+                      return Text('${value.round()}');
+                    },
                   ),
                 ),
                 const SizedBox(height: 16),
                 fluent.InfoLabel(
                   label: l10n.assistantMemoryIdleSecondsBeforeConsolidation,
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: fluent.Slider(
-                          value: settingsState.memoryIdleSeconds.toDouble(),
-                          min: 30,
-                          max: 7200,
-                          onChanged: (v) {
-                            ref
-                                .read(settingsProvider.notifier)
-                                .setMemoryIdleSeconds(v.round());
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Text('${settingsState.memoryIdleSeconds}s'),
-                    ],
+                  child: DeferredFluentSlider(
+                    value: settingsState.memoryIdleSeconds.toDouble(),
+                    min: 30,
+                    max: 7200,
+                    onChangeCommitted: (v) {
+                      ref
+                          .read(settingsProvider.notifier)
+                          .setMemoryIdleSeconds(v.round());
+                    },
+                    trailingBuilder: (context, value) {
+                      return Text('${value.round()}s');
+                    },
                   ),
                 ),
                 const SizedBox(height: 16),
                 fluent.InfoLabel(
                   label: l10n.assistantMemoryMaxBufferedMessages,
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: fluent.Slider(
-                          value: settingsState.memoryMaxBufferedMessages
-                              .toDouble(),
-                          min: 20,
-                          max: 500,
-                          onChanged: (v) {
-                            ref
-                                .read(settingsProvider.notifier)
-                                .setMemoryMaxBufferedMessages(v.round());
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Text('${settingsState.memoryMaxBufferedMessages}'),
-                    ],
+                  child: DeferredFluentSlider(
+                    value: settingsState.memoryMaxBufferedMessages.toDouble(),
+                    min: 20,
+                    max: 500,
+                    onChangeCommitted: (v) {
+                      ref
+                          .read(settingsProvider.notifier)
+                          .setMemoryMaxBufferedMessages(v.round());
+                    },
+                    trailingBuilder: (context, value) {
+                      return Text('${value.round()}');
+                    },
                   ),
                 ),
                 const SizedBox(height: 16),
                 fluent.InfoLabel(
                   label: l10n.assistantMemoryMaxRunsPerDay,
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: fluent.Slider(
-                          value: settingsState.memoryMaxRunsPerDay.toDouble(),
-                          min: 1,
-                          max: 30,
-                          onChanged: (v) {
-                            ref
-                                .read(settingsProvider.notifier)
-                                .setMemoryMaxRunsPerDay(v.round());
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Text('${settingsState.memoryMaxRunsPerDay}'),
-                    ],
+                  child: DeferredFluentSlider(
+                    value: settingsState.memoryMaxRunsPerDay.toDouble(),
+                    min: 1,
+                    max: 30,
+                    onChangeCommitted: (v) {
+                      ref
+                          .read(settingsProvider.notifier)
+                          .setMemoryMaxRunsPerDay(v.round());
+                    },
+                    trailingBuilder: (context, value) {
+                      return Text('${value.round()}');
+                    },
                   ),
                 ),
                 const SizedBox(height: 16),
                 fluent.InfoLabel(
                   label: l10n.assistantMemoryContextWindowSize,
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: fluent.Slider(
-                          value:
-                              settingsState.memoryContextWindowSize.toDouble(),
-                          min: 20,
-                          max: 240,
-                          onChanged: (v) {
-                            ref
-                                .read(settingsProvider.notifier)
-                                .setMemoryContextWindowSize(v.round());
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Text('${settingsState.memoryContextWindowSize}'),
-                    ],
+                  child: DeferredFluentSlider(
+                    value: settingsState.memoryContextWindowSize.toDouble(),
+                    min: 20,
+                    max: 240,
+                    onChangeCommitted: (v) {
+                      ref
+                          .read(settingsProvider.notifier)
+                          .setMemoryContextWindowSize(v.round());
+                    },
+                    trailingBuilder: (context, value) {
+                      return Text('${value.round()}');
+                    },
                   ),
                 ),
               ],
@@ -1445,41 +1417,31 @@ extension _SettingsContentSections on _SettingsContentState {
           const SizedBox(height: 16),
           fluent.InfoLabel(
             label: l10n.searchMaxResults,
-            child: Row(
-              children: [
-                Expanded(
-                  child: fluent.Slider(
-                    value: maxResults.toDouble(),
-                    min: 1,
-                    max: 50,
-                    onChanged: (v) => ref
-                        .read(settingsProvider.notifier)
-                        .setSearchMaxResults(v.round()),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Text('${maxResults.toInt()}'),
-              ],
+            child: DeferredFluentSlider(
+              value: maxResults.toDouble(),
+              min: 1,
+              max: 50,
+              onChangeCommitted: (v) => ref
+                  .read(settingsProvider.notifier)
+                  .setSearchMaxResults(v.round()),
+              trailingBuilder: (context, value) {
+                return Text('${value.round()}');
+              },
             ),
           ),
           const SizedBox(height: 16),
           fluent.InfoLabel(
             label: l10n.searchTimeoutSeconds,
-            child: Row(
-              children: [
-                Expanded(
-                  child: fluent.Slider(
-                    value: timeoutSeconds.toDouble(),
-                    min: 5,
-                    max: 60,
-                    onChanged: (v) => ref
-                        .read(settingsProvider.notifier)
-                        .setSearchTimeoutSeconds(v.round()),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Text('${timeoutSeconds.toInt()}s'),
-              ],
+            child: DeferredFluentSlider(
+              value: timeoutSeconds.toDouble(),
+              min: 5,
+              max: 60,
+              onChangeCommitted: (v) => ref
+                  .read(settingsProvider.notifier)
+                  .setSearchTimeoutSeconds(v.round()),
+              trailingBuilder: (context, value) {
+                return Text('${value.round()}s');
+              },
             ),
           ),
         ],
@@ -1803,29 +1765,29 @@ extension _SettingsContentSections on _SettingsContentState {
           const SizedBox(height: 24),
           fluent.InfoLabel(
             label: l10n.fontSize,
-            child: Row(
-              children: [
-                Expanded(
-                  child: fluent.Slider(
-                    label: settingsState.fontSize.toStringAsFixed(1),
-                    value: settingsState.fontSize,
-                    min: 10,
-                    max: 20,
-                    onChanged: (v) {
-                      ref.read(settingsProvider.notifier).setFontSize(v);
-                    },
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Text('${settingsState.fontSize.toStringAsFixed(1)} pt'),
-                const SizedBox(width: 8),
-                fluent.Button(
-                  child: Text(l10n.reset),
-                  onPressed: () {
-                    ref.read(settingsProvider.notifier).setFontSize(14.0);
-                  },
-                ),
-              ],
+            child: DeferredFluentSlider(
+              labelBuilder: (value) => value.toStringAsFixed(1),
+              value: settingsState.fontSize,
+              min: 10,
+              max: 20,
+              onChangeCommitted: (v) {
+                ref.read(settingsProvider.notifier).setFontSize(v);
+              },
+              trailingBuilder: (context, value) {
+                return Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('${value.toStringAsFixed(1)} pt'),
+                    const SizedBox(width: 8),
+                    fluent.Button(
+                      child: Text(l10n.reset),
+                      onPressed: () {
+                        ref.read(settingsProvider.notifier).setFontSize(14.0);
+                      },
+                    ),
+                  ],
+                );
+              },
             ),
           ),
           const Divider(),
@@ -1872,47 +1834,35 @@ extension _SettingsContentSections on _SettingsContentState {
                   const SizedBox(height: 16),
                   fluent.InfoLabel(
                     label: l10n.backgroundBrightness,
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: fluent.Slider(
-                            value: settingsState.backgroundBrightness,
-                            min: 0.0,
-                            max: 1.0,
-                            onChanged: (v) {
-                              ref
-                                  .read(settingsProvider.notifier)
-                                  .setBackgroundBrightness(v);
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                            '${(settingsState.backgroundBrightness * 100).toInt()}%'),
-                      ],
+                    child: DeferredFluentSlider(
+                      value: settingsState.backgroundBrightness,
+                      min: 0.0,
+                      max: 1.0,
+                      onChangeCommitted: (v) {
+                        ref
+                            .read(settingsProvider.notifier)
+                            .setBackgroundBrightness(v);
+                      },
+                      trailingBuilder: (context, value) {
+                        return Text('${(value * 100).toInt()}%');
+                      },
                     ),
                   ),
                   const SizedBox(height: 16),
                   fluent.InfoLabel(
                     label: l10n.backgroundBlur,
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: fluent.Slider(
-                            value: settingsState.backgroundBlur,
-                            min: 0.0,
-                            max: 20.0,
-                            onChanged: (v) {
-                              ref
-                                  .read(settingsProvider.notifier)
-                                  .setBackgroundBlur(v);
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                            '${settingsState.backgroundBlur.toStringAsFixed(1)} px'),
-                      ],
+                    child: DeferredFluentSlider(
+                      value: settingsState.backgroundBlur,
+                      min: 0.0,
+                      max: 20.0,
+                      onChangeCommitted: (v) {
+                        ref
+                            .read(settingsProvider.notifier)
+                            .setBackgroundBlur(v);
+                      },
+                      trailingBuilder: (context, value) {
+                        return Text('${value.toStringAsFixed(1)} px');
+                      },
                     ),
                   ),
                 ],
