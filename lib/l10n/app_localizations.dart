@@ -500,11 +500,11 @@ abstract class AppLocalizations {
   /// **'去设置'**
   String get goToSettings;
 
-  /// No description provided for @selectGenerationModel.
+  /// No description provided for @keyValuePerLineHint.
   ///
   /// In zh, this message translates to:
-  /// **'选择话题生成模型'**
-  String get selectGenerationModel;
+  /// **'每行一条：KEY=VALUE'**
+  String get keyValuePerLineHint;
 
   /// No description provided for @pickImageFailed.
   ///
@@ -566,12 +566,6 @@ abstract class AppLocalizations {
   /// **'关闭双语对照'**
   String get disableCompare;
 
-  /// No description provided for @translationPlaceholder.
-  ///
-  /// In zh, this message translates to:
-  /// **'翻译结果将显示在这里'**
-  String get translationPlaceholder;
-
   /// No description provided for @sessionDetails.
   ///
   /// In zh, this message translates to:
@@ -583,12 +577,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'请选择或新建一个话题'**
   String get selectOrNewTopic;
-
-  /// No description provided for @startNewChat.
-  ///
-  /// In zh, this message translates to:
-  /// **'新对话'**
-  String get startNewChat;
 
   /// No description provided for @edit.
   ///
@@ -704,12 +692,6 @@ abstract class AppLocalizations {
   /// **'技能'**
   String get agentSkills;
 
-  /// No description provided for @mcpNavLabel.
-  ///
-  /// In zh, this message translates to:
-  /// **'MCP'**
-  String get mcpNavLabel;
-
   /// No description provided for @mcpTitle.
   ///
   /// In zh, this message translates to:
@@ -818,12 +800,6 @@ abstract class AppLocalizations {
   /// **'环境变量'**
   String get mcpEnv;
 
-  /// No description provided for @mcpEnvHint.
-  ///
-  /// In zh, this message translates to:
-  /// **'每行一条：KEY=VALUE'**
-  String get mcpEnvHint;
-
   /// No description provided for @mcpRunInShell.
   ///
   /// In zh, this message translates to:
@@ -866,12 +842,6 @@ abstract class AppLocalizations {
   /// **'请求头'**
   String get mcpHeaders;
 
-  /// No description provided for @mcpHeadersHint.
-  ///
-  /// In zh, this message translates to:
-  /// **'每行一条：KEY=VALUE'**
-  String get mcpHeadersHint;
-
   /// No description provided for @mcpStatus.
   ///
   /// In zh, this message translates to:
@@ -895,12 +865,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'未连接'**
   String get mcpStatusDisconnected;
-
-  /// No description provided for @mcpStatusError.
-  ///
-  /// In zh, this message translates to:
-  /// **'错误'**
-  String get mcpStatusError;
 
   /// No description provided for @mcpLastError.
   ///
@@ -1321,12 +1285,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'值 (Value)'**
   String get paramValue;
-
-  /// No description provided for @paramType.
-  ///
-  /// In zh, this message translates to:
-  /// **'类型'**
-  String get paramType;
 
   /// No description provided for @typeText.
   ///
@@ -1759,12 +1717,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'预览'**
   String get preview;
-
-  /// No description provided for @stopTask.
-  ///
-  /// In zh, this message translates to:
-  /// **'停止'**
-  String get stopTask;
 
   /// No description provided for @startWriting.
   ///
@@ -3446,12 +3398,6 @@ abstract class AppLocalizations {
   /// **'自定义'**
   String get themeCustom;
 
-  /// No description provided for @customTheme.
-  ///
-  /// In zh, this message translates to:
-  /// **'自定义'**
-  String get customTheme;
-
   /// No description provided for @customThemeDescription.
   ///
   /// In zh, this message translates to:
@@ -4022,12 +3968,6 @@ abstract class AppLocalizations {
   /// **'聊天记录'**
   String get backupChatHistory;
 
-  /// No description provided for @backupChatPresets.
-  ///
-  /// In zh, this message translates to:
-  /// **'Prompt 预设'**
-  String get backupChatPresets;
-
   /// No description provided for @backupProviderConfigs.
   ///
   /// In zh, this message translates to:
@@ -4280,12 +4220,6 @@ abstract class AppLocalizations {
   /// **'新助理'**
   String get newAssistant;
 
-  /// No description provided for @cropAvatarTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'裁剪头像'**
-  String get cropAvatarTitle;
-
   /// No description provided for @lightMode.
   ///
   /// In zh, this message translates to:
@@ -4375,12 +4309,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'分析中'**
   String get cleanerStatusAnalyzing;
-
-  /// No description provided for @cleanerStatusPaused.
-  ///
-  /// In zh, this message translates to:
-  /// **'已暂停'**
-  String get cleanerStatusPaused;
 
   /// No description provided for @cleanerStatusReady.
   ///
@@ -5126,18 +5054,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'类型'**
   String get valueType;
-
-  /// No description provided for @valueTypeText.
-  ///
-  /// In zh, this message translates to:
-  /// **'文本'**
-  String get valueTypeText;
-
-  /// No description provided for @valueTypeJson.
-  ///
-  /// In zh, this message translates to:
-  /// **'JSON'**
-  String get valueTypeJson;
 
   /// No description provided for @schemaJson.
   ///

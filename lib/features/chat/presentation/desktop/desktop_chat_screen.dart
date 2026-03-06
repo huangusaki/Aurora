@@ -235,7 +235,7 @@ class _DesktopChatScreenState extends ConsumerState<DesktopChatScreen>
         label: l10n.agentSkills,
         body: SkillSettingsPage()
       ),
-      (icon: AuroraIcons.mcp, label: l10n.mcpNavLabel, body: McpSettingsPage()),
+      (icon: AuroraIcons.mcp, label: l10n.mcpTitle, body: McpSettingsPage()),
       (icon: AuroraIcons.studio, label: l10n.studio, body: StudioContent()),
       (
         icon: AuroraIcons.settings,

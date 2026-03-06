@@ -373,7 +373,8 @@ class _TranslationContentState extends ConsumerState<TranslationContent> {
       fluent.FluentThemeData theme, String? fontFamily) {
     if (aiMessage == null && !chatState.isLoading) {
       return Center(
-          child: Text(AppLocalizations.of(context)!.translationPlaceholder,
+          child: Text(
+              AppLocalizations.of(context)!.translationResultPlaceholder,
               style: TextStyle(color: theme.resources.textFillColorSecondary)));
     }
     final targetText = aiMessage?.content ?? '';

@@ -100,8 +100,7 @@ class _McpSettingsPageState extends ConsumerState<McpSettingsPage> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(AuroraIcons.mcp,
-                        size: 48, color: Colors.grey),
+                    const Icon(AuroraIcons.mcp, size: 48, color: Colors.grey),
                     const SizedBox(height: 16),
                     Text(l10n.mcpNoServers),
                   ],
@@ -129,8 +128,8 @@ class _McpSettingsPageState extends ConsumerState<McpSettingsPage> {
                         server,
                         info,
                       ),
-                      content:
-                          _buildServerDetails(context, theme, l10n, server, info),
+                      content: _buildServerDetails(
+                          context, theme, l10n, server, info),
                     ),
                   );
                 },
@@ -148,7 +147,7 @@ class _McpSettingsPageState extends ConsumerState<McpSettingsPage> {
       case McpConnectionStatus.connecting:
         return l10n.mcpStatusConnecting;
       case McpConnectionStatus.error:
-        return l10n.mcpStatusError;
+        return l10n.error;
       case McpConnectionStatus.disconnected:
         return l10n.mcpStatusDisconnected;
     }
@@ -235,7 +234,8 @@ class _McpSettingsPageState extends ConsumerState<McpSettingsPage> {
                 server.name.isNotEmpty ? server.name : l10n.unknown,
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: server.enabled ? null : theme.typography.caption?.color,
+                  color:
+                      server.enabled ? null : theme.typography.caption?.color,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -270,9 +270,8 @@ class _McpSettingsPageState extends ConsumerState<McpSettingsPage> {
         const SizedBox(width: 8),
         fluent.ToggleSwitch(
           checked: server.enabled,
-          onChanged: (v) => ref
-              .read(mcpServerProvider.notifier)
-              .toggleEnabled(server.id, v),
+          onChanged: (v) =>
+              ref.read(mcpServerProvider.notifier).toggleEnabled(server.id, v),
         ),
         const SizedBox(width: 8),
         fluent.Tooltip(
@@ -280,7 +279,9 @@ class _McpSettingsPageState extends ConsumerState<McpSettingsPage> {
           child: fluent.IconButton(
             icon: isTesting
                 ? const SizedBox(
-                    width: 14, height: 14, child: fluent.ProgressRing(strokeWidth: 2))
+                    width: 14,
+                    height: 14,
+                    child: fluent.ProgressRing(strokeWidth: 2))
                 : const Icon(AuroraIcons.play, size: 14),
             onPressed: isTesting ? null : () => _testServer(context, server),
           ),
@@ -381,7 +382,9 @@ class _McpSettingsPageState extends ConsumerState<McpSettingsPage> {
           ),
           kv(
             l10n.mcpLastConnectedAt,
-            info.lastConnectedAt == null ? l10n.none : '${info.lastConnectedAt}',
+            info.lastConnectedAt == null
+                ? l10n.none
+                : '${info.lastConnectedAt}',
           ),
           kv(
             l10n.mcpLastPingAt,
@@ -442,7 +445,9 @@ class _McpSettingsPageState extends ConsumerState<McpSettingsPage> {
               fluent.Button(
                 onPressed: () async {
                   try {
-                    await ref.read(mcpConnectionProvider.notifier).reconnect(server);
+                    await ref
+                        .read(mcpConnectionProvider.notifier)
+                        .reconnect(server);
                   } catch (e) {
                     if (!context.mounted) return;
                     showAuroraNotice(
@@ -477,7 +482,8 @@ class _McpSettingsPageState extends ConsumerState<McpSettingsPage> {
                 onPressed: stderrText.isEmpty
                     ? null
                     : () async {
-                        await Clipboard.setData(ClipboardData(text: stderrText));
+                        await Clipboard.setData(
+                            ClipboardData(text: stderrText));
                         if (!context.mounted) return;
                         showAuroraNotice(
                           context,
@@ -511,9 +517,8 @@ class _McpSettingsPageState extends ConsumerState<McpSettingsPage> {
 
   Future<void> _testServer(BuildContext context, McpServerConfig server) async {
     setState(() => _testingServerIds.add(server.id));
-    final result = await ref
-        .read(mcpConnectionProvider.notifier)
-        .testConnection(server);
+    final result =
+        await ref.read(mcpConnectionProvider.notifier).testConnection(server);
     if (!context.mounted) return;
     setState(() => _testingServerIds.remove(server.id));
     _showTestResultDialog(context, server, result);
@@ -551,8 +556,8 @@ class _McpSettingsPageState extends ConsumerState<McpSettingsPage> {
   Widget _formatToolsResult(
       AppLocalizations l10n, McpConnectionTestResult result) {
     final tools = result.tools;
-    final toolNames = tools.map((t) => t.name).where((s) => s.isNotEmpty).toList()
-      ..sort();
+    final toolNames =
+        tools.map((t) => t.name).where((s) => s.isNotEmpty).toList()..sort();
     final stderr = result.stderrTail.join('\n').trim();
 
     return Column(
@@ -593,7 +598,8 @@ class _McpSettingsPageState extends ConsumerState<McpSettingsPage> {
     );
   }
 
-  Widget _formatErrorResult(AppLocalizations l10n, McpConnectionTestResult result) {
+  Widget _formatErrorResult(
+      AppLocalizations l10n, McpConnectionTestResult result) {
     final stderr = result.stderrTail.join('\n').trim();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -620,7 +626,8 @@ class _McpSettingsPageState extends ConsumerState<McpSettingsPage> {
     );
   }
 
-  Future<void> _confirmDelete(BuildContext context, McpServerConfig server) async {
+  Future<void> _confirmDelete(
+      BuildContext context, McpServerConfig server) async {
     final l10n = AppLocalizations.of(context)!;
     await showDialog(
       context: context,
@@ -634,10 +641,13 @@ class _McpSettingsPageState extends ConsumerState<McpSettingsPage> {
           ),
           fluent.FilledButton(
             onPressed: () async {
-              await ref.read(mcpServerProvider.notifier).deleteServer(server.id);
+              await ref
+                  .read(mcpServerProvider.notifier)
+                  .deleteServer(server.id);
               if (!ctx.mounted) return;
               Navigator.pop(ctx);
-              showAuroraNotice(context, l10n.deleteSuccess, icon: AuroraIcons.success);
+              showAuroraNotice(context, l10n.deleteSuccess,
+                  icon: AuroraIcons.success);
             },
             child: Text(l10n.delete),
           ),
@@ -654,7 +664,8 @@ class _McpSettingsPageState extends ConsumerState<McpSettingsPage> {
     final nameController = TextEditingController(text: server?.name ?? '');
     McpServerTransport transport =
         server?.transport ?? McpServerTransport.stdio;
-    final commandController = TextEditingController(text: server?.command ?? '');
+    final commandController =
+        TextEditingController(text: server?.command ?? '');
     final argsController =
         TextEditingController(text: (server?.args ?? const []).join('\n'));
     final cwdController = TextEditingController(text: server?.cwd ?? '');
@@ -678,15 +689,15 @@ class _McpSettingsPageState extends ConsumerState<McpSettingsPage> {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setState) {
           return fluent.ContentDialog(
-            title: Text(server == null ? l10n.mcpAddServer : l10n.mcpEditServer),
+            title:
+                Text(server == null ? l10n.mcpAddServer : l10n.mcpEditServer),
             content: SizedBox(
               width: 560,
               child: SingleChildScrollView(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(l10n.mcpServerName,
-                        style: themeTextLabel(ctx)),
+                    Text(l10n.mcpServerName, style: themeTextLabel(ctx)),
                     const SizedBox(height: 6),
                     fluent.TextBox(
                       controller: nameController,
@@ -727,7 +738,7 @@ class _McpSettingsPageState extends ConsumerState<McpSettingsPage> {
                       const SizedBox(height: 6),
                       fluent.TextBox(
                         controller: headersController,
-                        placeholder: l10n.mcpHeadersHint,
+                        placeholder: l10n.keyValuePerLineHint,
                         maxLines: null,
                       ),
                       const SizedBox(height: 12),
@@ -758,7 +769,7 @@ class _McpSettingsPageState extends ConsumerState<McpSettingsPage> {
                       const SizedBox(height: 6),
                       fluent.TextBox(
                         controller: envController,
-                        placeholder: l10n.mcpEnvHint,
+                        placeholder: l10n.keyValuePerLineHint,
                         maxLines: null,
                       ),
                       const SizedBox(height: 12),

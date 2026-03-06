@@ -219,7 +219,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get goToSettings => '去设置';
 
   @override
-  String get selectGenerationModel => '选择话题生成模型';
+  String get keyValuePerLineHint => '每行一条：KEY=VALUE';
 
   @override
   String get pickImageFailed => '选择图片失败';
@@ -252,16 +252,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get disableCompare => '关闭双语对照';
 
   @override
-  String get translationPlaceholder => '翻译结果将显示在这里';
-
-  @override
   String get sessionDetails => '会话详情';
 
   @override
   String get selectOrNewTopic => '请选择或新建一个话题';
-
-  @override
-  String get startNewChat => '新对话';
 
   @override
   String get edit => '编辑';
@@ -323,9 +317,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get agentSkills => '技能';
 
   @override
-  String get mcpNavLabel => 'MCP';
-
-  @override
   String get mcpTitle => 'MCP';
 
   @override
@@ -380,9 +371,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get mcpEnv => '环境变量';
 
   @override
-  String get mcpEnvHint => '每行一条：KEY=VALUE';
-
-  @override
   String get mcpRunInShell => '通过 shell 运行';
 
   @override
@@ -404,9 +392,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get mcpHeaders => '请求头';
 
   @override
-  String get mcpHeadersHint => '每行一条：KEY=VALUE';
-
-  @override
   String get mcpStatus => '连接状态';
 
   @override
@@ -417,9 +402,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get mcpStatusDisconnected => '未连接';
-
-  @override
-  String get mcpStatusError => '错误';
 
   @override
   String get mcpLastError => '最近错误';
@@ -633,9 +615,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get paramValue => '值 (Value)';
-
-  @override
-  String get paramType => '类型';
 
   @override
   String get typeText => '文本';
@@ -866,9 +845,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get preview => '预览';
-
-  @override
-  String get stopTask => '停止';
 
   @override
   String get startWriting => '开始';
@@ -1737,9 +1713,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get themeCustom => '自定义';
 
   @override
-  String get customTheme => '自定义';
-
-  @override
   String get customThemeDescription => '允许设置自定义背景图片、亮度和模糊度';
 
   @override
@@ -2031,9 +2004,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get backupChatHistory => '聊天记录';
 
   @override
-  String get backupChatPresets => 'Prompt 预设';
-
-  @override
   String get backupProviderConfigs => '模型供应商配置';
 
   @override
@@ -2164,9 +2134,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get newAssistant => '新助理';
 
   @override
-  String get cropAvatarTitle => '裁剪头像';
-
-  @override
   String get lightMode => '浅色模式';
 
   @override
@@ -2216,9 +2183,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get cleanerStatusAnalyzing => '分析中';
-
-  @override
-  String get cleanerStatusPaused => '已暂停';
 
   @override
   String get cleanerStatusReady => '待命';
@@ -2637,12 +2601,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get valueType => '类型';
-
-  @override
-  String get valueTypeText => '文本';
-
-  @override
-  String get valueTypeJson => 'JSON';
 
   @override
   String get schemaJson => 'Schema JSON';

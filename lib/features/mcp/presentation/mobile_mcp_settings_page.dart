@@ -17,7 +17,8 @@ class MobileMcpSettingsPage extends ConsumerStatefulWidget {
   const MobileMcpSettingsPage({super.key, this.onBack});
 
   @override
-  ConsumerState<MobileMcpSettingsPage> createState() => _MobileMcpSettingsPageState();
+  ConsumerState<MobileMcpSettingsPage> createState() =>
+      _MobileMcpSettingsPageState();
 }
 
 class _MobileMcpSettingsPageState extends ConsumerState<MobileMcpSettingsPage> {
@@ -38,7 +39,7 @@ class _MobileMcpSettingsPageState extends ConsumerState<MobileMcpSettingsPage> {
       case McpConnectionStatus.connecting:
         return l10n.mcpStatusConnecting;
       case McpConnectionStatus.error:
-        return l10n.mcpStatusError;
+        return l10n.error;
       case McpConnectionStatus.disconnected:
         return l10n.mcpStatusDisconnected;
     }
@@ -52,7 +53,10 @@ class _MobileMcpSettingsPageState extends ConsumerState<MobileMcpSettingsPage> {
     setState(() => _testingServerIds.remove(server.id));
 
     final l10n = AppLocalizations.of(context)!;
-    final toolNames = result.tools.map((t) => t.name).where((s) => s.isNotEmpty).toList()
+    final toolNames = result.tools
+        .map((t) => t.name)
+        .where((s) => s.isNotEmpty)
+        .toList()
       ..sort();
     final stderr = result.stderrTail.join('\n').trim();
     final content = result.success
@@ -101,13 +105,14 @@ class _MobileMcpSettingsPageState extends ConsumerState<MobileMcpSettingsPage> {
     );
   }
 
-  Future<void> _showEditServerSheet(BuildContext context, {McpServerConfig? server}) async {
+  Future<void> _showEditServerSheet(BuildContext context,
+      {McpServerConfig? server}) async {
     final l10n = AppLocalizations.of(context)!;
 
     final nameController = TextEditingController(text: server?.name ?? '');
-    McpServerTransport transport =
-        server?.transport ?? McpServerTransport.http;
-    final commandController = TextEditingController(text: server?.command ?? '');
+    McpServerTransport transport = server?.transport ?? McpServerTransport.http;
+    final commandController =
+        TextEditingController(text: server?.command ?? '');
     final argsController =
         TextEditingController(text: (server?.args ?? const []).join('\n'));
     final cwdController = TextEditingController(text: server?.cwd ?? '');
@@ -118,9 +123,10 @@ class _MobileMcpSettingsPageState extends ConsumerState<MobileMcpSettingsPage> {
     );
     final urlController = TextEditingController(text: server?.url ?? '');
     final headersController = TextEditingController(
-      text: (server?.headers.entries.map((e) => '${e.key}=${e.value}').toList() ??
-              const <String>[])
-          .join('\n'),
+      text:
+          (server?.headers.entries.map((e) => '${e.key}=${e.value}').toList() ??
+                  const <String>[])
+              .join('\n'),
     );
 
     bool enabled = server?.enabled ?? true;
@@ -147,7 +153,8 @@ class _MobileMcpSettingsPageState extends ConsumerState<MobileMcpSettingsPage> {
         builder: (ctx, setState) {
           final isHttp = transport == McpServerTransport.http;
           return SingleChildScrollView(
-            padding: const EdgeInsets.only(left: 20, right: 20, top: 8, bottom: 20),
+            padding:
+                const EdgeInsets.only(left: 20, right: 20, top: 8, bottom: 20),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -213,7 +220,7 @@ class _MobileMcpSettingsPageState extends ConsumerState<MobileMcpSettingsPage> {
                     maxLines: null,
                     decoration: InputDecoration(
                       labelText: l10n.mcpHeaders,
-                      hintText: l10n.mcpHeadersHint,
+                      hintText: l10n.keyValuePerLineHint,
                       border: const OutlineInputBorder(),
                       filled: true,
                       fillColor: Theme.of(ctx).cardColor.withValues(alpha: 0.5),
@@ -260,7 +267,7 @@ class _MobileMcpSettingsPageState extends ConsumerState<MobileMcpSettingsPage> {
                     maxLines: null,
                     decoration: InputDecoration(
                       labelText: l10n.mcpEnv,
-                      hintText: l10n.mcpEnvHint,
+                      hintText: l10n.keyValuePerLineHint,
                       border: const OutlineInputBorder(),
                       filled: true,
                       fillColor: Theme.of(ctx).cardColor.withValues(alpha: 0.5),
@@ -338,7 +345,9 @@ class _MobileMcpSettingsPageState extends ConsumerState<MobileMcpSettingsPage> {
                           final headers = parseKeyValue(headersController.text);
 
                           if (server == null) {
-                            await ref.read(mcpServerProvider.notifier).addServer(
+                            await ref
+                                .read(mcpServerProvider.notifier)
+                                .addServer(
                                   name: name,
                                   transport: transport,
                                   command: isHttp ? '' : command,
@@ -351,7 +360,9 @@ class _MobileMcpSettingsPageState extends ConsumerState<MobileMcpSettingsPage> {
                                   runInShell: isHttp ? false : runInShell,
                                 );
                           } else {
-                            await ref.read(mcpServerProvider.notifier).updateServer(
+                            await ref
+                                .read(mcpServerProvider.notifier)
+                                .updateServer(
                                   server.copyWith(
                                     name: name,
                                     transport: transport,
@@ -369,7 +380,8 @@ class _MobileMcpSettingsPageState extends ConsumerState<MobileMcpSettingsPage> {
 
                           if (!context.mounted) return;
                           Navigator.pop(ctx);
-                          showAuroraNotice(context, l10n.saveSuccess, icon: AuroraIcons.success);
+                          showAuroraNotice(context, l10n.saveSuccess,
+                              icon: AuroraIcons.success);
                         },
                         child: Text(l10n.save),
                       ),
@@ -407,7 +419,8 @@ class _MobileMcpSettingsPageState extends ConsumerState<MobileMcpSettingsPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            AuroraBottomSheet.buildTitle(ctx, server.name.isNotEmpty ? server.name : l10n.unknown),
+            AuroraBottomSheet.buildTitle(
+                ctx, server.name.isNotEmpty ? server.name : l10n.unknown),
             const Divider(height: 1),
             Flexible(
               child: ListView(
@@ -425,7 +438,8 @@ class _MobileMcpSettingsPageState extends ConsumerState<MobileMcpSettingsPage> {
                     '${l10n.mcpStatus}: ${_statusLabel(l10n, info.status)}',
                     style: Theme.of(ctx).textTheme.bodyMedium,
                   ),
-                  if (info.lastError != null && info.lastError!.trim().isNotEmpty) ...[
+                  if (info.lastError != null &&
+                      info.lastError!.trim().isNotEmpty) ...[
                     const SizedBox(height: 6),
                     Text(
                       '${l10n.mcpLastError}: ${info.lastError}',
@@ -458,8 +472,8 @@ class _MobileMcpSettingsPageState extends ConsumerState<MobileMcpSettingsPage> {
                       ),
                       child: SelectableText(
                         stderrText,
-                        style:
-                            const TextStyle(fontFamily: 'Consolas', fontSize: 13),
+                        style: const TextStyle(
+                            fontFamily: 'Consolas', fontSize: 13),
                       ),
                     ),
                   ],
@@ -637,7 +651,8 @@ class _MobileMcpSettingsPageState extends ConsumerState<MobileMcpSettingsPage> {
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : const Icon(Icons.play_arrow_rounded),
-                      onPressed: isTesting ? null : () => _testServer(context, server),
+                      onPressed:
+                          isTesting ? null : () => _testServer(context, server),
                     ),
                     Switch.adaptive(
                       value: server.enabled,

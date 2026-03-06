@@ -143,7 +143,7 @@ class MobileNavigationDrawer extends ConsumerWidget {
                         Icon(AuroraIcons.add,
                             size: 14, color: theme.accentColor),
                         const SizedBox(width: 12),
-                        Text(AppLocalizations.of(context)!.startNewChat,
+                        Text(AppLocalizations.of(context)!.newChat,
                             style: TextStyle(
                                 fontSize: 14,
                                 color: theme.typography.body?.color,
@@ -218,7 +218,7 @@ class MobileNavigationDrawer extends ConsumerWidget {
                         Expanded(
                           child: _MobileDrawerNavItem(
                             icon: AuroraIcons.mcp,
-                            label: AppLocalizations.of(context)!.mcpNavLabel,
+                            label: AppLocalizations.of(context)!.mcpTitle,
                             onTap: () => onNavigate('__mcp__'),
                           ),
                         ),

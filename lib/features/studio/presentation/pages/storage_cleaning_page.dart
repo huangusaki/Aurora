@@ -374,7 +374,7 @@ class _StudioStorageCleaningPageState
     final statusText = state.isAnalyzing
         ? l10n.cleanerStatusAnalyzing
         : state.canContinueAnalyze
-            ? l10n.cleanerStatusPaused
+            ? l10n.paused
             : l10n.cleanerStatusReady;
     final statusColor = state.isAnalyzing
         ? Colors.orange

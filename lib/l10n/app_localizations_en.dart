@@ -224,7 +224,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get goToSettings => 'Go to Settings';
 
   @override
-  String get selectGenerationModel => 'Select Topic Generation Model';
+  String get keyValuePerLineHint => 'One per line: KEY=VALUE';
 
   @override
   String get pickImageFailed => 'Failed to pick image';
@@ -257,16 +257,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get disableCompare => 'Disable Compare Mode';
 
   @override
-  String get translationPlaceholder => 'Translation result will appear here';
-
-  @override
   String get sessionDetails => 'Session Details';
 
   @override
   String get selectOrNewTopic => 'Please select or start a new topic';
-
-  @override
-  String get startNewChat => 'New Chat';
 
   @override
   String get edit => 'Edit';
@@ -328,9 +322,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentSkills => 'Skills';
 
   @override
-  String get mcpNavLabel => 'MCP';
-
-  @override
   String get mcpTitle => 'MCP';
 
   @override
@@ -386,9 +377,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mcpEnv => 'Environment Variables';
 
   @override
-  String get mcpEnvHint => 'One per line: KEY=VALUE';
-
-  @override
   String get mcpRunInShell => 'Run in shell';
 
   @override
@@ -410,9 +398,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mcpHeaders => 'Headers';
 
   @override
-  String get mcpHeadersHint => 'One per line: KEY=VALUE';
-
-  @override
   String get mcpStatus => 'Status';
 
   @override
@@ -423,9 +408,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get mcpStatusDisconnected => 'Disconnected';
-
-  @override
-  String get mcpStatusError => 'Error';
 
   @override
   String get mcpLastError => 'Last error';
@@ -647,9 +629,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get paramValue => 'Value';
-
-  @override
-  String get paramType => 'Type';
 
   @override
   String get typeText => 'Text';
@@ -886,9 +865,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get preview => 'Preview';
-
-  @override
-  String get stopTask => 'Stop';
 
   @override
   String get startWriting => 'Start';
@@ -1780,9 +1756,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get themeCustom => 'Custom';
 
   @override
-  String get customTheme => 'Custom';
-
-  @override
   String get customThemeDescription =>
       'Allow setting custom background image, brightness and blur';
 
@@ -2090,9 +2063,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get backupChatHistory => 'Chat History';
 
   @override
-  String get backupChatPresets => 'Prompt Presets';
-
-  @override
   String get backupProviderConfigs => 'Model Provider Configs';
 
   @override
@@ -2231,9 +2201,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get newAssistant => 'New Assistant';
 
   @override
-  String get cropAvatarTitle => 'Crop Avatar';
-
-  @override
   String get lightMode => 'Light Mode';
 
   @override
@@ -2286,9 +2253,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cleanerStatusAnalyzing => 'Analyzing';
-
-  @override
-  String get cleanerStatusPaused => 'Paused';
 
   @override
   String get cleanerStatusReady => 'Ready';
@@ -2722,12 +2686,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get valueType => 'Value type';
-
-  @override
-  String get valueTypeText => 'Text';
-
-  @override
-  String get valueTypeJson => 'JSON';
 
   @override
   String get schemaJson => 'Schema JSON';

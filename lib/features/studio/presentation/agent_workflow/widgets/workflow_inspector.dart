@@ -154,7 +154,8 @@ class _WorkflowInspectorState extends ConsumerState<WorkflowInspector> {
       );
     }
 
-    final nodeRun = node == null ? null : widget.workflowState.runStates[node.id];
+    final nodeRun =
+        node == null ? null : widget.workflowState.runStates[node.id];
 
     return Container(
       color: Colors.transparent,
@@ -315,9 +316,10 @@ class _WorkflowInspectorState extends ConsumerState<WorkflowInspector> {
                         ];
 
                         final currentName = node.mcpToolName;
-                        final selectedName = tools.any((t) => t.name == currentName)
-                            ? currentName
-                            : null;
+                        final selectedName =
+                            tools.any((t) => t.name == currentName)
+                                ? currentName
+                                : null;
                         final selectedTool = selectedName == null
                             ? null
                             : tools.firstWhere((t) => t.name == selectedName);
@@ -362,7 +364,8 @@ class _WorkflowInspectorState extends ConsumerState<WorkflowInspector> {
                             ),
                             if (schemaPretty != null) ...[
                               const SizedBox(height: 10),
-                              readonlyBlock(l10n.mcpToolInputSchema, schemaPretty),
+                              readonlyBlock(
+                                  l10n.mcpToolInputSchema, schemaPretty),
                             ],
                           ],
                         );
@@ -413,7 +416,8 @@ class _WorkflowInspectorState extends ConsumerState<WorkflowInspector> {
                     ),
                   if (nodeRun.error != null && nodeRun.error!.trim().isNotEmpty)
                     readonlyBlock(l10n.error, nodeRun.error ?? ''),
-                  if (nodeRun.output != null && nodeRun.output!.trim().isNotEmpty)
+                  if (nodeRun.output != null &&
+                      nodeRun.output!.trim().isNotEmpty)
                     readonlyBlock(l10n.output, nodeRun.output ?? ''),
                   if (nodeRun.outputJsonPretty != null &&
                       nodeRun.outputJsonPretty!.trim().isNotEmpty)
@@ -464,8 +468,7 @@ class _WorkflowInspectorState extends ConsumerState<WorkflowInspector> {
     final options = <ComboBoxItem<AgentWorkflowModelRef?>>[];
     options.add(ComboBoxItem(
       value: null,
-      child: Text(l10n.defaultModelSameAsChat,
-          style: theme.typography.caption),
+      child: Text(l10n.defaultModelSameAsChat, style: theme.typography.caption),
     ));
 
     for (final provider in settings.providers) {
@@ -486,7 +489,8 @@ class _WorkflowInspectorState extends ConsumerState<WorkflowInspector> {
           .whereType<AgentWorkflowModelRef>()
           .firstWhere(
             (m) =>
-                m.providerId == current.providerId && m.modelId == current.modelId,
+                m.providerId == current.providerId &&
+                m.modelId == current.modelId,
             orElse: () => current,
           );
     }
@@ -638,7 +642,8 @@ class _WorkflowInspectorState extends ConsumerState<WorkflowInspector> {
     );
   }
 
-  Widget _buildStructuredOutputSection(BuildContext context, AgentWorkflowNode node) {
+  Widget _buildStructuredOutputSection(
+      BuildContext context, AgentWorkflowNode node) {
     final theme = FluentTheme.of(context);
     final l10n = AppLocalizations.of(context)!;
     final notifier = ref.read(agentWorkflowProvider.notifier);
@@ -658,7 +663,8 @@ class _WorkflowInspectorState extends ConsumerState<WorkflowInspector> {
       if (schema == null) {
         issues.add(l10n.structuredOutputRequiresSchema(primaryOutput.name));
       } else if (schema['type'] != 'object') {
-        issues.add(l10n.structuredOutputRequiresObjectSchema(primaryOutput.name));
+        issues
+            .add(l10n.structuredOutputRequiresObjectSchema(primaryOutput.name));
       }
     }
 
@@ -733,9 +739,9 @@ class _WorkflowInspectorState extends ConsumerState<WorkflowInspector> {
     String valueTypeLabel(AgentWorkflowPortValueType type) {
       switch (type) {
         case AgentWorkflowPortValueType.text:
-          return l10n.valueTypeText;
+          return l10n.typeText;
         case AgentWorkflowPortValueType.json:
-          return l10n.valueTypeJson;
+          return l10n.typeJson;
       }
     }
 
@@ -779,7 +785,8 @@ class _WorkflowInspectorState extends ConsumerState<WorkflowInspector> {
         }
         final schema = decoded.map((k, v) => MapEntry('$k', v));
         try {
-          AgentWorkflowJsonSchema.validateInstance(schema: schema, instance: null);
+          AgentWorkflowJsonSchema.validateInstance(
+              schema: schema, instance: null);
         } catch (e) {
           schemaError = '${l10n.invalidSchema}: $e';
           return;
@@ -795,7 +802,8 @@ class _WorkflowInspectorState extends ConsumerState<WorkflowInspector> {
         context: context,
         builder: (ctx) => StatefulBuilder(
           builder: (ctx, setState) {
-            final nameOk = !canEditName || nameController.text.trim().isNotEmpty;
+            final nameOk =
+                !canEditName || nameController.text.trim().isNotEmpty;
             final canSave = nameOk && schemaError == null;
 
             return ContentDialog(
@@ -822,11 +830,11 @@ class _WorkflowInspectorState extends ConsumerState<WorkflowInspector> {
                       items: [
                         ComboBoxItem(
                           value: AgentWorkflowPortValueType.text,
-                          child: Text(l10n.valueTypeText),
+                          child: Text(l10n.typeText),
                         ),
                         ComboBoxItem(
                           value: AgentWorkflowPortValueType.json,
-                          child: Text(l10n.valueTypeJson),
+                          child: Text(l10n.typeJson),
                         ),
                       ],
                       onChanged: (val) {
@@ -961,13 +969,14 @@ class _WorkflowInspectorState extends ConsumerState<WorkflowInspector> {
                     message: l10n.delete,
                     child: IconButton(
                       icon: const Icon(AuroraIcons.delete, size: 14),
-                      onPressed: node.isFixed || (!isInput && p.name.trim() == 'error')
-                          ? null
-                          : () => notifier.deletePort(
-                                nodeId: node.id,
-                                portId: p.id,
-                                isInput: isInput,
-                              ),
+                      onPressed:
+                          node.isFixed || (!isInput && p.name.trim() == 'error')
+                              ? null
+                              : () => notifier.deletePort(
+                                    nodeId: node.id,
+                                    portId: p.id,
+                                    isInput: isInput,
+                                  ),
                     ),
                   ),
                 ],
@@ -995,7 +1004,8 @@ class _WorkflowInspectorState extends ConsumerState<WorkflowInspector> {
     String nodeName(String id) => nodeById[id]?.title ?? id;
 
     String portName(AgentWorkflowNode? n, String portId, bool isInput) {
-      final ports = isInput ? (n?.inputs ?? const []) : (n?.outputs ?? const []);
+      final ports =
+          isInput ? (n?.inputs ?? const []) : (n?.outputs ?? const []);
       return ports.where((p) => p.id == portId).firstOrNull?.name ?? portId;
     }
 

@@ -178,8 +178,7 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
                 children: [
                   const Icon(AuroraIcons.stop, size: 12, color: Colors.white),
                   const SizedBox(width: 4),
-                  Text(l10n.stopTask,
-                      style: const TextStyle(color: Colors.white)),
+                  Text(l10n.stop, style: const TextStyle(color: Colors.white)),
                 ],
               ),
             ),

@@ -465,7 +465,7 @@ class _SessionListState extends ConsumerState<_SessionList> {
                         Icon(AuroraIcons.add,
                             size: 14, color: theme.accentColor),
                         const SizedBox(width: 12),
-                        Text(l10n.startNewChat,
+                        Text(l10n.newChat,
                             style: TextStyle(
                                 fontSize: 14,
                                 color: theme.typography.body?.color,

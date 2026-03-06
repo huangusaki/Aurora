@@ -204,8 +204,7 @@ class _MobileSettingsPageState extends ConsumerState<MobileSettingsPage> {
                           child: OutlinedButton(
                             onPressed: () => ref
                                 .read(settingsProvider.notifier)
-                                .setAllModelsEnabled(
-                                    viewingProvider.id, false),
+                                .setAllModelsEnabled(viewingProvider.id, false),
                             style: OutlinedButton.styleFrom(
                               padding: EdgeInsets.zero,
                               shape: RoundedRectangleBorder(
@@ -249,8 +248,7 @@ class _MobileSettingsPageState extends ConsumerState<MobileSettingsPage> {
                             ),
                             onPressed: () => ref
                                 .read(settingsProvider.notifier)
-                                .toggleModelDisabled(
-                                    viewingProvider.id, model),
+                                .toggleModelDisabled(viewingProvider.id, model),
                           ),
                           IconButton(
                             icon: const Icon(Icons.settings_outlined, size: 20),
@@ -442,9 +440,7 @@ class _MobileSettingsPageState extends ConsumerState<MobileSettingsPage> {
                         ],
                       ),
                       onTap: () {
-                        ref
-                            .read(settingsProvider.notifier)
-                            .viewProvider(p.id);
+                        ref.read(settingsProvider.notifier).viewProvider(p.id);
                         Navigator.pop(ctx);
                       },
                     )),
@@ -1217,7 +1213,7 @@ class _ParameterConfigDialogState extends State<_ParameterConfigDialog> {
               const SizedBox(height: 12),
               AuroraMaterialDropdownField<String>(
                 value: _type,
-                label: l10n.paramType,
+                label: l10n.typeLabel,
                 options: typeMap.entries
                     .map(
                       (entry) => AuroraDropdownOption<String>(

@@ -754,7 +754,7 @@ class MobileAppSettingsPage extends ConsumerWidget {
         return Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            AuroraBottomSheet.buildTitle(context, l10n.selectGenerationModel),
+            AuroraBottomSheet.buildTitle(context, l10n.selectTopicModel),
             const Divider(height: 1),
             Container(
               constraints: BoxConstraints(

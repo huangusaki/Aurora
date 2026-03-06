@@ -324,14 +324,14 @@ class _MobileAssistantDetailPageState
         aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
         uiSettings: [
           AndroidUiSettings(
-            toolbarTitle: l10n.cropAvatarTitle,
+            toolbarTitle: l10n.cropAvatar,
             toolbarColor: Theme.of(context).primaryColor,
             toolbarWidgetColor: Colors.white,
             initAspectRatio: CropAspectRatioPreset.square,
             lockAspectRatio: true,
           ),
           IOSUiSettings(
-            title: l10n.cropAvatarTitle,
+            title: l10n.cropAvatar,
             aspectRatioLockEnabled: true,
           ),
         ],
@@ -431,8 +431,8 @@ class _MobileAssistantDetailPageState
           final l10n = AppLocalizations.of(ctx)!;
           final configuredServers = ref.watch(mcpServerProvider).servers;
           final enabledServers = configuredServers
-              .where((s) =>
-                  s.enabled && s.transport != McpServerTransport.stdio)
+              .where(
+                  (s) => s.enabled && s.transport != McpServerTransport.stdio)
               .toList(growable: false);
           final enabledIds = enabledServers.map((s) => s.id).toSet();
           final bindingsState = ref.watch(mcpBindingsProvider);
@@ -470,8 +470,8 @@ class _MobileAssistantDetailPageState
           }
 
           return ConstrainedBox(
-            constraints:
-                BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * 0.75),
+            constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(ctx).size.height * 0.75),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -485,8 +485,9 @@ class _MobileAssistantDetailPageState
                         value: followGlobal,
                         onChanged: (v) => unawaited(setFollowGlobal(v)),
                         title: Text(l10n.mcpFollowGlobal),
-                        subtitle:
-                            followGlobal ? Text(l10n.mcpFollowGlobalHint) : null,
+                        subtitle: followGlobal
+                            ? Text(l10n.mcpFollowGlobalHint)
+                            : null,
                         contentPadding: EdgeInsets.zero,
                       ),
                       if (enabledServers.isEmpty)
@@ -503,20 +504,16 @@ class _MobileAssistantDetailPageState
                               : [
                                   server.command,
                                   ...server.args,
-                                ]
-                                    .where((s) => s.trim().isNotEmpty)
-                                    .join(' ');
+                                ].where((s) => s.trim().isNotEmpty).join(' ');
                           return SwitchListTile.adaptive(
                             value: checked,
                             onChanged: followGlobal
                                 ? null
-                                : (v) =>
-                                    unawaited(toggleServer(server.id, v)),
+                                : (v) => unawaited(toggleServer(server.id, v)),
                             title: Text(server.name.isNotEmpty
                                 ? server.name
                                 : l10n.unknown),
-                            subtitle:
-                                summary.isEmpty ? null : Text(summary),
+                            subtitle: summary.isEmpty ? null : Text(summary),
                             contentPadding: EdgeInsets.zero,
                           );
                         }),
@@ -715,4 +712,3 @@ class _MobileAssistantDetailPageState
     return AssistantAvatar(assistant: assistant, size: size);
   }
 }
-

@@ -544,7 +544,7 @@ class _AddParamDialogState extends State<_AddParamDialog> {
           ),
           const SizedBox(height: 12),
           InfoLabel(
-            label: l10n.paramType,
+            label: l10n.typeLabel,
             child: AuroraFluentDropdownField<String>(
               value: _type,
               options: [

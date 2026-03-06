@@ -131,7 +131,7 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
       return _buildSessionRestoreLoading(context, settingsState);
     }
 
-    String sessionTitle = AppLocalizations.of(context)!.startNewChat;
+    String sessionTitle = AppLocalizations.of(context)!.newChat;
 
     if (selectedSessionId != null &&
         selectedSessionId != 'new_chat' &&
@@ -142,7 +142,7 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
         sessionTitle = sessionMatch.first.title;
       } else if (sessionsState.sessions.isEmpty) {
         // Fallback for unexpected empty store during state sync
-        sessionTitle = AppLocalizations.of(context)!.startNewChat;
+        sessionTitle = AppLocalizations.of(context)!.newChat;
       }
     }
     final isDark = Theme.of(context).brightness == Brightness.dark;

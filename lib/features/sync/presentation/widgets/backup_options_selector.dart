@@ -35,7 +35,7 @@ class BackupOptionsSelector extends StatelessWidget {
             checked: options.includeChatPresets,
             onChanged: (v) =>
                 onChanged(options.copyWith(includeChatPresets: v)),
-            content: Text(l10n.backupChatPresets),
+            content: Text(l10n.promptPresets),
           ),
           const SizedBox(height: 12),
           fluent.Checkbox(
@@ -91,7 +91,7 @@ class BackupOptionsSelector extends StatelessWidget {
               onChanged(options.copyWith(includeChatHistory: v ?? false)),
         ),
         CheckboxListTile(
-          title: Text(l10n.backupChatPresets),
+          title: Text(l10n.promptPresets),
           value: options.includeChatPresets,
           onChanged: (v) =>
               onChanged(options.copyWith(includeChatPresets: v ?? false)),
