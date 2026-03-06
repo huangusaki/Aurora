@@ -178,9 +178,7 @@ class _DesktopFilterChip extends StatelessWidget {
     final bgColor = isSelected
         ? color.withValues(alpha: 0.15)
         : theme.resources.cardBackgroundFillColorDefault;
-    final fgColor = isSelected
-        ? color
-        : theme.resources.textFillColorSecondary;
+    final fgColor = isSelected ? color : theme.resources.textFillColorSecondary;
     final borderColor = isSelected
         ? color.withValues(alpha: 0.4)
         : theme.resources.dividerStrokeColorDefault;
@@ -277,16 +275,182 @@ class _MobileFilterChip extends StatelessWidget {
   }
 }
 
-class _LogEntriesPanel extends ConsumerWidget {
+class _LogEntriesPanel extends ConsumerStatefulWidget {
   final bool isMobile;
 
   const _LogEntriesPanel({required this.isMobile});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_LogEntriesPanel> createState() => _LogEntriesPanelState();
+}
+
+class _LogEntriesPanelState extends ConsumerState<_LogEntriesPanel> {
+  static const double _topPinnedThreshold = 100;
+  static const Duration _recentInteractionHold = Duration(milliseconds: 300);
+
+  late final ScrollController _scrollController;
+  double? _prevMaxScrollExtent;
+  double? _prevScrollPixels;
+  AppLogEntry? _lastVisibleHeadEntry;
+  int _lastFilterSignature = 0;
+  DateTime? _lastUserInteractionAt;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController()..addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    final position = _scrollController.position;
+    if (!position.hasPixels) return;
+    _prevScrollPixels = position.pixels;
+    if (position.hasContentDimensions) {
+      _prevMaxScrollExtent = position.maxScrollExtent;
+    }
+  }
+
+  void _scheduleScrollPositionCompensation() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (!_scrollController.hasClients) return;
+      final prevMax = _prevMaxScrollExtent;
+      final prevPixels = _prevScrollPixels;
+      if (prevMax == null || prevPixels == null) return;
+
+      final position = _scrollController.position;
+      if (!position.hasPixels || !position.hasContentDimensions) return;
+      if (position.isScrollingNotifier.value) return;
+      if (_hasRecentUserInteraction()) return;
+      final deltaMax = position.maxScrollExtent - prevMax;
+      if (deltaMax.abs() < 0.5) return;
+
+      final target = (prevPixels + deltaMax)
+          .clamp(position.minScrollExtent, position.maxScrollExtent)
+          .toDouble();
+      if ((target - position.pixels).abs() < 0.5) return;
+      _scrollController.jumpTo(target);
+    });
+  }
+
+  void _scheduleScrollMetricsCapture() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (!_scrollController.hasClients) return;
+      final position = _scrollController.position;
+      if (!position.hasPixels) return;
+      _prevScrollPixels = position.pixels;
+      if (!position.hasContentDimensions) return;
+      _prevMaxScrollExtent = position.maxScrollExtent;
+    });
+  }
+
+  bool _shouldPreserveViewport(
+    List<AppLogEntry> entries,
+    int filterSignature,
+  ) {
+    if (!_scrollController.hasClients) return false;
+    final position = _scrollController.position;
+    if (!position.hasPixels) return false;
+    if (position.pixels <= _topPinnedThreshold) return false;
+    final previousHead = _lastVisibleHeadEntry;
+    if (previousHead == null) return false;
+    if (_lastFilterSignature != filterSignature) return false;
+    return _indexOfEntry(entries, previousHead) > 0;
+  }
+
+  bool _hasActiveScrollInteraction() {
+    if (!_scrollController.hasClients) return false;
+    return _scrollController.position.isScrollingNotifier.value;
+  }
+
+  bool _hasRecentUserInteraction() {
+    final lastUserInteractionAt = _lastUserInteractionAt;
+    if (lastUserInteractionAt == null) return false;
+    return DateTime.now().difference(lastUserInteractionAt) <
+        _recentInteractionHold;
+  }
+
+  void _recordUserInteraction(
+    String source, {
+    ScrollMetrics? metrics,
+    bool? hasDragDetails,
+  }) {
+    _lastUserInteractionAt = DateTime.now();
+  }
+
+  bool _handleScrollNotification(
+    ScrollNotification notification,
+    int entryCount,
+  ) {
+    if (notification.depth != 0) return false;
+    final dragDetails = switch (notification) {
+      ScrollStartNotification() => notification.dragDetails,
+      ScrollUpdateNotification() => notification.dragDetails,
+      OverscrollNotification() => notification.dragDetails,
+      ScrollEndNotification() => notification.dragDetails,
+      _ => null,
+    };
+
+    if (notification is ScrollStartNotification ||
+        notification is ScrollUpdateNotification ||
+        notification is OverscrollNotification ||
+        notification is ScrollEndNotification ||
+        notification is UserScrollNotification) {
+      _recordUserInteraction(
+        notification.runtimeType.toString(),
+        metrics: notification.metrics,
+        hasDragDetails: dragDetails != null,
+      );
+    }
+    return false;
+  }
+
+  int _indexOfEntry(List<AppLogEntry> entries, AppLogEntry target) {
+    for (var i = 0; i < entries.length; i++) {
+      if (_sameEntry(entries[i], target)) {
+        return i;
+      }
+    }
+    return -1;
+  }
+
+  bool _sameEntry(AppLogEntry a, AppLogEntry b) {
+    return a.timestamp == b.timestamp &&
+        a.level == b.level &&
+        a.channel == b.channel &&
+        a.category == b.category &&
+        a.message == b.message &&
+        a.details == b.details;
+  }
+
+  @override
+  void dispose() {
+    _scrollController
+      ..removeListener(_onScroll)
+      ..dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final state = ref.watch(appLogRepositoryProvider);
     final entries = ref.watch(filteredAppLogEntriesProvider);
+    final selectedLevels = ref.watch(appLogFilterProvider);
     final l10n = AppLocalizations.of(context)!;
+    final filterSignature = Object.hashAllUnordered(selectedLevels);
+
+    if (!state.isLoading &&
+        !_hasActiveScrollInteraction() &&
+        !_hasRecentUserInteraction() &&
+        _shouldPreserveViewport(entries, filterSignature)) {
+      _scheduleScrollPositionCompensation();
+    }
+    _scheduleScrollMetricsCapture();
+
+    _lastVisibleHeadEntry = entries.isEmpty ? null : entries.first;
+    _lastFilterSignature = filterSignature;
 
     if (state.isLoading && entries.isEmpty) {
       return const Center(
@@ -295,34 +459,94 @@ class _LogEntriesPanel extends ConsumerWidget {
     }
 
     if (entries.isEmpty) {
-      return _LogEmptyState(isMobile: isMobile, title: l10n.noLogRecords);
+      return _LogEmptyState(
+        isMobile: widget.isMobile,
+        title: l10n.noLogRecords,
+      );
+    }
+
+    final scrollable = widget.isMobile
+        ? ListView.separated(
+            key: const PageStorageKey<String>('log-records-list'),
+            controller: _scrollController,
+            padding: const EdgeInsets.all(12),
+            itemCount: entries.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 10),
+            itemBuilder: (context, index) {
+              return _LogEntryTile(
+                entry: entries[index],
+                isMobile: widget.isMobile,
+              );
+            },
+            physics: const ClampingScrollPhysics(),
+          )
+        : SingleChildScrollView(
+            key: const PageStorageKey<String>('log-records-scroll-view'),
+            controller: _scrollController,
+            physics: const ClampingScrollPhysics(),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (var index = 0; index < entries.length; index++) ...[
+                    if (index > 0) const SizedBox(height: 10),
+                    _LogEntryTile(
+                      entry: entries[index],
+                      isMobile: widget.isMobile,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          );
+
+    Widget list = LayoutBuilder(
+      builder: (context, constraints) {
+        return NotificationListener<ScrollNotification>(
+          onNotification: (notification) =>
+              _handleScrollNotification(notification, entries.length),
+          child: scrollable,
+        );
+      },
+    );
+
+    if (!widget.isMobile) {
+      final isDark =
+          fluent.FluentTheme.of(context).brightness == Brightness.dark;
+      list = Padding(
+        padding: const EdgeInsets.only(right: 4),
+        child: RawScrollbar(
+          controller: _scrollController,
+          thumbVisibility: true,
+          thickness: 6,
+          radius: const Radius.circular(100),
+          thumbColor:
+              isDark ? const Color(0xFFa0a0a0) : const Color(0xFF898989),
+          child: ScrollConfiguration(
+            behavior:
+                ScrollConfiguration.of(context).copyWith(scrollbars: false),
+            child: list,
+          ),
+        ),
+      );
     }
 
     return Container(
       decoration: BoxDecoration(
-        color: isMobile
+        color: widget.isMobile
             ? Theme.of(context).cardColor
             : fluent.FluentTheme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isMobile
+          color: widget.isMobile
               ? Theme.of(context).dividerColor.withValues(alpha: 0.3)
               : fluent.FluentTheme.of(context)
                   .resources
                   .dividerStrokeColorDefault,
         ),
       ),
-      child: ListView.separated(
-        padding: const EdgeInsets.all(12),
-        itemCount: entries.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 10),
-        itemBuilder: (context, index) {
-          return _LogEntryTile(
-            entry: entries[index],
-            isMobile: isMobile,
-          );
-        },
-      ),
+      child: list,
     );
   }
 }

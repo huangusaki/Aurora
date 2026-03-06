@@ -14,6 +14,10 @@ class _FakeAppLogRepository extends AppLogRepository {
 }
 
 void main() {
+  setUp(() {
+    AppLogger.resetForTest();
+  });
+
   test('filtered provider returns only selected warning-level entries', () {
     final repository = _FakeAppLogRepository([
       AppLogEntry(

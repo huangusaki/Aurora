@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:aurora/shared/riverpod_compat.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
@@ -58,6 +59,8 @@ class AppLogRepository extends StateNotifier<AppLogState> {
   bool _isInitialized = false;
   bool _isDisposed = false;
   List<AppLogEntry> _runtimeEntries = <AppLogEntry>[];
+  AppLogState? _pendingState;
+  bool _hasScheduledStatePublish = false;
 
   List<AppLogEntry> get entries => state.entries;
 
@@ -157,10 +160,85 @@ class AppLogRepository extends StateNotifier<AppLogState> {
 
   void _publishState() {
     if (_isDisposed) return;
-    state = state.copyWith(
+    final nextState = state.copyWith(
       entries: List<AppLogEntry>.unmodifiable(_runtimeEntries),
       isLoading: !_isInitialized,
     );
+    if (_shouldDeferStatePublish()) {
+      _scheduleDeferredStatePublish(nextState);
+      return;
+    }
+    _applyState(nextState, allowDeferredFallback: true);
+  }
+
+  bool _shouldDeferStatePublish() {
+    final schedulerBinding = _tryGetSchedulerBinding();
+    if (schedulerBinding == null) {
+      return false;
+    }
+    switch (schedulerBinding.schedulerPhase) {
+      case SchedulerPhase.idle:
+      case SchedulerPhase.postFrameCallbacks:
+        return false;
+      case SchedulerPhase.transientCallbacks:
+      case SchedulerPhase.midFrameMicrotasks:
+      case SchedulerPhase.persistentCallbacks:
+        return true;
+    }
+  }
+
+  SchedulerBinding? _tryGetSchedulerBinding() {
+    try {
+      return SchedulerBinding.instance;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  void _scheduleDeferredStatePublish(AppLogState nextState) {
+    _pendingState = nextState;
+    if (_hasScheduledStatePublish) return;
+
+    _hasScheduledStatePublish = true;
+    final schedulerBinding = _tryGetSchedulerBinding();
+    if (schedulerBinding != null &&
+        schedulerBinding.schedulerPhase != SchedulerPhase.idle) {
+      schedulerBinding.addPostFrameCallback((_) {
+        _flushDeferredStatePublish();
+      });
+      return;
+    }
+    Future<void>(_flushDeferredStatePublish);
+  }
+
+  void _flushDeferredStatePublish() {
+    _hasScheduledStatePublish = false;
+    if (_isDisposed) return;
+    final pendingState = _pendingState;
+    _pendingState = null;
+    if (pendingState == null) return;
+    _applyState(pendingState, allowDeferredFallback: false);
+  }
+
+  void _applyState(
+    AppLogState nextState, {
+    required bool allowDeferredFallback,
+  }) {
+    if (_isDisposed) return;
+    try {
+      state = nextState;
+    } catch (error) {
+      if (allowDeferredFallback && _isBuildPhaseProviderMutation(error)) {
+        _scheduleDeferredStatePublish(nextState);
+        return;
+      }
+      rethrow;
+    }
+  }
+
+  bool _isBuildPhaseProviderMutation(Object error) {
+    return error.toString().contains(
+        'Tried to modify a provider while the widget tree was building.');
   }
 
   void _schedulePersist() {

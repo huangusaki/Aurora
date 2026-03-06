@@ -39,6 +39,13 @@ class _FakeAppLogRepository extends AppLogRepository {
 
   @override
   Future<void> init() async {}
+
+  void appendEntry(AppLogEntry entry) {
+    state = AppLogState(
+      entries: <AppLogEntry>[...state.entries, entry],
+      isLoading: false,
+    );
+  }
 }
 
 class _FakeUsageStatsStorage extends SettingsStorage {
@@ -77,6 +84,27 @@ class _FakeKnowledgeStorage implements KnowledgeStorage {
 
 class _FakeKnowledgeNotifier extends KnowledgeNotifier {
   _FakeKnowledgeNotifier() : super(_FakeKnowledgeStorage());
+}
+
+Widget _buildDesktopLogApp(ProviderContainer container) {
+  return UncontrolledProviderScope(
+    container: container,
+    child: fluent.FluentApp(
+      locale: const Locale('en'),
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        fluent.FluentLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: const Material(
+        type: MaterialType.transparency,
+        child: LogRecordsView(),
+      ),
+    ),
+  );
 }
 
 void main() {
@@ -218,5 +246,96 @@ void main() {
 
     expect(find.text('Warning'), findsWidgets);
     expect(find.text('Request cancelled by user'), findsOneWidget);
+  });
+
+  testWidgets('desktop log page does not throw before scroll metrics are ready',
+      (tester) async {
+    final container = ProviderContainer(
+      overrides: [
+        appLogRepositoryProvider.overrideWith(
+          (ref) => _FakeAppLogRepository(
+            entries: [
+              AppLogEntry(
+                timestamp: DateTime(2026, 3, 6, 12, 0, 0),
+                level: AppLogLevel.info,
+                channel: 'BOOT',
+                message: 'startup entry',
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    await tester.pumpWidget(_buildDesktopLogApp(container));
+    expect(tester.takeException(), isNull);
+
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+      'desktop log page does not compensate viewport during active drag',
+      (tester) async {
+    await tester.binding.setSurfaceSize(const Size(1400, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    final repository = _FakeAppLogRepository(
+      entries: List<AppLogEntry>.generate(
+        80,
+        (index) => AppLogEntry(
+          timestamp: DateTime(2026, 3, 6, 12, 0, index),
+          level: AppLogLevel.info,
+          channel: 'CHAT',
+          category: 'STREAM',
+          message: 'Log entry $index',
+        ),
+      ),
+    );
+    final container = ProviderContainer(
+      overrides: [
+        appLogRepositoryProvider.overrideWith((ref) => repository),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    await tester.pumpWidget(_buildDesktopLogApp(container));
+    await tester.pumpAndSettle();
+
+    final scrollableFinder = find.byType(Scrollable).first;
+    final scrollableState = tester.state<ScrollableState>(scrollableFinder);
+    scrollableState.position.jumpTo(900);
+    await tester.pumpAndSettle();
+
+    final gesture =
+        await tester.startGesture(tester.getCenter(scrollableFinder));
+    await gesture.moveBy(const Offset(0, -30));
+    await tester.pump();
+
+    final beforeAppend = scrollableState.position.pixels;
+
+    repository.appendEntry(
+      AppLogEntry(
+        timestamp: DateTime(2026, 3, 6, 12, 2, 0),
+        level: AppLogLevel.info,
+        channel: 'CHAT',
+        category: 'STREAM',
+        message: 'Newest log entry',
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(
+      scrollableState.position.pixels,
+      closeTo(beforeAppend, 0.1),
+    );
+
+    await gesture.up();
+    await tester.pumpAndSettle();
   });
 }
