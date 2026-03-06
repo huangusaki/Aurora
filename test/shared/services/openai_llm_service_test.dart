@@ -348,6 +348,188 @@ void main() {
       expect(payload.containsKey('extra_body'), isFalse);
     });
 
+    test('preserves explicit xhigh reasoning effort from custom params',
+        () async {
+      final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      final payloadCompleter = Completer<Map<String, dynamic>>();
+      final sub = server.listen((request) async {
+        final raw = await utf8.decoder.bind(request).join();
+        final payload = jsonDecode(raw) as Map<String, dynamic>;
+        if (!payloadCompleter.isCompleted) {
+          payloadCompleter.complete(payload);
+        }
+
+        request.response.statusCode = 200;
+        request.response.headers.contentType = ContentType.json;
+        request.response.write(jsonEncode({
+          'choices': [
+            {
+              'message': {'content': 'ok'}
+            }
+          ]
+        }));
+        await request.response.close();
+      });
+      addTearDown(() async {
+        await sub.cancel();
+        await server.close(force: true);
+      });
+
+      final settings = SettingsState(
+        providers: [
+          ProviderConfig(
+            id: 'custom',
+            name: 'Custom',
+            apiKeys: const ['test-key'],
+            selectedModel: 'gpt-5.4',
+            baseUrl: 'http://${server.address.host}:${server.port}/v1',
+            customParameters: const {
+              'reasoning.effort': 'xhigh',
+            },
+            modelSettings: const {
+              'gpt-5.4': {
+                'reasoning_effort': 'xhigh',
+                '_aurora_thinking_config': {
+                  'enabled': true,
+                  'budget': 'high',
+                  'mode': 'reasoning_effort',
+                },
+              }
+            },
+          ),
+        ],
+        activeProviderId: 'custom',
+        viewingProviderId: 'custom',
+        language: 'zh',
+      );
+      final service = OpenAILLMService(settings);
+
+      final response = await service.getResponse([Message.user('你好')]);
+      final payload = await payloadCompleter.future;
+
+      expect(response.content, 'ok');
+      expect(payload['reasoning.effort'], 'xhigh');
+      expect(payload['reasoning_effort'], 'xhigh');
+    });
+
+    test('keeps xhigh for reasoning_effort on custom compatible hosts',
+        () async {
+      final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      final payloadCompleter = Completer<Map<String, dynamic>>();
+      final sub = server.listen((request) async {
+        final raw = await utf8.decoder.bind(request).join();
+        final payload = jsonDecode(raw) as Map<String, dynamic>;
+        if (!payloadCompleter.isCompleted) {
+          payloadCompleter.complete(payload);
+        }
+
+        request.response.statusCode = 200;
+        request.response.headers.contentType = ContentType.json;
+        request.response.write(jsonEncode({
+          'choices': [
+            {
+              'message': {'content': 'ok'}
+            }
+          ]
+        }));
+        await request.response.close();
+      });
+      addTearDown(() async {
+        await sub.cancel();
+        await server.close(force: true);
+      });
+
+      final settings = SettingsState(
+        providers: [
+          ProviderConfig(
+            id: 'custom',
+            name: 'Custom',
+            apiKeys: const ['test-key'],
+            selectedModel: 'gpt-5.4',
+            baseUrl: 'http://${server.address.host}:${server.port}/v1',
+            modelSettings: const {
+              'gpt-5.4': {
+                '_aurora_thinking_config': {
+                  'enabled': true,
+                  'budget': 'xhigh',
+                  'mode': 'reasoning_effort',
+                },
+              }
+            },
+          ),
+        ],
+        activeProviderId: 'custom',
+        viewingProviderId: 'custom',
+        language: 'zh',
+      );
+      final service = OpenAILLMService(settings);
+
+      final response = await service.getResponse([Message.user('你好')]);
+      final payload = await payloadCompleter.future;
+
+      expect(response.content, 'ok');
+      expect(payload['reasoning_effort'], 'xhigh');
+    });
+
+    test('keeps minimal for OpenAI reasoning_effort when explicitly selected',
+        () async {
+      final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      final payloadCompleter = Completer<Map<String, dynamic>>();
+      final sub = server.listen((request) async {
+        final raw = await utf8.decoder.bind(request).join();
+        final payload = jsonDecode(raw) as Map<String, dynamic>;
+        if (!payloadCompleter.isCompleted) {
+          payloadCompleter.complete(payload);
+        }
+
+        request.response.statusCode = 200;
+        request.response.headers.contentType = ContentType.json;
+        request.response.write(jsonEncode({
+          'choices': [
+            {
+              'message': {'content': 'ok'}
+            }
+          ]
+        }));
+        await request.response.close();
+      });
+      addTearDown(() async {
+        await sub.cancel();
+        await server.close(force: true);
+      });
+
+      final settings = SettingsState(
+        providers: [
+          ProviderConfig(
+            id: 'custom',
+            name: 'Custom',
+            apiKeys: const ['test-key'],
+            selectedModel: 'gpt-5',
+            baseUrl: 'http://${server.address.host}:${server.port}/v1',
+            modelSettings: const {
+              'gpt-5': {
+                '_aurora_thinking_config': {
+                  'enabled': true,
+                  'budget': 'minimal',
+                  'mode': 'reasoning_effort',
+                },
+              }
+            },
+          ),
+        ],
+        activeProviderId: 'custom',
+        viewingProviderId: 'custom',
+        language: 'zh',
+      );
+      final service = OpenAILLMService(settings);
+
+      final response = await service.getResponse([Message.user('你好')]);
+      final payload = await payloadCompleter.future;
+
+      expect(response.content, 'ok');
+      expect(payload['reasoning_effort'], 'minimal');
+    });
+
     test('collects multiple images from a single streaming delta', () async {
       final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
       final sub = server.listen((request) async {

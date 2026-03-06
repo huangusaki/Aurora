@@ -167,7 +167,6 @@ _ThinkingTier _coerceTierForGemini3(_ThinkingTier tier) {
 }
 
 _ThinkingTier _coerceTierForOpenAI(_ThinkingTier tier) {
-  if (tier == _ThinkingTier.minimal) return _ThinkingTier.low;
   return tier;
 }
 
@@ -188,21 +187,7 @@ String _thinkingTierToGeminiEffort(_ThinkingTier tier) {
 }
 
 bool _supportsXHighReasoningEffort(String baseUrl, String model) {
-  final lowerModel = model.toLowerCase();
-  if (lowerModel.contains('gemini') &&
-      (lowerModel.contains('claude') || lowerModel.contains('anthropic'))) {
-    return true;
-  }
-  final uri = Uri.tryParse(baseUrl);
-  final host =
-      (uri?.host.isNotEmpty == true ? uri!.host : baseUrl).toLowerCase();
-  if (host.contains('openrouter')) return true;
-  if (host.endsWith('openai.com') ||
-      host.contains('openai.azure.com') ||
-      host.contains('azure.com')) {
-    return false;
-  }
-  return false;
+  return true;
 }
 
 String _thinkingTierToOpenAIEffort(_ThinkingTier tier,
@@ -211,7 +196,7 @@ String _thinkingTierToOpenAIEffort(_ThinkingTier tier,
   if (coerced == _ThinkingTier.xhigh && !supportsXHigh) return 'high';
   switch (coerced) {
     case _ThinkingTier.minimal:
-      return 'low';
+      return 'minimal';
     case _ThinkingTier.low:
       return 'low';
     case _ThinkingTier.medium:
@@ -221,6 +206,36 @@ String _thinkingTierToOpenAIEffort(_ThinkingTier tier,
     case _ThinkingTier.xhigh:
       return 'xhigh';
   }
+}
+
+String? _configuredReasoningEffort(Map<String, dynamic> requestData) {
+  final reasoning = _safeStringKeyedMap(requestData['reasoning']);
+  final nested = reasoning['effort']?.toString().trim();
+  if (nested != null && nested.isNotEmpty) return nested;
+
+  final dotted = requestData['reasoning.effort']?.toString().trim();
+  if (dotted != null && dotted.isNotEmpty) return dotted;
+
+  final compat = requestData['reasoning_effort']?.toString().trim();
+  if (compat != null && compat.isNotEmpty) return compat;
+
+  return null;
+}
+
+void _applyConfiguredReasoningEffortCompatAlias({
+  required Map<String, dynamic> requestData,
+  required String selectedModel,
+  required String baseUrl,
+  required String? explicitReasoningEffort,
+}) {
+  final effort = explicitReasoningEffort?.trim();
+  if (effort == null || effort.isEmpty) return;
+
+  final modelFamily = _inferModelFamily(selectedModel);
+  final isOfficialGeminiOpenAI = _isOfficialGeminiOpenAIEndpoint(baseUrl);
+  if (isOfficialGeminiOpenAI && modelFamily == _ModelFamily.gemini) return;
+
+  requestData['reasoning_effort'] = effort;
 }
 
 String? _thinkingInputToCompatReasoningEffort(
@@ -322,12 +337,17 @@ void _applyGeminiExtraBodyReasoningCompat({
   required _ModelFamily modelFamily,
   required String baseUrl,
   required String selectedModel,
+  String? explicitReasoningEffort,
 }) {
   if (modelFamily != _ModelFamily.gemini &&
       modelFamily != _ModelFamily.gemini3) {
     return;
   }
   if (_isOfficialGeminiOpenAIEndpoint(baseUrl)) return;
+  if (explicitReasoningEffort != null && explicitReasoningEffort.isNotEmpty) {
+    requestData['reasoning_effort'] = explicitReasoningEffort;
+    return;
+  }
   if (requestData.containsKey('reasoning_effort')) return;
 
   final effort = _thinkingInputToCompatReasoningEffort(
@@ -474,6 +494,7 @@ void _applyThinkingConfigToRequest({
   required String baseUrl,
 }) {
   final modelFamily = _inferModelFamily(selectedModel);
+  final explicitReasoningEffort = _configuredReasoningEffort(requestData);
   final isGeminiImageModel = _isImageModel(selectedModel) &&
       (modelFamily == _ModelFamily.gemini ||
           modelFamily == _ModelFamily.gemini3);
@@ -489,8 +510,11 @@ void _applyThinkingConfigToRequest({
     if (_isGemini31PlusImageModel(selectedModel)) {
       // Gemini 3.1+ image models support explicit thinking levels (high, etc.)
       final thinkingConfig = activeParams['_aurora_thinking_config'];
-      String effort = 'high'; // sensible default for 3.1+
-      if (thinkingConfig is Map && thinkingConfig['enabled'] == true) {
+      String effort =
+          explicitReasoningEffort ?? 'high'; // sensible default for 3.1+
+      if (explicitReasoningEffort == null &&
+          thinkingConfig is Map &&
+          thinkingConfig['enabled'] == true) {
         final raw = thinkingConfig['budget']?.toString().trim() ?? '';
         if (raw.isNotEmpty) {
           final parsed = _parseThinkingInput(raw);
@@ -532,9 +556,25 @@ void _applyThinkingConfigToRequest({
     thinkingMode = activeParams['_aurora_thinking_mode']?.toString() ?? 'auto';
   }
 
-  if (!thinkingEnabled) return;
+  if (!thinkingEnabled) {
+    _applyConfiguredReasoningEffortCompatAlias(
+      requestData: requestData,
+      selectedModel: selectedModel,
+      baseUrl: baseUrl,
+      explicitReasoningEffort: explicitReasoningEffort,
+    );
+    return;
+  }
   final raw = thinkingValue.trim();
-  if (raw.isEmpty) return;
+  if (raw.isEmpty) {
+    _applyConfiguredReasoningEffortCompatAlias(
+      requestData: requestData,
+      selectedModel: selectedModel,
+      baseUrl: baseUrl,
+      explicitReasoningEffort: explicitReasoningEffort,
+    );
+    return;
+  }
 
   final isOfficialGeminiOpenAI = _isOfficialGeminiOpenAIEndpoint(baseUrl);
   if (isOfficialGeminiOpenAI) {
@@ -609,6 +649,7 @@ void _applyThinkingConfigToRequest({
         modelFamily: modelFamily,
         baseUrl: baseUrl,
         selectedModel: selectedModel,
+        explicitReasoningEffort: explicitReasoningEffort,
       );
     } else if (modelFamily == _ModelFamily.anthropic) {
       final budgetTokens = _budgetTokensFromThinkingInput(input);
@@ -627,7 +668,9 @@ void _applyThinkingConfigToRequest({
   } else if (thinkingMode == 'reasoning_effort') {
     final supportsXHigh = _supportsXHighReasoningEffort(baseUrl, selectedModel);
     String effort;
-    if (modelFamily == _ModelFamily.gemini3) {
+    if (explicitReasoningEffort != null && explicitReasoningEffort.isNotEmpty) {
+      effort = explicitReasoningEffort;
+    } else if (modelFamily == _ModelFamily.gemini3) {
       if (input.budgetTokens != null) {
         effort = _thinkingTierToGeminiEffort(
             _tierFromBudgetForGemini3(input.budgetTokens!));
