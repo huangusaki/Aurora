@@ -46,6 +46,12 @@ class _FakeAppLogRepository extends AppLogRepository {
       isLoading: false,
     );
   }
+
+  @override
+  Future<void> clear() async {
+    AppLogger.clearBufferedEntries();
+    state = const AppLogState(entries: <AppLogEntry>[], isLoading: false);
+  }
 }
 
 class _FakeUsageStatsStorage extends SettingsStorage {
@@ -246,6 +252,37 @@ void main() {
 
     expect(find.text('Warning'), findsWidgets);
     expect(find.text('Request cancelled by user'), findsOneWidget);
+  });
+
+  testWidgets('desktop log page clear button removes all entries',
+      (tester) async {
+    final repository = _FakeAppLogRepository(
+      entries: [
+        AppLogEntry(
+          timestamp: DateTime(2026, 3, 6, 12, 0, 0),
+          level: AppLogLevel.info,
+          channel: 'CHAT',
+          message: 'Clear me',
+        ),
+      ],
+    );
+    final container = ProviderContainer(
+      overrides: [
+        appLogRepositoryProvider.overrideWith((ref) => repository),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    await tester.pumpWidget(_buildDesktopLogApp(container));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Clear me'), findsOneWidget);
+
+    await tester.tap(find.text('Clear'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Clear me'), findsNothing);
+    expect(find.text('No log records yet'), findsOneWidget);
   });
 
   testWidgets('desktop log page does not throw before scroll metrics are ready',

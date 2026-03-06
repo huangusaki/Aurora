@@ -16,6 +16,7 @@ final filteredAppLogEntriesProvider = Provider<List<AppLogEntry>>((ref) {
   final selectedLevels = ref.watch(appLogFilterProvider);
 
   return state.entries
+      .where(shouldDisplayAppLogEntry)
       .where((entry) => selectedLevels.contains(entry.level))
       .toList(growable: false)
       .reversed

@@ -567,6 +567,14 @@ ThemeBackgroundStateResolution resolveThemeBackgroundState({
 
 class SettingsNotifier extends StateNotifier<SettingsState> {
   final SettingsStorage _storage;
+
+  void _debugLifecycleLog(String message) {
+    assert(() {
+      debugPrint(message);
+      return true;
+    }());
+  }
+
   SettingsStorage get storage => _storage;
   SettingsNotifier({
     required SettingsStorage storage,
@@ -664,7 +672,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
           backgroundBlur: backgroundBlur,
           useCustomTheme: useCustomTheme,
         )) {
-    debugPrint(
+    _debugLifecycleLog(
         'SettingsNotifier initialized with backgroundImagePath: $backgroundImagePath');
     loadPresets();
   }

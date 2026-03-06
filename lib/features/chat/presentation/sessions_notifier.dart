@@ -16,6 +16,13 @@ class SessionsNotifier extends StateNotifier<SessionsState> {
     _init();
   }
 
+  void _debugStartupLog(String message) {
+    assert(() {
+      debugPrint(message);
+      return true;
+    }());
+  }
+
   void _cleanupCollapsedSessionIds(List<SessionEntity> sessions) {
     final collapsed = _ref.read(collapsedHistorySessionIdsProvider);
     if (collapsed.isEmpty) return;
@@ -59,14 +66,14 @@ class SessionsNotifier extends StateNotifier<SessionsState> {
     final loadSw = Stopwatch()..start();
     await loadSessions();
     loadSw.stop();
-    debugPrint(
+    _debugStartupLog(
         '[STARTUP] SessionsNotifier.loadSessions ${loadSw.elapsedMilliseconds}ms (${state.sessions.length} sessions)');
 
     final settings = await _ref.read(settingsStorageProvider).loadAppSettings();
     final restoreLast = settings?.restoreLastSessionOnLaunch ?? true;
     final lastId = settings?.lastSessionId;
     final lastTopicId = settings?.lastTopicId;
-    debugPrint(
+    _debugStartupLog(
         'Restoring session (enabled=$restoreLast). lastId: $lastId, lastTopicId: $lastTopicId');
 
     var targetSessionId = 'new_chat';
@@ -76,7 +83,7 @@ class SessionsNotifier extends StateNotifier<SessionsState> {
       if (lastTopicId != null) {
         final topicId = int.tryParse(lastTopicId);
         _ref.read(selectedTopicIdProvider.notifier).state = topicId;
-        debugPrint('Restored topic id: $topicId');
+        _debugStartupLog('Restored topic id: $topicId');
       }
       if (lastId != null && state.sessions.any((s) => s.sessionId == lastId)) {
         targetSessionId = lastId;
@@ -94,7 +101,7 @@ class SessionsNotifier extends StateNotifier<SessionsState> {
         _ref.read(selectedHistorySessionIdProvider.notifier).state =
             deferredTarget;
         _ref.read(sessionRestoreInProgressProvider.notifier).state = false;
-        debugPrint(
+        _debugStartupLog(
             '[STARTUP] SessionsNotifier.mobile restored session: $deferredTarget');
       });
     } else {
@@ -105,7 +112,7 @@ class SessionsNotifier extends StateNotifier<SessionsState> {
       }
     }
     initSw.stop();
-    debugPrint('[STARTUP] SessionsNotifier._init total '
+    _debugStartupLog('[STARTUP] SessionsNotifier._init total '
         '${initSw.elapsedMilliseconds}ms');
 
     unawaited(_runDeferredStartupMaintenance());
@@ -130,10 +137,11 @@ class SessionsNotifier extends StateNotifier<SessionsState> {
         await loadSessions();
         await settingsStorage.saveStartupMaintenanceLastRun(now);
         maintenanceSw.stop();
-        debugPrint('[STARTUP] SessionsNotifier.deferredMaintenance '
+        _debugStartupLog('[STARTUP] SessionsNotifier.deferredMaintenance '
             '${maintenanceSw.elapsedMilliseconds}ms');
       } else {
-        debugPrint('[STARTUP] SessionsNotifier.deferredMaintenance skipped '
+        _debugStartupLog(
+            '[STARTUP] SessionsNotifier.deferredMaintenance skipped '
             '(lastRun=$lastRun)');
       }
 
@@ -141,7 +149,7 @@ class SessionsNotifier extends StateNotifier<SessionsState> {
         final preloadSw = Stopwatch()..start();
         await _storage.preloadAllSessions(limit: _desktopPreloadLimit);
         preloadSw.stop();
-        debugPrint('[STARTUP] SessionsNotifier.deferredPreload '
+        _debugStartupLog('[STARTUP] SessionsNotifier.deferredPreload '
             '${preloadSw.elapsedMilliseconds}ms '
             '(limit=$_desktopPreloadLimit)');
       }
@@ -149,7 +157,7 @@ class SessionsNotifier extends StateNotifier<SessionsState> {
       debugPrint('[STARTUP] SessionsNotifier.deferred failed: $e\n$st');
     } finally {
       totalSw.stop();
-      debugPrint('[STARTUP] SessionsNotifier.deferred total '
+      _debugStartupLog('[STARTUP] SessionsNotifier.deferred total '
           '${totalSw.elapsedMilliseconds}ms');
     }
   }
@@ -173,7 +181,7 @@ class SessionsNotifier extends StateNotifier<SessionsState> {
     _cleanupCollapsedSessionIds(sessions);
     state = SessionsState(sessions: sessions, isLoading: false);
     sw.stop();
-    debugPrint(
+    _debugStartupLog(
         '[STARTUP] SessionsNotifier.loadSessionsInternal ${sw.elapsedMilliseconds}ms (order=${order.length}, sessions=${sessions.length})');
   }
 

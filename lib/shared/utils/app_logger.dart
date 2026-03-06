@@ -139,6 +139,10 @@ class AppLogger {
     return List<AppLogEntry>.unmodifiable(_buffer);
   }
 
+  static void clearBufferedEntries() {
+    _buffer.clear();
+  }
+
   static VoidCallback addListener(
     AppLogListener listener, {
     bool replayBuffered = false,

@@ -1,10 +1,15 @@
+import 'dart:io';
+
 import 'package:aurora/features/settings/presentation/app_log_provider.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 import 'package:aurora/shared/riverpod_compat.dart';
 import 'package:aurora/shared/theme/aurora_icons.dart';
 import 'package:aurora/shared/utils/app_logger.dart';
+import 'package:aurora/shared/widgets/aurora_notice.dart';
+import 'package:file_selector/file_selector.dart';
 import 'package:fluent_ui/fluent_ui.dart' as fluent;
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 class LogRecordsView extends ConsumerWidget {
   const LogRecordsView({super.key});
@@ -13,15 +18,40 @@ class LogRecordsView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final theme = fluent.FluentTheme.of(context);
+    final hasEntries = ref.watch(
+      appLogRepositoryProvider.select((state) => state.entries.isNotEmpty),
+    );
+    final visibleEntries = ref.watch(filteredAppLogEntriesProvider);
 
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            l10n.logRecords,
-            style: theme.typography.subtitle,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                l10n.logRecords,
+                style: theme.typography.subtitle,
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  fluent.Button(
+                    onPressed: visibleEntries.isNotEmpty
+                        ? () => _exportLogs(context, ref, visibleEntries)
+                        : null,
+                    child: Text(l10n.exportData),
+                  ),
+                  const SizedBox(width: 8),
+                  fluent.Button(
+                    onPressed: hasEntries ? () => _clearLogs(ref) : null,
+                    child: Text(l10n.clear),
+                  ),
+                ],
+              ),
+            ],
           ),
           const SizedBox(height: 8),
           Text(
@@ -50,6 +80,10 @@ class MobileLogPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
+    final hasEntries = ref.watch(
+      appLogRepositoryProvider.select((state) => state.entries.isNotEmpty),
+    );
+    final visibleEntries = ref.watch(filteredAppLogEntriesProvider);
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -64,6 +98,20 @@ class MobileLogPage extends ConsumerWidget {
                 onPressed: onBack,
               )
             : null,
+        actions: [
+          IconButton(
+            onPressed: visibleEntries.isNotEmpty
+                ? () => _exportLogs(context, ref, visibleEntries)
+                : null,
+            icon: const Icon(Icons.download_outlined),
+            tooltip: l10n.exportData,
+          ),
+          IconButton(
+            onPressed: hasEntries ? () => _clearLogs(ref) : null,
+            icon: const Icon(Icons.delete_outline),
+            tooltip: l10n.clear,
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
@@ -86,6 +134,45 @@ class MobileLogPage extends ConsumerWidget {
         ),
       ),
     );
+  }
+}
+
+Future<void> _clearLogs(WidgetRef ref) async {
+  await ref.read(appLogRepositoryProvider.notifier).clear();
+}
+
+Future<void> _exportLogs(
+  BuildContext context,
+  WidgetRef ref,
+  List<AppLogEntry> entries,
+) async {
+  final l10n = AppLocalizations.of(context)!;
+  try {
+    final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
+    final location = await getSaveLocation(
+      suggestedName: 'aurora_logs_$timestamp.txt',
+    );
+    if (location == null) return;
+
+    final content = entries.map((entry) => entry.toPlainText()).join('\n\n');
+    final file = File(location.path);
+    await file.writeAsString(content.isEmpty ? '' : '$content\n');
+
+    if (context.mounted) {
+      showAuroraNotice(
+        context,
+        l10n.exportSuccess,
+        icon: AuroraIcons.success,
+      );
+    }
+  } catch (e) {
+    if (context.mounted) {
+      showAuroraNotice(
+        context,
+        '${l10n.exportFailed}: $e',
+        icon: AuroraIcons.error,
+      );
+    }
   }
 }
 

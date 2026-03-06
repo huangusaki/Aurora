@@ -293,38 +293,31 @@ class OpenAILLMService implements LLMService {
   }
 
   void _logRequest(String url, Map<String, dynamic> data) {
-    assert(() {
-      try {
-        AppLogger.llmRequest(
-          url: url,
-          payload: _sanitizeForLog(
-            data,
-            preserveLongText: AppLogger.showRawLlmPayload,
-          ),
-        );
-      } catch (e) {
-        AppLogger.error('LLM', 'Request log error: $e',
-            category: 'REQUEST_LOG');
-      }
-      return true;
-    }());
+    try {
+      AppLogger.llmRequest(
+        url: url,
+        payload: _sanitizeForLog(
+          data,
+          preserveLongText: AppLogger.showRawLlmPayload,
+        ),
+      );
+    } catch (e) {
+      AppLogger.error('LLM', 'Request log error: $e', category: 'REQUEST_LOG');
+    }
   }
 
   void _logResponse(dynamic data) {
-    assert(() {
-      try {
-        AppLogger.llmResponse(
-          payload: _sanitizeForLog(
-            data,
-            preserveLongText: AppLogger.showRawLlmPayload,
-          ),
-        );
-      } catch (e) {
-        AppLogger.error('LLM', 'Response log error: $e',
-            category: 'RESPONSE_LOG');
-      }
-      return true;
-    }());
+    try {
+      AppLogger.llmResponse(
+        payload: _sanitizeForLog(
+          data,
+          preserveLongText: AppLogger.showRawLlmPayload,
+        ),
+      );
+    } catch (e) {
+      AppLogger.error('LLM', 'Response log error: $e',
+          category: 'RESPONSE_LOG');
+    }
   }
 
   @override

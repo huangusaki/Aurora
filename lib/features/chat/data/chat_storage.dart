@@ -30,6 +30,13 @@ class ChatStorage {
   final Map<String, List<Message>> _messagesCache = {};
   ChatStorage(this._settingsStorage) : _isar = _settingsStorage.isar;
 
+  void _debugStorageLog(String message) {
+    assert(() {
+      debugPrint(message);
+      return true;
+    }());
+  }
+
   int _effectiveTokenTotalFromMessage(Message message) {
     final splitProvided = message.promptTokens != null ||
         message.completionTokens != null ||
@@ -101,7 +108,7 @@ class ChatStorage {
             await _loadHistoryFromDb(session.sessionId);
       }
     }
-    debugPrint('ChatStorage: preloadAllSessions completed in '
+    _debugStorageLog('ChatStorage: preloadAllSessions completed in '
         '${sw.elapsedMilliseconds}ms for ${targetSessions.length} sessions '
         '(total=${sessions.length}${limit != null ? ', limit=$limit' : ''})');
   }
@@ -159,9 +166,11 @@ class ChatStorage {
     } catch (e) {
       debugPrint('[CHAT_STORAGE] saveMessage error: $e');
       // 计算 message 大概大小以供参考
-      final contentSize = (message.content.length) + (message.reasoningContent?.length ?? 0);
+      final contentSize =
+          (message.content.length) + (message.reasoningContent?.length ?? 0);
       final imagesSize = message.images.fold(0, (sum, img) => sum + img.length);
-      debugPrint('[CHAT_STORAGE] Message stats: content=$contentSize chars, images=$imagesSize chars (${message.images.length} images)');
+      debugPrint(
+          '[CHAT_STORAGE] Message stats: content=$contentSize chars, images=$imagesSize chars (${message.images.length} images)');
       rethrow;
     }
     if (_messagesCache.containsKey(sessionId)) {
@@ -228,10 +237,10 @@ class ChatStorage {
 
   Future<List<Message>> loadHistory(String sessionId) async {
     if (_messagesCache.containsKey(sessionId)) {
-      debugPrint('ChatStorage: loadHistory cache HIT for $sessionId');
+      _debugStorageLog('ChatStorage: loadHistory cache HIT for $sessionId');
       return List.from(_messagesCache[sessionId]!);
     }
-    debugPrint(
+    _debugStorageLog(
         'ChatStorage: loadHistory cache MISS for $sessionId, loading from DB');
     final messages = await _loadHistoryFromDb(sessionId);
     _messagesCache[sessionId] = messages;

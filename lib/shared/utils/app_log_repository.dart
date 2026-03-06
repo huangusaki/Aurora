@@ -30,6 +30,54 @@ class AppLogState {
   }
 }
 
+bool shouldDisplayAppLogEntry(AppLogEntry entry) {
+  if (entry.level == AppLogLevel.info && entry.channel == 'BOOT') {
+    return false;
+  }
+
+  if (entry.level == AppLogLevel.info &&
+      entry.channel == 'APP' &&
+      entry.message.startsWith('[STARTUP]')) {
+    return false;
+  }
+
+  if (entry.level == AppLogLevel.info &&
+      entry.channel == 'SESSION' &&
+      (entry.message.startsWith('Restoring session') ||
+          entry.message.startsWith('Restored topic'))) {
+    return false;
+  }
+
+  if (entry.level == AppLogLevel.info &&
+      entry.channel == 'SETTINGS' &&
+      entry.message.startsWith('SettingsNotifier initialized')) {
+    return false;
+  }
+
+  if (entry.level == AppLogLevel.info &&
+      entry.channel == 'CHAT_STORAGE' &&
+      (entry.message.startsWith('loadHistory cache HIT') ||
+          entry.message.startsWith('loadHistory cache MISS') ||
+          entry.message.startsWith('preloadAllSessions completed'))) {
+    return false;
+  }
+
+  if (entry.level == AppLogLevel.info && entry.channel == 'APP') {
+    final message = entry.message;
+    if (message.startsWith('IsarCore using libmdbx:') ||
+        message.contains('ISAR CONNECT STARTED') ||
+        message.contains('Open the link to connect to the Isar') ||
+        message.contains('Inspector while this build is running.') ||
+        message.contains('inspect.isar-community.dev') ||
+        message.contains('════════════════════════════════') ||
+        RegExp(r'^[\s\|\-─═╔╗╚╝╟╢║╠╣╬]+$').hasMatch(message)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 class AppLogRepository extends StateNotifier<AppLogState> {
   AppLogRepository({
     Future<Directory> Function()? supportDirectoryProvider,
@@ -89,6 +137,17 @@ class AppLogRepository extends StateNotifier<AppLogState> {
     }
   }
 
+  Future<void> clear() async {
+    if (_isDisposed) return;
+    _persistTimer?.cancel();
+    AppLogger.clearBufferedEntries();
+    _runtimeEntries = <AppLogEntry>[];
+    _publishState();
+    if (_isInitialized) {
+      await flushNow();
+    }
+  }
+
   Future<void> _initInternal() async {
     _attachLoggerListener();
 
@@ -134,7 +193,9 @@ class AppLogRepository extends StateNotifier<AppLogState> {
           // Ignore malformed historical lines instead of breaking startup.
         }
       }
-      return _trimEntries(entries);
+      return _trimEntries(
+        entries.where(shouldDisplayAppLogEntry).toList(growable: false),
+      );
     } catch (_) {
       return const <AppLogEntry>[];
     }
@@ -151,6 +212,7 @@ class AppLogRepository extends StateNotifier<AppLogState> {
 
   void _handleLogEntry(AppLogEntry entry) {
     if (_isDisposed) return;
+    if (!shouldDisplayAppLogEntry(entry)) return;
     _runtimeEntries = _trimEntries([..._runtimeEntries, entry]);
     _publishState();
     if (_isInitialized) {

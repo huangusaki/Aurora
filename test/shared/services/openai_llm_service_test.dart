@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:aurora/core/error/app_exception.dart';
 import 'package:aurora/features/chat/domain/ui_message.dart';
+import 'package:aurora/shared/utils/app_logger.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:aurora/features/chat/domain/message.dart';
 import 'package:aurora/features/settings/presentation/settings_provider.dart';
@@ -12,6 +13,10 @@ import 'package:aurora/shared/services/openai_llm_service.dart';
 
 void main() {
   group('OpenAILLMService', () {
+    setUp(() {
+      AppLogger.resetForTest();
+    });
+
     test('returns missing model message when model is not configured',
         () async {
       final settings = SettingsState(
@@ -121,6 +126,63 @@ void main() {
       expect(response.reasoningTokens, 37);
       expect(response.usage, 144);
       expect(response.finishReason, 'stop');
+    });
+
+    test('emits request and response logs for non-streaming responses',
+        () async {
+      final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      final sub = server.listen((request) async {
+        request.response.statusCode = 200;
+        request.response.headers.contentType = ContentType.json;
+        request.response.write(jsonEncode({
+          'choices': [
+            {
+              'message': {'content': 'ok'}
+            }
+          ]
+        }));
+        await request.response.close();
+      });
+      addTearDown(() async {
+        await sub.cancel();
+        await server.close(force: true);
+      });
+
+      final received = <AppLogEntry>[];
+      final removeListener = AppLogger.addListener(received.add);
+      addTearDown(removeListener);
+
+      final settings = SettingsState(
+        providers: [
+          ProviderConfig(
+            id: 'openai',
+            name: 'OpenAI',
+            apiKeys: const ['test-key'],
+            selectedModel: 'gpt-4.1',
+            baseUrl: 'http://${server.address.host}:${server.port}/v1',
+          ),
+        ],
+        activeProviderId: 'openai',
+        viewingProviderId: 'openai',
+        language: 'en',
+      );
+      final service = OpenAILLMService(settings);
+
+      final response = await service.getResponse([Message.user('hello')]);
+
+      expect(response.content, 'ok');
+      expect(
+        received.any((entry) =>
+            entry.channel == 'LLM' &&
+            entry.category == 'REQUEST' &&
+            entry.message.contains('/v1/chat/completions')),
+        isTrue,
+      );
+      expect(
+        received.any(
+            (entry) => entry.channel == 'LLM' && entry.category == 'RESPONSE'),
+        isTrue,
+      );
     });
 
     test('fails clearly when non-streaming payload is not valid JSON',
