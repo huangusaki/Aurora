@@ -12,6 +12,7 @@ import 'llm_service.dart';
 import '../../core/error/app_exception.dart';
 import '../../core/error/app_error_type.dart';
 import '../utils/app_logger.dart';
+import '../utils/llm_stream_log_accumulator.dart';
 
 part 'openai/openai_attachments.dart';
 part 'openai/openai_provider_compat.dart';
@@ -340,6 +341,7 @@ class OpenAILLMService implements LLMService {
       yield LLMResponseChunk(content: _emptyApiKeyMessage());
       return;
     }
+    LlmStreamLogAccumulator? streamLog;
     try {
       final prepared = await _buildPreparedChatRequest(
         messages: messages,
@@ -352,6 +354,10 @@ class OpenAILLMService implements LLMService {
       final baseUrl = prepared.baseUrl;
       final apiKey = prepared.apiKey;
       final requestData = prepared.requestData;
+      streamLog = LlmStreamLogAccumulator(
+        providerId: provider.id,
+        model: selectedModel,
+      );
 
       _logRequest('${baseUrl}chat/completions', requestData);
       Response<ResponseBody> response;
@@ -411,13 +417,13 @@ class OpenAILLMService implements LLMService {
 
         final data = line.substring(5).trimLeft();
         if (data == '[DONE]') {
-          _debugLog('DONE', category: 'STREAM');
-          return;
+          streamLog.recordDoneMarkerSeen();
+          break;
         }
 
         try {
           final json = jsonDecode(data);
-          _logResponse(json);
+          streamLog.recordSseEvent();
           if (json['usage'] != null) {
             final usage = json['usage'];
             final int? completionTokens = usage['completion_tokens'];
@@ -438,6 +444,15 @@ class OpenAILLMService implements LLMService {
             final int totalConsume = (promptTokens ?? 0) + totalGenerated;
 
             if (completionTokens != null || totalTokens != null) {
+              streamLog.recordUsage(
+                usage: totalConsume > 0
+                    ? totalConsume
+                    : (totalTokens ?? completionTokens),
+                promptTokens: promptTokens,
+                completionTokens: completionTokens,
+                reasoningTokens: reasoningTokens,
+              );
+              streamLog.recordEmission();
               yield LLMResponseChunk(
                 usage: totalConsume > 0
                     ? totalConsume
@@ -636,6 +651,10 @@ class OpenAILLMService implements LLMService {
                 for (final url in imageUrls) {
                   _rememberImageThoughtSignature(url, imageSignatures[url]);
                 }
+                streamLog.recordEmission(
+                  imageCount: imageUrls.length,
+                  finishReason: finishReason,
+                );
                 yield LLMResponseChunk(
                     content: '', images: imageUrls, finishReason: finishReason);
               } else if (content != null ||
@@ -672,6 +691,11 @@ class OpenAILLMService implements LLMService {
                     parsedToolCalls = null;
                   }
                 }
+                streamLog.recordEmission(
+                  content: content,
+                  reasoning: reasoning,
+                  finishReason: finishReason,
+                );
                 yield LLMResponseChunk(
                     content: content,
                     reasoning: reasoning,
@@ -681,13 +705,14 @@ class OpenAILLMService implements LLMService {
             }
           }
         } catch (e) {
+          streamLog.recordParseError();
           _debugLog('LLM Stream Parse Error: $e');
         }
       }
+      streamLog.logCompleted();
     } on DioException catch (e) {
       if (e.type == DioExceptionType.cancel) {
-        _debugLog('Request was cancelled by the user.',
-            level: 'INFO', category: 'REQUEST_CANCELLED');
+        streamLog?.logCancelled();
         return;
       }
       final statusCode = e.response?.statusCode;

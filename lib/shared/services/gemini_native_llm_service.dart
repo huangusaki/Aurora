@@ -8,6 +8,7 @@ import '../../core/error/app_exception.dart';
 import '../../features/chat/domain/message.dart';
 import '../../features/settings/presentation/settings_provider.dart';
 import '../utils/app_logger.dart';
+import '../utils/llm_stream_log_accumulator.dart';
 import 'llm_service.dart';
 import 'llm_transport_mode.dart';
 
@@ -1040,6 +1041,7 @@ class GeminiNativeLlmService implements LLMService {
       yield LLMResponseChunk(content: _emptyApiKeyMessage());
       return;
     }
+    LlmStreamLogAccumulator? streamLog;
 
     final baseUrl = _resolveNativeBaseUrl(
       provider: provider,
@@ -1059,6 +1061,10 @@ class GeminiNativeLlmService implements LLMService {
         activeParams: activeParams,
         tools: tools,
         toolChoice: toolChoice,
+      );
+      streamLog = LlmStreamLogAccumulator(
+        providerId: provider.id,
+        model: selectedModel,
       );
 
       _logRequest(uri, requestData);
@@ -1088,6 +1094,7 @@ class GeminiNativeLlmService implements LLMService {
       final emittedToolNames = <int, String>{};
       final emittedToolArgs = <int, String>{};
       final emittedToolIds = <int, String>{};
+      var done = false;
 
       await for (final chunk in stream) {
         lineBuffer += chunk;
@@ -1105,14 +1112,17 @@ class GeminiNativeLlmService implements LLMService {
           final data = line.substring(5).trim();
           if (data.isEmpty) continue;
           if (data == '[DONE]') {
-            AppLogger.debug('LLM', 'DONE', category: 'STREAM');
-            return;
+            streamLog.recordDoneMarkerSeen();
+            done = true;
+            break;
           }
 
           dynamic parsed;
           try {
             parsed = jsonDecode(data);
+            streamLog.recordSseEvent();
           } catch (_) {
+            streamLog.recordParseError();
             AppLogger.warn(
               'LLM',
               'Failed to parse Gemini SSE payload',
@@ -1122,11 +1132,17 @@ class GeminiNativeLlmService implements LLMService {
             continue;
           }
 
-          _logResponse(parsed);
           final usageChunk = _usageChunkFromUsageMetadata(
             parsed is Map ? parsed['usageMetadata'] : null,
           );
           if (usageChunk != null) {
+            streamLog.recordUsage(
+              usage: usageChunk.usage,
+              promptTokens: usageChunk.promptTokens,
+              completionTokens: usageChunk.completionTokens,
+              reasoningTokens: usageChunk.reasoningTokens,
+            );
+            streamLog.recordEmission();
             yield usageChunk;
           }
 
@@ -1173,6 +1189,12 @@ class GeminiNativeLlmService implements LLMService {
             continue;
           }
 
+          streamLog.recordEmission(
+            content: contentDelta.isEmpty ? null : contentDelta,
+            reasoning: reasoningDelta.isEmpty ? null : reasoningDelta,
+            imageCount: responseView.images.length,
+            finishReason: finishReason,
+          );
           yield LLMResponseChunk(
             content: contentDelta.isEmpty ? null : contentDelta,
             reasoning: reasoningDelta.isEmpty ? null : reasoningDelta,
@@ -1181,14 +1203,12 @@ class GeminiNativeLlmService implements LLMService {
             finishReason: finishReason,
           );
         }
+        if (done) break;
       }
+      streamLog.logCompleted();
     } on DioException catch (e) {
       if (e.type == DioExceptionType.cancel) {
-        AppLogger.info(
-          'LLM',
-          'Request was cancelled by the user.',
-          category: 'REQUEST_CANCELLED',
-        );
+        streamLog?.logCancelled();
         return;
       }
       final statusCode = e.response?.statusCode;

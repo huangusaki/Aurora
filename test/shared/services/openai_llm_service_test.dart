@@ -185,6 +185,163 @@ void main() {
       );
     });
 
+    test('emits one stream summary log for streaming responses', () async {
+      final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      final sub = server.listen((request) async {
+        request.response.statusCode = 200;
+        request.response.headers.contentType =
+            ContentType('text', 'event-stream', charset: 'utf-8');
+        request.response.add(utf8.encode(
+          'data: {"choices":[{"delta":{"content":"你"}}]}\n\n',
+        ));
+        request.response.add(utf8.encode(
+          'data: {"choices":[{"delta":{"content":"好"}}]}\n\n',
+        ));
+        request.response.add(utf8.encode(
+          'data: {"usage":{"prompt_tokens":3,"completion_tokens":2,"completion_tokens_details":{"reasoning_tokens":4}},"choices":[{"delta":{},"finish_reason":"stop"}]}\n\n',
+        ));
+        request.response.add(utf8.encode('data: [DONE]\n\n'));
+        await request.response.close();
+      });
+      addTearDown(() async {
+        await sub.cancel();
+        await server.close(force: true);
+      });
+
+      final received = <AppLogEntry>[];
+      final removeListener = AppLogger.addListener(received.add);
+      addTearDown(removeListener);
+
+      final settings = SettingsState(
+        providers: [
+          ProviderConfig(
+            id: 'openai',
+            name: 'OpenAI',
+            apiKeys: const ['test-key'],
+            selectedModel: 'gpt-4.1',
+            baseUrl: 'http://${server.address.host}:${server.port}/v1',
+          ),
+        ],
+        activeProviderId: 'openai',
+        viewingProviderId: 'openai',
+        language: 'zh',
+      );
+      final service = OpenAILLMService(settings);
+
+      final chunks =
+          await service.streamResponse([Message.user('你好')]).toList();
+      final content = chunks.map((chunk) => chunk.content ?? '').join();
+
+      expect(content, '你好');
+      expect(
+        received.any((entry) =>
+            entry.channel == 'LLM' &&
+            entry.category == 'REQUEST' &&
+            entry.message.contains('/v1/chat/completions')),
+        isTrue,
+      );
+      expect(
+        received.where(
+            (entry) => entry.channel == 'LLM' && entry.category == 'RESPONSE'),
+        isEmpty,
+      );
+
+      final streamEntries = received
+          .where(
+              (entry) => entry.channel == 'LLM' && entry.category == 'STREAM')
+          .toList();
+      expect(streamEntries, hasLength(1));
+      expect(streamEntries.single.message, 'stream completed');
+
+      final summary = _decodeLogDetails(streamEntries.single);
+      expect(summary['outcome'], 'completed');
+      expect(summary['provider_id'], 'openai');
+      expect(summary['model'], 'gpt-4.1');
+      expect(summary['duration_ms'], greaterThanOrEqualTo(0));
+      expect(summary['sse_events'], 3);
+      expect(summary['emitted_chunks'], 4);
+      expect(summary['done_marker_seen'], isTrue);
+      expect(summary['finish_reason'], 'stop');
+      expect(summary['content_chars'], 2);
+      expect(summary['reasoning_chars'], 0);
+      expect(summary['image_count'], 0);
+      expect(summary['parse_error_count'], 0);
+      expect(summary['prompt_tokens'], 3);
+      expect(summary['completion_tokens'], 2);
+      expect(summary['reasoning_tokens'], 4);
+      expect(summary['usage'], 9);
+    });
+
+    test('records stream parse errors in summary and continues streaming',
+        () async {
+      final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      final sub = server.listen((request) async {
+        request.response.statusCode = 200;
+        request.response.headers
+            .set(HttpHeaders.contentTypeHeader, 'text/event-stream');
+        request.response.write(
+          'data: {"choices":[{"delta":{"content":"A"}}]}\n\n',
+        );
+        request.response.write('data: not-json\n\n');
+        request.response.write(
+          'data: {"choices":[{"delta":{"content":"B"},"finish_reason":"stop"}]}\n\n',
+        );
+        request.response.write('data: [DONE]\n\n');
+        await request.response.close();
+      });
+      addTearDown(() async {
+        await sub.cancel();
+        await server.close(force: true);
+      });
+
+      final received = <AppLogEntry>[];
+      final removeListener = AppLogger.addListener(received.add);
+      addTearDown(removeListener);
+
+      final settings = SettingsState(
+        providers: [
+          ProviderConfig(
+            id: 'openai',
+            name: 'OpenAI',
+            apiKeys: const ['test-key'],
+            selectedModel: 'gpt-4.1',
+            baseUrl: 'http://${server.address.host}:${server.port}/v1',
+          ),
+        ],
+        activeProviderId: 'openai',
+        viewingProviderId: 'openai',
+        language: 'en',
+      );
+      final service = OpenAILLMService(settings);
+
+      final chunks =
+          await service.streamResponse([Message.user('hello')]).toList();
+      final content = chunks.map((chunk) => chunk.content ?? '').join();
+
+      expect(content, 'AB');
+      expect(
+        received.any(
+          (entry) => entry.message.contains('LLM Stream Parse Error'),
+        ),
+        isTrue,
+      );
+
+      final streamEntries = received
+          .where(
+              (entry) => entry.channel == 'LLM' && entry.category == 'STREAM')
+          .toList();
+      expect(streamEntries, hasLength(1));
+
+      final summary = _decodeLogDetails(streamEntries.single);
+      expect(summary['outcome'], 'completed');
+      expect(summary['sse_events'], 2);
+      expect(summary['emitted_chunks'], 2);
+      expect(summary['done_marker_seen'], isTrue);
+      expect(summary['finish_reason'], 'stop');
+      expect(summary['content_chars'], 2);
+      expect(summary['parse_error_count'], 1);
+    });
+
     test('fails clearly when non-streaming payload is not valid JSON',
         () async {
       final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
@@ -671,4 +828,21 @@ void main() {
       expect(message.images, const ['img-1']);
     });
   });
+}
+
+Map<String, dynamic> _decodeLogDetails(AppLogEntry entry) {
+  final details = entry.details;
+  if (details == null || details.isEmpty) {
+    fail('Expected JSON details for log entry "${entry.message}".');
+  }
+
+  final decoded = jsonDecode(details);
+  if (decoded is Map<String, dynamic>) {
+    return decoded;
+  }
+  if (decoded is Map) {
+    return decoded.map((key, value) => MapEntry(key.toString(), value));
+  }
+
+  fail('Expected log details to decode into a JSON object.');
 }
