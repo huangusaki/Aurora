@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import '../../features/chat/domain/message.dart';
 import '../../features/settings/presentation/settings_provider.dart';
 import 'gemini_native_llm_service.dart';
+import 'gemini_native_endpoint.dart';
 import 'llm_service.dart';
 import 'llm_transport_mode.dart';
 import 'openai_llm_service.dart';
@@ -53,7 +54,8 @@ class ModelRoutedLlmService implements LLMService {
     final modelName = _resolveModel(provider: provider, requestedModel: model);
     if (modelName == null) {
       // No model selected: fall back to OpenAI-compatible request shape.
-      return _ResolvedDelegate(_openAiCompatService, LlmTransportMode.openaiCompat);
+      return _ResolvedDelegate(
+          _openAiCompatService, LlmTransportMode.openaiCompat);
     }
 
     final transportMode = resolveModelTransportMode(
@@ -61,16 +63,20 @@ class ModelRoutedLlmService implements LLMService {
       modelName: modelName,
     );
     if (transportMode == LlmTransportMode.openaiCompat) {
-      return _ResolvedDelegate(_openAiCompatService, LlmTransportMode.openaiCompat);
+      return _ResolvedDelegate(
+          _openAiCompatService, LlmTransportMode.openaiCompat);
     }
     if (transportMode == LlmTransportMode.geminiNative) {
-      return _ResolvedDelegate(_geminiNativeService, LlmTransportMode.geminiNative);
+      return _ResolvedDelegate(
+          _geminiNativeService, LlmTransportMode.geminiNative);
     }
     if (_shouldUseGeminiNativeInAuto(
         provider: provider, modelName: modelName)) {
-      return _ResolvedDelegate(_geminiNativeService, LlmTransportMode.geminiNative);
+      return _ResolvedDelegate(
+          _geminiNativeService, LlmTransportMode.geminiNative);
     }
-    return _ResolvedDelegate(_openAiCompatService, LlmTransportMode.openaiCompat);
+    return _ResolvedDelegate(
+        _openAiCompatService, LlmTransportMode.openaiCompat);
   }
 
   bool _shouldUseGeminiNativeInAuto({
@@ -90,9 +96,12 @@ class ModelRoutedLlmService implements LLMService {
     if (!looksLikeGemini) return false;
 
     final baseUrl = provider.baseUrl.trim();
-    final uri = Uri.tryParse(baseUrl);
-    if (uri == null || uri.host.isEmpty) return false;
-    return uri.host.toLowerCase().contains('generativelanguage.googleapis.com');
+    final overrideBaseUrl =
+        modelSettings?[auroraTransportBaseUrlKey]?.toString().trim();
+    if (overrideBaseUrl != null && overrideBaseUrl.isNotEmpty) {
+      return looksLikeGeminiNativeBaseUrl(overrideBaseUrl);
+    }
+    return looksLikeGeminiNativeBaseUrl(baseUrl);
   }
 
   @override

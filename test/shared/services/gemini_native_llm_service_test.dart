@@ -136,6 +136,65 @@ void main() {
       expect(summary['reasoning_tokens'], 5);
       expect(summary['usage'], 10);
     });
+
+    test('uses third-party root host as Gemini v1beta base URL', () async {
+      final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      String? requestedPath;
+      String? requestedQuery;
+      String? requestedApiKey;
+
+      final sub = server.listen((request) async {
+        requestedPath = request.uri.path;
+        requestedQuery = request.uri.query;
+        requestedApiKey = request.headers.value('x-goog-api-key');
+
+        request.response.statusCode = 200;
+        request.response.headers.contentType = ContentType.json;
+        request.response.write(jsonEncode({
+          'candidates': [
+            {
+              'content': {
+                'parts': [
+                  {'text': '第三方 v1beta'},
+                ],
+              },
+              'finishReason': 'STOP',
+            },
+          ],
+        }));
+        await request.response.close();
+      });
+      addTearDown(() async {
+        await sub.cancel();
+        await server.close(force: true);
+      });
+
+      final settings = SettingsState(
+        providers: [
+          ProviderConfig(
+            id: 'gemini-proxy',
+            name: 'Gemini Proxy',
+            apiKeys: const ['proxy-key'],
+            baseUrl: 'http://${server.address.host}:${server.port}',
+            selectedModel: 'gemini-2.0-flash',
+          ),
+        ],
+        activeProviderId: 'gemini-proxy',
+        viewingProviderId: 'gemini-proxy',
+        language: 'zh',
+      );
+      final service = GeminiNativeLlmService(settings);
+
+      final response = await service.getResponse([Message.user('你好')]);
+
+      expect(response.content, '第三方 v1beta');
+      expect(
+        requestedPath,
+        '/v1beta/models/gemini-2.0-flash:generateContent',
+      );
+      expect(requestedQuery, isEmpty);
+      expect(requestedApiKey, 'proxy-key');
+    });
   });
 }
 

@@ -9,13 +9,11 @@ import '../../features/chat/domain/message.dart';
 import '../../features/settings/presentation/settings_provider.dart';
 import '../utils/app_logger.dart';
 import '../utils/llm_stream_log_accumulator.dart';
+import 'gemini_native_endpoint.dart';
 import 'llm_service.dart';
 import 'llm_transport_mode.dart';
 
 class GeminiNativeLlmService implements LLMService {
-  static const String _officialBaseUrl =
-      'https://generativelanguage.googleapis.com/v1beta/';
-
   final Dio _dio;
   final SettingsState _settings;
 
@@ -114,14 +112,14 @@ class GeminiNativeLlmService implements LLMService {
   }) {
     final override = activeParams[auroraTransportBaseUrlKey]?.toString().trim();
     if (override != null && override.isNotEmpty) {
-      return _normalizeNativeBaseUrl(override);
+      return normalizeGeminiNativeBaseUrl(override);
     }
 
     final providerBase = provider.baseUrl.trim();
-    if (providerBase.contains('generativelanguage.googleapis.com')) {
-      return _normalizeNativeBaseUrl(providerBase);
+    if (providerBase.isNotEmpty) {
+      return normalizeGeminiNativeBaseUrl(providerBase);
     }
-    return _officialBaseUrl;
+    return officialGeminiNativeBaseUrl;
   }
 
   String _resolveNativeApiKey({
@@ -133,32 +131,6 @@ class GeminiNativeLlmService implements LLMService {
       return override;
     }
     return provider.apiKey;
-  }
-
-  String _normalizeNativeBaseUrl(String rawBase) {
-    final parsed = Uri.tryParse(rawBase.trim());
-    if (parsed == null || parsed.host.isEmpty) return _officialBaseUrl;
-
-    final pathSegments =
-        parsed.pathSegments.where((segment) => segment.isNotEmpty).toList();
-    if (pathSegments.isNotEmpty &&
-        pathSegments.last.toLowerCase() == 'openai') {
-      pathSegments.removeLast();
-    }
-    if (pathSegments.isEmpty) {
-      pathSegments.add('v1beta');
-    }
-
-    final normalized = parsed.replace(
-      pathSegments: pathSegments,
-      query: null,
-      fragment: null,
-    );
-    var base = normalized.toString();
-    if (!base.endsWith('/')) {
-      base = '$base/';
-    }
-    return base;
   }
 
   String _modelResourcePath(String model) {

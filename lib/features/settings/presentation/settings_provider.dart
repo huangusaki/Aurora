@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/painting.dart';
 import 'package:aurora/shared/riverpod_compat.dart';
+import 'package:aurora/shared/services/gemini_native_endpoint.dart';
 import 'package:dio/dio.dart';
 import 'package:aurora/shared/utils/app_logger.dart';
 import '../data/settings_storage.dart';
@@ -1074,6 +1075,117 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     await updateProvider(id: providerId, modelSettings: newModelSettings);
   }
 
+  bool _shouldPreferGeminiNativeModelFetch(ProviderConfig provider) {
+    if (looksLikeGeminiNativeBaseUrl(provider.baseUrl)) {
+      return true;
+    }
+
+    for (final settings in provider.modelSettings.values) {
+      final rawTransport =
+          settings['_aurora_transport_mode'] ?? settings['_aurora_transport'];
+      if (rawTransport?.toString().trim().toLowerCase() == 'gemini_native') {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  Future<List<String>> _fetchOpenAiCompatibleModels(
+    Dio dio,
+    ProviderConfig provider,
+  ) async {
+    final baseUrl = provider.baseUrl.endsWith('/')
+        ? provider.baseUrl
+        : '${provider.baseUrl}/';
+    final response = await dio.getUri(
+      Uri.parse('${baseUrl}models'),
+      options: Options(
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': 'Bearer ${provider.apiKey}',
+        },
+      ),
+    );
+    return _parseOpenAiCompatibleModelResponse(response.data);
+  }
+
+  Future<List<String>> _fetchGeminiNativeModels(
+    Dio dio,
+    ProviderConfig provider,
+  ) async {
+    final uri =
+        Uri.parse('${normalizeGeminiNativeBaseUrl(provider.baseUrl)}models');
+    final response = await dio.getUri(
+      uri,
+      options: Options(
+        headers: {
+          'Accept': 'application/json',
+          'x-goog-api-key': provider.apiKey,
+        },
+      ),
+    );
+    return _parseGeminiNativeModelResponse(response.data);
+  }
+
+  dynamic _normalizeModelResponsePayload(dynamic payload) {
+    if (payload is String) {
+      return jsonDecode(payload);
+    }
+    return payload;
+  }
+
+  List<String> _parseOpenAiCompatibleModelResponse(dynamic payload) {
+    final normalized = _normalizeModelResponsePayload(payload);
+    if (normalized is! Map) {
+      throw FormatException('OpenAI model list payload is not a JSON object.');
+    }
+
+    final data = normalized['data'];
+    if (data is! List) {
+      throw FormatException(
+        'OpenAI model list payload does not contain data[].',
+      );
+    }
+
+    final models = <String>[];
+    for (final item in data) {
+      if (item is! Map) continue;
+      final id = item['id']?.toString().trim();
+      if (id == null || id.isEmpty) continue;
+      models.add(id);
+    }
+    models.sort();
+    return models.toSet().toList();
+  }
+
+  List<String> _parseGeminiNativeModelResponse(dynamic payload) {
+    final normalized = _normalizeModelResponsePayload(payload);
+    if (normalized is! Map) {
+      throw FormatException('Gemini model list payload is not a JSON object.');
+    }
+
+    final data = normalized['models'];
+    if (data is! List) {
+      throw FormatException(
+        'Gemini model list payload does not contain models[].',
+      );
+    }
+
+    final models = <String>[];
+    for (final item in data) {
+      if (item is! Map) continue;
+      final name = item['name']?.toString().trim();
+      if (name == null || name.isEmpty) continue;
+      final normalizedName =
+          name.startsWith('models/') ? name.substring('models/'.length) : name;
+      if (normalizedName.isEmpty) continue;
+      models.add(normalizedName);
+    }
+    models.sort();
+    return models.toSet().toList();
+  }
+
   Future<bool> fetchModels() async {
     final provider = state.viewingProvider;
     final isActiveProvider = provider.id == state.activeProviderId;
@@ -1103,62 +1215,70 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     state = state.copyWith(isLoadingModels: true, error: null);
     try {
       final dio = Dio();
-      final baseUrl = provider.baseUrl.endsWith('/')
-          ? provider.baseUrl
-          : '${provider.baseUrl}/';
-      final response = await dio.get(
-        '${baseUrl}models',
-        options: Options(
-          headers: {
-            'Authorization': 'Bearer ${provider.apiKey}',
+      final preferGeminiNative = _shouldPreferGeminiNativeModelFetch(provider);
+
+      List<String> models;
+      var fetchMode = preferGeminiNative ? 'gemini_native' : 'openai_compat';
+      try {
+        models = preferGeminiNative
+            ? await _fetchGeminiNativeModels(dio, provider)
+            : await _fetchOpenAiCompatibleModels(dio, provider);
+      } catch (primaryError) {
+        AppLogger.warn(
+          'SETTINGS',
+          'Primary model fetch strategy failed, retrying fallback',
+          category: 'MODEL_FETCH',
+          data: {
+            'provider_id': provider.id,
+            'provider_name': provider.name,
+            'primary_mode':
+                preferGeminiNative ? 'gemini_native' : 'openai_compat',
+            'error': primaryError.toString(),
           },
-        ),
-      );
-      if (response.statusCode == 200) {
-        final List<dynamic> data = response.data['data'];
-        final models = data.map((e) => e['id'] as String).toList();
-        models.sort();
-        String? newSelectedModel = provider.selectedModel;
-        if (newSelectedModel == null || !models.contains(newSelectedModel)) {
-          newSelectedModel = models.isNotEmpty ? models.first : null;
-        }
-        await updateProvider(
-            id: provider.id, models: models, selectedModel: newSelectedModel);
-        state = state.copyWith(isLoadingModels: false);
-        if (isActiveProvider) {
-          await _storage.saveAppSettings(
-            activeProviderId: provider.id,
-            selectedModel: newSelectedModel,
-            availableModels: models,
+        );
+
+        try {
+          fetchMode = preferGeminiNative ? 'openai_compat' : 'gemini_native';
+          models = preferGeminiNative
+              ? await _fetchOpenAiCompatibleModels(dio, provider)
+              : await _fetchGeminiNativeModels(dio, provider);
+        } catch (fallbackError) {
+          throw Exception(
+            'Primary: $primaryError; Fallback: $fallbackError',
           );
         }
-        AppLogger.info(
-          'SETTINGS',
-          'Model fetch completed',
-          category: 'MODEL_FETCH',
-          data: {
-            'provider_id': provider.id,
-            'provider_name': provider.name,
-            'model_count': models.length,
-            'selected_model': newSelectedModel,
-          },
-        );
-        return true;
-      } else {
-        AppLogger.error(
-          'SETTINGS',
-          'Model fetch failed',
-          category: 'MODEL_FETCH',
-          data: {
-            'provider_id': provider.id,
-            'provider_name': provider.name,
-            'status_code': response.statusCode,
-          },
-        );
-        state = state.copyWith(
-            isLoadingModels: false, error: 'Failed: ${response.statusCode}');
-        return false;
       }
+
+      String? newSelectedModel = provider.selectedModel;
+      if (newSelectedModel == null || !models.contains(newSelectedModel)) {
+        newSelectedModel = models.isNotEmpty ? models.first : null;
+      }
+      await updateProvider(
+        id: provider.id,
+        models: models,
+        selectedModel: newSelectedModel,
+      );
+      state = state.copyWith(isLoadingModels: false);
+      if (isActiveProvider) {
+        await _storage.saveAppSettings(
+          activeProviderId: provider.id,
+          selectedModel: newSelectedModel,
+          availableModels: models,
+        );
+      }
+      AppLogger.info(
+        'SETTINGS',
+        'Model fetch completed',
+        category: 'MODEL_FETCH',
+        data: {
+          'provider_id': provider.id,
+          'provider_name': provider.name,
+          'model_count': models.length,
+          'selected_model': newSelectedModel,
+          'fetch_mode': fetchMode,
+        },
+      );
+      return true;
     } catch (e) {
       AppLogger.error(
         'SETTINGS',
