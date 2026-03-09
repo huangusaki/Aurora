@@ -2551,13 +2551,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Enable unrestricted creative writing mode with role-play directives';
 
   @override
-  String get agentWorkflow => 'Agent Workflow';
-
-  @override
-  String get agentWorkflowDescription =>
-      'Build and debug agent workflows with nodes and wires.';
-
-  @override
   String get templates => 'Templates';
 
   @override
@@ -2785,7 +2778,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get providerLabel => 'Provider';
 
   @override
-  String get capabilityRoutesTitle => 'Capability Routes';
+  String get capabilityRoutesTitle => 'Advanced Options';
 
   @override
   String get capabilityRoutesSubtitle =>

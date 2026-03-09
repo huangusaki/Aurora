@@ -1157,8 +1157,6 @@
   "novelUnlimitedMode": "Unrestricted Mode",
   "novelUnlimitedModeHint": "Enable unrestricted creative writing mode with role-play directives",
 
-  "agentWorkflow": "Agent Workflow",
-  "agentWorkflowDescription": "Build and debug agent workflows with nodes and wires.",
   "templates": "Templates",
   "newTemplate": "New Template",
   "templateNameHint": "Template name",
@@ -1257,7 +1255,7 @@
   "noConnectionsYet": "No connections yet.",
 
   "providerLabel": "Provider",
-  "capabilityRoutesTitle": "Capability Routes",
+  "capabilityRoutesTitle": "Advanced Options",
   "capabilityRoutesSubtitle": "Configure per-capability presets and endpoint overrides for chat, models, embeddings, image, and audio flows.",
   "modelCapabilityRoutesTitle": "Model Capability Routes",
   "modelCapabilityRoutesSubtitle": "Override routes for this model only; empty values inherit the provider route.",

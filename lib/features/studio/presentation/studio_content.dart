@@ -6,7 +6,6 @@ import 'package:aurora/shared/theme/aurora_icons.dart';
 import '../../settings/presentation/settings_provider.dart';
 import 'pages/capability_lab_page.dart';
 import 'pages/storage_cleaning_page.dart';
-import 'agent_workflow/agent_workflow_page.dart';
 
 class StudioContent extends ConsumerStatefulWidget {
   const StudioContent({super.key});
@@ -16,7 +15,7 @@ class StudioContent extends ConsumerStatefulWidget {
 }
 
 class _StudioContentState extends ConsumerState<StudioContent> {
-  // 0: Dashboard, 1: Novel Writing, 2: Storage Cleaning, 3: Agent Workflow, 4: Capability Lab
+  // 0: Dashboard, 1: Novel Writing, 2: Storage Cleaning, 3: Capability Lab
   int _viewIndex = 0;
 
   @override
@@ -40,15 +39,6 @@ class _StudioContentState extends ConsumerState<StudioContent> {
       );
     }
     if (_viewIndex == 3) {
-      return AgentWorkflowPage(
-        onBack: () {
-          setState(() {
-            _viewIndex = 0;
-          });
-        },
-      );
-    }
-    if (_viewIndex == 4) {
       return CapabilityLabPage(
         onBack: () {
           setState(() {
@@ -123,18 +113,6 @@ class _StudioContentState extends ConsumerState<StudioContent> {
                     icon: AuroraIcons.image,
                     title: l10n.capabilityLabTitle,
                     description: l10n.capabilityLabDescription,
-                    hasBackground: hasBackground,
-                    onTap: () {
-                      setState(() {
-                        _viewIndex = 4;
-                      });
-                    },
-                  ),
-                  _buildFeatureCard(
-                    context,
-                    icon: AuroraIcons.branch,
-                    title: l10n.agentWorkflow,
-                    description: l10n.agentWorkflowDescription,
                     hasBackground: hasBackground,
                     onTap: () {
                       setState(() {

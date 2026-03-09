@@ -4809,18 +4809,6 @@ abstract class AppLocalizations {
   /// **'启用不受限制的创作模式，注入角色扮演指令'**
   String get novelUnlimitedModeHint;
 
-  /// No description provided for @agentWorkflow.
-  ///
-  /// In zh, this message translates to:
-  /// **'Agent 工作流'**
-  String get agentWorkflow;
-
-  /// No description provided for @agentWorkflowDescription.
-  ///
-  /// In zh, this message translates to:
-  /// **'用节点与连线搭建并调试 Agent 工作流。'**
-  String get agentWorkflowDescription;
-
   /// No description provided for @templates.
   ///
   /// In zh, this message translates to:
@@ -5250,7 +5238,7 @@ abstract class AppLocalizations {
   /// No description provided for @capabilityRoutesTitle.
   ///
   /// In zh, this message translates to:
-  /// **'Capability 路由'**
+  /// **'高级选项'**
   String get capabilityRoutesTitle;
 
   /// No description provided for @capabilityRoutesSubtitle.

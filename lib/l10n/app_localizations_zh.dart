@@ -2470,12 +2470,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get novelUnlimitedModeHint => '启用不受限制的创作模式，注入角色扮演指令';
 
   @override
-  String get agentWorkflow => 'Agent 工作流';
-
-  @override
-  String get agentWorkflowDescription => '用节点与连线搭建并调试 Agent 工作流。';
-
-  @override
   String get templates => '模板';
 
   @override
@@ -2699,7 +2693,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get providerLabel => '提供商';
 
   @override
-  String get capabilityRoutesTitle => 'Capability 路由';
+  String get capabilityRoutesTitle => '高级选项';
 
   @override
   String get capabilityRoutesSubtitle =>

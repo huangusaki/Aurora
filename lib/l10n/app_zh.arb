@@ -1157,8 +1157,6 @@
   "novelUnlimitedMode": "破限",
   "novelUnlimitedModeHint": "启用不受限制的创作模式，注入角色扮演指令",
 
-  "agentWorkflow": "Agent 工作流",
-  "agentWorkflowDescription": "用节点与连线搭建并调试 Agent 工作流。",
   "templates": "模板",
   "newTemplate": "新建模板",
   "templateNameHint": "模板名称",
@@ -1257,7 +1255,7 @@
   "noConnectionsYet": "暂无连接。",
 
   "providerLabel": "提供商",
-  "capabilityRoutesTitle": "Capability 路由",
+  "capabilityRoutesTitle": "高级选项",
   "capabilityRoutesSubtitle": "为聊天、模型列表、Embedding、图片和音频能力分别配置协议预设与接口覆盖。",
   "modelCapabilityRoutesTitle": "模型能力路由",
   "modelCapabilityRoutesSubtitle": "仅覆盖当前模型；留空时继承 Provider 路由。",

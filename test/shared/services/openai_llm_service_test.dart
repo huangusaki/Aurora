@@ -778,7 +778,7 @@ void main() {
           {
             'type': 'function',
             'function': {
-              'name': 'workflow_output',
+              'name': 'example_tool',
               'parameters': {
                 'type': 'object',
                 'properties': {},
@@ -786,7 +786,7 @@ void main() {
             },
           },
         ],
-        toolChoice: '{"type":"function","function":{"name":"workflow_output"}}',
+        toolChoice: '{"type":"function","function":{"name":"example_tool"}}',
       );
 
       final payload = await payloadCompleter.future;
@@ -795,7 +795,7 @@ void main() {
       expect(toolChoice['type'], 'function');
       expect(
         (toolChoice['function'] as Map)['name'],
-        'workflow_output',
+        'example_tool',
       );
     });
   });

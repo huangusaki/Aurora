@@ -191,7 +191,6 @@ class BackupService {
       try {
         final docsDir = await getApplicationDocumentsDirectory();
         Map<String, dynamic>? novelWritingState;
-        Map<String, dynamic>? agentWorkflows;
 
         final novelFile = File('${docsDir.path}/novel_writing_state.json');
         if (await novelFile.exists()) {
@@ -202,23 +201,9 @@ class BackupService {
           }
         }
 
-        final workflowFile = File('${docsDir.path}/agent_workflows.json');
-        if (await workflowFile.exists()) {
-          final content = await workflowFile.readAsString();
-          final decoded = jsonDecode(content);
-          if (decoded is Map) {
-            agentWorkflows = decoded.map((k, v) => MapEntry('$k', v));
-          }
-        }
-
-        if (novelWritingState != null || agentWorkflows != null) {
+        if (novelWritingState != null) {
           final map = <String, dynamic>{};
-          if (novelWritingState != null) {
-            map['novelWritingState'] = novelWritingState;
-          }
-          if (agentWorkflows != null) {
-            map['agentWorkflows'] = agentWorkflows;
-          }
+          map['novelWritingState'] = novelWritingState;
           studioContent = map;
         }
       } catch (e) {
@@ -592,10 +577,9 @@ class BackupService {
       try {
         final docsDir = await getApplicationDocumentsDirectory();
         final studio = backup.studioContent!;
-        final hasNewKeys = studio.containsKey('novelWritingState') ||
-            studio.containsKey('agentWorkflows');
+        final hasNovelState = studio.containsKey('novelWritingState');
 
-        if (!hasNewKeys) {
+        if (!hasNovelState) {
           // Backward compatibility: old backups stored novel state directly.
           final studioFile = File('${docsDir.path}/novel_writing_state.json');
           await studioFile.writeAsString(jsonEncode(studio));
@@ -604,12 +588,6 @@ class BackupService {
           if (novelState is Map) {
             final studioFile = File('${docsDir.path}/novel_writing_state.json');
             await studioFile.writeAsString(jsonEncode(novelState));
-          }
-
-          final workflows = studio['agentWorkflows'];
-          if (workflows is Map) {
-            final workflowFile = File('${docsDir.path}/agent_workflows.json');
-            await workflowFile.writeAsString(jsonEncode(workflows));
           }
         }
       } catch (e) {
