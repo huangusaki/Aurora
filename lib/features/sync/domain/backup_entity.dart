@@ -266,9 +266,12 @@ class ProviderConfigBackup {
   final String? customParametersJson;
   final String? modelSettingsJson;
   final String? globalSettingsJson;
+  final String? capabilityRoutesJson;
+  final String? modelCapabilityOverridesJson;
   final List<String> globalExcludeModels;
   final List<String> savedModels;
   final String? lastSelectedModel;
+  final String? selectedChatModel;
   final bool isActive;
   final bool isEnabled;
 
@@ -284,9 +287,12 @@ class ProviderConfigBackup {
     this.customParametersJson,
     this.modelSettingsJson,
     this.globalSettingsJson,
+    this.capabilityRoutesJson,
+    this.modelCapabilityOverridesJson,
     this.globalExcludeModels = const [],
     this.savedModels = const [],
     this.lastSelectedModel,
+    this.selectedChatModel,
     this.isActive = false,
     this.isEnabled = true,
   });
@@ -303,9 +309,12 @@ class ProviderConfigBackup {
         'customParametersJson': customParametersJson,
         'modelSettingsJson': modelSettingsJson,
         'globalSettingsJson': globalSettingsJson,
+        'capabilityRoutesJson': capabilityRoutesJson,
+        'modelCapabilityOverridesJson': modelCapabilityOverridesJson,
         'globalExcludeModels': globalExcludeModels,
         'savedModels': savedModels,
         'lastSelectedModel': lastSelectedModel,
+        'selectedChatModel': selectedChatModel,
         'isActive': isActive,
         'isEnabled': isEnabled,
       };
@@ -323,12 +332,17 @@ class ProviderConfigBackup {
         customParametersJson: json['customParametersJson'] as String?,
         modelSettingsJson: json['modelSettingsJson'] as String?,
         globalSettingsJson: json['globalSettingsJson'] as String?,
+        capabilityRoutesJson: json['capabilityRoutesJson'] as String?,
+        modelCapabilityOverridesJson:
+            json['modelCapabilityOverridesJson'] as String?,
         globalExcludeModels:
             (json['globalExcludeModels'] as List<dynamic>?)?.cast<String>() ??
                 [],
         savedModels:
             (json['savedModels'] as List<dynamic>?)?.cast<String>() ?? [],
         lastSelectedModel: json['lastSelectedModel'] as String?,
+        selectedChatModel: json['selectedChatModel'] as String? ??
+            json['lastSelectedModel'] as String?,
         isActive: json['isActive'] as bool? ?? false,
         isEnabled: json['isEnabled'] as bool? ?? true,
       );

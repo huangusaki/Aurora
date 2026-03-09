@@ -5240,6 +5240,540 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'暂无连接。'**
   String get noConnectionsYet;
+
+  /// No description provided for @providerLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'提供商'**
+  String get providerLabel;
+
+  /// No description provided for @capabilityRoutesTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'Capability 路由'**
+  String get capabilityRoutesTitle;
+
+  /// No description provided for @capabilityRoutesSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'为聊天、模型列表、Embedding、图片和音频能力分别配置协议预设与接口覆盖。'**
+  String get capabilityRoutesSubtitle;
+
+  /// No description provided for @modelCapabilityRoutesTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'模型能力路由'**
+  String get modelCapabilityRoutesTitle;
+
+  /// No description provided for @modelCapabilityRoutesSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'仅覆盖当前模型；留空时继承 Provider 路由。'**
+  String get modelCapabilityRoutesSubtitle;
+
+  /// No description provided for @capabilityChatLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'聊天'**
+  String get capabilityChatLabel;
+
+  /// No description provided for @capabilityModelsLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'模型列表'**
+  String get capabilityModelsLabel;
+
+  /// No description provided for @capabilityEmbeddingsLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'向量嵌入'**
+  String get capabilityEmbeddingsLabel;
+
+  /// No description provided for @capabilityImagesLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'图片生成'**
+  String get capabilityImagesLabel;
+
+  /// No description provided for @capabilitySpeechLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'语音合成'**
+  String get capabilitySpeechLabel;
+
+  /// No description provided for @capabilityTranscriptionsLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'音频转录'**
+  String get capabilityTranscriptionsLabel;
+
+  /// No description provided for @capabilityTranslationsLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'音频翻译'**
+  String get capabilityTranslationsLabel;
+
+  /// No description provided for @capabilityChatDescription.
+  ///
+  /// In zh, this message translates to:
+  /// **'聊天补全与流式响应'**
+  String get capabilityChatDescription;
+
+  /// No description provided for @capabilityModelsDescription.
+  ///
+  /// In zh, this message translates to:
+  /// **'拉取可用模型列表'**
+  String get capabilityModelsDescription;
+
+  /// No description provided for @capabilityEmbeddingsDescription.
+  ///
+  /// In zh, this message translates to:
+  /// **'向量生成与检索'**
+  String get capabilityEmbeddingsDescription;
+
+  /// No description provided for @capabilityImagesDescription.
+  ///
+  /// In zh, this message translates to:
+  /// **'图片生成能力'**
+  String get capabilityImagesDescription;
+
+  /// No description provided for @capabilitySpeechDescription.
+  ///
+  /// In zh, this message translates to:
+  /// **'文本转语音'**
+  String get capabilitySpeechDescription;
+
+  /// No description provided for @capabilityTranscriptionsDescription.
+  ///
+  /// In zh, this message translates to:
+  /// **'语音转文字'**
+  String get capabilityTranscriptionsDescription;
+
+  /// No description provided for @capabilityTranslationsDescription.
+  ///
+  /// In zh, this message translates to:
+  /// **'音频翻译为文本'**
+  String get capabilityTranslationsDescription;
+
+  /// No description provided for @protocolPresetOpenaiResponses.
+  ///
+  /// In zh, this message translates to:
+  /// **'OpenAI Responses'**
+  String get protocolPresetOpenaiResponses;
+
+  /// No description provided for @protocolPresetOpenaiChatCompletions.
+  ///
+  /// In zh, this message translates to:
+  /// **'OpenAI Chat Completions'**
+  String get protocolPresetOpenaiChatCompletions;
+
+  /// No description provided for @protocolPresetAnthropicMessages.
+  ///
+  /// In zh, this message translates to:
+  /// **'Anthropic Messages'**
+  String get protocolPresetAnthropicMessages;
+
+  /// No description provided for @protocolPresetGeminiNativeGenerateContent.
+  ///
+  /// In zh, this message translates to:
+  /// **'Gemini Native GenerateContent'**
+  String get protocolPresetGeminiNativeGenerateContent;
+
+  /// No description provided for @protocolPresetGeminiOpenaiChatCompletions.
+  ///
+  /// In zh, this message translates to:
+  /// **'Gemini OpenAI Chat Completions'**
+  String get protocolPresetGeminiOpenaiChatCompletions;
+
+  /// No description provided for @protocolPresetOpenaiModels.
+  ///
+  /// In zh, this message translates to:
+  /// **'OpenAI Models'**
+  String get protocolPresetOpenaiModels;
+
+  /// No description provided for @protocolPresetAnthropicModels.
+  ///
+  /// In zh, this message translates to:
+  /// **'Anthropic Models'**
+  String get protocolPresetAnthropicModels;
+
+  /// No description provided for @protocolPresetGeminiModels.
+  ///
+  /// In zh, this message translates to:
+  /// **'Gemini Models'**
+  String get protocolPresetGeminiModels;
+
+  /// No description provided for @protocolPresetOpenaiEmbeddings.
+  ///
+  /// In zh, this message translates to:
+  /// **'OpenAI Embeddings'**
+  String get protocolPresetOpenaiEmbeddings;
+
+  /// No description provided for @protocolPresetGeminiEmbedContent.
+  ///
+  /// In zh, this message translates to:
+  /// **'Gemini EmbedContent'**
+  String get protocolPresetGeminiEmbedContent;
+
+  /// No description provided for @protocolPresetOpenaiImages.
+  ///
+  /// In zh, this message translates to:
+  /// **'OpenAI Images'**
+  String get protocolPresetOpenaiImages;
+
+  /// No description provided for @protocolPresetOpenaiAudioSpeech.
+  ///
+  /// In zh, this message translates to:
+  /// **'OpenAI Audio Speech'**
+  String get protocolPresetOpenaiAudioSpeech;
+
+  /// No description provided for @protocolPresetOpenaiAudioTranscriptions.
+  ///
+  /// In zh, this message translates to:
+  /// **'OpenAI Audio Transcriptions'**
+  String get protocolPresetOpenaiAudioTranscriptions;
+
+  /// No description provided for @protocolPresetOpenaiAudioTranslations.
+  ///
+  /// In zh, this message translates to:
+  /// **'OpenAI Audio Translations'**
+  String get protocolPresetOpenaiAudioTranslations;
+
+  /// No description provided for @protocolPresetCustomJson.
+  ///
+  /// In zh, this message translates to:
+  /// **'自定义 JSON'**
+  String get protocolPresetCustomJson;
+
+  /// No description provided for @protocolPresetCustomMultipart.
+  ///
+  /// In zh, this message translates to:
+  /// **'自定义 Multipart'**
+  String get protocolPresetCustomMultipart;
+
+  /// No description provided for @authModeBearerHeader.
+  ///
+  /// In zh, this message translates to:
+  /// **'Bearer Header'**
+  String get authModeBearerHeader;
+
+  /// No description provided for @authModeXApiKeyHeader.
+  ///
+  /// In zh, this message translates to:
+  /// **'X-API-Key Header'**
+  String get authModeXApiKeyHeader;
+
+  /// No description provided for @authModeCustomHeader.
+  ///
+  /// In zh, this message translates to:
+  /// **'自定义 Header'**
+  String get authModeCustomHeader;
+
+  /// No description provided for @authModeQueryParameter.
+  ///
+  /// In zh, this message translates to:
+  /// **'Query 参数'**
+  String get authModeQueryParameter;
+
+  /// No description provided for @authModeNoAuth.
+  ///
+  /// In zh, this message translates to:
+  /// **'无认证'**
+  String get authModeNoAuth;
+
+  /// No description provided for @streamModeAutoLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'自动'**
+  String get streamModeAutoLabel;
+
+  /// No description provided for @streamModeSseLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'SSE'**
+  String get streamModeSseLabel;
+
+  /// No description provided for @streamModeNonStreamingLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'非流式'**
+  String get streamModeNonStreamingLabel;
+
+  /// No description provided for @inheritProviderRoute.
+  ///
+  /// In zh, this message translates to:
+  /// **'继承 Provider 路由'**
+  String get inheritProviderRoute;
+
+  /// No description provided for @routeNoFallback.
+  ///
+  /// In zh, this message translates to:
+  /// **'不使用回退'**
+  String get routeNoFallback;
+
+  /// No description provided for @routeBaseUrlOverride.
+  ///
+  /// In zh, this message translates to:
+  /// **'基础 URL 覆盖'**
+  String get routeBaseUrlOverride;
+
+  /// No description provided for @routePathOverride.
+  ///
+  /// In zh, this message translates to:
+  /// **'接口路径覆盖'**
+  String get routePathOverride;
+
+  /// No description provided for @routeAdvancedOptions.
+  ///
+  /// In zh, this message translates to:
+  /// **'高级选项'**
+  String get routeAdvancedOptions;
+
+  /// No description provided for @routeMethodOverride.
+  ///
+  /// In zh, this message translates to:
+  /// **'请求方法覆盖'**
+  String get routeMethodOverride;
+
+  /// No description provided for @routeAuthMode.
+  ///
+  /// In zh, this message translates to:
+  /// **'认证模式'**
+  String get routeAuthMode;
+
+  /// No description provided for @routeAuthHeaderName.
+  ///
+  /// In zh, this message translates to:
+  /// **'认证 Header 名称'**
+  String get routeAuthHeaderName;
+
+  /// No description provided for @routeAuthQueryKey.
+  ///
+  /// In zh, this message translates to:
+  /// **'认证 Query Key'**
+  String get routeAuthQueryKey;
+
+  /// No description provided for @routeApiKeyOverride.
+  ///
+  /// In zh, this message translates to:
+  /// **'API Key 覆盖'**
+  String get routeApiKeyOverride;
+
+  /// No description provided for @routeUseProviderApiKeyWhenEmpty.
+  ///
+  /// In zh, this message translates to:
+  /// **'留空则使用 Provider API Key'**
+  String get routeUseProviderApiKeyWhenEmpty;
+
+  /// No description provided for @routePresetDefault.
+  ///
+  /// In zh, this message translates to:
+  /// **'跟随预设'**
+  String get routePresetDefault;
+
+  /// No description provided for @routeUseDefaultWhenEmpty.
+  ///
+  /// In zh, this message translates to:
+  /// **'留空使用默认值'**
+  String get routeUseDefaultWhenEmpty;
+
+  /// No description provided for @routeStreamMode.
+  ///
+  /// In zh, this message translates to:
+  /// **'流式模式'**
+  String get routeStreamMode;
+
+  /// No description provided for @routeTimeoutMs.
+  ///
+  /// In zh, this message translates to:
+  /// **'超时(ms)'**
+  String get routeTimeoutMs;
+
+  /// No description provided for @routeFallbackPreset.
+  ///
+  /// In zh, this message translates to:
+  /// **'回退预设'**
+  String get routeFallbackPreset;
+
+  /// No description provided for @routeStaticHeadersJson.
+  ///
+  /// In zh, this message translates to:
+  /// **'静态 Headers(JSON)'**
+  String get routeStaticHeadersJson;
+
+  /// No description provided for @routeStaticQueryJson.
+  ///
+  /// In zh, this message translates to:
+  /// **'静态 Query(JSON)'**
+  String get routeStaticQueryJson;
+
+  /// No description provided for @routeTestButton.
+  ///
+  /// In zh, this message translates to:
+  /// **'测试'**
+  String get routeTestButton;
+
+  /// No description provided for @routeSelectModelFirst.
+  ///
+  /// In zh, this message translates to:
+  /// **'请先选择模型。'**
+  String get routeSelectModelFirst;
+
+  /// No description provided for @routeReplyWithOk.
+  ///
+  /// In zh, this message translates to:
+  /// **'请回复 ok'**
+  String get routeReplyWithOk;
+
+  /// No description provided for @routeChatTestCompleted.
+  ///
+  /// In zh, this message translates to:
+  /// **'聊天测试已完成。'**
+  String get routeChatTestCompleted;
+
+  /// No description provided for @routeChatTestSucceeded.
+  ///
+  /// In zh, this message translates to:
+  /// **'聊天测试成功: {content}'**
+  String routeChatTestSucceeded(String content);
+
+  /// No description provided for @routeModelListTestSucceeded.
+  ///
+  /// In zh, this message translates to:
+  /// **'模型列表测试成功，共 {count} 个模型'**
+  String routeModelListTestSucceeded(int count);
+
+  /// No description provided for @routeEmbeddingTestSucceeded.
+  ///
+  /// In zh, this message translates to:
+  /// **'Embedding 测试成功，维度 {dimension}'**
+  String routeEmbeddingTestSucceeded(int dimension);
+
+  /// No description provided for @routeImageTestSucceeded.
+  ///
+  /// In zh, this message translates to:
+  /// **'图片测试成功，返回 {count} 张图片'**
+  String routeImageTestSucceeded(int count);
+
+  /// No description provided for @routeSpeechTestSucceeded.
+  ///
+  /// In zh, this message translates to:
+  /// **'语音测试成功（{bytes} bytes，{contentType}）'**
+  String routeSpeechTestSucceeded(int bytes, String contentType);
+
+  /// No description provided for @routeAudioTestSucceeded.
+  ///
+  /// In zh, this message translates to:
+  /// **'音频测试成功: {text}'**
+  String routeAudioTestSucceeded(String text);
+
+  /// No description provided for @routeTestFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'测试失败: {error}'**
+  String routeTestFailed(String error);
+
+  /// No description provided for @capabilityLabTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'能力实验台'**
+  String get capabilityLabTitle;
+
+  /// No description provided for @capabilityLabDescription.
+  ///
+  /// In zh, this message translates to:
+  /// **'图片、语音、转录和翻译能力的正式调试入口'**
+  String get capabilityLabDescription;
+
+  /// No description provided for @capabilityLabPromptLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'提示词'**
+  String get capabilityLabPromptLabel;
+
+  /// No description provided for @capabilityLabInputTextLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'朗读内容'**
+  String get capabilityLabInputTextLabel;
+
+  /// No description provided for @capabilityLabOutputTextLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'输出文本'**
+  String get capabilityLabOutputTextLabel;
+
+  /// No description provided for @capabilityLabNoAudioFile.
+  ///
+  /// In zh, this message translates to:
+  /// **'未选择音频文件'**
+  String get capabilityLabNoAudioFile;
+
+  /// No description provided for @capabilityLabSelectAudio.
+  ///
+  /// In zh, this message translates to:
+  /// **'选择音频'**
+  String get capabilityLabSelectAudio;
+
+  /// No description provided for @capabilityLabGenerateImage.
+  ///
+  /// In zh, this message translates to:
+  /// **'生成图片'**
+  String get capabilityLabGenerateImage;
+
+  /// No description provided for @capabilityLabSynthesizeSpeech.
+  ///
+  /// In zh, this message translates to:
+  /// **'生成语音'**
+  String get capabilityLabSynthesizeSpeech;
+
+  /// No description provided for @capabilityLabTranscribeAudio.
+  ///
+  /// In zh, this message translates to:
+  /// **'开始转录'**
+  String get capabilityLabTranscribeAudio;
+
+  /// No description provided for @capabilityLabTranslateAudio.
+  ///
+  /// In zh, this message translates to:
+  /// **'开始翻译'**
+  String get capabilityLabTranslateAudio;
+
+  /// No description provided for @capabilityLabImageGenerated.
+  ///
+  /// In zh, this message translates to:
+  /// **'图片生成成功，返回 {count} 张图片'**
+  String capabilityLabImageGenerated(int count);
+
+  /// No description provided for @capabilityLabSpeechGenerated.
+  ///
+  /// In zh, this message translates to:
+  /// **'语音合成成功（{bytes} bytes，{contentType}）'**
+  String capabilityLabSpeechGenerated(int bytes, String contentType);
+
+  /// No description provided for @capabilityLabAudioProcessed.
+  ///
+  /// In zh, this message translates to:
+  /// **'音频处理成功'**
+  String get capabilityLabAudioProcessed;
+
+  /// No description provided for @capabilityLabRequestFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'执行失败: {error}'**
+  String capabilityLabRequestFailed(String error);
+
+  /// No description provided for @capabilityLabDefaultImagePrompt.
+  ///
+  /// In zh, this message translates to:
+  /// **'清晨日出的电影感城市天际线，画面简洁。'**
+  String get capabilityLabDefaultImagePrompt;
+
+  /// No description provided for @capabilityLabDefaultSpeechText.
+  ///
+  /// In zh, this message translates to:
+  /// **'你好，这里是 Aurora 能力实验台。'**
+  String get capabilityLabDefaultSpeechText;
 }
 
 class _AppLocalizationsDelegate

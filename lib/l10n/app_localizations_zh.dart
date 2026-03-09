@@ -2694,4 +2694,296 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get noConnectionsYet => '暂无连接。';
+
+  @override
+  String get providerLabel => '提供商';
+
+  @override
+  String get capabilityRoutesTitle => 'Capability 路由';
+
+  @override
+  String get capabilityRoutesSubtitle =>
+      '为聊天、模型列表、Embedding、图片和音频能力分别配置协议预设与接口覆盖。';
+
+  @override
+  String get modelCapabilityRoutesTitle => '模型能力路由';
+
+  @override
+  String get modelCapabilityRoutesSubtitle => '仅覆盖当前模型；留空时继承 Provider 路由。';
+
+  @override
+  String get capabilityChatLabel => '聊天';
+
+  @override
+  String get capabilityModelsLabel => '模型列表';
+
+  @override
+  String get capabilityEmbeddingsLabel => '向量嵌入';
+
+  @override
+  String get capabilityImagesLabel => '图片生成';
+
+  @override
+  String get capabilitySpeechLabel => '语音合成';
+
+  @override
+  String get capabilityTranscriptionsLabel => '音频转录';
+
+  @override
+  String get capabilityTranslationsLabel => '音频翻译';
+
+  @override
+  String get capabilityChatDescription => '聊天补全与流式响应';
+
+  @override
+  String get capabilityModelsDescription => '拉取可用模型列表';
+
+  @override
+  String get capabilityEmbeddingsDescription => '向量生成与检索';
+
+  @override
+  String get capabilityImagesDescription => '图片生成能力';
+
+  @override
+  String get capabilitySpeechDescription => '文本转语音';
+
+  @override
+  String get capabilityTranscriptionsDescription => '语音转文字';
+
+  @override
+  String get capabilityTranslationsDescription => '音频翻译为文本';
+
+  @override
+  String get protocolPresetOpenaiResponses => 'OpenAI Responses';
+
+  @override
+  String get protocolPresetOpenaiChatCompletions => 'OpenAI Chat Completions';
+
+  @override
+  String get protocolPresetAnthropicMessages => 'Anthropic Messages';
+
+  @override
+  String get protocolPresetGeminiNativeGenerateContent =>
+      'Gemini Native GenerateContent';
+
+  @override
+  String get protocolPresetGeminiOpenaiChatCompletions =>
+      'Gemini OpenAI Chat Completions';
+
+  @override
+  String get protocolPresetOpenaiModels => 'OpenAI Models';
+
+  @override
+  String get protocolPresetAnthropicModels => 'Anthropic Models';
+
+  @override
+  String get protocolPresetGeminiModels => 'Gemini Models';
+
+  @override
+  String get protocolPresetOpenaiEmbeddings => 'OpenAI Embeddings';
+
+  @override
+  String get protocolPresetGeminiEmbedContent => 'Gemini EmbedContent';
+
+  @override
+  String get protocolPresetOpenaiImages => 'OpenAI Images';
+
+  @override
+  String get protocolPresetOpenaiAudioSpeech => 'OpenAI Audio Speech';
+
+  @override
+  String get protocolPresetOpenaiAudioTranscriptions =>
+      'OpenAI Audio Transcriptions';
+
+  @override
+  String get protocolPresetOpenaiAudioTranslations =>
+      'OpenAI Audio Translations';
+
+  @override
+  String get protocolPresetCustomJson => '自定义 JSON';
+
+  @override
+  String get protocolPresetCustomMultipart => '自定义 Multipart';
+
+  @override
+  String get authModeBearerHeader => 'Bearer Header';
+
+  @override
+  String get authModeXApiKeyHeader => 'X-API-Key Header';
+
+  @override
+  String get authModeCustomHeader => '自定义 Header';
+
+  @override
+  String get authModeQueryParameter => 'Query 参数';
+
+  @override
+  String get authModeNoAuth => '无认证';
+
+  @override
+  String get streamModeAutoLabel => '自动';
+
+  @override
+  String get streamModeSseLabel => 'SSE';
+
+  @override
+  String get streamModeNonStreamingLabel => '非流式';
+
+  @override
+  String get inheritProviderRoute => '继承 Provider 路由';
+
+  @override
+  String get routeNoFallback => '不使用回退';
+
+  @override
+  String get routeBaseUrlOverride => '基础 URL 覆盖';
+
+  @override
+  String get routePathOverride => '接口路径覆盖';
+
+  @override
+  String get routeAdvancedOptions => '高级选项';
+
+  @override
+  String get routeMethodOverride => '请求方法覆盖';
+
+  @override
+  String get routeAuthMode => '认证模式';
+
+  @override
+  String get routeAuthHeaderName => '认证 Header 名称';
+
+  @override
+  String get routeAuthQueryKey => '认证 Query Key';
+
+  @override
+  String get routeApiKeyOverride => 'API Key 覆盖';
+
+  @override
+  String get routeUseProviderApiKeyWhenEmpty => '留空则使用 Provider API Key';
+
+  @override
+  String get routePresetDefault => '跟随预设';
+
+  @override
+  String get routeUseDefaultWhenEmpty => '留空使用默认值';
+
+  @override
+  String get routeStreamMode => '流式模式';
+
+  @override
+  String get routeTimeoutMs => '超时(ms)';
+
+  @override
+  String get routeFallbackPreset => '回退预设';
+
+  @override
+  String get routeStaticHeadersJson => '静态 Headers(JSON)';
+
+  @override
+  String get routeStaticQueryJson => '静态 Query(JSON)';
+
+  @override
+  String get routeTestButton => '测试';
+
+  @override
+  String get routeSelectModelFirst => '请先选择模型。';
+
+  @override
+  String get routeReplyWithOk => '请回复 ok';
+
+  @override
+  String get routeChatTestCompleted => '聊天测试已完成。';
+
+  @override
+  String routeChatTestSucceeded(String content) {
+    return '聊天测试成功: $content';
+  }
+
+  @override
+  String routeModelListTestSucceeded(int count) {
+    return '模型列表测试成功，共 $count 个模型';
+  }
+
+  @override
+  String routeEmbeddingTestSucceeded(int dimension) {
+    return 'Embedding 测试成功，维度 $dimension';
+  }
+
+  @override
+  String routeImageTestSucceeded(int count) {
+    return '图片测试成功，返回 $count 张图片';
+  }
+
+  @override
+  String routeSpeechTestSucceeded(int bytes, String contentType) {
+    return '语音测试成功（$bytes bytes，$contentType）';
+  }
+
+  @override
+  String routeAudioTestSucceeded(String text) {
+    return '音频测试成功: $text';
+  }
+
+  @override
+  String routeTestFailed(String error) {
+    return '测试失败: $error';
+  }
+
+  @override
+  String get capabilityLabTitle => '能力实验台';
+
+  @override
+  String get capabilityLabDescription => '图片、语音、转录和翻译能力的正式调试入口';
+
+  @override
+  String get capabilityLabPromptLabel => '提示词';
+
+  @override
+  String get capabilityLabInputTextLabel => '朗读内容';
+
+  @override
+  String get capabilityLabOutputTextLabel => '输出文本';
+
+  @override
+  String get capabilityLabNoAudioFile => '未选择音频文件';
+
+  @override
+  String get capabilityLabSelectAudio => '选择音频';
+
+  @override
+  String get capabilityLabGenerateImage => '生成图片';
+
+  @override
+  String get capabilityLabSynthesizeSpeech => '生成语音';
+
+  @override
+  String get capabilityLabTranscribeAudio => '开始转录';
+
+  @override
+  String get capabilityLabTranslateAudio => '开始翻译';
+
+  @override
+  String capabilityLabImageGenerated(int count) {
+    return '图片生成成功，返回 $count 张图片';
+  }
+
+  @override
+  String capabilityLabSpeechGenerated(int bytes, String contentType) {
+    return '语音合成成功（$bytes bytes，$contentType）';
+  }
+
+  @override
+  String get capabilityLabAudioProcessed => '音频处理成功';
+
+  @override
+  String capabilityLabRequestFailed(String error) {
+    return '执行失败: $error';
+  }
+
+  @override
+  String get capabilityLabDefaultImagePrompt => '清晨日出的电影感城市天际线，画面简洁。';
+
+  @override
+  String get capabilityLabDefaultSpeechText => '你好，这里是 Aurora 能力实验台。';
 }

@@ -2780,4 +2780,304 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noConnectionsYet => 'No connections yet.';
+
+  @override
+  String get providerLabel => 'Provider';
+
+  @override
+  String get capabilityRoutesTitle => 'Capability Routes';
+
+  @override
+  String get capabilityRoutesSubtitle =>
+      'Configure per-capability presets and endpoint overrides for chat, models, embeddings, image, and audio flows.';
+
+  @override
+  String get modelCapabilityRoutesTitle => 'Model Capability Routes';
+
+  @override
+  String get modelCapabilityRoutesSubtitle =>
+      'Override routes for this model only; empty values inherit the provider route.';
+
+  @override
+  String get capabilityChatLabel => 'Chat';
+
+  @override
+  String get capabilityModelsLabel => 'Models';
+
+  @override
+  String get capabilityEmbeddingsLabel => 'Embeddings';
+
+  @override
+  String get capabilityImagesLabel => 'Images';
+
+  @override
+  String get capabilitySpeechLabel => 'Speech';
+
+  @override
+  String get capabilityTranscriptionsLabel => 'Transcriptions';
+
+  @override
+  String get capabilityTranslationsLabel => 'Translations';
+
+  @override
+  String get capabilityChatDescription =>
+      'Chat completions and streaming responses';
+
+  @override
+  String get capabilityModelsDescription => 'Fetch available model lists';
+
+  @override
+  String get capabilityEmbeddingsDescription =>
+      'Embedding generation and retrieval';
+
+  @override
+  String get capabilityImagesDescription => 'Image generation capability';
+
+  @override
+  String get capabilitySpeechDescription => 'Text to speech';
+
+  @override
+  String get capabilityTranscriptionsDescription => 'Speech to text';
+
+  @override
+  String get capabilityTranslationsDescription => 'Audio translation to text';
+
+  @override
+  String get protocolPresetOpenaiResponses => 'OpenAI Responses';
+
+  @override
+  String get protocolPresetOpenaiChatCompletions => 'OpenAI Chat Completions';
+
+  @override
+  String get protocolPresetAnthropicMessages => 'Anthropic Messages';
+
+  @override
+  String get protocolPresetGeminiNativeGenerateContent =>
+      'Gemini Native GenerateContent';
+
+  @override
+  String get protocolPresetGeminiOpenaiChatCompletions =>
+      'Gemini OpenAI Chat Completions';
+
+  @override
+  String get protocolPresetOpenaiModels => 'OpenAI Models';
+
+  @override
+  String get protocolPresetAnthropicModels => 'Anthropic Models';
+
+  @override
+  String get protocolPresetGeminiModels => 'Gemini Models';
+
+  @override
+  String get protocolPresetOpenaiEmbeddings => 'OpenAI Embeddings';
+
+  @override
+  String get protocolPresetGeminiEmbedContent => 'Gemini EmbedContent';
+
+  @override
+  String get protocolPresetOpenaiImages => 'OpenAI Images';
+
+  @override
+  String get protocolPresetOpenaiAudioSpeech => 'OpenAI Audio Speech';
+
+  @override
+  String get protocolPresetOpenaiAudioTranscriptions =>
+      'OpenAI Audio Transcriptions';
+
+  @override
+  String get protocolPresetOpenaiAudioTranslations =>
+      'OpenAI Audio Translations';
+
+  @override
+  String get protocolPresetCustomJson => 'Custom JSON';
+
+  @override
+  String get protocolPresetCustomMultipart => 'Custom Multipart';
+
+  @override
+  String get authModeBearerHeader => 'Bearer Header';
+
+  @override
+  String get authModeXApiKeyHeader => 'X-API-Key Header';
+
+  @override
+  String get authModeCustomHeader => 'Custom Header';
+
+  @override
+  String get authModeQueryParameter => 'Query Parameter';
+
+  @override
+  String get authModeNoAuth => 'No Auth';
+
+  @override
+  String get streamModeAutoLabel => 'Auto';
+
+  @override
+  String get streamModeSseLabel => 'SSE';
+
+  @override
+  String get streamModeNonStreamingLabel => 'Non-streaming';
+
+  @override
+  String get inheritProviderRoute => 'Inherit provider route';
+
+  @override
+  String get routeNoFallback => 'No fallback';
+
+  @override
+  String get routeBaseUrlOverride => 'Base URL Override';
+
+  @override
+  String get routePathOverride => 'Path Override';
+
+  @override
+  String get routeAdvancedOptions => 'Advanced';
+
+  @override
+  String get routeMethodOverride => 'Method Override';
+
+  @override
+  String get routeAuthMode => 'Auth Mode';
+
+  @override
+  String get routeAuthHeaderName => 'Auth Header Name';
+
+  @override
+  String get routeAuthQueryKey => 'Auth Query Key';
+
+  @override
+  String get routeApiKeyOverride => 'API Key Override';
+
+  @override
+  String get routeUseProviderApiKeyWhenEmpty =>
+      'Leave empty to use provider API key';
+
+  @override
+  String get routePresetDefault => 'Preset default';
+
+  @override
+  String get routeUseDefaultWhenEmpty => 'Use default when empty';
+
+  @override
+  String get routeStreamMode => 'Stream Mode';
+
+  @override
+  String get routeTimeoutMs => 'Timeout (ms)';
+
+  @override
+  String get routeFallbackPreset => 'Fallback Preset';
+
+  @override
+  String get routeStaticHeadersJson => 'Static Headers (JSON)';
+
+  @override
+  String get routeStaticQueryJson => 'Static Query (JSON)';
+
+  @override
+  String get routeTestButton => 'Test';
+
+  @override
+  String get routeSelectModelFirst => 'Select a model first.';
+
+  @override
+  String get routeReplyWithOk => 'Reply with ok';
+
+  @override
+  String get routeChatTestCompleted => 'Chat test completed.';
+
+  @override
+  String routeChatTestSucceeded(String content) {
+    return 'Chat test succeeded: $content';
+  }
+
+  @override
+  String routeModelListTestSucceeded(int count) {
+    return 'Model list test succeeded with $count models';
+  }
+
+  @override
+  String routeEmbeddingTestSucceeded(int dimension) {
+    return 'Embedding test succeeded, dimension $dimension';
+  }
+
+  @override
+  String routeImageTestSucceeded(int count) {
+    return 'Image test succeeded with $count image(s)';
+  }
+
+  @override
+  String routeSpeechTestSucceeded(int bytes, String contentType) {
+    return 'Speech test succeeded ($bytes bytes, $contentType)';
+  }
+
+  @override
+  String routeAudioTestSucceeded(String text) {
+    return 'Audio test succeeded: $text';
+  }
+
+  @override
+  String routeTestFailed(String error) {
+    return 'Test failed: $error';
+  }
+
+  @override
+  String get capabilityLabTitle => 'Capability Lab';
+
+  @override
+  String get capabilityLabDescription =>
+      'Official entry for image, speech, transcription, and translation tools';
+
+  @override
+  String get capabilityLabPromptLabel => 'Prompt';
+
+  @override
+  String get capabilityLabInputTextLabel => 'Input Text';
+
+  @override
+  String get capabilityLabOutputTextLabel => 'Output Text';
+
+  @override
+  String get capabilityLabNoAudioFile => 'No audio file selected';
+
+  @override
+  String get capabilityLabSelectAudio => 'Select Audio';
+
+  @override
+  String get capabilityLabGenerateImage => 'Generate Image';
+
+  @override
+  String get capabilityLabSynthesizeSpeech => 'Synthesize Speech';
+
+  @override
+  String get capabilityLabTranscribeAudio => 'Transcribe Audio';
+
+  @override
+  String get capabilityLabTranslateAudio => 'Translate Audio';
+
+  @override
+  String capabilityLabImageGenerated(int count) {
+    return 'Generated $count image(s)';
+  }
+
+  @override
+  String capabilityLabSpeechGenerated(int bytes, String contentType) {
+    return 'Speech synthesis succeeded ($bytes bytes, $contentType)';
+  }
+
+  @override
+  String get capabilityLabAudioProcessed =>
+      'Audio request completed successfully';
+
+  @override
+  String capabilityLabRequestFailed(String error) {
+    return 'Request failed: $error';
+  }
+
+  @override
+  String get capabilityLabDefaultImagePrompt =>
+      'A clean, cinematic city skyline at sunrise.';
+
+  @override
+  String get capabilityLabDefaultSpeechText =>
+      'Hello from Aurora capability lab.';
 }

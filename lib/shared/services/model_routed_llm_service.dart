@@ -1,27 +1,53 @@
 import 'package:dio/dio.dart';
 
 import '../../features/chat/domain/message.dart';
+import '../../features/settings/domain/provider_route_config.dart';
 import '../../features/settings/presentation/settings_provider.dart';
+import 'capability_route_resolver.dart';
+import 'chat_capability_handlers.dart';
 import 'gemini_native_llm_service.dart';
-import 'gemini_native_endpoint.dart';
 import 'llm_service.dart';
 import 'llm_transport_mode.dart';
 import 'openai_llm_service.dart';
 import 'tool_schema_sanitizer.dart';
 
 class _ResolvedDelegate {
-  final LLMService service;
   final LlmTransportMode mode;
+  final Future<LLMResponseChunk> Function(
+    List<Message> messages, {
+    List<Map<String, dynamic>>? tools,
+    String? toolChoice,
+    String? model,
+    String? providerId,
+    CancelToken? cancelToken,
+  }) getResponse;
+  final Stream<LLMResponseChunk> Function(
+    List<Message> messages, {
+    List<Map<String, dynamic>>? tools,
+    String? toolChoice,
+    String? model,
+    String? providerId,
+    CancelToken? cancelToken,
+  }) streamResponse;
 
-  const _ResolvedDelegate(this.service, this.mode);
+  const _ResolvedDelegate({
+    required this.mode,
+    required this.getResponse,
+    required this.streamResponse,
+  });
 }
 
 class ModelRoutedLlmService implements LLMService {
   final SettingsState _settings;
+  final CapabilityRouteResolver _resolver = const CapabilityRouteResolver();
   late final OpenAILLMService _openAiCompatService =
       OpenAILLMService(_settings);
   late final GeminiNativeLlmService _geminiNativeService =
       GeminiNativeLlmService(_settings);
+  late final OpenAiResponsesChatHandler _responsesHandler =
+      OpenAiResponsesChatHandler();
+  late final AnthropicMessagesChatHandler _anthropicHandler =
+      AnthropicMessagesChatHandler();
 
   ModelRoutedLlmService(this._settings);
 
@@ -53,55 +79,100 @@ class ModelRoutedLlmService implements LLMService {
     final provider = _resolveProvider(providerId);
     final modelName = _resolveModel(provider: provider, requestedModel: model);
     if (modelName == null) {
-      // No model selected: fall back to OpenAI-compatible request shape.
-      return _ResolvedDelegate(
-          _openAiCompatService, LlmTransportMode.openaiCompat);
+      return _delegateForOpenAiCompat();
     }
 
-    final transportMode = resolveModelTransportMode(
+    final route = _resolver.resolve(
       provider: provider,
+      capability: ProviderCapability.chat,
       modelName: modelName,
     );
-    if (transportMode == LlmTransportMode.openaiCompat) {
-      return _ResolvedDelegate(
-          _openAiCompatService, LlmTransportMode.openaiCompat);
+    switch (route.preset) {
+      case ProtocolPreset.openaiResponses:
+        return _ResolvedDelegate(
+          mode: LlmTransportMode.openaiCompat,
+          getResponse: (messages,
+                  {tools, toolChoice, model, providerId, cancelToken}) =>
+              _responsesHandler.getResponse(
+            messages,
+            tools: tools,
+            toolChoice: toolChoice,
+            model: modelName,
+            provider: provider,
+            route: route,
+            cancelToken: cancelToken,
+          ),
+          streamResponse: (messages,
+                  {tools, toolChoice, model, providerId, cancelToken}) =>
+              _responsesHandler.streamResponse(
+            messages,
+            tools: tools,
+            toolChoice: toolChoice,
+            model: modelName,
+            provider: provider,
+            route: route,
+            cancelToken: cancelToken,
+          ),
+        );
+      case ProtocolPreset.anthropicMessages:
+        return _ResolvedDelegate(
+          mode: LlmTransportMode.openaiCompat,
+          getResponse: (messages,
+                  {tools, toolChoice, model, providerId, cancelToken}) =>
+              _anthropicHandler.getResponse(
+            messages,
+            tools: tools,
+            toolChoice: toolChoice,
+            model: modelName,
+            provider: provider,
+            route: route,
+            cancelToken: cancelToken,
+          ),
+          streamResponse: (messages,
+                  {tools, toolChoice, model, providerId, cancelToken}) =>
+              _anthropicHandler.streamResponse(
+            messages,
+            tools: tools,
+            toolChoice: toolChoice,
+            model: modelName,
+            provider: provider,
+            route: route,
+            cancelToken: cancelToken,
+          ),
+        );
+      case ProtocolPreset.geminiNativeGenerateContent:
+        return _delegateForGeminiNative();
+      case ProtocolPreset.openaiChatCompletions:
+      case ProtocolPreset.geminiOpenaiChatCompletions:
+      case ProtocolPreset.customJson:
+      case ProtocolPreset.customMultipart:
+      case ProtocolPreset.openaiModels:
+      case ProtocolPreset.anthropicModels:
+      case ProtocolPreset.geminiModels:
+      case ProtocolPreset.openaiEmbeddings:
+      case ProtocolPreset.geminiEmbedContent:
+      case ProtocolPreset.openaiImages:
+      case ProtocolPreset.openaiAudioSpeech:
+      case ProtocolPreset.openaiAudioTranscriptions:
+      case ProtocolPreset.openaiAudioTranslations:
+        return _delegateForOpenAiCompat();
     }
-    if (transportMode == LlmTransportMode.geminiNative) {
-      return _ResolvedDelegate(
-          _geminiNativeService, LlmTransportMode.geminiNative);
-    }
-    if (_shouldUseGeminiNativeInAuto(
-        provider: provider, modelName: modelName)) {
-      return _ResolvedDelegate(
-          _geminiNativeService, LlmTransportMode.geminiNative);
-    }
-    return _ResolvedDelegate(
-        _openAiCompatService, LlmTransportMode.openaiCompat);
   }
 
-  bool _shouldUseGeminiNativeInAuto({
-    required ProviderConfig provider,
-    required String modelName,
-  }) {
-    final modelSettings = provider.modelSettings[modelName];
-    final nativeTools = resolveGeminiNativeToolsFromSettings(modelSettings);
-    if (nativeTools.hasAnyEnabled) {
-      return true;
-    }
+  _ResolvedDelegate _delegateForOpenAiCompat() {
+    return _ResolvedDelegate(
+      mode: LlmTransportMode.openaiCompat,
+      getResponse: _openAiCompatService.getResponse,
+      streamResponse: _openAiCompatService.streamResponse,
+    );
+  }
 
-    final normalizedModel = modelName.trim().toLowerCase();
-    final looksLikeGemini = normalizedModel.startsWith('gemini') ||
-        normalizedModel.contains('/gemini') ||
-        normalizedModel.contains('gemini-');
-    if (!looksLikeGemini) return false;
-
-    final baseUrl = provider.baseUrl.trim();
-    final overrideBaseUrl =
-        modelSettings?[auroraTransportBaseUrlKey]?.toString().trim();
-    if (overrideBaseUrl != null && overrideBaseUrl.isNotEmpty) {
-      return looksLikeGeminiNativeBaseUrl(overrideBaseUrl);
-    }
-    return looksLikeGeminiNativeBaseUrl(baseUrl);
+  _ResolvedDelegate _delegateForGeminiNative() {
+    return _ResolvedDelegate(
+      mode: LlmTransportMode.geminiNative,
+      getResponse: _geminiNativeService.getResponse,
+      streamResponse: _geminiNativeService.streamResponse,
+    );
   }
 
   @override
@@ -121,7 +192,7 @@ class ModelRoutedLlmService implements LLMService {
       tools,
       resolution.mode,
     );
-    return resolution.service.streamResponse(
+    return resolution.streamResponse(
       messages,
       tools: sanitizedTools,
       toolChoice: toolChoice,
@@ -148,7 +219,7 @@ class ModelRoutedLlmService implements LLMService {
       tools,
       resolution.mode,
     );
-    return resolution.service.getResponse(
+    return resolution.getResponse(
       messages,
       tools: sanitizedTools,
       toolChoice: toolChoice,

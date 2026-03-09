@@ -21,6 +21,7 @@ import 'widgets/deferred_fluent_slider.dart';
 import '../../../shared/utils/avatar_cropper.dart';
 import '../../../shared/utils/avatar_storage.dart';
 import 'model_config_dialog.dart';
+import 'widgets/capability_route_editor_panel.dart';
 import 'global_config_dialog.dart';
 import '../../sync/presentation/sync_settings_section.dart';
 import 'package:aurora/shared/theme/aurora_icons.dart';

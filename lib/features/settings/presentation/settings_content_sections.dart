@@ -535,6 +535,27 @@ extension _SettingsContentSections on _SettingsContentState {
                   ),
                 ),
                 const SizedBox(height: 16),
+                _buildSectionCard(
+                  context,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      fluent.Text(
+                        l10n.capabilityRoutesTitle,
+                        style:
+                            fluent.FluentTheme.of(context).typography.subtitle,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        l10n.capabilityRoutesSubtitle,
+                        style: theme.typography.caption,
+                      ),
+                      const SizedBox(height: 12),
+                      CapabilityRouteEditorPanel(provider: viewingProvider),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
 
                 // --- Available Models Section ---
                 _buildSectionCard(

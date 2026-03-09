@@ -6,9 +6,11 @@ import 'package:dio/dio.dart';
 import '../../core/error/app_error_type.dart';
 import '../../core/error/app_exception.dart';
 import '../../features/chat/domain/message.dart';
+import '../../features/settings/domain/provider_route_config.dart';
 import '../../features/settings/presentation/settings_provider.dart';
 import '../utils/app_logger.dart';
 import '../utils/llm_stream_log_accumulator.dart';
+import 'capability_route_resolver.dart';
 import 'gemini_native_endpoint.dart';
 import 'llm_service.dart';
 import 'llm_transport_mode.dart';
@@ -117,6 +119,9 @@ class GeminiNativeLlmService implements LLMService {
 
     final providerBase = provider.baseUrl.trim();
     if (providerBase.isNotEmpty) {
+      if (providerBase.toLowerCase().contains('api.openai.com')) {
+        return officialGeminiNativeBaseUrl;
+      }
       return normalizeGeminiNativeBaseUrl(providerBase);
     }
     return officialGeminiNativeBaseUrl;
@@ -131,28 +136,6 @@ class GeminiNativeLlmService implements LLMService {
       return override;
     }
     return provider.apiKey;
-  }
-
-  String _modelResourcePath(String model) {
-    final normalized = model.trim();
-    if (normalized.startsWith('models/') ||
-        normalized.startsWith('publishers/')) {
-      return normalized;
-    }
-    return 'models/$normalized';
-  }
-
-  Uri _buildGenerateUri({
-    required String baseUrl,
-    required String model,
-    required bool stream,
-  }) {
-    final method = stream ? 'streamGenerateContent' : 'generateContent';
-    final endpoint = '$baseUrl${_modelResourcePath(model)}:$method';
-    if (stream) {
-      return Uri.parse('$endpoint?alt=sse');
-    }
-    return Uri.parse(endpoint);
   }
 
   void _logRequest(Uri uri, Map<String, dynamic> data) {
@@ -1015,14 +998,22 @@ class GeminiNativeLlmService implements LLMService {
     }
     LlmStreamLogAccumulator? streamLog;
 
-    final baseUrl = _resolveNativeBaseUrl(
+    var route = const CapabilityRouteResolver().resolve(
       provider: provider,
-      activeParams: activeParams,
+      capability: ProviderCapability.chat,
+      modelName: selectedModel,
+      forcePreset: ProtocolPreset.geminiNativeGenerateContent,
     );
-    final uri = _buildGenerateUri(
-      baseUrl: baseUrl,
+    route = route.copyWith(
+      baseUrl: _resolveNativeBaseUrl(
+        provider: provider,
+        activeParams: activeParams,
+      ),
+    );
+    final uri = route.buildUri(
       model: selectedModel,
       stream: true,
+      apiKey: route.effectiveApiKey(provider),
     );
 
     try {
@@ -1044,11 +1035,13 @@ class GeminiNativeLlmService implements LLMService {
         uri,
         data: requestData,
         options: Options(
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'text/event-stream',
-            'x-goog-api-key': apiKey,
-          },
+          headers: route.buildHeaders(
+            apiKey: apiKey,
+            extra: const {
+              'Content-Type': 'application/json',
+              'Accept': 'text/event-stream',
+            },
+          ),
           responseType: ResponseType.stream,
         ),
         cancelToken: cancelToken,
@@ -1226,14 +1219,22 @@ class GeminiNativeLlmService implements LLMService {
       return LLMResponseChunk(content: _emptyApiKeyMessage());
     }
 
-    final baseUrl = _resolveNativeBaseUrl(
+    var route = const CapabilityRouteResolver().resolve(
       provider: provider,
-      activeParams: activeParams,
+      capability: ProviderCapability.chat,
+      modelName: selectedModel,
+      forcePreset: ProtocolPreset.geminiNativeGenerateContent,
     );
-    final uri = _buildGenerateUri(
-      baseUrl: baseUrl,
+    route = route.copyWith(
+      baseUrl: _resolveNativeBaseUrl(
+        provider: provider,
+        activeParams: activeParams,
+      ),
+    );
+    final uri = route.buildUri(
       model: selectedModel,
       stream: false,
+      apiKey: route.effectiveApiKey(provider),
     );
 
     try {
@@ -1251,11 +1252,13 @@ class GeminiNativeLlmService implements LLMService {
         uri,
         data: requestData,
         options: Options(
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'x-goog-api-key': apiKey,
-          },
+          headers: route.buildHeaders(
+            apiKey: apiKey,
+            extra: const {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+          ),
         ),
         cancelToken: cancelToken,
       );

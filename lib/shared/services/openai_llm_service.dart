@@ -7,12 +7,14 @@ import 'package:flutter/foundation.dart';
 import 'package:image/image.dart' as img;
 import 'package:archive/archive.dart';
 import '../../features/chat/domain/message.dart';
+import '../../features/settings/domain/provider_route_config.dart';
 import '../../features/settings/presentation/settings_provider.dart';
 import 'llm_service.dart';
 import '../../core/error/app_exception.dart';
 import '../../core/error/app_error_type.dart';
 import '../utils/app_logger.dart';
 import '../utils/llm_stream_log_accumulator.dart';
+import 'capability_route_resolver.dart';
 
 part 'openai/openai_attachments.dart';
 part 'openai/openai_provider_compat.dart';
@@ -351,25 +353,28 @@ class OpenAILLMService implements LLMService {
         tools: tools,
         toolChoice: toolChoice,
       );
-      final baseUrl = prepared.baseUrl;
       final apiKey = prepared.apiKey;
       final requestData = prepared.requestData;
+      final endpointUri = prepared.endpointUri;
+      final route = prepared.route;
       streamLog = LlmStreamLogAccumulator(
         providerId: provider.id,
         model: selectedModel,
       );
 
-      _logRequest('${baseUrl}chat/completions', requestData);
+      _logRequest(endpointUri.toString(), requestData);
       Response<ResponseBody> response;
       try {
-        response = await _dio.post(
-          '${baseUrl}chat/completions',
+        response = await _dio.postUri(
+          endpointUri,
           options: Options(
-            headers: {
-              'Authorization': 'Bearer $apiKey',
-              'Content-Type': 'application/json',
-              'Accept': 'text/event-stream',
-            },
+            headers: route.buildHeaders(
+              apiKey: apiKey,
+              extra: const {
+                'Content-Type': 'application/json',
+                'Accept': 'text/event-stream',
+              },
+            ),
             responseType: ResponseType.stream,
           ),
           data: requestData,
@@ -385,15 +390,17 @@ class OpenAILLMService implements LLMService {
             ..remove('stream_options');
           _debugLog(
               'Gemini backend rejected stream_options (400). Retrying without it.');
-          _logRequest('${baseUrl}chat/completions', retryData);
-          response = await _dio.post(
-            '${baseUrl}chat/completions',
+          _logRequest(endpointUri.toString(), retryData);
+          response = await _dio.postUri(
+            endpointUri,
             options: Options(
-              headers: {
-                'Authorization': 'Bearer $apiKey',
-                'Content-Type': 'application/json',
-                'Accept': 'text/event-stream',
-              },
+              headers: route.buildHeaders(
+                apiKey: apiKey,
+                extra: const {
+                  'Content-Type': 'application/json',
+                  'Accept': 'text/event-stream',
+                },
+              ),
               responseType: ResponseType.stream,
             ),
             data: retryData,
@@ -1099,19 +1106,22 @@ class OpenAILLMService implements LLMService {
         tools: tools,
         toolChoice: toolChoice,
       );
-      final baseUrl = prepared.baseUrl;
       final apiKey = prepared.apiKey;
       final requestData = prepared.requestData;
+      final endpointUri = prepared.endpointUri;
+      final route = prepared.route;
 
-      _logRequest('${baseUrl}chat/completions', requestData);
-      final response = await _dio.post(
-        '${baseUrl}chat/completions',
+      _logRequest(endpointUri.toString(), requestData);
+      final response = await _dio.postUri(
+        endpointUri,
         options: Options(
-          headers: {
-            'Authorization': 'Bearer $apiKey',
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-          },
+          headers: route.buildHeaders(
+            apiKey: apiKey,
+            extra: const {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+          ),
         ),
         data: requestData,
         cancelToken: cancelToken,

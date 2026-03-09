@@ -205,6 +205,7 @@ class SettingsStorage {
   Future<void> saveAppSettings({
     String? activeProviderId,
     String? selectedModel,
+    String? selectedChatModel,
     List<String>? availableModels,
     String? userName,
     String? userAvatar,
@@ -237,6 +238,14 @@ class SettingsStorage {
     int? closeBehavior,
     String? executionModel,
     String? executionProviderId,
+    String? imageModel,
+    String? imageProviderId,
+    String? speechModel,
+    String? speechProviderId,
+    String? transcriptionModel,
+    String? transcriptionProviderId,
+    String? translationModel,
+    String? translationProviderId,
     int? memoryMinNewUserMessages,
     int? memoryIdleSeconds,
     int? memoryMaxBufferedMessages,
@@ -253,6 +262,10 @@ class SettingsStorage {
     final settings = AppSettingsEntity()
       ..activeProviderId = activeProviderId ?? existing?.activeProviderId ?? ''
       ..selectedModel = selectedModel ?? existing?.selectedModel
+      ..selectedChatModel = selectedChatModel ??
+          selectedModel ??
+          existing?.selectedChatModel ??
+          existing?.selectedModel
       ..availableModels = availableModels ?? existing?.availableModels ?? []
       ..userName = userName ?? existing?.userName ?? 'User'
       ..userAvatar = userAvatar ?? existing?.userAvatar
@@ -303,6 +316,16 @@ class SettingsStorage {
       ..executionModel = executionModel ?? existing?.executionModel
       ..executionProviderId =
           executionProviderId ?? existing?.executionProviderId
+      ..imageModel = imageModel ?? existing?.imageModel
+      ..imageProviderId = imageProviderId ?? existing?.imageProviderId
+      ..speechModel = speechModel ?? existing?.speechModel
+      ..speechProviderId = speechProviderId ?? existing?.speechProviderId
+      ..transcriptionModel = transcriptionModel ?? existing?.transcriptionModel
+      ..transcriptionProviderId =
+          transcriptionProviderId ?? existing?.transcriptionProviderId
+      ..translationModel = translationModel ?? existing?.translationModel
+      ..translationProviderId =
+          translationProviderId ?? existing?.translationProviderId
       ..memoryMinNewUserMessages =
           memoryMinNewUserMessages ?? existing?.memoryMinNewUserMessages ?? 20
       ..memoryIdleSeconds =
@@ -696,6 +719,7 @@ class SettingsStorage {
     return AppSettingsEntity()
       ..activeProviderId = source.activeProviderId
       ..selectedModel = source.selectedModel
+      ..selectedChatModel = source.selectedChatModel
       ..availableModels = List<String>.from(source.availableModels)
       ..userName = source.userName
       ..userAvatar = source.userAvatar
@@ -730,6 +754,14 @@ class SettingsStorage {
       ..closeBehavior = source.closeBehavior
       ..executionModel = source.executionModel
       ..executionProviderId = source.executionProviderId
+      ..imageModel = source.imageModel
+      ..imageProviderId = source.imageProviderId
+      ..speechModel = source.speechModel
+      ..speechProviderId = source.speechProviderId
+      ..transcriptionModel = source.transcriptionModel
+      ..transcriptionProviderId = source.transcriptionProviderId
+      ..translationModel = source.translationModel
+      ..translationProviderId = source.translationProviderId
       ..memoryMinNewUserMessages = source.memoryMinNewUserMessages
       ..memoryIdleSeconds = source.memoryIdleSeconds
       ..memoryMaxBufferedMessages = source.memoryMaxBufferedMessages
@@ -897,7 +929,8 @@ class SettingsStorage {
       return true;
     }
     if (differs(msg.model, sanitizeMessageModel(msg.model))) return true;
-    if (differs(msg.provider, sanitizeMessageProvider(msg.provider))) return true;
+    if (differs(msg.provider, sanitizeMessageProvider(msg.provider)))
+      return true;
     if (differs(msg.role, sanitizeMessageRole(msg.role))) return true;
     if (differs(msg.assistantId, sanitizeMessageAssistantId(msg.assistantId))) {
       return true;

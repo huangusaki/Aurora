@@ -1254,5 +1254,171 @@
   "connections": "Connections",
   "inbound": "Inbound",
   "outbound": "Outbound",
-  "noConnectionsYet": "No connections yet."
+  "noConnectionsYet": "No connections yet.",
+
+  "providerLabel": "Provider",
+  "capabilityRoutesTitle": "Capability Routes",
+  "capabilityRoutesSubtitle": "Configure per-capability presets and endpoint overrides for chat, models, embeddings, image, and audio flows.",
+  "modelCapabilityRoutesTitle": "Model Capability Routes",
+  "modelCapabilityRoutesSubtitle": "Override routes for this model only; empty values inherit the provider route.",
+  "capabilityChatLabel": "Chat",
+  "capabilityModelsLabel": "Models",
+  "capabilityEmbeddingsLabel": "Embeddings",
+  "capabilityImagesLabel": "Images",
+  "capabilitySpeechLabel": "Speech",
+  "capabilityTranscriptionsLabel": "Transcriptions",
+  "capabilityTranslationsLabel": "Translations",
+  "capabilityChatDescription": "Chat completions and streaming responses",
+  "capabilityModelsDescription": "Fetch available model lists",
+  "capabilityEmbeddingsDescription": "Embedding generation and retrieval",
+  "capabilityImagesDescription": "Image generation capability",
+  "capabilitySpeechDescription": "Text to speech",
+  "capabilityTranscriptionsDescription": "Speech to text",
+  "capabilityTranslationsDescription": "Audio translation to text",
+  "protocolPresetOpenaiResponses": "OpenAI Responses",
+  "protocolPresetOpenaiChatCompletions": "OpenAI Chat Completions",
+  "protocolPresetAnthropicMessages": "Anthropic Messages",
+  "protocolPresetGeminiNativeGenerateContent": "Gemini Native GenerateContent",
+  "protocolPresetGeminiOpenaiChatCompletions": "Gemini OpenAI Chat Completions",
+  "protocolPresetOpenaiModels": "OpenAI Models",
+  "protocolPresetAnthropicModels": "Anthropic Models",
+  "protocolPresetGeminiModels": "Gemini Models",
+  "protocolPresetOpenaiEmbeddings": "OpenAI Embeddings",
+  "protocolPresetGeminiEmbedContent": "Gemini EmbedContent",
+  "protocolPresetOpenaiImages": "OpenAI Images",
+  "protocolPresetOpenaiAudioSpeech": "OpenAI Audio Speech",
+  "protocolPresetOpenaiAudioTranscriptions": "OpenAI Audio Transcriptions",
+  "protocolPresetOpenaiAudioTranslations": "OpenAI Audio Translations",
+  "protocolPresetCustomJson": "Custom JSON",
+  "protocolPresetCustomMultipart": "Custom Multipart",
+  "authModeBearerHeader": "Bearer Header",
+  "authModeXApiKeyHeader": "X-API-Key Header",
+  "authModeCustomHeader": "Custom Header",
+  "authModeQueryParameter": "Query Parameter",
+  "authModeNoAuth": "No Auth",
+  "streamModeAutoLabel": "Auto",
+  "streamModeSseLabel": "SSE",
+  "streamModeNonStreamingLabel": "Non-streaming",
+  "inheritProviderRoute": "Inherit provider route",
+  "routeNoFallback": "No fallback",
+  "routeBaseUrlOverride": "Base URL Override",
+  "routePathOverride": "Path Override",
+  "routeAdvancedOptions": "Advanced",
+  "routeMethodOverride": "Method Override",
+  "routeAuthMode": "Auth Mode",
+  "routeAuthHeaderName": "Auth Header Name",
+  "routeAuthQueryKey": "Auth Query Key",
+  "routeApiKeyOverride": "API Key Override",
+  "routeUseProviderApiKeyWhenEmpty": "Leave empty to use provider API key",
+  "routePresetDefault": "Preset default",
+  "routeUseDefaultWhenEmpty": "Use default when empty",
+  "routeStreamMode": "Stream Mode",
+  "routeTimeoutMs": "Timeout (ms)",
+  "routeFallbackPreset": "Fallback Preset",
+  "routeStaticHeadersJson": "Static Headers (JSON)",
+  "routeStaticQueryJson": "Static Query (JSON)",
+  "routeTestButton": "Test",
+  "routeSelectModelFirst": "Select a model first.",
+  "routeReplyWithOk": "Reply with ok",
+  "routeChatTestCompleted": "Chat test completed.",
+  "routeChatTestSucceeded": "Chat test succeeded: {content}",
+  "@routeChatTestSucceeded": {
+    "placeholders": {
+      "content": {
+        "type": "String"
+      }
+    }
+  },
+  "routeModelListTestSucceeded": "Model list test succeeded with {count} models",
+  "@routeModelListTestSucceeded": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "routeEmbeddingTestSucceeded": "Embedding test succeeded, dimension {dimension}",
+  "@routeEmbeddingTestSucceeded": {
+    "placeholders": {
+      "dimension": {
+        "type": "int"
+      }
+    }
+  },
+  "routeImageTestSucceeded": "Image test succeeded with {count} image(s)",
+  "@routeImageTestSucceeded": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "routeSpeechTestSucceeded": "Speech test succeeded ({bytes} bytes, {contentType})",
+  "@routeSpeechTestSucceeded": {
+    "placeholders": {
+      "bytes": {
+        "type": "int"
+      },
+      "contentType": {
+        "type": "String"
+      }
+    }
+  },
+  "routeAudioTestSucceeded": "Audio test succeeded: {text}",
+  "@routeAudioTestSucceeded": {
+    "placeholders": {
+      "text": {
+        "type": "String"
+      }
+    }
+  },
+  "routeTestFailed": "Test failed: {error}",
+  "@routeTestFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "capabilityLabTitle": "Capability Lab",
+  "capabilityLabDescription": "Official entry for image, speech, transcription, and translation tools",
+  "capabilityLabPromptLabel": "Prompt",
+  "capabilityLabInputTextLabel": "Input Text",
+  "capabilityLabOutputTextLabel": "Output Text",
+  "capabilityLabNoAudioFile": "No audio file selected",
+  "capabilityLabSelectAudio": "Select Audio",
+  "capabilityLabGenerateImage": "Generate Image",
+  "capabilityLabSynthesizeSpeech": "Synthesize Speech",
+  "capabilityLabTranscribeAudio": "Transcribe Audio",
+  "capabilityLabTranslateAudio": "Translate Audio",
+  "capabilityLabImageGenerated": "Generated {count} image(s)",
+  "@capabilityLabImageGenerated": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "capabilityLabSpeechGenerated": "Speech synthesis succeeded ({bytes} bytes, {contentType})",
+  "@capabilityLabSpeechGenerated": {
+    "placeholders": {
+      "bytes": {
+        "type": "int"
+      },
+      "contentType": {
+        "type": "String"
+      }
+    }
+  },
+  "capabilityLabAudioProcessed": "Audio request completed successfully",
+  "capabilityLabRequestFailed": "Request failed: {error}",
+  "@capabilityLabRequestFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "capabilityLabDefaultImagePrompt": "A clean, cinematic city skyline at sunrise.",
+  "capabilityLabDefaultSpeechText": "Hello from Aurora capability lab."
 }

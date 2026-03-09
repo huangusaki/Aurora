@@ -298,9 +298,12 @@ class BackupService {
               customParametersJson: c.customParametersJson,
               modelSettingsJson: c.modelSettingsJson,
               globalSettingsJson: c.globalSettingsJson,
+              capabilityRoutesJson: c.capabilityRoutesJson,
+              modelCapabilityOverridesJson: c.modelCapabilityOverridesJson,
               globalExcludeModels: c.globalExcludeModels,
               savedModels: c.savedModels,
               lastSelectedModel: c.lastSelectedModel,
+              selectedChatModel: c.selectedChatModel,
               isActive: c.isActive,
               isEnabled: c.isEnabled,
             ))
@@ -565,9 +568,12 @@ class BackupService {
             ..customParametersJson = c.customParametersJson
             ..modelSettingsJson = c.modelSettingsJson
             ..globalSettingsJson = c.globalSettingsJson
+            ..capabilityRoutesJson = c.capabilityRoutesJson
+            ..modelCapabilityOverridesJson = c.modelCapabilityOverridesJson
             ..globalExcludeModels = c.globalExcludeModels
             ..savedModels = c.savedModels
             ..lastSelectedModel = c.lastSelectedModel
+            ..selectedChatModel = c.selectedChatModel
             ..isActive = c.isActive
             ..isEnabled = c.isEnabled);
         } else {
@@ -586,8 +592,8 @@ class BackupService {
       try {
         final docsDir = await getApplicationDocumentsDirectory();
         final studio = backup.studioContent!;
-        final hasNewKeys =
-            studio.containsKey('novelWritingState') || studio.containsKey('agentWorkflows');
+        final hasNewKeys = studio.containsKey('novelWritingState') ||
+            studio.containsKey('agentWorkflows');
 
         if (!hasNewKeys) {
           // Backward compatibility: old backups stored novel state directly.
@@ -728,6 +734,7 @@ class BackupService {
   Map<String, dynamic> _appSettingsToJson(AppSettingsEntity s) => {
         'activeProviderId': s.activeProviderId,
         'selectedModel': s.selectedModel,
+        'selectedChatModel': s.selectedChatModel,
         'availableModels': s.availableModels,
         'userName': s.userName,
         'userAvatar': s.userAvatar,
@@ -760,6 +767,14 @@ class BackupService {
         'closeBehavior': s.closeBehavior,
         'executionModel': s.executionModel,
         'executionProviderId': s.executionProviderId,
+        'imageModel': s.imageModel,
+        'imageProviderId': s.imageProviderId,
+        'speechModel': s.speechModel,
+        'speechProviderId': s.speechProviderId,
+        'transcriptionModel': s.transcriptionModel,
+        'transcriptionProviderId': s.transcriptionProviderId,
+        'translationModel': s.translationModel,
+        'translationProviderId': s.translationProviderId,
         'memoryMinNewUserMessages': s.memoryMinNewUserMessages,
         'memoryIdleSeconds': s.memoryIdleSeconds,
         'memoryMaxBufferedMessages': s.memoryMaxBufferedMessages,
@@ -778,6 +793,8 @@ class BackupService {
       ..activeProviderId =
           _asString(json['activeProviderId'], fallback: 'custom')
       ..selectedModel = _asNullableString(json['selectedModel'])
+      ..selectedChatModel = _asNullableString(json['selectedChatModel']) ??
+          _asNullableString(json['selectedModel'])
       ..availableModels = _asStringList(json['availableModels'])
       ..userName = _asString(json['userName'], fallback: 'User')
       ..userAvatar = _asNullableString(json['userAvatar'])
@@ -818,6 +835,15 @@ class BackupService {
       ..closeBehavior = _asInt(json['closeBehavior'], fallback: 0)
       ..executionModel = _asNullableString(json['executionModel'])
       ..executionProviderId = _asNullableString(json['executionProviderId'])
+      ..imageModel = _asNullableString(json['imageModel'])
+      ..imageProviderId = _asNullableString(json['imageProviderId'])
+      ..speechModel = _asNullableString(json['speechModel'])
+      ..speechProviderId = _asNullableString(json['speechProviderId'])
+      ..transcriptionModel = _asNullableString(json['transcriptionModel'])
+      ..transcriptionProviderId =
+          _asNullableString(json['transcriptionProviderId'])
+      ..translationModel = _asNullableString(json['translationModel'])
+      ..translationProviderId = _asNullableString(json['translationProviderId'])
       ..memoryMinNewUserMessages =
           _asInt(json['memoryMinNewUserMessages'], fallback: 20)
       ..memoryIdleSeconds = _asInt(json['memoryIdleSeconds'], fallback: 600)

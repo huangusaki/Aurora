@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:fluent_ui/fluent_ui.dart' as fluent;
 import 'package:aurora/shared/riverpod_compat.dart';
 import 'settings_provider.dart';
 import 'package:aurora/l10n/app_localizations.dart';
@@ -7,6 +8,7 @@ import 'package:aurora/shared/widgets/aurora_bottom_sheet.dart';
 import 'package:aurora/shared/widgets/aurora_dropdown.dart';
 import 'package:aurora/shared/widgets/aurora_notice.dart';
 import 'model_display_name.dart';
+import 'widgets/capability_route_editor_panel.dart';
 import 'widgets/mobile_settings_widgets.dart';
 
 class MobileSettingsPage extends ConsumerStatefulWidget {
@@ -140,6 +142,13 @@ class _MobileSettingsPageState extends ConsumerState<MobileSettingsPage> {
                 onTap: () {
                   _showGlobalConfigDialog(context, viewingProvider);
                 },
+              ),
+              MobileSettingsTile(
+                leading: const Icon(Icons.alt_route),
+                title: l10n.capabilityRoutesTitle,
+                subtitle: l10n.capabilityRoutesSubtitle,
+                onTap: () =>
+                    _showCapabilityRoutesManager(context, viewingProvider),
               ),
             ],
           ),
@@ -488,6 +497,37 @@ class _MobileSettingsPageState extends ConsumerState<MobileSettingsPage> {
       context: context,
       builder: (ctx) => _GlobalConfigBottomSheet(
         provider: provider,
+      ),
+    );
+  }
+
+  void _showCapabilityRoutesManager(
+      BuildContext context, ProviderConfig provider) {
+    AuroraBottomSheet.show(
+      context: context,
+      builder: (ctx) => fluent.FluentTheme(
+        data: fluent.FluentThemeData(
+          brightness: Theme.of(context).brightness == Brightness.dark
+              ? fluent.Brightness.dark
+              : fluent.Brightness.light,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AuroraBottomSheet.buildTitle(
+                  context,
+                  AppLocalizations.of(context)!.capabilityRoutesTitle,
+                ),
+                const SizedBox(height: 12),
+                CapabilityRouteEditorPanel(provider: provider),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

@@ -1,8 +1,10 @@
 import 'package:aurora/shared/theme/aurora_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:aurora/l10n/app_localizations.dart';
+import 'package:fluent_ui/fluent_ui.dart' as fluent;
 import 'mobile_novel_writing_page.dart';
 import 'package:aurora/shared/widgets/aurora_page_route.dart';
+import 'capability_lab_page.dart';
 import 'mobile_storage_cleaning_page.dart';
 
 class MobileStudioPage extends StatefulWidget {
@@ -99,8 +101,25 @@ class _MobileStudioPageState extends State<MobileStudioPage> {
                 _buildFeatureCard(
                   context,
                   icon: AuroraIcons.image,
-                  title: l10n.imageManagement,
-                  comingSoon: true,
+                  title: l10n.capabilityLabTitle,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      AuroraMobilePageRoute(
+                        builder: (context) => fluent.FluentTheme(
+                          data: fluent.FluentThemeData(
+                            brightness:
+                                Theme.of(context).brightness == Brightness.dark
+                                    ? fluent.Brightness.dark
+                                    : fluent.Brightness.light,
+                          ),
+                          child: CapabilityLabPage(
+                            onBack: () => Navigator.pop(context),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ],
             ),

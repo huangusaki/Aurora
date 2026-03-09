@@ -7,12 +7,14 @@ import 'package:path_provider/path_provider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/painting.dart';
 import 'package:aurora/shared/riverpod_compat.dart';
+import 'package:aurora/shared/services/capability_route_resolver.dart';
 import 'package:aurora/shared/services/gemini_native_endpoint.dart';
-import 'package:dio/dio.dart';
+import 'package:aurora/shared/services/provider_capability_gateway.dart';
 import 'package:aurora/shared/utils/app_logger.dart';
 import '../data/settings_storage.dart';
 import '../data/provider_config_entity.dart';
 import '../domain/chat_preset.dart';
+import '../domain/provider_route_config.dart';
 import '../data/chat_preset_entity.dart';
 
 class ProviderConfig {
@@ -27,10 +29,14 @@ class ProviderConfig {
   final Map<String, dynamic> customParameters;
   final Map<String, Map<String, dynamic>> modelSettings;
   final Map<String, dynamic> globalSettings;
+  final ProviderCapabilityConfig capabilityConfig;
+  final Map<String, ModelCapabilityOverride> modelCapabilityOverrides;
   final List<String> globalExcludeModels;
   final List<String> models;
-  final String? selectedModel;
+  final String? selectedChatModel;
   final bool isEnabled;
+
+  String? get selectedModel => selectedChatModel;
 
   /// Returns the current API key based on currentKeyIndex (with bounds checking)
   String get apiKey {
@@ -54,14 +60,30 @@ class ProviderConfig {
     this.autoRotateKeys = false,
     this.baseUrl = 'https://api.openai.com/v1',
     this.isCustom = false,
-    this.customParameters = const {},
-    this.modelSettings = const {},
-    this.globalSettings = const {},
+    Map<String, dynamic> customParameters = const {},
+    Map<String, Map<String, dynamic>> modelSettings = const {},
+    Map<String, dynamic> globalSettings = const {},
+    ProviderCapabilityConfig capabilityConfig =
+        const ProviderCapabilityConfig(),
+    Map<String, ModelCapabilityOverride> modelCapabilityOverrides = const {},
     this.globalExcludeModels = const [],
     this.models = const [],
-    this.selectedModel,
+    String? selectedChatModel,
+    @Deprecated('Use selectedChatModel instead.') String? selectedModel,
     this.isEnabled = true,
-  });
+  })  : customParameters = customParameters,
+        modelSettings = modelSettings,
+        globalSettings = globalSettings,
+        capabilityConfig = capabilityConfig.routes.isNotEmpty
+            ? capabilityConfig
+            : _migrateLegacyCapabilityConfig(
+                baseUrl: baseUrl,
+                modelSettings: modelSettings,
+              ),
+        modelCapabilityOverrides = modelCapabilityOverrides.isNotEmpty
+            ? modelCapabilityOverrides
+            : _migrateLegacyModelOverrides(modelSettings),
+        selectedChatModel = selectedChatModel ?? selectedModel;
 
   ProviderConfig copyWith({
     String? name,
@@ -73,9 +95,12 @@ class ProviderConfig {
     Map<String, dynamic>? customParameters,
     Map<String, Map<String, dynamic>>? modelSettings,
     Map<String, dynamic>? globalSettings,
+    ProviderCapabilityConfig? capabilityConfig,
+    Map<String, ModelCapabilityOverride>? modelCapabilityOverrides,
     List<String>? globalExcludeModels,
     List<String>? models,
-    String? selectedModel,
+    Object? selectedChatModel = _settingsSentinel,
+    @Deprecated('Use selectedChatModel instead.') String? selectedModel,
     bool? isEnabled,
   }) {
     return ProviderConfig(
@@ -90,9 +115,14 @@ class ProviderConfig {
       customParameters: customParameters ?? this.customParameters,
       modelSettings: modelSettings ?? this.modelSettings,
       globalSettings: globalSettings ?? this.globalSettings,
+      capabilityConfig: capabilityConfig ?? this.capabilityConfig,
+      modelCapabilityOverrides:
+          modelCapabilityOverrides ?? this.modelCapabilityOverrides,
       globalExcludeModels: globalExcludeModels ?? this.globalExcludeModels,
       models: models ?? this.models,
-      selectedModel: selectedModel ?? this.selectedModel,
+      selectedChatModel: selectedChatModel == _settingsSentinel
+          ? (selectedModel ?? this.selectedChatModel)
+          : selectedChatModel as String?,
       isEnabled: isEnabled ?? this.isEnabled,
     );
   }
@@ -114,16 +144,41 @@ class ProviderConfig {
     }
     final providers = entities.map(ProviderConfig.fromEntity).toList();
     if (!providers.any((provider) => provider.id == 'custom')) {
-      providers
-          .add(ProviderConfig(id: 'custom', name: 'Custom', isCustom: true));
+      providers.add(
+        ProviderConfig(
+          id: 'custom',
+          name: 'Custom',
+          isCustom: true,
+          capabilityConfig: _migrateLegacyCapabilityConfig(
+            baseUrl: 'https://api.openai.com/v1',
+            modelSettings: const {},
+          ),
+        ),
+      );
     }
     return providers;
   }
 
   static List<ProviderConfig> defaultProviders() {
     return [
-      ProviderConfig(id: 'openai', name: 'OpenAI', isCustom: false),
-      ProviderConfig(id: 'custom', name: 'Custom', isCustom: true),
+      ProviderConfig(
+        id: 'openai',
+        name: 'OpenAI',
+        isCustom: false,
+        capabilityConfig: _migrateLegacyCapabilityConfig(
+          baseUrl: 'https://api.openai.com/v1',
+          modelSettings: const {},
+        ),
+      ),
+      ProviderConfig(
+        id: 'custom',
+        name: 'Custom',
+        isCustom: true,
+        capabilityConfig: _migrateLegacyCapabilityConfig(
+          baseUrl: 'https://api.openai.com/v1',
+          modelSettings: const {},
+        ),
+      ),
     ];
   }
 
@@ -131,6 +186,12 @@ class ProviderConfig {
     final customParams = _decodeJsonMap(entity.customParametersJson);
     final modelSettings = _decodeModelSettings(entity.modelSettingsJson);
     final globalSettings = _decodeJsonMap(entity.globalSettingsJson);
+    final explicitCapabilityConfig = _decodeCapabilityConfig(
+      entity.capabilityRoutesJson,
+    );
+    final explicitModelOverrides = _decodeModelCapabilityOverrides(
+      entity.modelCapabilityOverridesJson,
+    );
 
     List<String> apiKeys = List<String>.from(entity.apiKeys);
     // ignore: deprecated_member_use_from_same_package
@@ -138,6 +199,18 @@ class ProviderConfig {
       // ignore: deprecated_member_use_from_same_package
       apiKeys = [entity.apiKey];
     }
+
+    final selectedChatModel =
+        entity.selectedChatModel ?? entity.lastSelectedModel;
+    final capabilityConfig = explicitCapabilityConfig.routes.isNotEmpty
+        ? explicitCapabilityConfig
+        : _migrateLegacyCapabilityConfig(
+            baseUrl: entity.baseUrl,
+            modelSettings: modelSettings,
+          );
+    final modelCapabilityOverrides = explicitModelOverrides.isNotEmpty
+        ? explicitModelOverrides
+        : _migrateLegacyModelOverrides(modelSettings);
 
     return ProviderConfig(
       id: entity.providerId,
@@ -151,9 +224,11 @@ class ProviderConfig {
       customParameters: customParams,
       modelSettings: modelSettings,
       globalSettings: globalSettings,
+      capabilityConfig: capabilityConfig,
+      modelCapabilityOverrides: modelCapabilityOverrides,
       globalExcludeModels: entity.globalExcludeModels,
       models: entity.savedModels,
-      selectedModel: entity.lastSelectedModel,
+      selectedChatModel: selectedChatModel,
       isEnabled: entity.isEnabled,
     );
   }
@@ -194,6 +269,153 @@ class ProviderConfig {
     } catch (_) {}
     return {};
   }
+
+  static ProviderCapabilityConfig _decodeCapabilityConfig(String? raw) {
+    if (raw == null || raw.isEmpty) {
+      return const ProviderCapabilityConfig();
+    }
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is Map) {
+        return ProviderCapabilityConfig.fromJson(
+          decoded.map((key, value) => MapEntry(key.toString(), value)),
+        );
+      }
+    } catch (_) {}
+    return const ProviderCapabilityConfig();
+  }
+
+  static Map<String, ModelCapabilityOverride> _decodeModelCapabilityOverrides(
+    String? raw,
+  ) {
+    if (raw == null || raw.isEmpty) {
+      return const {};
+    }
+    try {
+      final decoded = jsonDecode(raw);
+      return decodeModelCapabilityOverrides(decoded);
+    } catch (_) {
+      return const {};
+    }
+  }
+
+  static ProviderCapabilityConfig _migrateLegacyCapabilityConfig({
+    required String baseUrl,
+    required Map<String, Map<String, dynamic>> modelSettings,
+  }) {
+    final lowerBaseUrl = baseUrl.trim().toLowerCase();
+    final isAnthropicBase = lowerBaseUrl.contains('anthropic.com');
+    final isOpenAiLikeBase =
+        lowerBaseUrl.contains('openai.com') || lowerBaseUrl.contains('/v1');
+    final forceGeminiNative = looksLikeGeminiNativeBaseUrl(baseUrl) ||
+        modelSettings.values.any((settings) {
+          final rawTransport = settings['_aurora_transport_mode'] ??
+              settings['_aurora_transport'];
+          return rawTransport?.toString().trim().toLowerCase() ==
+              'gemini_native';
+        });
+    final chatPreset = forceGeminiNative
+        ? ProtocolPreset.geminiNativeGenerateContent
+        : (isAnthropicBase
+            ? ProtocolPreset.anthropicMessages
+            : ProtocolPreset.openaiChatCompletions);
+    final modelPreset = forceGeminiNative
+        ? ProtocolPreset.geminiModels
+        : (isAnthropicBase
+            ? ProtocolPreset.anthropicModels
+            : ProtocolPreset.openaiModels);
+    final embeddingPreset = forceGeminiNative
+        ? ProtocolPreset.geminiEmbedContent
+        : ProtocolPreset.openaiEmbeddings;
+    final shouldKeepLegacyModelFallback =
+        !forceGeminiNative && !isAnthropicBase && !isOpenAiLikeBase;
+
+    return ProviderCapabilityConfig(
+      routes: {
+        ProviderCapability.chat: CapabilityRouteConfig(
+          preset: chatPreset,
+          enabled: true,
+          baseUrlOverride: baseUrl,
+        ),
+        ProviderCapability.models: CapabilityRouteConfig(
+          preset: modelPreset,
+          enabled: true,
+          baseUrlOverride: baseUrl,
+          fallbackPreset: shouldKeepLegacyModelFallback
+              ? ProtocolPreset.geminiModels
+              : null,
+        ),
+        ProviderCapability.embeddings: CapabilityRouteConfig(
+          preset: embeddingPreset,
+          enabled: true,
+          baseUrlOverride: baseUrl,
+        ),
+        ProviderCapability.images: CapabilityRouteConfig(
+          preset: ProtocolPreset.openaiImages,
+          enabled: true,
+          baseUrlOverride: baseUrl,
+        ),
+        ProviderCapability.speech: CapabilityRouteConfig(
+          preset: ProtocolPreset.openaiAudioSpeech,
+          enabled: true,
+          baseUrlOverride: baseUrl,
+        ),
+        ProviderCapability.transcriptions: CapabilityRouteConfig(
+          preset: ProtocolPreset.openaiAudioTranscriptions,
+          enabled: true,
+          baseUrlOverride: baseUrl,
+        ),
+        ProviderCapability.translations: CapabilityRouteConfig(
+          preset: ProtocolPreset.openaiAudioTranslations,
+          enabled: true,
+          baseUrlOverride: baseUrl,
+        ),
+      },
+    );
+  }
+
+  static Map<String, ModelCapabilityOverride> _migrateLegacyModelOverrides(
+    Map<String, Map<String, dynamic>> modelSettings,
+  ) {
+    final result = <String, ModelCapabilityOverride>{};
+    for (final entry in modelSettings.entries) {
+      final route = _legacyChatRouteFromModelSettings(entry.value);
+      if (route == null) continue;
+      result[entry.key] = ModelCapabilityOverride(
+        routes: {ProviderCapability.chat: route},
+      );
+    }
+    return result;
+  }
+
+  static CapabilityRouteConfig? _legacyChatRouteFromModelSettings(
+    Map<String, dynamic> settings,
+  ) {
+    final rawTransport =
+        settings['_aurora_transport_mode'] ?? settings['_aurora_transport'];
+    final preset = switch (rawTransport?.toString().trim().toLowerCase()) {
+      'gemini_native' => ProtocolPreset.geminiNativeGenerateContent,
+      'openai_compat' => ProtocolPreset.openaiChatCompletions,
+      _ => null,
+    };
+    final baseUrlOverride =
+        settings['_aurora_transport_base_url']?.toString().trim();
+    final authOverride =
+        settings['_aurora_transport_api_key']?.toString().trim();
+    if (preset == null &&
+        (baseUrlOverride == null || baseUrlOverride.isEmpty) &&
+        (authOverride == null || authOverride.isEmpty)) {
+      return null;
+    }
+    return CapabilityRouteConfig(
+      preset: preset,
+      baseUrlOverride: baseUrlOverride == null || baseUrlOverride.isEmpty
+          ? null
+          : baseUrlOverride,
+      apiKeyOverride:
+          authOverride == null || authOverride.isEmpty ? null : authOverride,
+    );
+  }
 }
 
 class SettingsState {
@@ -233,6 +455,14 @@ class SettingsState {
   final int closeBehavior;
   final String? executionModel;
   final String? executionProviderId;
+  final String? imageModel;
+  final String? imageProviderId;
+  final String? speechModel;
+  final String? speechProviderId;
+  final String? transcriptionModel;
+  final String? transcriptionProviderId;
+  final String? translationModel;
+  final String? translationProviderId;
   final int memoryMinNewUserMessages;
   final int memoryIdleSeconds;
   final int memoryMaxBufferedMessages;
@@ -280,6 +510,14 @@ class SettingsState {
     this.closeBehavior = 0,
     this.executionModel,
     this.executionProviderId,
+    this.imageModel,
+    this.imageProviderId,
+    this.speechModel,
+    this.speechProviderId,
+    this.transcriptionModel,
+    this.transcriptionProviderId,
+    this.translationModel,
+    this.translationProviderId,
     this.memoryMinNewUserMessages = 20,
     this.memoryIdleSeconds = 600,
     this.memoryMaxBufferedMessages = 120,
@@ -365,8 +603,16 @@ class SettingsState {
     String? themeColor,
     String? backgroundColor,
     int? closeBehavior,
-    String? executionModel,
-    String? executionProviderId,
+    Object? executionModel = _settingsSentinel,
+    Object? executionProviderId = _settingsSentinel,
+    Object? imageModel = _settingsSentinel,
+    Object? imageProviderId = _settingsSentinel,
+    Object? speechModel = _settingsSentinel,
+    Object? speechProviderId = _settingsSentinel,
+    Object? transcriptionModel = _settingsSentinel,
+    Object? transcriptionProviderId = _settingsSentinel,
+    Object? translationModel = _settingsSentinel,
+    Object? translationProviderId = _settingsSentinel,
     int? memoryMinNewUserMessages,
     int? memoryIdleSeconds,
     int? memoryMaxBufferedMessages,
@@ -431,8 +677,36 @@ class SettingsState {
       themeColor: themeColor ?? this.themeColor,
       backgroundColor: backgroundColor ?? this.backgroundColor,
       closeBehavior: closeBehavior ?? this.closeBehavior,
-      executionModel: executionModel ?? this.executionModel,
-      executionProviderId: executionProviderId ?? this.executionProviderId,
+      executionModel: executionModel == _settingsSentinel
+          ? this.executionModel
+          : executionModel as String?,
+      executionProviderId: executionProviderId == _settingsSentinel
+          ? this.executionProviderId
+          : executionProviderId as String?,
+      imageModel: imageModel == _settingsSentinel
+          ? this.imageModel
+          : imageModel as String?,
+      imageProviderId: imageProviderId == _settingsSentinel
+          ? this.imageProviderId
+          : imageProviderId as String?,
+      speechModel: speechModel == _settingsSentinel
+          ? this.speechModel
+          : speechModel as String?,
+      speechProviderId: speechProviderId == _settingsSentinel
+          ? this.speechProviderId
+          : speechProviderId as String?,
+      transcriptionModel: transcriptionModel == _settingsSentinel
+          ? this.transcriptionModel
+          : transcriptionModel as String?,
+      transcriptionProviderId: transcriptionProviderId == _settingsSentinel
+          ? this.transcriptionProviderId
+          : transcriptionProviderId as String?,
+      translationModel: translationModel == _settingsSentinel
+          ? this.translationModel
+          : translationModel as String?,
+      translationProviderId: translationProviderId == _settingsSentinel
+          ? this.translationProviderId
+          : translationProviderId as String?,
       memoryMinNewUserMessages: memoryMinNewUserMessages != null
           ? _clampInt(memoryMinNewUserMessages, 1, 200)
           : this.memoryMinNewUserMessages,
@@ -460,6 +734,18 @@ class SettingsState {
 }
 
 const Object _settingsSentinel = Object();
+
+Map<String, dynamic> _encodeModelCapabilityOverrides(
+  Map<String, ModelCapabilityOverride> source,
+) {
+  final result = <String, dynamic>{};
+  source.forEach((key, value) {
+    if (!value.isEmpty) {
+      result[key] = value.toJson();
+    }
+  });
+  return result;
+}
 
 int _clampInt(int value, int min, int max) {
   if (value < min) return min;
@@ -610,6 +896,14 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     int closeBehavior = 0,
     String? executionModel,
     String? executionProviderId,
+    String? imageModel,
+    String? imageProviderId,
+    String? speechModel,
+    String? speechProviderId,
+    String? transcriptionModel,
+    String? transcriptionProviderId,
+    String? translationModel,
+    String? translationProviderId,
     int memoryMinNewUserMessages = 20,
     int memoryIdleSeconds = 600,
     int memoryMaxBufferedMessages = 120,
@@ -661,6 +955,14 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
           closeBehavior: closeBehavior,
           executionModel: executionModel,
           executionProviderId: executionProviderId,
+          imageModel: imageModel,
+          imageProviderId: imageProviderId,
+          speechModel: speechModel,
+          speechProviderId: speechProviderId,
+          transcriptionModel: transcriptionModel,
+          transcriptionProviderId: transcriptionProviderId,
+          translationModel: translationModel,
+          translationProviderId: translationProviderId,
           memoryMinNewUserMessages: _clampInt(memoryMinNewUserMessages, 1, 200),
           memoryIdleSeconds: _clampInt(memoryIdleSeconds, 30, 7200),
           memoryMaxBufferedMessages:
@@ -737,6 +1039,14 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
       closeBehavior: appSettings?.closeBehavior ?? 0,
       executionModel: appSettings?.executionModel,
       executionProviderId: appSettings?.executionProviderId,
+      imageModel: appSettings?.imageModel,
+      imageProviderId: appSettings?.imageProviderId,
+      speechModel: appSettings?.speechModel,
+      speechProviderId: appSettings?.speechProviderId,
+      transcriptionModel: appSettings?.transcriptionModel,
+      transcriptionProviderId: appSettings?.transcriptionProviderId,
+      translationModel: appSettings?.translationModel,
+      translationProviderId: appSettings?.translationProviderId,
       memoryMinNewUserMessages:
           _clampInt(appSettings?.memoryMinNewUserMessages ?? 20, 1, 200),
       memoryIdleSeconds:
@@ -835,9 +1145,12 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     Map<String, dynamic>? customParameters,
     Map<String, Map<String, dynamic>>? modelSettings,
     Map<String, dynamic>? globalSettings,
+    ProviderCapabilityConfig? capabilityConfig,
+    Map<String, ModelCapabilityOverride>? modelCapabilityOverrides,
     List<String>? globalExcludeModels,
     List<String>? models,
-    String? selectedModel,
+    Object? selectedChatModel = _settingsSentinel,
+    @Deprecated('Use selectedChatModel instead.') String? selectedModel,
     bool? isEnabled,
   }) async {
     final newProviders = state.providers.map((p) {
@@ -852,8 +1165,11 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
           customParameters: customParameters,
           modelSettings: modelSettings,
           globalSettings: globalSettings,
+          capabilityConfig: capabilityConfig,
+          modelCapabilityOverrides: modelCapabilityOverrides,
           globalExcludeModels: globalExcludeModels,
           models: models,
+          selectedChatModel: selectedChatModel,
           selectedModel: selectedModel,
           isEnabled: isEnabled,
         );
@@ -874,15 +1190,21 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
       ..customParametersJson = jsonEncode(updatedProvider.customParameters)
       ..modelSettingsJson = jsonEncode(updatedProvider.modelSettings)
       ..globalSettingsJson = jsonEncode(updatedProvider.globalSettings)
+      ..capabilityRoutesJson =
+          jsonEncode(updatedProvider.capabilityConfig.toJson())
+      ..modelCapabilityOverridesJson = jsonEncode(
+          _encodeModelCapabilityOverrides(
+              updatedProvider.modelCapabilityOverrides))
       ..globalExcludeModels = updatedProvider.globalExcludeModels
       ..savedModels = updatedProvider.models
       ..lastSelectedModel = updatedProvider.selectedModel
+      ..selectedChatModel = updatedProvider.selectedChatModel
       ..isEnabled = updatedProvider.isEnabled;
     await _storage.saveProvider(entity);
   }
 
   Future<void> setSelectedModel(String model) async {
-    await updateProvider(id: state.activeProvider.id, selectedModel: model);
+    await updateProvider(id: state.activeProvider.id, selectedChatModel: model);
     final provider = state.activeProvider;
     await _storage.saveAppSettings(
       activeProviderId: state.activeProvider.id,
@@ -1075,120 +1397,63 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     await updateProvider(id: providerId, modelSettings: newModelSettings);
   }
 
-  bool _shouldPreferGeminiNativeModelFetch(ProviderConfig provider) {
-    if (looksLikeGeminiNativeBaseUrl(provider.baseUrl)) {
-      return true;
+  Future<void> updateCapabilityRoute({
+    required String providerId,
+    required ProviderCapability capability,
+    required CapabilityRouteConfig route,
+  }) async {
+    final provider = state.providers.firstWhere((p) => p.id == providerId);
+    final routes = Map<ProviderCapability, CapabilityRouteConfig>.from(
+        provider.capabilityConfig.routes);
+    if (route.isEmpty) {
+      routes.remove(capability);
+    } else {
+      routes[capability] = route;
     }
-
-    for (final settings in provider.modelSettings.values) {
-      final rawTransport =
-          settings['_aurora_transport_mode'] ?? settings['_aurora_transport'];
-      if (rawTransport?.toString().trim().toLowerCase() == 'gemini_native') {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  Future<List<String>> _fetchOpenAiCompatibleModels(
-    Dio dio,
-    ProviderConfig provider,
-  ) async {
-    final baseUrl = provider.baseUrl.endsWith('/')
-        ? provider.baseUrl
-        : '${provider.baseUrl}/';
-    final response = await dio.getUri(
-      Uri.parse('${baseUrl}models'),
-      options: Options(
-        headers: {
-          'Accept': 'application/json',
-          'Authorization': 'Bearer ${provider.apiKey}',
-        },
-      ),
+    await updateProvider(
+      id: providerId,
+      capabilityConfig: ProviderCapabilityConfig(routes: routes),
     );
-    return _parseOpenAiCompatibleModelResponse(response.data);
   }
 
-  Future<List<String>> _fetchGeminiNativeModels(
-    Dio dio,
-    ProviderConfig provider,
-  ) async {
-    final uri =
-        Uri.parse('${normalizeGeminiNativeBaseUrl(provider.baseUrl)}models');
-    final response = await dio.getUri(
-      uri,
-      options: Options(
-        headers: {
-          'Accept': 'application/json',
-          'x-goog-api-key': provider.apiKey,
-        },
-      ),
+  Future<void> updateModelCapabilityRoute({
+    required String providerId,
+    required String modelName,
+    required ProviderCapability capability,
+    required CapabilityRouteConfig route,
+  }) async {
+    final provider = state.providers.firstWhere((p) => p.id == providerId);
+    final overrides = Map<String, ModelCapabilityOverride>.from(
+        provider.modelCapabilityOverrides);
+    final modelOverride =
+        overrides[modelName] ?? const ModelCapabilityOverride(routes: {});
+    final routes = Map<ProviderCapability, CapabilityRouteConfig>.from(
+        modelOverride.routes);
+    if (route.isEmpty) {
+      routes.remove(capability);
+    } else {
+      routes[capability] = route;
+    }
+    if (routes.isEmpty) {
+      overrides.remove(modelName);
+    } else {
+      overrides[modelName] = ModelCapabilityOverride(routes: routes);
+    }
+    await updateProvider(
+      id: providerId,
+      modelCapabilityOverrides: overrides,
     );
-    return _parseGeminiNativeModelResponse(response.data);
-  }
-
-  dynamic _normalizeModelResponsePayload(dynamic payload) {
-    if (payload is String) {
-      return jsonDecode(payload);
-    }
-    return payload;
-  }
-
-  List<String> _parseOpenAiCompatibleModelResponse(dynamic payload) {
-    final normalized = _normalizeModelResponsePayload(payload);
-    if (normalized is! Map) {
-      throw FormatException('OpenAI model list payload is not a JSON object.');
-    }
-
-    final data = normalized['data'];
-    if (data is! List) {
-      throw FormatException(
-        'OpenAI model list payload does not contain data[].',
-      );
-    }
-
-    final models = <String>[];
-    for (final item in data) {
-      if (item is! Map) continue;
-      final id = item['id']?.toString().trim();
-      if (id == null || id.isEmpty) continue;
-      models.add(id);
-    }
-    models.sort();
-    return models.toSet().toList();
-  }
-
-  List<String> _parseGeminiNativeModelResponse(dynamic payload) {
-    final normalized = _normalizeModelResponsePayload(payload);
-    if (normalized is! Map) {
-      throw FormatException('Gemini model list payload is not a JSON object.');
-    }
-
-    final data = normalized['models'];
-    if (data is! List) {
-      throw FormatException(
-        'Gemini model list payload does not contain models[].',
-      );
-    }
-
-    final models = <String>[];
-    for (final item in data) {
-      if (item is! Map) continue;
-      final name = item['name']?.toString().trim();
-      if (name == null || name.isEmpty) continue;
-      final normalizedName =
-          name.startsWith('models/') ? name.substring('models/'.length) : name;
-      if (normalizedName.isEmpty) continue;
-      models.add(normalizedName);
-    }
-    models.sort();
-    return models.toSet().toList();
   }
 
   Future<bool> fetchModels() async {
     final provider = state.viewingProvider;
     final isActiveProvider = provider.id == state.activeProviderId;
+    final resolver = const CapabilityRouteResolver();
+    final gateway = ProviderCapabilityGateway();
+    final primaryRoute = resolver.resolve(
+      provider: provider,
+      capability: ProviderCapability.models,
+    );
     AppLogger.info(
       'SETTINGS',
       'Model fetch started',
@@ -1214,39 +1479,39 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     }
     state = state.copyWith(isLoadingModels: true, error: null);
     try {
-      final dio = Dio();
-      final preferGeminiNative = _shouldPreferGeminiNativeModelFetch(provider);
-
       List<String> models;
-      var fetchMode = preferGeminiNative ? 'gemini_native' : 'openai_compat';
+      var fetchMode = primaryRoute.preset.wireName;
       try {
-        models = preferGeminiNative
-            ? await _fetchGeminiNativeModels(dio, provider)
-            : await _fetchOpenAiCompatibleModels(dio, provider);
+        models = await gateway.fetchModels(
+          provider: provider,
+          route: primaryRoute,
+        );
       } catch (primaryError) {
+        final fallbackRoute = resolver.resolveFallback(
+          provider: provider,
+          capability: ProviderCapability.models,
+          current: primaryRoute,
+        );
+        if (fallbackRoute == null) {
+          rethrow;
+        }
         AppLogger.warn(
           'SETTINGS',
-          'Primary model fetch strategy failed, retrying fallback',
+          'Primary model fetch route failed, retrying configured fallback',
           category: 'MODEL_FETCH',
           data: {
             'provider_id': provider.id,
             'provider_name': provider.name,
-            'primary_mode':
-                preferGeminiNative ? 'gemini_native' : 'openai_compat',
+            'primary_mode': primaryRoute.preset.wireName,
+            'fallback_mode': fallbackRoute.preset.wireName,
             'error': primaryError.toString(),
           },
         );
-
-        try {
-          fetchMode = preferGeminiNative ? 'openai_compat' : 'gemini_native';
-          models = preferGeminiNative
-              ? await _fetchOpenAiCompatibleModels(dio, provider)
-              : await _fetchGeminiNativeModels(dio, provider);
-        } catch (fallbackError) {
-          throw Exception(
-            'Primary: $primaryError; Fallback: $fallbackError',
-          );
-        }
+        fetchMode = fallbackRoute.preset.wireName;
+        models = await gateway.fetchModels(
+          provider: provider,
+          route: fallbackRoute,
+        );
       }
 
       String? newSelectedModel = provider.selectedModel;
@@ -1770,6 +2035,60 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     await _storage.saveAppSettings(
       activeProviderId: state.activeProvider.id,
       closeBehavior: behavior,
+    );
+  }
+
+  Future<void> setImageSettings({String? model, String? providerId}) async {
+    state = state.copyWith(
+      imageModel: model,
+      imageProviderId: providerId,
+    );
+    await _storage.saveAppSettings(
+      activeProviderId: state.activeProvider.id,
+      imageModel: model,
+      imageProviderId: providerId,
+    );
+  }
+
+  Future<void> setSpeechSettings({String? model, String? providerId}) async {
+    state = state.copyWith(
+      speechModel: model,
+      speechProviderId: providerId,
+    );
+    await _storage.saveAppSettings(
+      activeProviderId: state.activeProvider.id,
+      speechModel: model,
+      speechProviderId: providerId,
+    );
+  }
+
+  Future<void> setTranscriptionSettings({
+    String? model,
+    String? providerId,
+  }) async {
+    state = state.copyWith(
+      transcriptionModel: model,
+      transcriptionProviderId: providerId,
+    );
+    await _storage.saveAppSettings(
+      activeProviderId: state.activeProvider.id,
+      transcriptionModel: model,
+      transcriptionProviderId: providerId,
+    );
+  }
+
+  Future<void> setTranslationSettings({
+    String? model,
+    String? providerId,
+  }) async {
+    state = state.copyWith(
+      translationModel: model,
+      translationProviderId: providerId,
+    );
+    await _storage.saveAppSettings(
+      activeProviderId: state.activeProvider.id,
+      translationModel: model,
+      translationProviderId: providerId,
     );
   }
 

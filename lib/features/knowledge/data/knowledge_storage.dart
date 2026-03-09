@@ -3,10 +3,10 @@ import 'dart:math';
 import 'dart:io';
 
 import 'package:archive/archive.dart';
-import 'package:dio/dio.dart';
 import 'package:isar_community/isar.dart';
 import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
+import 'package:aurora/shared/services/provider_capability_gateway.dart';
 
 import '../../settings/data/settings_storage.dart';
 import '../../settings/presentation/settings_provider.dart';
@@ -27,11 +27,10 @@ class KnowledgeIngestReport {
 
 class KnowledgeStorage {
   KnowledgeStorage(SettingsStorage settingsStorage)
-      : _isar = settingsStorage.isar,
-        _dio = Dio(BaseOptions(connectTimeout: const Duration(seconds: 20)));
+      : _isar = settingsStorage.isar;
 
   final Isar _isar;
-  final Dio _dio;
+  final ProviderCapabilityGateway _gateway = ProviderCapabilityGateway();
 
   Future<List<KnowledgeBaseSummary>> loadBaseSummaries({
     String? scope,
@@ -703,52 +702,11 @@ class KnowledgeStorage {
     required ProviderConfig provider,
   }) async {
     if (inputs.isEmpty) return const [];
-
-    final apiKey = provider.apiKey;
-    if (apiKey.isEmpty) {
-      throw Exception(
-          'Embedding API key is empty for provider ${provider.name}.');
-    }
-
-    final baseUrl = provider.baseUrl.endsWith('/')
-        ? provider.baseUrl
-        : '${provider.baseUrl}/';
-
-    final response = await _dio.post(
-      '${baseUrl}embeddings',
-      data: {
-        'model': model,
-        'input': inputs,
-      },
-      options: Options(
-        headers: {
-          'Authorization': 'Bearer $apiKey',
-          'Content-Type': 'application/json',
-        },
-      ),
+    return _gateway.embedTexts(
+      provider: provider,
+      model: model,
+      inputs: inputs,
     );
-
-    final data = response.data;
-    if (data is! Map || data['data'] is! List) {
-      throw Exception('Invalid embedding response format.');
-    }
-
-    final items = (data['data'] as List)
-        .whereType<Map>()
-        .map((e) => {
-              'index': (e['index'] as num?)?.toInt() ?? 0,
-              'embedding': (e['embedding'] as List?)
-                      ?.map((v) => (v as num).toDouble())
-                      .toList() ??
-                  <double>[],
-            })
-        .toList();
-
-    items.sort((a, b) => (a['index'] as int).compareTo(b['index'] as int));
-
-    return items
-        .map((e) => e['embedding'] as List<double>)
-        .toList(growable: false);
   }
 
   double _cosineSimilarity(List<double> a, List<double> b) {

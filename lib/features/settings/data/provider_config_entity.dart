@@ -18,9 +18,12 @@ class ProviderConfigEntity {
   String? customParametersJson;
   String? modelSettingsJson;
   String? globalSettingsJson;
+  String? capabilityRoutesJson;
+  String? modelCapabilityOverridesJson;
   List<String> globalExcludeModels = [];
   List<String> savedModels = [];
   String? lastSelectedModel;
+  String? selectedChatModel;
   bool isActive = false;
   bool isEnabled = true;
 }
@@ -30,6 +33,7 @@ class AppSettingsEntity {
   Id id = Isar.autoIncrement;
   late String activeProviderId;
   String? selectedModel;
+  String? selectedChatModel;
   List<String> availableModels = [];
   String userName = 'User';
   String? userAvatar;
@@ -65,6 +69,14 @@ class AppSettingsEntity {
   int closeBehavior = 0; // 0: ask, 1: minimize, 2: exit
   String? executionModel;
   String? executionProviderId;
+  String? imageModel;
+  String? imageProviderId;
+  String? speechModel;
+  String? speechProviderId;
+  String? transcriptionModel;
+  String? transcriptionProviderId;
+  String? translationModel;
+  String? translationProviderId;
   int memoryMinNewUserMessages = 20;
   int memoryIdleSeconds = 600;
   int memoryMaxBufferedMessages = 120;

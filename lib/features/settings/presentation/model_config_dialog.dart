@@ -5,6 +5,7 @@ import 'package:aurora/shared/riverpod_compat.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 import 'package:aurora/shared/services/llm_transport_mode.dart';
 import 'package:aurora/shared/widgets/aurora_dropdown.dart';
+import 'widgets/capability_route_editor_panel.dart';
 import 'settings_provider.dart';
 
 class ModelConfigDialog extends ConsumerStatefulWidget {
@@ -202,6 +203,23 @@ class _ModelConfigDialogState extends ConsumerState<ModelConfigDialog> {
       content: SingleChildScrollView(
         child: Column(
           children: [
+            _buildSectionCard(
+              title: l10n.modelCapabilityRoutesTitle,
+              subtitle: l10n.modelCapabilityRoutesSubtitle,
+              icon: AuroraIcons.globe,
+              headerAction: null,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 16),
+                  CapabilityRouteEditorPanel(
+                    provider: widget.provider,
+                    modelName: widget.modelName,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
             _buildSectionCard(
               title: l10n.transportMode,
               subtitle: l10n.transportModeSubtitle,

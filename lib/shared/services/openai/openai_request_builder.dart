@@ -4,11 +4,15 @@ class _PreparedChatRequest {
   final String baseUrl;
   final String apiKey;
   final Map<String, dynamic> requestData;
+  final Uri endpointUri;
+  final ResolvedCapabilityRoute route;
 
   _PreparedChatRequest({
     required this.baseUrl,
     required this.apiKey,
     required this.requestData,
+    required this.endpointUri,
+    required this.route,
   });
 }
 
@@ -196,7 +200,12 @@ Use search for:
     List<Map<String, dynamic>>? tools,
     String? toolChoice,
   }) async {
-    final baseUrl = _normalizeBaseUrl(provider.baseUrl);
+    final route = const CapabilityRouteResolver().resolve(
+      provider: provider,
+      capability: ProviderCapability.chat,
+      modelName: selectedModel,
+    );
+    final baseUrl = _normalizeBaseUrl(route.baseUrl);
     var apiMessages = await _buildApiMessages(messages);
     apiMessages = _sanitizeOutgoingImageMessages(
       apiMessages,
@@ -276,11 +285,19 @@ Use search for:
       activeParams: activeParams,
       selectedModel: selectedModel,
     );
+    final apiKey = route.effectiveApiKey(provider);
+    final endpointUri = route.buildUri(
+      model: selectedModel,
+      stream: stream,
+      apiKey: apiKey,
+    );
 
     return _PreparedChatRequest(
       baseUrl: baseUrl,
-      apiKey: provider.apiKey,
+      apiKey: apiKey,
       requestData: requestData,
+      endpointUri: endpointUri,
+      route: route,
     );
   }
 }
