@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:dio/dio.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:aurora/l10n/app_localizations.dart';
@@ -8,6 +9,8 @@ import 'package:aurora/shared/riverpod_compat.dart';
 import 'package:aurora/features/settings/presentation/provider_route_labels.dart';
 import 'package:aurora/features/settings/presentation/settings_provider.dart';
 import 'package:aurora/features/settings/domain/provider_route_config.dart';
+import 'package:aurora/shared/services/capability_route_resolver.dart';
+import 'package:aurora/shared/services/model_capability_registry.dart';
 import 'package:aurora/shared/services/provider_capability_gateway.dart';
 import 'package:aurora/shared/theme/aurora_icons.dart';
 import 'package:aurora/shared/widgets/aurora_dropdown.dart';
@@ -24,8 +27,11 @@ class CapabilityLabPage extends ConsumerStatefulWidget {
 
 class _CapabilityLabPageState extends ConsumerState<CapabilityLabPage> {
   final ProviderCapabilityGateway _gateway = ProviderCapabilityGateway();
+  final CapabilityRouteResolver _resolver = const CapabilityRouteResolver();
   final TextEditingController _imagePromptController = TextEditingController();
   final TextEditingController _speechTextController = TextEditingController();
+  final TextEditingController _audioTextResultController =
+      TextEditingController();
   String? _audioFilePath;
   bool _isRunning = false;
   int _tabIndex = 0;
@@ -48,6 +54,7 @@ class _CapabilityLabPageState extends ConsumerState<CapabilityLabPage> {
   void dispose() {
     _imagePromptController.dispose();
     _speechTextController.dispose();
+    _audioTextResultController.dispose();
     super.dispose();
   }
 
@@ -61,10 +68,6 @@ class _CapabilityLabPageState extends ConsumerState<CapabilityLabPage> {
       ProviderCapability.transcriptions,
       ProviderCapability.translations,
     ];
-    final currentCapability = tabs[_tabIndex];
-    final selection = _selectionForCapability(settings, currentCapability);
-    final provider = selection.provider;
-    final models = provider?.models ?? const <String>[];
 
     return ScaffoldPage.withPadding(
       header: PageHeader(
@@ -79,25 +82,41 @@ class _CapabilityLabPageState extends ConsumerState<CapabilityLabPage> {
       content: TabView(
         currentIndex: _tabIndex,
         onChanged: (value) => setState(() => _tabIndex = value),
-        tabs: tabs
-            .map(
-              (capability) => Tab(
-                text: Text(capabilityLabel(context, capability)),
-                icon: Icon(_iconFor(capability), size: 16),
-                body: SingleChildScrollView(
-                  padding: const EdgeInsets.only(top: 12, right: 4),
-                  child: _buildCapabilityBody(
-                    context: context,
-                    settings: settings,
-                    capability: capability,
-                    provider: provider,
-                    models: models,
-                    selectedModel: selection.model,
-                  ),
+        tabs: tabs.map(
+          (capability) {
+            final selection = _selectionForCapability(settings, capability);
+            final provider = selection.provider?.isEnabled == true
+                ? selection.provider
+                : null;
+            final modelOptions = _buildModelOptions(provider, capability);
+            final selectedModel =
+                _resolveSelectedCapabilityModel(selection.model, modelOptions);
+            final invalidSelectedModelMessage = _invalidSelectedModelMessage(
+              context,
+              provider: provider,
+              capability: capability,
+              storedModel: selection.model,
+              selectedModel: selectedModel,
+              modelOptions: modelOptions,
+            );
+            return Tab(
+              text: Text(capabilityLabel(context, capability)),
+              icon: Icon(_iconFor(capability), size: 16),
+              body: SingleChildScrollView(
+                padding: const EdgeInsets.only(top: 12, right: 4),
+                child: _buildCapabilityBody(
+                  context: context,
+                  settings: settings,
+                  capability: capability,
+                  provider: provider,
+                  modelOptions: modelOptions,
+                  selectedModel: selectedModel,
+                  invalidSelectedModelMessage: invalidSelectedModelMessage,
                 ),
               ),
-            )
-            .toList(),
+            );
+          },
+        ).toList(),
       ),
     );
   }
@@ -107,8 +126,9 @@ class _CapabilityLabPageState extends ConsumerState<CapabilityLabPage> {
     required SettingsState settings,
     required ProviderCapability capability,
     required ProviderConfig? provider,
-    required List<String> models,
+    required List<_CapabilityModelOption> modelOptions,
     required String? selectedModel,
+    required String? invalidSelectedModelMessage,
   }) {
     final l10n = AppLocalizations.of(context)!;
     final availableProviders = settings.providers
@@ -149,11 +169,11 @@ class _CapabilityLabPageState extends ConsumerState<CapabilityLabPage> {
                   label: l10n.model,
                   child: AuroraFluentDropdownField<String>(
                     value: selectedModel,
-                    options: models
+                    options: modelOptions
                         .map(
-                          (model) => AuroraDropdownOption<String>(
-                            value: model,
-                            label: model,
+                          (option) => AuroraDropdownOption<String>(
+                            value: option.value,
+                            label: option.label,
                           ),
                         )
                         .toList(),
@@ -180,6 +200,13 @@ class _CapabilityLabPageState extends ConsumerState<CapabilityLabPage> {
             );
           },
         ),
+        if (invalidSelectedModelMessage != null) ...[
+          const SizedBox(height: 12),
+          InfoBar(
+            severity: InfoBarSeverity.warning,
+            title: Text(invalidSelectedModelMessage),
+          ),
+        ],
         const SizedBox(height: 16),
         if (capability == ProviderCapability.images)
           _buildImageTab(provider, selectedModel)
@@ -273,7 +300,7 @@ class _CapabilityLabPageState extends ConsumerState<CapabilityLabPage> {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(fileText),
+                  _buildAudioFileText(fileText, maxLines: 3),
                   const SizedBox(height: 12),
                   Button(
                     onPressed: _pickAudioFile,
@@ -284,7 +311,9 @@ class _CapabilityLabPageState extends ConsumerState<CapabilityLabPage> {
             }
             return Row(
               children: [
-                Expanded(child: Text(fileText)),
+                Expanded(
+                  child: _buildAudioFileText(fileText),
+                ),
                 const SizedBox(width: 12),
                 Button(
                   onPressed: _pickAudioFile,
@@ -313,7 +342,7 @@ class _CapabilityLabPageState extends ConsumerState<CapabilityLabPage> {
           InfoLabel(
             label: AppLocalizations.of(context)!.capabilityLabOutputTextLabel,
             child: TextBox(
-              controller: TextEditingController(text: _audioTextResult),
+              controller: _audioTextResultController,
               minLines: 5,
               maxLines: 10,
               readOnly: true,
@@ -336,6 +365,8 @@ class _CapabilityLabPageState extends ConsumerState<CapabilityLabPage> {
     if (file == null) return;
     setState(() {
       _audioFilePath = file.path;
+      _audioTextResult = null;
+      _audioTextResultController.clear();
     });
   }
 
@@ -404,6 +435,7 @@ class _CapabilityLabPageState extends ConsumerState<CapabilityLabPage> {
       final l10n = AppLocalizations.of(context)!;
       setState(() {
         _audioTextResult = result.text;
+        _audioTextResultController.text = result.text;
       });
       showAuroraNotice(
         context,
@@ -422,7 +454,7 @@ class _CapabilityLabPageState extends ConsumerState<CapabilityLabPage> {
       final l10n = AppLocalizations.of(context)!;
       showAuroraNotice(
         context,
-        l10n.capabilityLabRequestFailed(error.toString()),
+        l10n.capabilityLabRequestFailed(_formatErrorMessage(error)),
         icon: AuroraIcons.error,
       );
     } finally {
@@ -430,6 +462,171 @@ class _CapabilityLabPageState extends ConsumerState<CapabilityLabPage> {
         setState(() => _isRunning = false);
       }
     }
+  }
+
+  Widget _buildAudioFileText(String text, {int maxLines = 2}) {
+    return Tooltip(
+      message: text,
+      child: Text(
+        text,
+        maxLines: maxLines,
+        overflow: TextOverflow.ellipsis,
+      ),
+    );
+  }
+
+  String _formatErrorMessage(Object error) {
+    if (error is DioException) {
+      final responseMessage = _extractErrorMessage(error.response?.data);
+      final statusCode = error.response?.statusCode;
+      if (responseMessage != null && responseMessage.isNotEmpty) {
+        return statusCode == null
+            ? responseMessage
+            : 'HTTP $statusCode: $responseMessage';
+      }
+      if (statusCode != null) {
+        return 'HTTP $statusCode';
+      }
+      final dioMessage = error.message?.trim();
+      if (dioMessage != null && dioMessage.isNotEmpty) {
+        return dioMessage;
+      }
+    }
+
+    final raw = error.toString().trim();
+    const exceptionPrefix = 'Exception: ';
+    if (raw.startsWith(exceptionPrefix)) {
+      return raw.substring(exceptionPrefix.length);
+    }
+    return raw;
+  }
+
+  String? _extractErrorMessage(dynamic payload) {
+    final normalized = switch (payload) {
+      String text => _tryDecodeJson(text),
+      _ => payload,
+    };
+    if (normalized is Map) {
+      final nestedError = normalized['error'];
+      if (nestedError is Map) {
+        return nestedError['message']?.toString() ??
+            nestedError['detail']?.toString() ??
+            nestedError['error']?.toString();
+      }
+      return normalized['message']?.toString() ??
+          normalized['detail']?.toString() ??
+          normalized['error']?.toString();
+    }
+    if (normalized is String) {
+      final text = normalized.trim();
+      return text.isEmpty ? null : text;
+    }
+    return null;
+  }
+
+  dynamic _tryDecodeJson(String raw) {
+    final text = raw.trim();
+    if (text.isEmpty) return raw;
+    try {
+      return jsonDecode(text);
+    } catch (_) {
+      return raw;
+    }
+  }
+
+  List<_CapabilityModelOption> _buildModelOptions(
+    ProviderConfig? provider,
+    ProviderCapability capability,
+  ) {
+    if (provider == null) {
+      return const [];
+    }
+    final options = <_CapabilityModelOption>[];
+    for (final model in provider.models) {
+      if (!provider.isModelEnabled(model)) continue;
+      final route = _resolver.resolve(
+        provider: provider,
+        capability: capability,
+        modelName: model,
+      );
+      final assessment = matchModelCapability(
+        capability: capability,
+        model: model,
+        baseUrl: route.baseUrl,
+        preset: route.preset,
+        routeEnabled: route.enabled,
+      );
+      if (assessment.isKnownUnsupported) {
+        continue;
+      }
+      options.add(
+        _CapabilityModelOption(
+          value: model,
+          label: '${displayCapabilityMarker(assessment)} $model',
+        ),
+      );
+    }
+    return options;
+  }
+
+  String? _resolveSelectedCapabilityModel(
+    String? storedModel,
+    List<_CapabilityModelOption> options,
+  ) {
+    if (storedModel == null) return null;
+    for (final option in options) {
+      if (option.value == storedModel) {
+        return storedModel;
+      }
+    }
+    return null;
+  }
+
+  String? _invalidSelectedModelMessage(
+    BuildContext context, {
+    required ProviderConfig? provider,
+    required ProviderCapability capability,
+    required String? storedModel,
+    required String? selectedModel,
+    required List<_CapabilityModelOption> modelOptions,
+  }) {
+    if (provider == null || storedModel == null || selectedModel != null) {
+      return null;
+    }
+    final locale = Localizations.localeOf(context).languageCode;
+    final route = _resolver.resolve(
+      provider: provider,
+      capability: capability,
+      modelName: storedModel,
+    );
+    final assessment = matchModelCapability(
+      capability: capability,
+      model: storedModel,
+      baseUrl: route.baseUrl,
+      preset: route.preset,
+      routeEnabled: route.enabled,
+    );
+    final capabilityText = capabilityLabel(context, capability);
+    if (assessment.isKnownUnsupported) {
+      return locale == 'zh'
+          ? '已保存的模型“$storedModel”明确不支持$capabilityText，请重新选择模型。'
+          : 'Saved model "$storedModel" does not support $capabilityText. Choose another model.';
+    }
+    final stillExists = provider.models.contains(storedModel);
+    final available = modelOptions.isNotEmpty;
+    if (!stillExists) {
+      return locale == 'zh'
+          ? '已保存的模型“$storedModel”已不在当前 Provider 的模型列表中，请重新选择模型。'
+          : 'Saved model "$storedModel" is no longer available on this provider. Choose another model.';
+    }
+    if (!available) {
+      return locale == 'zh'
+          ? '当前 Provider 没有可用于$capabilityText的兼容模型。'
+          : 'No compatible models are available for $capabilityText on this provider.';
+    }
+    return locale == 'zh'
+        ? '已保存的模型“$storedModel”当前不可用于$capabilityText，请重新选择模型。'
+        : 'Saved model "$storedModel" is not currently usable for $capabilityText. Choose another model.';
   }
 
   void _updateProviderSelection(
@@ -555,6 +752,16 @@ class _CapabilitySelection {
   const _CapabilitySelection({
     required this.provider,
     required this.model,
+  });
+}
+
+class _CapabilityModelOption {
+  final String value;
+  final String label;
+
+  const _CapabilityModelOption({
+    required this.value,
+    required this.label,
   });
 }
 

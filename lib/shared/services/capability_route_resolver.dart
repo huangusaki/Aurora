@@ -403,6 +403,14 @@ String _normalizeBaseUrlForPreset({
     ProtocolPreset.geminiModels ||
     ProtocolPreset.geminiEmbedContent =>
       normalizeGeminiNativeBaseUrl(trimmed),
+    ProtocolPreset.openaiChatCompletions ||
+    ProtocolPreset.geminiOpenaiChatCompletions ||
+    ProtocolPreset.openaiImages ||
+    ProtocolPreset.openaiAudioSpeech ||
+    ProtocolPreset.openaiAudioTranscriptions ||
+    ProtocolPreset.openaiAudioTranslations
+        when isOfficialGeminiNativeBaseUrl(trimmed) =>
+      normalizeGeminiOpenAIBaseUrl(trimmed),
     _ => trimmed.endsWith('/')
         ? trimmed.substring(0, trimmed.length - 1)
         : trimmed,

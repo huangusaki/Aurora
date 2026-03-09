@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/painting.dart';
 import 'package:aurora/shared/riverpod_compat.dart';
+import 'package:aurora/shared/services/model_capability_registry.dart';
 import 'package:aurora/shared/services/capability_route_resolver.dart';
 import 'package:aurora/shared/services/gemini_native_endpoint.dart';
 import 'package:aurora/shared/services/provider_capability_gateway.dart';
@@ -60,9 +61,9 @@ class ProviderConfig {
     this.autoRotateKeys = false,
     this.baseUrl = 'https://api.openai.com/v1',
     this.isCustom = false,
-    Map<String, dynamic> customParameters = const {},
-    Map<String, Map<String, dynamic>> modelSettings = const {},
-    Map<String, dynamic> globalSettings = const {},
+    this.customParameters = const {},
+    this.modelSettings = const {},
+    this.globalSettings = const {},
     ProviderCapabilityConfig capabilityConfig =
         const ProviderCapabilityConfig(),
     Map<String, ModelCapabilityOverride> modelCapabilityOverrides = const {},
@@ -71,10 +72,7 @@ class ProviderConfig {
     String? selectedChatModel,
     @Deprecated('Use selectedChatModel instead.') String? selectedModel,
     this.isEnabled = true,
-  })  : customParameters = customParameters,
-        modelSettings = modelSettings,
-        globalSettings = globalSettings,
-        capabilityConfig = capabilityConfig.routes.isNotEmpty
+  })  : capabilityConfig = capabilityConfig.routes.isNotEmpty
             ? capabilityConfig
             : _migrateLegacyCapabilityConfig(
                 baseUrl: baseUrl,
@@ -304,7 +302,6 @@ class ProviderConfig {
     required Map<String, Map<String, dynamic>> modelSettings,
   }) {
     final lowerBaseUrl = baseUrl.trim().toLowerCase();
-    final isAnthropicBase = lowerBaseUrl.contains('anthropic.com');
     final isOpenAiLikeBase =
         lowerBaseUrl.contains('openai.com') || lowerBaseUrl.contains('/v1');
     final forceGeminiNative = looksLikeGeminiNativeBaseUrl(baseUrl) ||
@@ -314,21 +311,43 @@ class ProviderConfig {
           return rawTransport?.toString().trim().toLowerCase() ==
               'gemini_native';
         });
-    final chatPreset = forceGeminiNative
-        ? ProtocolPreset.geminiNativeGenerateContent
-        : (isAnthropicBase
-            ? ProtocolPreset.anthropicMessages
-            : ProtocolPreset.openaiChatCompletions);
-    final modelPreset = forceGeminiNative
-        ? ProtocolPreset.geminiModels
-        : (isAnthropicBase
-            ? ProtocolPreset.anthropicModels
-            : ProtocolPreset.openaiModels);
-    final embeddingPreset = forceGeminiNative
-        ? ProtocolPreset.geminiEmbedContent
-        : ProtocolPreset.openaiEmbeddings;
-    final shouldKeepLegacyModelFallback =
-        !forceGeminiNative && !isAnthropicBase && !isOpenAiLikeBase;
+    final family = detectProviderFamilyFromBaseUrl(
+      baseUrl,
+      forceGeminiNative: forceGeminiNative,
+    );
+    final chatPreset = switch (family) {
+      ProviderModelFamily.geminiNative =>
+        ProtocolPreset.geminiNativeGenerateContent,
+      ProviderModelFamily.geminiOpenAi =>
+        ProtocolPreset.geminiOpenaiChatCompletions,
+      ProviderModelFamily.anthropic => ProtocolPreset.anthropicMessages,
+      _ => ProtocolPreset.openaiChatCompletions,
+    };
+    final modelPreset = switch (family) {
+      ProviderModelFamily.geminiNative ||
+      ProviderModelFamily.geminiOpenAi =>
+        ProtocolPreset.geminiModels,
+      ProviderModelFamily.anthropic => ProtocolPreset.anthropicModels,
+      _ => ProtocolPreset.openaiModels,
+    };
+    final embeddingPreset = switch (family) {
+      ProviderModelFamily.geminiNative ||
+      ProviderModelFamily.geminiOpenAi =>
+        ProtocolPreset.geminiEmbedContent,
+      ProviderModelFamily.anthropic => ProtocolPreset.customJson,
+      _ => ProtocolPreset.openaiEmbeddings,
+    };
+    final audioChatPreset = switch (family) {
+      ProviderModelFamily.geminiNative =>
+        ProtocolPreset.geminiNativeGenerateContent,
+      ProviderModelFamily.geminiOpenAi =>
+        ProtocolPreset.geminiOpenaiChatCompletions,
+      ProviderModelFamily.anthropic => ProtocolPreset.customJson,
+      _ => ProtocolPreset.openaiChatCompletions,
+    };
+    final shouldKeepLegacyModelFallback = !forceGeminiNative &&
+        family != ProviderModelFamily.anthropic &&
+        !isOpenAiLikeBase;
 
     return ProviderCapabilityConfig(
       routes: {
@@ -347,27 +366,27 @@ class ProviderConfig {
         ),
         ProviderCapability.embeddings: CapabilityRouteConfig(
           preset: embeddingPreset,
-          enabled: true,
+          enabled: family != ProviderModelFamily.anthropic,
           baseUrlOverride: baseUrl,
         ),
         ProviderCapability.images: CapabilityRouteConfig(
           preset: ProtocolPreset.openaiImages,
-          enabled: true,
+          enabled: family != ProviderModelFamily.anthropic,
           baseUrlOverride: baseUrl,
         ),
         ProviderCapability.speech: CapabilityRouteConfig(
           preset: ProtocolPreset.openaiAudioSpeech,
-          enabled: true,
+          enabled: family != ProviderModelFamily.anthropic,
           baseUrlOverride: baseUrl,
         ),
         ProviderCapability.transcriptions: CapabilityRouteConfig(
-          preset: ProtocolPreset.openaiAudioTranscriptions,
-          enabled: true,
+          preset: audioChatPreset,
+          enabled: family != ProviderModelFamily.anthropic,
           baseUrlOverride: baseUrl,
         ),
         ProviderCapability.translations: CapabilityRouteConfig(
-          preset: ProtocolPreset.openaiAudioTranslations,
-          enabled: true,
+          preset: audioChatPreset,
+          enabled: family != ProviderModelFamily.anthropic,
           baseUrlOverride: baseUrl,
         ),
       },
@@ -1114,12 +1133,12 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
         final defaultModel = provider.models.first;
         final newProviders = state.providers.map((p) {
           if (p.id == id) {
-            return p.copyWith(selectedModel: defaultModel);
+            return p.copyWith(selectedChatModel: defaultModel);
           }
           return p;
         }).toList();
         state = state.copyWith(providers: newProviders);
-        await updateProvider(id: id, selectedModel: defaultModel);
+        await updateProvider(id: id, selectedChatModel: defaultModel);
         provider = state.providers.firstWhere((p) => p.id == id);
       }
       state = state.copyWith(
@@ -1170,7 +1189,6 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
           globalExcludeModels: globalExcludeModels,
           models: models,
           selectedChatModel: selectedChatModel,
-          selectedModel: selectedModel,
           isEnabled: isEnabled,
         );
       }
@@ -1521,7 +1539,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
       await updateProvider(
         id: provider.id,
         models: models,
-        selectedModel: newSelectedModel,
+        selectedChatModel: newSelectedModel,
       );
       state = state.copyWith(isLoadingModels: false);
       if (isActiveProvider) {

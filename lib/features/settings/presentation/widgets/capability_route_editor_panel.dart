@@ -9,6 +9,8 @@ import 'package:aurora/features/chat/domain/message.dart';
 import 'package:aurora/features/settings/domain/provider_route_config.dart';
 import 'package:aurora/features/settings/presentation/provider_route_labels.dart';
 import 'package:aurora/features/settings/presentation/settings_provider.dart';
+import 'package:aurora/shared/services/capability_route_resolver.dart';
+import 'package:aurora/shared/services/model_capability_registry.dart';
 import 'package:aurora/shared/services/model_routed_llm_service.dart';
 import 'package:aurora/shared/services/provider_capability_gateway.dart';
 import 'package:aurora/shared/theme/aurora_icons.dart';
@@ -200,7 +202,10 @@ class _CapabilityRouteEditorCard extends ConsumerWidget {
             label: l10n.routePathOverride,
             child: _CommittedTextBox(
               value: route.pathOverride ?? '',
-              placeholder: _defaultPathForCapability(capability),
+              placeholder: _defaultPathForCapability(
+                capability,
+                route.preset,
+              ),
               onCommitted: (value) =>
                   _saveRoute(ref, route.copyWith(pathOverride: value)),
             ),
@@ -363,16 +368,16 @@ class _CapabilityRouteEditorCard extends ConsumerWidget {
       orElse: () => provider,
     );
     final gateway = ProviderCapabilityGateway();
-    final effectiveModel = modelName ??
-        liveProvider.selectedModel ??
-        (liveProvider.models.isNotEmpty ? liveProvider.models.first : null);
+    final effectiveModel = _pickEffectiveModelForTest(
+        provider: liveProvider, capability: capability);
+    if (capability != ProviderCapability.models &&
+        (effectiveModel == null || effectiveModel.isEmpty)) {
+      throw Exception(_noCompatibleModelMessage(context, capability));
+    }
 
     try {
       switch (capability) {
         case ProviderCapability.chat:
-          if (effectiveModel == null || effectiveModel.isEmpty) {
-            throw Exception(l10n.routeSelectModelFirst);
-          }
           final testSettings = SettingsState(
             providers: [liveProvider],
             activeProviderId: liveProvider.id,
@@ -382,7 +387,7 @@ class _CapabilityRouteEditorCard extends ConsumerWidget {
           final response =
               await ModelRoutedLlmService(testSettings).getResponse(
             [Message.user(l10n.routeReplyWithOk)],
-            model: effectiveModel,
+            model: effectiveModel!,
             providerId: liveProvider.id,
           );
           if (!context.mounted) return;
@@ -404,12 +409,9 @@ class _CapabilityRouteEditorCard extends ConsumerWidget {
           );
           break;
         case ProviderCapability.embeddings:
-          if (effectiveModel == null || effectiveModel.isEmpty) {
-            throw Exception(l10n.routeSelectModelFirst);
-          }
           final vectors = await gateway.embedTexts(
             provider: liveProvider,
-            model: effectiveModel,
+            model: effectiveModel!,
             inputs: const ['aurora capability test'],
           );
           if (!context.mounted) return;
@@ -422,12 +424,9 @@ class _CapabilityRouteEditorCard extends ConsumerWidget {
           );
           break;
         case ProviderCapability.images:
-          if (effectiveModel == null || effectiveModel.isEmpty) {
-            throw Exception(l10n.routeSelectModelFirst);
-          }
           final result = await gateway.generateImages(
             provider: liveProvider,
-            model: effectiveModel,
+            model: effectiveModel!,
             prompt: l10n.capabilityLabDefaultImagePrompt,
           );
           if (!context.mounted) return;
@@ -438,12 +437,9 @@ class _CapabilityRouteEditorCard extends ConsumerWidget {
           );
           break;
         case ProviderCapability.speech:
-          if (effectiveModel == null || effectiveModel.isEmpty) {
-            throw Exception(l10n.routeSelectModelFirst);
-          }
           final result = await gateway.synthesizeSpeech(
             provider: liveProvider,
-            model: effectiveModel,
+            model: effectiveModel!,
             input: l10n.capabilityLabDefaultSpeechText,
           );
           if (!context.mounted) return;
@@ -458,9 +454,6 @@ class _CapabilityRouteEditorCard extends ConsumerWidget {
           break;
         case ProviderCapability.transcriptions:
         case ProviderCapability.translations:
-          if (effectiveModel == null || effectiveModel.isEmpty) {
-            throw Exception(l10n.routeSelectModelFirst);
-          }
           final file = await openFile(
             acceptedTypeGroups: const [
               XTypeGroup(
@@ -473,12 +466,12 @@ class _CapabilityRouteEditorCard extends ConsumerWidget {
           final result = capability == ProviderCapability.transcriptions
               ? await gateway.transcribeAudio(
                   provider: liveProvider,
-                  model: effectiveModel,
+                  model: effectiveModel!,
                   filePath: file.path,
                 )
               : await gateway.translateAudio(
                   provider: liveProvider,
-                  model: effectiveModel,
+                  model: effectiveModel!,
                   filePath: file.path,
                 );
           if (!context.mounted) return;
@@ -497,6 +490,60 @@ class _CapabilityRouteEditorCard extends ConsumerWidget {
         icon: AuroraIcons.error,
       );
     }
+  }
+
+  String? _pickEffectiveModelForTest({
+    required ProviderConfig provider,
+    required ProviderCapability capability,
+  }) {
+    if (capability == ProviderCapability.models) {
+      return null;
+    }
+    if (modelName != null) {
+      final route = const CapabilityRouteResolver().resolve(
+        provider: provider,
+        capability: capability,
+        modelName: modelName,
+      );
+      final assessment = matchModelCapability(
+        capability: capability,
+        model: modelName!,
+        baseUrl: route.baseUrl,
+        preset: route.preset,
+        routeEnabled: route.enabled,
+      );
+      return assessment.isKnownUnsupported ? null : modelName;
+    }
+    final enabledModels =
+        provider.models.where(provider.isModelEnabled).toList(growable: false);
+    return pickBestModelForCapability(
+      capability: capability,
+      models: enabledModels,
+      assessModel: (model) {
+        final route = const CapabilityRouteResolver().resolve(
+          provider: provider,
+          capability: capability,
+          modelName: model,
+        );
+        return matchModelCapability(
+          capability: capability,
+          model: model,
+          baseUrl: route.baseUrl,
+          preset: route.preset,
+          routeEnabled: route.enabled,
+        );
+      },
+    );
+  }
+
+  String _noCompatibleModelMessage(
+    BuildContext context,
+    ProviderCapability capability,
+  ) {
+    final capabilityText = capabilityLabel(context, capability);
+    return Localizations.localeOf(context).languageCode == 'zh'
+        ? '当前 Provider 没有可用于$capabilityText的兼容模型。'
+        : 'No compatible model is available for $capabilityText on this provider.';
   }
 
   void _saveRoute(WidgetRef ref, CapabilityRouteConfig next) {
@@ -604,12 +651,16 @@ List<ProtocolPreset> _presetsForCapability(ProviderCapability capability) {
         ProtocolPreset.customJson,
       ],
     ProviderCapability.transcriptions => [
-        ProtocolPreset.openaiAudioTranscriptions,
+        ProtocolPreset.openaiChatCompletions,
+        ProtocolPreset.geminiOpenaiChatCompletions,
+        ProtocolPreset.geminiNativeGenerateContent,
         ProtocolPreset.customMultipart,
         ProtocolPreset.customJson,
       ],
     ProviderCapability.translations => [
-        ProtocolPreset.openaiAudioTranslations,
+        ProtocolPreset.openaiChatCompletions,
+        ProtocolPreset.geminiOpenaiChatCompletions,
+        ProtocolPreset.geminiNativeGenerateContent,
         ProtocolPreset.customMultipart,
         ProtocolPreset.customJson,
       ],
@@ -628,15 +679,31 @@ IconData _iconForCapability(ProviderCapability capability) {
   };
 }
 
-String _defaultPathForCapability(ProviderCapability capability) {
+String _defaultPathForCapability(
+  ProviderCapability capability,
+  ProtocolPreset? preset,
+) {
+  if (capability == ProviderCapability.transcriptions ||
+      capability == ProviderCapability.translations) {
+    return switch (preset) {
+      ProtocolPreset.geminiNativeGenerateContent => '{model}:generateContent',
+      ProtocolPreset.customMultipart =>
+        capability == ProviderCapability.transcriptions
+            ? 'audio/transcriptions'
+            : 'audio/translations',
+      _ => 'chat/completions',
+    };
+  }
   return switch (capability) {
     ProviderCapability.chat => 'chat/completions',
     ProviderCapability.models => 'models',
     ProviderCapability.embeddings => 'embeddings',
-    ProviderCapability.images => 'images/generations',
+    ProviderCapability.images => preset == ProtocolPreset.openaiResponses
+        ? 'responses'
+        : 'images/generations',
     ProviderCapability.speech => 'audio/speech',
-    ProviderCapability.transcriptions => 'audio/transcriptions',
-    ProviderCapability.translations => 'audio/translations',
+    ProviderCapability.transcriptions => 'chat/completions',
+    ProviderCapability.translations => 'chat/completions',
   };
 }
 

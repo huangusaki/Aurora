@@ -556,7 +556,9 @@ class AppLogger {
   }
 
   static bool _shouldRedactContent({required String channel}) {
-    if (channel == 'LLM') return !_showRawLlmPayload;
+    if (channel == 'LLM' || channel == 'CAPABILITY') {
+      return !_showRawLlmPayload;
+    }
     return true;
   }
 

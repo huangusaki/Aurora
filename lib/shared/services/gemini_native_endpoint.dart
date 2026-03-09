@@ -1,5 +1,7 @@
 const String officialGeminiNativeBaseUrl =
     'https://generativelanguage.googleapis.com/v1beta/';
+const String officialGeminiOpenAIBaseUrl =
+    'https://generativelanguage.googleapis.com/v1beta/openai/';
 
 bool isOfficialGeminiNativeBaseUrl(String baseUrl) {
   final uri = Uri.tryParse(baseUrl.trim());
@@ -68,6 +70,50 @@ String normalizeGeminiNativeBaseUrl(
   return base;
 }
 
+String normalizeGeminiOpenAIBaseUrl(
+  String rawBase, {
+  String fallback = officialGeminiOpenAIBaseUrl,
+}) {
+  final parsed = Uri.tryParse(rawBase.trim());
+  if (parsed == null || parsed.host.isEmpty) return fallback;
+
+  final originalSegments =
+      parsed.pathSegments.where((segment) => segment.isNotEmpty).toList();
+  final lowerSegments =
+      originalSegments.map((segment) => segment.toLowerCase()).toList();
+  final versionIndex = _findGeminiVersionIndex(lowerSegments);
+
+  late final List<String> normalizedSegments;
+  if (versionIndex != -1) {
+    normalizedSegments = originalSegments.sublist(0, versionIndex + 1);
+  } else {
+    normalizedSegments = _stripTrailingEndpointSegments(originalSegments);
+    if (normalizedSegments.isNotEmpty &&
+        normalizedSegments.last.toLowerCase() == 'v1') {
+      normalizedSegments[normalizedSegments.length - 1] = 'v1beta';
+    } else {
+      normalizedSegments.add('v1beta');
+    }
+  }
+
+  if (normalizedSegments.isEmpty ||
+      normalizedSegments.last.toLowerCase() != 'openai') {
+    normalizedSegments.add('openai');
+  }
+
+  final normalized = parsed.replace(
+    pathSegments: normalizedSegments,
+    query: null,
+    fragment: null,
+  );
+
+  var base = normalized.toString();
+  if (!base.endsWith('/')) {
+    base = '$base/';
+  }
+  return base;
+}
+
 List<String> _stripTrailingEndpointSegments(List<String> segments) {
   final trimmed = List<String>.from(segments);
 
@@ -86,6 +132,18 @@ List<String> _stripTrailingEndpointSegments(List<String> segments) {
         trimmed.removeLast();
       }
       continue;
+    }
+
+    if (trimmed.length >= 2) {
+      final previous = trimmed[trimmed.length - 2].toLowerCase();
+      if ((last == 'generations' && previous == 'images') ||
+          (last == 'transcriptions' && previous == 'audio') ||
+          (last == 'translations' && previous == 'audio') ||
+          (last == 'speech' && previous == 'audio')) {
+        trimmed.removeLast();
+        trimmed.removeLast();
+        continue;
+      }
     }
 
     if (last.contains(':') &&
