@@ -461,8 +461,7 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
           },
         ),
         actions: [
-          if (sessionId != 'new_chat')
-            MobilePresetSelector(sessionId: sessionId),
+          MobilePresetSelector(sessionId: sessionId),
           IconButton(
             icon: const Icon(Icons.add_circle_outline, size: 26),
             tooltip: AppLocalizations.of(context)!.newChat,
