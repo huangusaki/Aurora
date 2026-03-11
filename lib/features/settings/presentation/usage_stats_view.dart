@@ -82,8 +82,7 @@ class UsageStatsView extends ConsumerWidget {
                           context: context,
                           builder: (context) => fluent.ContentDialog(
                             title: Text(l10n.clearStats),
-                            content:
-                                Text(l10n.clearStatsConfirm),
+                            content: Text(l10n.clearStatsConfirm),
                             actions: [
                               fluent.Button(
                                 child: Text(l10n.cancel),
@@ -383,7 +382,6 @@ class UsageStatsView extends ConsumerWidget {
       ),
     );
   }
-
 }
 
 class UsageStatsMobileSheet extends ConsumerWidget {
@@ -632,7 +630,8 @@ class _ModelStatsList extends StatelessWidget {
           const SizedBox(height: 8),
           LayoutBuilder(builder: (context, constraints) {
             final avgDuration = stats.validDurationCount > 0
-                ? ((stats.totalDurationMs - stats.totalFirstTokenMs) /
+                ? (((stats.totalDurationMs - stats.totalFirstTokenMs)
+                            .clamp(0, stats.totalDurationMs)) /
                         stats.validDurationCount /
                         1000)
                     .toStringAsFixed(2)
@@ -646,6 +645,7 @@ class _ModelStatsList extends StatelessWidget {
               reasoningTokens: stats.reasoningTokenCount,
               durationMs: stats.totalDurationMs,
               firstTokenMs: stats.totalFirstTokenMs,
+              sampleCount: stats.success,
             ).toStringAsFixed(1);
 
             // Thresholds for coloring (Green/Yellow/Red)
@@ -780,7 +780,6 @@ class _ModelStatsList extends StatelessWidget {
       ],
     );
   }
-
 }
 
 class _ErrorDistributionList extends StatelessWidget {
@@ -938,4 +937,3 @@ class _ErrorDistributionList extends StatelessWidget {
     );
   }
 }
-
