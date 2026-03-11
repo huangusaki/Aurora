@@ -17,6 +17,24 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   // plugins.
   ::CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
 
+  HANDLE single_instance_mutex =
+      ::CreateMutexW(nullptr, TRUE, L"Local\\AuroraSingleInstance");
+  if (single_instance_mutex == nullptr) {
+    ::CoUninitialize();
+    return EXIT_FAILURE;
+  }
+
+  if (::GetLastError() == ERROR_ALREADY_EXISTS) {
+    if (HWND existing_window = ::FindWindowW(nullptr, L"Aurora")) {
+      ::ShowWindow(existing_window, SW_SHOW);
+      ::ShowWindow(existing_window, SW_RESTORE);
+      ::SetForegroundWindow(existing_window);
+    }
+    ::CloseHandle(single_instance_mutex);
+    ::CoUninitialize();
+    return EXIT_SUCCESS;
+  }
+
   flutter::DartProject project(L"data");
 
   std::vector<std::string> command_line_arguments =
@@ -28,6 +46,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   Win32Window::Point origin(10, 10);
   Win32Window::Size size(1280, 720);
   if (!window.Create(L"Aurora", origin, size)) {
+    ::CloseHandle(single_instance_mutex);
+    ::CoUninitialize();
     return EXIT_FAILURE;
   }
   window.SetQuitOnClose(true);
@@ -38,6 +58,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
     ::DispatchMessage(&msg);
   }
 
+  ::CloseHandle(single_instance_mutex);
   ::CoUninitialize();
   return EXIT_SUCCESS;
 }
