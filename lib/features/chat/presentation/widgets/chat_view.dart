@@ -179,8 +179,8 @@ class ChatViewState extends ConsumerState<ChatView> {
       final deltaMax = pos.maxScrollExtent - prevMax;
       if (deltaMax.abs() < 0.5) return;
 
-      final target =
-          (prevPixels + deltaMax).clamp(pos.minScrollExtent, pos.maxScrollExtent);
+      final target = (prevPixels + deltaMax)
+          .clamp(pos.minScrollExtent, pos.maxScrollExtent);
       if ((target - pos.pixels).abs() < 0.5) return;
       _scrollController.jumpTo(target);
     });
@@ -211,7 +211,8 @@ class ChatViewState extends ConsumerState<ChatView> {
     return offset & renderObject.size;
   }
 
-  Rect? _messageViewportRect() => _rectForContext(_messageViewportKey.currentContext);
+  Rect? _messageViewportRect() =>
+      _rectForContext(_messageViewportKey.currentContext);
 
   int _computeAnchorIndex() {
     final count = _displayOrderIds.length;
@@ -297,8 +298,8 @@ class ChatViewState extends ConsumerState<ChatView> {
   (int?, int?) _findVisibleBoundaryIndices() {
     final viewportRect = _messageViewportRect();
     if (viewportRect == null) return (null, null);
-    int? topmostIdx; 
-    int? bottommostIdx; 
+    int? topmostIdx;
+    int? bottommostIdx;
     for (final entry in _builtItemContexts.entries) {
       if (!entry.value.mounted) continue;
       final rect = _rectForContext(entry.value);
@@ -463,9 +464,9 @@ class ChatViewState extends ConsumerState<ChatView> {
     }
   }
 
-  Future<void> _handlePaste() async {
+  Future<bool> _handlePaste() async {
     final clipboard = SystemClipboard.instance;
-    if (clipboard == null) return;
+    if (clipboard == null) return false;
     const maxAttempts = 10;
     for (int attempt = 0; attempt < maxAttempts; attempt++) {
       ClipboardReader reader;
@@ -474,7 +475,7 @@ class ChatViewState extends ConsumerState<ChatView> {
       } catch (e) {
         if (attempt == maxAttempts - 1) {
           debugPrint('Failed to read clipboard: $e');
-          return;
+          return false;
         }
         await Future.delayed(const Duration(milliseconds: 200));
         continue;
@@ -487,11 +488,12 @@ class ChatViewState extends ConsumerState<ChatView> {
         debugPrint('Failed to process clipboard: $e');
       }
 
-      if (handled) return;
+      if (handled) return true;
       if (attempt < maxAttempts - 1) {
         await Future.delayed(const Duration(milliseconds: 200));
       }
     }
+    return false;
   }
 
   Future<String?> _saveClipboardFileAsAttachment(
@@ -965,8 +967,7 @@ class ChatViewState extends ConsumerState<ChatView> {
                                               duration: const Duration(
                                                   milliseconds: 300),
                                               curve: Curves.easeOutCubic,
-                                              builder:
-                                                  (context, value, child) {
+                                              builder: (context, value, child) {
                                                 return Opacity(
                                                   opacity: value,
                                                   child: Transform.translate(
@@ -989,7 +990,8 @@ class ChatViewState extends ConsumerState<ChatView> {
                                           key: ValueKey(item.id),
                                           itemId: item.id,
                                           onMount: _registerBuiltItemContext,
-                                          onUnmount: _unregisterBuiltItemContext,
+                                          onUnmount:
+                                              _unregisterBuiltItemContext,
                                           child: child,
                                         );
                                       },
@@ -1000,11 +1002,12 @@ class ChatViewState extends ConsumerState<ChatView> {
                               )
                             : ListView.builder(
                                 cacheExtent: 2000,
-                                key: ValueKey(
-                                    ref.watch(selectedHistorySessionIdProvider)),
+                                key: ValueKey(ref
+                                    .watch(selectedHistorySessionIdProvider)),
                                 controller: _scrollController,
                                 reverse: true,
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 6, vertical: 12),
                                 itemCount: displayItems.length,
                                 itemBuilder: (context, index) {
                                   final reversedIndex =

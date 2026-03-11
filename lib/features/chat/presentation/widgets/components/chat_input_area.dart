@@ -13,6 +13,7 @@ import '../../../../mcp/domain/mcp_server_config.dart';
 import '../../../../mcp/presentation/mcp_bindings_provider.dart';
 import '../../../../mcp/presentation/mcp_server_provider.dart';
 import '../../../../settings/presentation/settings_provider.dart';
+import 'attachment_aware_paste_action.dart';
 import '../custom_dropdown_overlay.dart'; // for generateColorFromString
 import 'payload_config_panel.dart';
 
@@ -67,7 +68,7 @@ class DesktopChatInputArea extends ConsumerStatefulWidget {
   final bool isLoading;
   final VoidCallback onSend;
   final VoidCallback onPickFiles;
-  final Future<void> Function() onPaste;
+  final Future<bool> Function() onPaste;
   final Function(String message, IconData icon) onShowToast;
 
   const DesktopChatInputArea({
@@ -199,6 +200,41 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
         _animateClosePreset();
       }
     }
+  }
+
+  Future<bool> _pastePlainTextFromClipboard() async {
+    final data = await Clipboard.getData(Clipboard.kTextPlain);
+    final text = data?.text;
+    if (text == null || text.isEmpty) {
+      return false;
+    }
+
+    final selection = widget.controller.selection;
+    final currentText = widget.controller.text;
+    late final String newText;
+    late final int newSelectionIndex;
+
+    if (selection.isValid && selection.start >= 0) {
+      newText = currentText.replaceRange(selection.start, selection.end, text);
+      newSelectionIndex = selection.start + text.length;
+    } else {
+      newText = currentText + text;
+      newSelectionIndex = newText.length;
+    }
+
+    widget.controller.value = TextEditingValue(
+      text: newText,
+      selection: TextSelection.collapsed(offset: newSelectionIndex),
+    );
+    return true;
+  }
+
+  Future<void> _handleToolbarPaste() async {
+    final handled = await widget.onPaste();
+    if (!handled) {
+      await _pastePlainTextFromClipboard();
+    }
+    _focusNode.requestFocus();
   }
 
   void _removeOverlay() {
@@ -944,19 +980,6 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
                   }
                 }
 
-                // Handle Shortcuts
-                if (event.logicalKey == LogicalKeyboardKey.paste ||
-                    (isControl &&
-                        event.logicalKey == LogicalKeyboardKey.keyV) ||
-                    (isShift &&
-                        event.logicalKey == LogicalKeyboardKey.insert)) {
-                  widget.onPaste().then((_) {
-                    // Restore focus after paste
-                    _focusNode.requestFocus();
-                  });
-                  return KeyEventResult.handled;
-                }
-
                 if (isControl && event.logicalKey == LogicalKeyboardKey.enter) {
                   widget.onSend();
                   return KeyEventResult.handled;
@@ -993,41 +1016,40 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
 
                 return KeyEventResult.ignored;
               },
-              child: Actions(
-                actions: <Type, Action<Intent>>{
-                  PasteTextIntent: CallbackAction<PasteTextIntent>(
-                    onInvoke: (intent) {
-                      unawaited(
-                        widget.onPaste().whenComplete(() {
-                          // Restore focus after paste
-                          _focusNode.requestFocus();
-                        }),
-                      );
-                      return null;
-                    },
-                  ),
+              child: Shortcuts(
+                shortcuts: const <ShortcutActivator, Intent>{
+                  SingleActivator(LogicalKeyboardKey.paste):
+                      PasteTextIntent(SelectionChangedCause.keyboard),
                 },
-                child: fluent.TextBox(
-                  controller: widget.controller,
-                  focusNode: _focusNode,
-                  placeholder: l10n.desktopInputHint,
-                  maxLines: 5,
-                  minLines: 1,
-                  decoration:
-                      const fluent.WidgetStatePropertyAll(fluent.BoxDecoration(
-                    color: Colors.transparent,
-                    border: Border.fromBorderSide(BorderSide.none),
-                  )),
-                  highlightColor: Colors.transparent,
-                  unfocusedColor: Colors.transparent,
-                  cursorColor: theme.accentColor,
-                  style: const TextStyle(fontSize: 14),
-                  foregroundDecoration:
-                      const fluent.WidgetStatePropertyAll(fluent.BoxDecoration(
-                    border: Border.fromBorderSide(BorderSide.none),
-                  )),
-                  // Close overlay if user clicks away or types something else (simple version)
-                  onTap: _removeOverlay,
+                child: Actions(
+                  actions: <Type, Action<Intent>>{
+                    PasteTextIntent: AttachmentAwarePasteAction(
+                      onCustomPaste: widget.onPaste,
+                      onAfterPaste: _focusNode.requestFocus,
+                    ),
+                  },
+                  child: fluent.TextBox(
+                    controller: widget.controller,
+                    focusNode: _focusNode,
+                    placeholder: l10n.desktopInputHint,
+                    maxLines: 5,
+                    minLines: 1,
+                    decoration: const fluent.WidgetStatePropertyAll(
+                        fluent.BoxDecoration(
+                      color: Colors.transparent,
+                      border: Border.fromBorderSide(BorderSide.none),
+                    )),
+                    highlightColor: Colors.transparent,
+                    unfocusedColor: Colors.transparent,
+                    cursorColor: theme.accentColor,
+                    style: const TextStyle(fontSize: 14),
+                    foregroundDecoration: const fluent.WidgetStatePropertyAll(
+                        fluent.BoxDecoration(
+                      border: Border.fromBorderSide(BorderSide.none),
+                    )),
+                    // Close overlay if user clicks away or types something else (simple version)
+                    onTap: _removeOverlay,
+                  ),
                 ),
               ),
             ),
@@ -1062,11 +1084,7 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
                   foregroundColor: fluent.WidgetStatePropertyAll(
                       theme.resources.textFillColorSecondary),
                 ),
-                onPressed: () {
-                  widget.onPaste().then((_) {
-                    _focusNode.requestFocus();
-                  });
-                },
+                onPressed: _handleToolbarPaste,
               ),
               const SizedBox(width: 4),
               fluent.IconButton(

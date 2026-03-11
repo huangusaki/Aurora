@@ -24,6 +24,7 @@ import '../../../../../shared/utils/stats_calculator.dart';
 import 'package:aurora/shared/utils/number_format_utils.dart';
 import 'package:aurora/shared/utils/platform_utils.dart';
 import 'package:aurora/shared/theme/aurora_icons.dart';
+import 'attachment_aware_paste_action.dart';
 
 class MessageBubble extends ConsumerStatefulWidget {
   final Message message;
@@ -91,15 +92,15 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
     }
   }
 
-  Future<void> _handlePaste() async {
+  Future<bool> _handlePaste() async {
     if (_isPasting) {
-      return;
+      return false;
     }
     _isPasting = true;
     try {
       final clipboard = SystemClipboard.instance;
       if (clipboard == null) {
-        return;
+        return false;
       }
       const maxAttempts = 10;
       for (int attempt = 0; attempt < maxAttempts; attempt++) {
@@ -109,7 +110,7 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
         } catch (e) {
           if (attempt == maxAttempts - 1) {
             debugPrint('Failed to read clipboard: $e');
-            return;
+            return false;
           }
           await Future.delayed(const Duration(milliseconds: 200));
           continue;
@@ -122,11 +123,12 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
           debugPrint('Failed to process clipboard: $e');
         }
 
-        if (handled) return;
+        if (handled) return true;
         if (attempt < maxAttempts - 1) {
           await Future.delayed(const Duration(milliseconds: 200));
         }
       }
+      return false;
     } finally {
       _isPasting = false;
     }
@@ -554,32 +556,22 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
                                         children: [
-                                          CallbackShortcuts(
-                                            bindings: {
-                                              const SingleActivator(
-                                                  LogicalKeyboardKey.keyV,
-                                                  control: true): _handlePaste,
-                                              const SingleActivator(
-                                                  LogicalKeyboardKey.insert,
-                                                  shift: true): _handlePaste,
-                                              const SingleActivator(
+                                          Shortcuts(
+                                            shortcuts: const <ShortcutActivator,
+                                                Intent>{
+                                              SingleActivator(
                                                       LogicalKeyboardKey.paste):
-                                                  _handlePaste,
+                                                  PasteTextIntent(
+                                                      SelectionChangedCause
+                                                          .keyboard),
                                             },
                                             child: Actions(
                                               actions: <Type, Action<Intent>>{
-                                                PasteTextIntent: CallbackAction<
-                                                    PasteTextIntent>(
-                                                  onInvoke: (intent) {
-                                                    unawaited(
-                                                      _handlePaste()
-                                                          .whenComplete(() {
-                                                        _focusNode
-                                                            .requestFocus();
-                                                      }),
-                                                    );
-                                                    return null;
-                                                  },
+                                                PasteTextIntent:
+                                                    AttachmentAwarePasteAction(
+                                                  onCustomPaste: _handlePaste,
+                                                  onAfterPaste:
+                                                      _focusNode.requestFocus,
                                                 ),
                                               },
                                               child: Focus(
