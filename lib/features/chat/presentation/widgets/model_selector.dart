@@ -250,56 +250,120 @@ class _ModelSelectorState extends ConsumerState<ModelSelector> {
           AuroraBottomSheet.buildTitle(context, l10n.switchModel),
           const Divider(height: 1),
           Flexible(
-            child: ListView(
-              shrinkWrap: true,
-              children: [
-                for (final provider in providers) ...[
-                  if (provider.isEnabled && provider.models.isNotEmpty) ...[
-                    ListTile(
-                      dense: true,
-                      enabled: false,
-                      title: Text(
-                        provider.name,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ),
-                    for (final model in provider.models)
-                      if (provider.isModelEnabled(model))
-                        ListTile(
-                          contentPadding:
-                              const EdgeInsets.only(left: 32, right: 16),
-                          leading: Icon(
-                            activeProvider.id == provider.id &&
-                                    selected == model
-                                ? Icons.check_circle
-                                : Icons.circle_outlined,
-                            color: activeProvider.id == provider.id &&
-                                    selected == model
-                                ? Theme.of(context).primaryColor
-                                : null,
-                          ),
-                          title: Text(model),
-                          onTap: () async {
-                            Navigator.pop(ctx);
-                            await switchModel(provider.id, model);
-                          },
-                        ),
-                    if (provider !=
-                        providers
-                            .where((p) => p.isEnabled && p.models.isNotEmpty)
-                            .last)
-                      const Divider(),
-                  ],
-                ],
-              ],
+            child: _MobileModelList(
+              providers: providers,
+              activeProvider: activeProvider,
+              selected: selected,
+              switchModel: switchModel,
+              sheetContext: ctx,
             ),
           ),
           const SizedBox(height: 16),
         ],
       ),
+    );
+  }
+}
+
+class _MobileModelList extends StatefulWidget {
+  const _MobileModelList({
+    required this.providers,
+    required this.activeProvider,
+    required this.selected,
+    required this.switchModel,
+    required this.sheetContext,
+  });
+
+  final List<ProviderConfig> providers;
+  final ProviderConfig activeProvider;
+  final String? selected;
+  final Future<void> Function(String, String) switchModel;
+  final BuildContext sheetContext;
+
+  @override
+  State<_MobileModelList> createState() => _MobileModelListState();
+}
+
+class _MobileModelListState extends State<_MobileModelList> {
+  final ScrollController _scrollController = ScrollController();
+  final GlobalKey _selectedItemKey = GlobalKey();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToSelectedItem();
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollToSelectedItem() {
+    final selectedContext = _selectedItemKey.currentContext;
+    if (selectedContext == null) {
+      return;
+    }
+
+    Scrollable.ensureVisible(
+      selectedContext,
+      alignment: 0.35,
+      duration: Duration.zero,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final enabledProviders = widget.providers
+        .where((provider) => provider.isEnabled && provider.models.isNotEmpty)
+        .toList(growable: false);
+
+    return ListView(
+      controller: _scrollController,
+      shrinkWrap: true,
+      children: [
+        for (final provider in enabledProviders) ...[
+          ListTile(
+            dense: true,
+            enabled: false,
+            title: Text(
+              provider.name,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.grey,
+              ),
+            ),
+          ),
+          for (final model in provider.models)
+            if (provider.isModelEnabled(model))
+              ListTile(
+                key: widget.activeProvider.id == provider.id &&
+                        widget.selected == model
+                    ? _selectedItemKey
+                    : null,
+                contentPadding: const EdgeInsets.only(left: 32, right: 16),
+                leading: Icon(
+                  widget.activeProvider.id == provider.id &&
+                          widget.selected == model
+                      ? Icons.check_circle
+                      : Icons.circle_outlined,
+                  color: widget.activeProvider.id == provider.id &&
+                          widget.selected == model
+                      ? Theme.of(context).primaryColor
+                      : null,
+                ),
+                title: Text(model),
+                onTap: () async {
+                  Navigator.pop(widget.sheetContext);
+                  await widget.switchModel(provider.id, model);
+                },
+              ),
+          if (provider != enabledProviders.last) const Divider(),
+        ],
+      ],
     );
   }
 }

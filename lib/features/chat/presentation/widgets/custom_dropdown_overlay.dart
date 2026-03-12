@@ -110,6 +110,9 @@ class _AnimatedDropdownListState extends State<AnimatedDropdownList>
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
   late Animation<double> _fadeAnimation;
+  final ScrollController _scrollController = ScrollController();
+  final GlobalKey _selectedItemKey = GlobalKey();
+
   @override
   void initState() {
     super.initState();
@@ -124,12 +127,29 @@ class _AnimatedDropdownListState extends State<AnimatedDropdownList>
       CurvedAnimation(parent: _controller, curve: Curves.easeOut),
     );
     _controller.forward();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToSelectedItem();
+    });
   }
 
   @override
   void dispose() {
+    _scrollController.dispose();
     _controller.dispose();
     super.dispose();
+  }
+
+  void _scrollToSelectedItem() {
+    final selectedContext = _selectedItemKey.currentContext;
+    if (selectedContext == null) {
+      return;
+    }
+
+    Scrollable.ensureVisible(
+      selectedContext,
+      alignment: 0.4,
+      duration: Duration.zero,
+    );
   }
 
   @override
@@ -159,6 +179,7 @@ class _AnimatedDropdownListState extends State<AnimatedDropdownList>
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
               child: ListView(
+                controller: _scrollController,
                 padding: const EdgeInsets.symmetric(vertical: 4),
                 shrinkWrap: true,
                 children: _buildItems(),
@@ -181,14 +202,17 @@ class _AnimatedDropdownListState extends State<AnimatedDropdownList>
           child: Divider(height: 1, thickness: 1, color: Colors.grey),
         );
       }
-      return _ColoredMenuItem(item: item);
+      return _ColoredMenuItem(
+        key: item.isSelected ? _selectedItemKey : null,
+        item: item,
+      );
     }).toList();
   }
 }
 
 class _ColoredMenuItem extends StatefulWidget {
   final ColoredDropdownItem item;
-  const _ColoredMenuItem({required this.item});
+  const _ColoredMenuItem({super.key, required this.item});
   @override
   State<_ColoredMenuItem> createState() => _ColoredMenuItemState();
 }
@@ -232,8 +256,8 @@ class _ColoredMenuItemState extends State<_ColoredMenuItem> {
                     Text(
                       widget.item.label,
                       style: TextStyle(
-                        color:
-                            widget.item.textColor ?? theme.typography.body?.color,
+                        color: widget.item.textColor ??
+                            theme.typography.body?.color,
                         fontSize: 14,
                         fontWeight: widget.item.isBold
                             ? FontWeight.bold
