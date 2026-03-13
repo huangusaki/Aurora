@@ -1,18 +1,6 @@
-import 'dart:math';
 import 'dart:ui';
 import 'package:fluent_ui/fluent_ui.dart' as fluent;
 import 'package:flutter/material.dart';
-
-/// Helper function to generate a consistent color from a string (e.g., provider ID)
-Color generateColorFromString(String input) {
-  final hash = input.hashCode;
-  final random = Random(hash);
-  // Generate pleasing pastel colors by keeping saturation and brightness in a good range
-  final hue = random.nextDouble() * 360;
-  final saturation = 0.5 + random.nextDouble() * 0.3; // 0.5-0.8
-  final lightness = 0.4 + random.nextDouble() * 0.2; // 0.4-0.6
-  return HSLColor.fromAHSL(1.0, hue, saturation, lightness).toColor();
-}
 
 /// A dropdown item with optional background color
 class ColoredDropdownItem {

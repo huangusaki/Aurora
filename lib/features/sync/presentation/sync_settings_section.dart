@@ -188,6 +188,8 @@ class _SyncSettingsSectionState extends ConsumerState<SyncSettingsSection> {
         SyncMessageKeys.backupFailed: l10n.backupFailed,
         SyncMessageKeys.restoreSuccess: l10n.restoreSuccess,
         SyncMessageKeys.restoreFailed: l10n.restoreFailed,
+        SyncMessageKeys.deleteBackupSuccess: l10n.deleteBackupSuccess,
+        SyncMessageKeys.deleteBackupFailed: l10n.deleteBackupFailed,
         SyncMessageKeys.fetchBackupListFailed: l10n.fetchBackupListFailed,
       };
 
@@ -341,35 +343,81 @@ class _SyncSettingsSectionState extends ConsumerState<SyncSettingsSection> {
                   leading: const Icon(AuroraIcons.folderOpen),
                   title: Text(item.name),
                   subtitle: Text('$dateStr  •  $sizeMb MB'),
-                  trailing: Button(
-                    onPressed: state.isBusy
-                        ? null
-                        : () async {
-                            showDialog(
-                                context: context,
-                                builder: (context) {
-                                  return ContentDialog(
-                                    title: Text(l10n.confirmRestore),
-                                    content: Text(l10n.restoreWarning),
-                                    actions: [
-                                      Button(
-                                          child: Text(l10n.cancel),
-                                          onPressed: () =>
-                                              Navigator.pop(context)),
-                                      FilledButton(
-                                          child:
-                                              Text(l10n.confirmRestoreButton),
-                                          onPressed: () {
-                                            Navigator.pop(context);
-                                            ref
-                                                .read(syncProvider.notifier)
-                                                .restore(item);
-                                          }),
-                                    ],
-                                  );
-                                });
-                          },
-                    child: Text(l10n.restore),
+                  trailing: Wrap(
+                    spacing: 8,
+                    children: [
+                      Button(
+                        onPressed: state.isBusy
+                            ? null
+                            : () async {
+                                showDialog(
+                                    context: context,
+                                    builder: (context) {
+                                      return ContentDialog(
+                                        title: Text(l10n.confirmRestore),
+                                        content: Text(l10n.restoreWarning),
+                                        actions: [
+                                          Button(
+                                              child: Text(l10n.cancel),
+                                              onPressed: () =>
+                                                  Navigator.pop(context)),
+                                          FilledButton(
+                                              child: Text(
+                                                  l10n.confirmRestoreButton),
+                                              onPressed: () {
+                                                Navigator.pop(context);
+                                                ref
+                                                    .read(syncProvider.notifier)
+                                                    .restore(item);
+                                              }),
+                                        ],
+                                      );
+                                    });
+                              },
+                        child: Text(l10n.restore),
+                      ),
+                      Button(
+                        style: ButtonStyle(
+                          foregroundColor: WidgetStatePropertyAll(Colors.red),
+                        ),
+                        onPressed: state.isBusy
+                            ? null
+                            : () async {
+                                showDialog(
+                                    context: context,
+                                    builder: (context) {
+                                      return ContentDialog(
+                                        title: Text(l10n.deleteBackup),
+                                        content: Text(
+                                          l10n.deleteBackupConfirm(item.name),
+                                        ),
+                                        actions: [
+                                          Button(
+                                              child: Text(l10n.cancel),
+                                              onPressed: () =>
+                                                  Navigator.pop(context)),
+                                          FilledButton(
+                                            style: ButtonStyle(
+                                              backgroundColor:
+                                                  WidgetStatePropertyAll(
+                                                Colors.red,
+                                              ),
+                                            ),
+                                            child: Text(l10n.delete),
+                                            onPressed: () {
+                                              Navigator.pop(context);
+                                              ref
+                                                  .read(syncProvider.notifier)
+                                                  .deleteBackup(item);
+                                            },
+                                          ),
+                                        ],
+                                      );
+                                    });
+                              },
+                        child: Text(l10n.delete),
+                      ),
+                    ],
                   ),
                 );
               },
@@ -379,4 +427,3 @@ class _SyncSettingsSectionState extends ConsumerState<SyncSettingsSection> {
     );
   }
 }
-

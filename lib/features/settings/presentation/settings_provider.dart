@@ -1,11 +1,9 @@
 import 'dart:io';
 import 'dart:convert';
-import 'dart:math';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/painting.dart';
 import 'package:aurora/shared/riverpod_compat.dart';
 import 'package:aurora/shared/services/model_capability_registry.dart';
 import 'package:aurora/shared/services/capability_route_resolver.dart';
@@ -1234,19 +1232,9 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
   Future<void> addProvider() async {
     final newId = 'custom_${DateTime.now().millisecondsSinceEpoch}';
 
-    // Generate random pastel-ish color
-    final random = Random();
-    final hue = random.nextDouble() * 360;
-    final saturation = 0.5 + random.nextDouble() * 0.3; // 0.5-0.8
-    final lightness = 0.4 + random.nextDouble() * 0.2; // 0.4-0.6
-    final color = HSLColor.fromAHSL(1.0, hue, saturation, lightness).toColor();
-    final colorHex =
-        '#${color.toARGB32().toRadixString(16).substring(2).toUpperCase()}';
-
     final newProvider = ProviderConfig(
       id: newId,
       name: 'New Provider',
-      color: colorHex,
       isCustom: true,
       models: [],
     );
@@ -1254,7 +1242,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
       providers: [...state.providers, newProvider],
       viewingProviderId: newId,
     );
-    await updateProvider(id: newId, name: 'New Provider', color: colorHex);
+    await updateProvider(id: newId, name: 'New Provider');
   }
 
   Future<void> toggleProviderEnabled(String id) async {

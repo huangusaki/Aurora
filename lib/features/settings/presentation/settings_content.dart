@@ -39,7 +39,6 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
   final TextEditingController _apiKeyController = TextEditingController();
   final TextEditingController _baseUrlController = TextEditingController();
   final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _colorController = TextEditingController();
   final TextEditingController _userNameController = TextEditingController();
   final TextEditingController _llmNameController = TextEditingController();
 
@@ -86,7 +85,6 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
     _apiKeyController.dispose();
     _baseUrlController.dispose();
     _nameController.dispose();
-    _colorController.dispose();
     _userNameController.dispose();
     _llmNameController.dispose();
     _renameListController.dispose();
@@ -107,9 +105,6 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
     }
     if (_nameController.text != provider.name) {
       _nameController.text = provider.name;
-    }
-    if (_colorController.text != (provider.color ?? '')) {
-      _colorController.text = provider.color ?? '';
     }
   }
 

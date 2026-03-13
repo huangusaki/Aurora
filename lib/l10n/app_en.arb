@@ -786,6 +786,13 @@
   "confirmRestore": "Confirm Restore?",
   "restoreWarning": "Restore will attempt to merge cloud data to local. If conflicts exist, local data may be updated. It is recommended to backup current data first.",
   "confirmRestoreButton": "Confirm Restore",
+  "deleteBackup": "Delete Backup",
+  "deleteBackupConfirm": "Delete cloud backup \"{name}\"? This action cannot be undone.",
+  "@deleteBackupConfirm": {
+    "placeholders": {
+      "name": {}
+    }
+  },
   "connectionSuccess": "Connection successful",
   "connectionFailed": "Connection failed: please check configuration",
   "connectionError": "Connection error",
@@ -793,6 +800,8 @@
   "backupFailed": "Backup failed",
   "restoreSuccess": "Data restored successfully",
   "restoreFailed": "Restore failed",
+  "deleteBackupSuccess": "Cloud backup deleted successfully",
+  "deleteBackupFailed": "Cloud backup deletion failed",
   "fetchBackupListFailed": "Failed to fetch backup list",
   "exportSuccess": "Export successful",
   "exportFailed": "Export failed",

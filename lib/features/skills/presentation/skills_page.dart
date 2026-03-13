@@ -1,5 +1,6 @@
 import 'package:aurora/shared/theme/aurora_icons.dart';
 import 'dart:io';
+import 'package:aurora/shared/services/provider_display_metadata.dart';
 import 'package:fluent_ui/fluent_ui.dart' as fluent;
 import 'package:flutter/material.dart';
 import 'package:aurora/shared/riverpod_compat.dart';
@@ -98,15 +99,10 @@ class _SkillSettingsPageState extends ConsumerState<SkillSettingsPage> {
     for (final provider in settings.providers) {
       if (!provider.isEnabled || provider.models.isEmpty) continue;
 
-      // Get provider color
-      Color providerColor;
-      if (provider.color != null && provider.color!.isNotEmpty) {
-        providerColor = Color(
-            int.tryParse(provider.color!.replaceFirst('#', '0xFF')) ??
-                0xFF000000);
-      } else {
-        providerColor = generateColorFromString(provider.id);
-      }
+      final providerColor = resolveProviderDisplayMetadata(
+        providerId: provider.id,
+        baseUrl: provider.baseUrl,
+      ).displayColor;
 
       // Add provider header
       items.add(ColoredDropdownItem(
@@ -791,4 +787,3 @@ class _SkillSettingsPageState extends ConsumerState<SkillSettingsPage> {
     }
   }
 }
-

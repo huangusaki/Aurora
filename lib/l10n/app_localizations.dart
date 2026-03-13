@@ -3722,6 +3722,18 @@ abstract class AppLocalizations {
   /// **'确定恢复'**
   String get confirmRestoreButton;
 
+  /// No description provided for @deleteBackup.
+  ///
+  /// In zh, this message translates to:
+  /// **'删除备份'**
+  String get deleteBackup;
+
+  /// No description provided for @deleteBackupConfirm.
+  ///
+  /// In zh, this message translates to:
+  /// **'确定删除云端备份“{name}”吗？此操作无法撤销。'**
+  String deleteBackupConfirm(Object name);
+
   /// No description provided for @connectionSuccess.
   ///
   /// In zh, this message translates to:
@@ -3763,6 +3775,18 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'恢复失败'**
   String get restoreFailed;
+
+  /// No description provided for @deleteBackupSuccess.
+  ///
+  /// In zh, this message translates to:
+  /// **'云端备份删除成功'**
+  String get deleteBackupSuccess;
+
+  /// No description provided for @deleteBackupFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'云端备份删除失败'**
+  String get deleteBackupFailed;
 
   /// No description provided for @fetchBackupListFailed.
   ///

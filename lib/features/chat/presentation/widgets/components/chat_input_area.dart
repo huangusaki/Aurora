@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:aurora/shared/theme/aurora_icons.dart';
+import 'package:aurora/shared/services/provider_display_metadata.dart';
 import 'package:fluent_ui/fluent_ui.dart' as fluent;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -14,7 +15,6 @@ import '../../../../mcp/presentation/mcp_bindings_provider.dart';
 import '../../../../mcp/presentation/mcp_server_provider.dart';
 import '../../../../settings/presentation/settings_provider.dart';
 import 'attachment_aware_paste_action.dart';
-import '../custom_dropdown_overlay.dart'; // for generateColorFromString
 import 'payload_config_panel.dart';
 
 final RegExp _gemini3ImageModelPattern =
@@ -39,7 +39,7 @@ class ModelOption {
   final String providerId;
   final String providerName;
   final String modelId;
-  final String? color;
+  final Color? color;
 
   ModelOption({
     required this.providerId,
@@ -561,13 +561,7 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
                                 final isSelected = index == _selectedIndex;
                                 final model = _filteredModels[index];
                                 final theme = fluent.FluentTheme.of(context);
-                                Color? itemColor;
-                                if (model.color != null &&
-                                    model.color!.isNotEmpty) {
-                                  itemColor = Color(int.tryParse(model.color!
-                                          .replaceFirst('#', '0xFF')) ??
-                                      0xFF000000);
-                                }
+                                final itemColor = model.color;
                                 return Container(
                                   margin: const EdgeInsets.symmetric(
                                       horizontal: 4, vertical: 2),
@@ -856,15 +850,10 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
     final List<ModelOption> allModels = [];
     for (final provider in settings.providers) {
       if (provider.isEnabled && provider.models.isNotEmpty) {
-        // Get color: use set color or generate from provider ID
-        String? colorValue = provider.color;
-        if (colorValue == null || colorValue.isEmpty) {
-          // Generate a hex color string from the provider ID
-          final generatedColor = generateColorFromString(provider.id);
-          final argb32 = generatedColor.toARGB32();
-          colorValue =
-              '#${argb32.toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}';
-        }
+        final colorValue = resolveProviderDisplayMetadata(
+          providerId: provider.id,
+          baseUrl: provider.baseUrl,
+        ).displayColor;
         for (final model in provider.models) {
           if (!provider.isModelEnabled(model)) continue;
           allModels.add(ModelOption(

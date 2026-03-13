@@ -12,8 +12,14 @@ import '../domain/backup_options.dart';
 import '../domain/remote_backup_file.dart';
 import '../domain/webdav_config.dart';
 
+typedef WebDavServiceFactory = WebDavService Function(WebDavConfig config);
+
 final syncProvider = StateNotifierProvider<SyncNotifier, SyncState>((ref) {
   return SyncNotifier(ref);
+});
+
+final webDavServiceFactoryProvider = Provider<WebDavServiceFactory>((ref) {
+  return (config) => WebDavService(config);
 });
 
 final backupServiceProvider = Provider<BackupService>((ref) {
@@ -31,6 +37,8 @@ class SyncMessageKeys {
   static const backupFailed = 'backupFailed';
   static const restoreSuccess = 'restoreSuccess';
   static const restoreFailed = 'restoreFailed';
+  static const deleteBackupSuccess = 'deleteBackupSuccess';
+  static const deleteBackupFailed = 'deleteBackupFailed';
   static const fetchBackupListFailed = 'fetchBackupListFailed';
 }
 
@@ -77,6 +85,10 @@ class SyncNotifier extends StateNotifier<SyncState> {
     _loadConfig();
   }
 
+  WebDavService _webDav(WebDavConfig config) {
+    return ref.read(webDavServiceFactoryProvider)(config);
+  }
+
   Future<void> _loadConfig() async {
     final prefs = await SharedPreferences.getInstance();
     final jsonStr = prefs.getString('webdav_config');
@@ -104,14 +116,16 @@ class SyncNotifier extends StateNotifier<SyncState> {
   }
 
   Future<void> testConnection() async {
+    if (state.isBusy) return;
     state = state.copyWith(isBusy: true, error: null, successMessage: null);
     try {
-      final service = WebDavService(state.config);
+      final service = _webDav(state.config);
       final success = await service.checkConnection();
       if (success) {
-        state = state.copyWith(
-            isBusy: false, successMessage: SyncMessageKeys.connectionSuccess);
-        refreshBackups();
+        await refreshBackups(
+          preserveBusy: true,
+          successMessage: SyncMessageKeys.connectionSuccess,
+        );
       } else {
         state = state.copyWith(
             isBusy: false, error: SyncMessageKeys.connectionFailed);
@@ -123,14 +137,16 @@ class SyncNotifier extends StateNotifier<SyncState> {
   }
 
   Future<void> backup({BackupOptions options = const BackupOptions()}) async {
+    if (state.isBusy) return;
     state = state.copyWith(isBusy: true, error: null, successMessage: null);
     try {
       await ref
           .read(backupServiceProvider)
           .backup(state.config, options: options);
-      state = state.copyWith(
-          isBusy: false, successMessage: SyncMessageKeys.backupSuccess);
-      refreshBackups();
+      await refreshBackups(
+        preserveBusy: true,
+        successMessage: SyncMessageKeys.backupSuccess,
+      );
     } catch (e) {
       state = state.copyWith(
           isBusy: false, error: '${SyncMessageKeys.backupFailed}: $e');
@@ -138,6 +154,7 @@ class SyncNotifier extends StateNotifier<SyncState> {
   }
 
   Future<void> restore(RemoteBackupFile file) async {
+    if (state.isBusy) return;
     state = state.copyWith(isBusy: true, error: null, successMessage: null);
     try {
       await ref.read(backupServiceProvider).restore(state.config, file.name);
@@ -159,16 +176,43 @@ class SyncNotifier extends StateNotifier<SyncState> {
     ref.invalidate(chatSessionManagerProvider);
   }
 
-  Future<void> refreshBackups() async {
-    state = state.copyWith(isBusy: true, error: null);
+  Future<void> deleteBackup(RemoteBackupFile file) async {
+    if (state.isBusy) return;
+    state = state.copyWith(isBusy: true, error: null, successMessage: null);
     try {
-      final service = WebDavService(state.config);
+      final service = _webDav(state.config);
+      await service.deleteBackup(file.name);
+      await refreshBackups(
+        preserveBusy: true,
+        successMessage: SyncMessageKeys.deleteBackupSuccess,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        isBusy: false,
+        error: '${SyncMessageKeys.deleteBackupFailed}: $e',
+      );
+    }
+  }
+
+  Future<void> refreshBackups({
+    bool preserveBusy = false,
+    String? successMessage,
+  }) async {
+    if (state.isBusy && !preserveBusy) return;
+    if (!preserveBusy) {
+      state = state.copyWith(isBusy: true, error: null, successMessage: null);
+    }
+    try {
+      final service = _webDav(state.config);
       final backups = await service.listBackups();
-      state = state.copyWith(isBusy: false, remoteBackups: backups);
+      state = state.copyWith(
+        isBusy: false,
+        remoteBackups: backups,
+        successMessage: successMessage,
+      );
     } catch (e) {
       state = state.copyWith(
           isBusy: false, error: '${SyncMessageKeys.fetchBackupListFailed}: $e');
     }
   }
 }
-

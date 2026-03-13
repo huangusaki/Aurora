@@ -69,6 +69,8 @@ class _MobileSyncSettingsPageState
         SyncMessageKeys.backupFailed: l10n.backupFailed,
         SyncMessageKeys.restoreSuccess: l10n.restoreSuccess,
         SyncMessageKeys.restoreFailed: l10n.restoreFailed,
+        SyncMessageKeys.deleteBackupSuccess: l10n.deleteBackupSuccess,
+        SyncMessageKeys.deleteBackupFailed: l10n.deleteBackupFailed,
         SyncMessageKeys.fetchBackupListFailed: l10n.fetchBackupListFailed,
       };
 
@@ -294,23 +296,58 @@ class _MobileSyncSettingsPageState
                     title: item.name,
                     subtitle: '$dateStr  •  $sizeMb MB',
                     showChevron: false,
-                    trailing: TextButton(
-                      onPressed: state.isBusy
-                          ? null
-                          : () async {
-                              final confirmed =
-                                  await AuroraBottomSheet.showConfirm(
-                                context: context,
-                                title: l10n.confirmRestore,
-                                content: l10n.restoreWarning,
-                                confirmText: l10n.confirmRestoreButton,
-                              );
-                              if (confirmed == true) {
-                                ref.read(syncProvider.notifier).restore(item);
-                              }
-                            },
-                      child: Text(l10n.restore,
-                          style: const TextStyle(fontWeight: FontWeight.bold)),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        TextButton(
+                          onPressed: state.isBusy
+                              ? null
+                              : () async {
+                                  final confirmed =
+                                      await AuroraBottomSheet.showConfirm(
+                                    context: context,
+                                    title: l10n.confirmRestore,
+                                    content: l10n.restoreWarning,
+                                    confirmText: l10n.confirmRestoreButton,
+                                  );
+                                  if (confirmed == true) {
+                                    ref
+                                        .read(syncProvider.notifier)
+                                        .restore(item);
+                                  }
+                                },
+                          child: Text(l10n.restore,
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.bold)),
+                        ),
+                        TextButton(
+                          onPressed: state.isBusy
+                              ? null
+                              : () async {
+                                  final confirmed =
+                                      await AuroraBottomSheet.showConfirm(
+                                    context: context,
+                                    title: l10n.deleteBackup,
+                                    content:
+                                        l10n.deleteBackupConfirm(item.name),
+                                    confirmText: l10n.delete,
+                                    isDestructive: true,
+                                  );
+                                  if (confirmed == true) {
+                                    ref
+                                        .read(syncProvider.notifier)
+                                        .deleteBackup(item);
+                                  }
+                                },
+                          child: Text(
+                            l10n.delete,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.red,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   );
                 }),

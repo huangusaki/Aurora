@@ -786,6 +786,13 @@
   "confirmRestore": "确认恢复?",
   "restoreWarning": "恢复操作将尝试合并云端数据到本地。如果存在冲突可能会更新本地数据。建议先备份当前数据。",
   "confirmRestoreButton": "确定恢复",
+  "deleteBackup": "删除备份",
+  "deleteBackupConfirm": "确定删除云端备份“{name}”吗？此操作无法撤销。",
+  "@deleteBackupConfirm": {
+    "placeholders": {
+      "name": {}
+    }
+  },
   "connectionSuccess": "连接成功",
   "connectionFailed": "连接失败: 请检查配置",
   "connectionError": "连接异常",
@@ -793,6 +800,8 @@
   "backupFailed": "备份失败",
   "restoreSuccess": "数据恢复成功",
   "restoreFailed": "恢复失败",
+  "deleteBackupSuccess": "云端备份删除成功",
+  "deleteBackupFailed": "云端备份删除失败",
   "fetchBackupListFailed": "获取备份列表失败",
   "exportSuccess": "导出成功",
   "exportFailed": "导出失败",

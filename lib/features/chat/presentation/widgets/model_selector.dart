@@ -1,6 +1,7 @@
 import 'package:aurora/shared/theme/aurora_icons.dart';
 import 'package:fluent_ui/fluent_ui.dart' as fluent;
 import 'package:aurora/shared/widgets/aurora_bottom_sheet.dart';
+import 'package:aurora/shared/services/provider_display_metadata.dart';
 import 'package:aurora/shared/utils/platform_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:aurora/shared/riverpod_compat.dart';
@@ -77,15 +78,10 @@ class _ModelSelectorState extends ConsumerState<ModelSelector> {
     for (final provider in providers) {
       if (!provider.isEnabled || provider.models.isEmpty) continue;
 
-      // Get provider color: use set color or generate from ID
-      Color providerColor;
-      if (provider.color != null && provider.color!.isNotEmpty) {
-        providerColor = Color(
-            int.tryParse(provider.color!.replaceFirst('#', '0xFF')) ??
-                0xFF000000);
-      } else {
-        providerColor = generateColorFromString(provider.id);
-      }
+      final providerColor = resolveProviderDisplayMetadata(
+        providerId: provider.id,
+        baseUrl: provider.baseUrl,
+      ).displayColor;
 
       // Add provider header
       items.add(ColoredDropdownItem(

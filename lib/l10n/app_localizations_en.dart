@@ -1930,6 +1930,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get confirmRestoreButton => 'Confirm Restore';
 
   @override
+  String get deleteBackup => 'Delete Backup';
+
+  @override
+  String deleteBackupConfirm(Object name) {
+    return 'Delete cloud backup \"$name\"? This action cannot be undone.';
+  }
+
+  @override
   String get connectionSuccess => 'Connection successful';
 
   @override
@@ -1950,6 +1958,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get restoreFailed => 'Restore failed';
+
+  @override
+  String get deleteBackupSuccess => 'Cloud backup deleted successfully';
+
+  @override
+  String get deleteBackupFailed => 'Cloud backup deletion failed';
 
   @override
   String get fetchBackupListFailed => 'Failed to fetch backup list';

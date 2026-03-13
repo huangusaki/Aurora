@@ -1877,6 +1877,14 @@ class AppLocalizationsZh extends AppLocalizations {
   String get confirmRestoreButton => '确定恢复';
 
   @override
+  String get deleteBackup => '删除备份';
+
+  @override
+  String deleteBackupConfirm(Object name) {
+    return '确定删除云端备份“$name”吗？此操作无法撤销。';
+  }
+
+  @override
   String get connectionSuccess => '连接成功';
 
   @override
@@ -1896,6 +1904,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get restoreFailed => '恢复失败';
+
+  @override
+  String get deleteBackupSuccess => '云端备份删除成功';
+
+  @override
+  String get deleteBackupFailed => '云端备份删除失败';
 
   @override
   String get fetchBackupListFailed => '获取备份列表失败';

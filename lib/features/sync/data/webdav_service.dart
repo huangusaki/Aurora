@@ -77,6 +77,16 @@ class WebDavService {
     return File(localPath);
   }
 
+  Future<void> deleteBackup(String remoteName) async {
+    final remoteUrl = '$_baseUrl${config.remotePath}/$remoteName'
+        .replaceAll('//', '/')
+        .replaceFirst(':/', '://');
+    await _dio.delete(
+      remoteUrl,
+      options: _options,
+    );
+  }
+
   Future<List<RemoteBackupFile>> listBackups() async {
     // Ensure directory first
     try {

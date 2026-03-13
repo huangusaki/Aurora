@@ -175,150 +175,155 @@ extension _SettingsContentSections on _SettingsContentState {
                       index: index,
                       child: fluent.FluentTheme(
                         data: fluent.FluentTheme.of(context),
-                        child: StatefulBuilder(
-                          builder: (context, setState) {
-                            bool isHovered = false;
-                            return MouseRegion(
-                              onEnter: (_) => setState(() => isHovered = true),
-                              onExit: (_) => setState(() => isHovered = false),
-                              child: Container(
-                                margin: const EdgeInsets.only(bottom: 2),
-                                decoration: BoxDecoration(
-                                  color: isSelected
-                                      ? fluent.FluentTheme.of(context)
-                                          .accentColor
-                                          .withValues(alpha: 0.1)
-                                      : null,
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: fluent.ListTile(
-                                  title: isEditing
-                                      ? _buildStyledTextBox(
-                                          controller: _renameListController,
-                                          autofocus: true,
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 8, vertical: 6),
-                                          radius: 6,
-                                          onSubmitted: (value) {
-                                            if (value.trim().isNotEmpty) {
-                                              ref
-                                                  .read(settingsProvider.notifier)
-                                                  .updateProvider(
-                                                      id: provider.id,
-                                                      name: value.trim());
-                                            }
-                                            setState(() {
-                                              _editingProviderId = null;
-                                            });
-                                          },
-                                          onTapOutside: (_) {
-                                            if (_renameListController.text
-                                                .trim()
-                                                .isNotEmpty) {
-                                              ref
-                                                  .read(settingsProvider.notifier)
-                                                  .updateProvider(
-                                                      id: provider.id,
-                                                      name: _renameListController.text
-                                                          .trim());
-                                            }
-                                            setState(() {
-                                              _editingProviderId = null;
-                                            });
-                                          },
-                                        )
-                                      : Text(
-                                          provider.name,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: fluent.FluentTheme.of(context)
-                                              .typography
-                                              .body
-                                              ?.copyWith(
-                                                color: isSelected
-                                                    ? fluent.FluentTheme.of(context)
-                                                        .accentColor
-                                                    : null,
-                                                fontWeight: isSelected
-                                                    ? FontWeight.w600
-                                                    : null,
-                                              ),
-                                        ),
-                                  onPressed: isEditing
-                                      ? null
-                                      : () {
-                                          ref
-                                              .read(settingsProvider.notifier)
-                                              .viewProvider(provider.id);
-                                        },
-                                  trailing: isEditing || (!isHovered && !isSelected)
-                                      ? null // Hide actions while editing or when not hovered/selected
-                                      : Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            fluent.IconButton(
-                                              icon: Icon(AuroraIcons.edit,
-                                                  size: 12,
-                                                  color:
-                                                      fluent.FluentTheme.of(context)
-                                                          .resources
-                                                          .textFillColorSecondary),
-                                              onPressed: () {
-                                                setState(() {
-                                                  _editingProviderId = provider.id;
-                                                  _renameListController.text =
-                                                      provider.name;
-                                                });
-                                              },
-                                            ),
-                                            const SizedBox(width: 4),
-                                            fluent.IconButton(
-                                              icon: Icon(AuroraIcons.delete,
-                                                  size: 12,
-                                                  color:
-                                                      fluent.FluentTheme.of(context)
-                                                          .resources
-                                                          .textFillColorSecondary),
-                                              onPressed: () {
-                                                showDialog(
-                                                    context: context,
-                                                    builder: (context) {
-                                                      return fluent.ContentDialog(
-                                                        title:
-                                                            Text(l10n.deleteProvider),
-                                                        content: Text(l10n
-                                                            .deleteProviderConfirm),
-                                                        actions: [
-                                                          fluent.Button(
-                                                            child: Text(l10n.cancel),
-                                                            onPressed: () =>
-                                                                Navigator.pop(
-                                                                    context),
-                                                          ),
-                                                          fluent.FilledButton(
-                                                            child: Text(l10n.delete),
-                                                            onPressed: () {
-                                                              Navigator.pop(context);
-                                                              ref
-                                                                  .read(
-                                                                      settingsProvider
-                                                                          .notifier)
-                                                                  .deleteProvider(
-                                                                      provider.id);
-                                                            },
-                                                          ),
-                                                        ],
-                                                      );
-                                                    });
-                                              },
-                                            ),
-                                          ],
-                                        ),
-                                ),
+                        child: StatefulBuilder(builder: (context, setState) {
+                          bool isHovered = false;
+                          return MouseRegion(
+                            onEnter: (_) => setState(() => isHovered = true),
+                            onExit: (_) => setState(() => isHovered = false),
+                            child: Container(
+                              margin: const EdgeInsets.only(bottom: 2),
+                              decoration: BoxDecoration(
+                                color: isSelected
+                                    ? fluent.FluentTheme.of(context)
+                                        .accentColor
+                                        .withValues(alpha: 0.1)
+                                    : null,
+                                borderRadius: BorderRadius.circular(4),
                               ),
-                            );
-                          }
-                        ),
+                              child: fluent.ListTile(
+                                title: isEditing
+                                    ? _buildStyledTextBox(
+                                        controller: _renameListController,
+                                        autofocus: true,
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 8, vertical: 6),
+                                        radius: 6,
+                                        onSubmitted: (value) {
+                                          if (value.trim().isNotEmpty) {
+                                            ref
+                                                .read(settingsProvider.notifier)
+                                                .updateProvider(
+                                                    id: provider.id,
+                                                    name: value.trim());
+                                          }
+                                          setState(() {
+                                            _editingProviderId = null;
+                                          });
+                                        },
+                                        onTapOutside: (_) {
+                                          if (_renameListController.text
+                                              .trim()
+                                              .isNotEmpty) {
+                                            ref
+                                                .read(settingsProvider.notifier)
+                                                .updateProvider(
+                                                    id: provider.id,
+                                                    name: _renameListController
+                                                        .text
+                                                        .trim());
+                                          }
+                                          setState(() {
+                                            _editingProviderId = null;
+                                          });
+                                        },
+                                      )
+                                    : Text(
+                                        provider.name,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: fluent.FluentTheme.of(context)
+                                            .typography
+                                            .body
+                                            ?.copyWith(
+                                              color: isSelected
+                                                  ? fluent.FluentTheme.of(
+                                                          context)
+                                                      .accentColor
+                                                  : null,
+                                              fontWeight: isSelected
+                                                  ? FontWeight.w600
+                                                  : null,
+                                            ),
+                                      ),
+                                onPressed: isEditing
+                                    ? null
+                                    : () {
+                                        ref
+                                            .read(settingsProvider.notifier)
+                                            .viewProvider(provider.id);
+                                      },
+                                trailing: isEditing ||
+                                        (!isHovered && !isSelected)
+                                    ? null // Hide actions while editing or when not hovered/selected
+                                    : Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          fluent.IconButton(
+                                            icon: Icon(AuroraIcons.edit,
+                                                size: 12,
+                                                color: fluent.FluentTheme.of(
+                                                        context)
+                                                    .resources
+                                                    .textFillColorSecondary),
+                                            onPressed: () {
+                                              setState(() {
+                                                _editingProviderId =
+                                                    provider.id;
+                                                _renameListController.text =
+                                                    provider.name;
+                                              });
+                                            },
+                                          ),
+                                          const SizedBox(width: 4),
+                                          fluent.IconButton(
+                                            icon: Icon(AuroraIcons.delete,
+                                                size: 12,
+                                                color: fluent.FluentTheme.of(
+                                                        context)
+                                                    .resources
+                                                    .textFillColorSecondary),
+                                            onPressed: () {
+                                              showDialog(
+                                                  context: context,
+                                                  builder: (context) {
+                                                    return fluent.ContentDialog(
+                                                      title: Text(
+                                                          l10n.deleteProvider),
+                                                      content: Text(l10n
+                                                          .deleteProviderConfirm),
+                                                      actions: [
+                                                        fluent.Button(
+                                                          child:
+                                                              Text(l10n.cancel),
+                                                          onPressed: () =>
+                                                              Navigator.pop(
+                                                                  context),
+                                                        ),
+                                                        fluent.FilledButton(
+                                                          child:
+                                                              Text(l10n.delete),
+                                                          onPressed: () {
+                                                            Navigator.pop(
+                                                                context);
+                                                            ref
+                                                                .read(settingsProvider
+                                                                    .notifier)
+                                                                .deleteProvider(
+                                                                    provider
+                                                                        .id);
+                                                          },
+                                                        ),
+                                                      ],
+                                                    );
+                                                  });
+                                            },
+                                          ),
+                                        ],
+                                      ),
+                              ),
+                            ),
+                          );
+                        }),
                       ),
                     );
                   },
@@ -815,44 +820,6 @@ extension _SettingsContentSections on _SettingsContentState {
                           ),
                           child: fluent.Text(l10n.noModelsData),
                         ),
-
-                      const SizedBox(height: 16),
-
-                      // --- Color Selector ---
-                      fluent.InfoLabel(
-                        label: l10n.providerColor,
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 32,
-                              height: 32,
-                              decoration: BoxDecoration(
-                                color: (viewingProvider.color != null &&
-                                        viewingProvider.color!.isNotEmpty)
-                                    ? Color(int.tryParse(viewingProvider.color!
-                                            .replaceFirst('#', '0xFF')) ??
-                                        0xFF000000)
-                                    : Colors.transparent,
-                                border: Border.all(color: fluent.Colors.grey),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: _buildStyledTextBox(
-                                controller: _colorController,
-                                placeholder: '#FF0000',
-                                onChanged: (value) {
-                                  ref
-                                      .read(settingsProvider.notifier)
-                                      .updateProvider(
-                                          id: viewingProvider.id, color: value);
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
                     ],
                   ),
                 ),
