@@ -1,12 +1,12 @@
 import 'package:aurora/shared/theme/aurora_icons.dart';
 import 'package:fluent_ui/fluent_ui.dart' as fluent;
-import 'package:aurora/shared/widgets/aurora_bottom_sheet.dart';
 import 'package:aurora/shared/services/provider_display_metadata.dart';
 import 'package:aurora/shared/utils/platform_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:aurora/shared/riverpod_compat.dart';
 import '../../../settings/presentation/settings_provider.dart';
 import 'custom_dropdown_overlay.dart';
+import 'mobile_model_switcher_sheet.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 
 class ModelSelector extends ConsumerStatefulWidget {
@@ -189,8 +189,13 @@ class _ModelSelectorState extends ConsumerState<ModelSelector> {
       );
     } else {
       return GestureDetector(
-        onTap: () => _showMobileModelBottomSheet(
-            context, providers, activeProvider, selected, switchModel),
+        onTap: () => showMobileModelSwitcherSheet(
+          context: context,
+          providers: providers,
+          activeProvider: activeProvider,
+          selectedModel: selected,
+          onSwitchModel: switchModel,
+        ),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           child: Row(
@@ -228,138 +233,5 @@ class _ModelSelectorState extends ConsumerState<ModelSelector> {
         ),
       );
     }
-  }
-
-  void _showMobileModelBottomSheet(
-    BuildContext context,
-    List<ProviderConfig> providers,
-    ProviderConfig activeProvider,
-    String? selected,
-    Future<void> Function(String, String) switchModel,
-  ) {
-    final l10n = AppLocalizations.of(context)!;
-    AuroraBottomSheet.show(
-      context: context,
-      builder: (ctx) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          AuroraBottomSheet.buildTitle(context, l10n.switchModel),
-          const Divider(height: 1),
-          Flexible(
-            child: _MobileModelList(
-              providers: providers,
-              activeProvider: activeProvider,
-              selected: selected,
-              switchModel: switchModel,
-              sheetContext: ctx,
-            ),
-          ),
-          const SizedBox(height: 16),
-        ],
-      ),
-    );
-  }
-}
-
-class _MobileModelList extends StatefulWidget {
-  const _MobileModelList({
-    required this.providers,
-    required this.activeProvider,
-    required this.selected,
-    required this.switchModel,
-    required this.sheetContext,
-  });
-
-  final List<ProviderConfig> providers;
-  final ProviderConfig activeProvider;
-  final String? selected;
-  final Future<void> Function(String, String) switchModel;
-  final BuildContext sheetContext;
-
-  @override
-  State<_MobileModelList> createState() => _MobileModelListState();
-}
-
-class _MobileModelListState extends State<_MobileModelList> {
-  final ScrollController _scrollController = ScrollController();
-  final GlobalKey _selectedItemKey = GlobalKey();
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _scrollToSelectedItem();
-    });
-  }
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  void _scrollToSelectedItem() {
-    final selectedContext = _selectedItemKey.currentContext;
-    if (selectedContext == null) {
-      return;
-    }
-
-    Scrollable.ensureVisible(
-      selectedContext,
-      alignment: 0.35,
-      duration: Duration.zero,
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final enabledProviders = widget.providers
-        .where((provider) => provider.isEnabled && provider.models.isNotEmpty)
-        .toList(growable: false);
-
-    return ListView(
-      controller: _scrollController,
-      shrinkWrap: true,
-      children: [
-        for (final provider in enabledProviders) ...[
-          ListTile(
-            dense: true,
-            enabled: false,
-            title: Text(
-              provider.name,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.grey,
-              ),
-            ),
-          ),
-          for (final model in provider.models)
-            if (provider.isModelEnabled(model))
-              ListTile(
-                key: widget.activeProvider.id == provider.id &&
-                        widget.selected == model
-                    ? _selectedItemKey
-                    : null,
-                contentPadding: const EdgeInsets.only(left: 32, right: 16),
-                leading: Icon(
-                  widget.activeProvider.id == provider.id &&
-                          widget.selected == model
-                      ? Icons.check_circle
-                      : Icons.circle_outlined,
-                  color: widget.activeProvider.id == provider.id &&
-                          widget.selected == model
-                      ? Theme.of(context).primaryColor
-                      : null,
-                ),
-                title: Text(model),
-                onTap: () async {
-                  Navigator.pop(widget.sheetContext);
-                  await widget.switchModel(provider.id, model);
-                },
-              ),
-          if (provider != enabledProviders.last) const Divider(),
-        ],
-      ],
-    );
   }
 }

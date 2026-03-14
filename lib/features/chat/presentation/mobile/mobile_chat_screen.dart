@@ -17,6 +17,7 @@ import 'mobile_navigation_drawer.dart';
 import '../../../assistant/presentation/mobile_assistant_page.dart';
 import '../../../studio/presentation/pages/mobile_studio_page.dart';
 import '../../../mcp/presentation/mobile_mcp_settings_page.dart';
+import '../widgets/mobile_model_switcher_sheet.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 import 'package:aurora/shared/utils/number_format_utils.dart';
 import 'package:aurora/shared/theme/chat_background_theme.dart';
@@ -497,86 +498,15 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
       );
       return;
     }
-    AuroraBottomSheet.show(
+    showMobileModelSwitcherSheet(
       context: context,
-      builder: (ctx) {
-        return Container(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.7,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              AuroraBottomSheet.buildTitle(context, l10n.switchModel),
-              const Divider(height: 1),
-              Flexible(
-                child: ListView(
-                  shrinkWrap: true,
-                  children: [
-                    // Model Section
-                    ListTile(
-                      dense: true,
-                      enabled: false,
-                      title: Text(
-                        l10n.selectModel,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ),
-                    for (final provider in providers) ...[
-                      if (provider.isEnabled && provider.models.isNotEmpty) ...[
-                        ListTile(
-                          dense: true,
-                          enabled: false,
-                          title: Text(
-                            provider.name,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.grey,
-                            ),
-                          ),
-                        ),
-                        for (final model in provider.models)
-                          if (provider.isModelEnabled(model))
-                            AuroraBottomSheet.buildListItem(
-                              context: context,
-                              leading: Icon(
-                                activeProvider.id == provider.id &&
-                                        selectedModel == model
-                                    ? Icons.check_circle
-                                    : Icons.circle_outlined,
-                                color: activeProvider.id == provider.id &&
-                                        selectedModel == model
-                                    ? Theme.of(context).primaryColor
-                                    : null,
-                              ),
-                              title: Text(model),
-                              onTap: () async {
-                                await ref
-                                    .read(settingsProvider.notifier)
-                                    .selectProvider(provider.id);
-                                await ref
-                                    .read(settingsProvider.notifier)
-                                    .setSelectedModel(model);
-                                if (context.mounted) Navigator.pop(ctx);
-                              },
-                            ),
-                        if (provider !=
-                            providers
-                                .where(
-                                    (p) => p.isEnabled && p.models.isNotEmpty)
-                                .last)
-                          const Divider(),
-                      ],
-                    ],
-                  ],
-                ),
-              ),
-            ],
-          ),
-        );
+      providers: providers,
+      activeProvider: activeProvider,
+      selectedModel: selectedModel,
+      title: l10n.switchModel,
+      onSwitchModel: (providerId, modelId) async {
+        await ref.read(settingsProvider.notifier).selectProvider(providerId);
+        await ref.read(settingsProvider.notifier).setSelectedModel(modelId);
       },
     );
   }

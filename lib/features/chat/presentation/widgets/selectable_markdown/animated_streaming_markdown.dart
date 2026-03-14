@@ -9,6 +9,7 @@ class AnimatedStreamingMarkdown extends StatefulWidget {
   final bool isDark;
   final Color textColor;
   final double baseFontSize;
+  final bool animate;
 
   const AnimatedStreamingMarkdown({
     super.key,
@@ -16,6 +17,7 @@ class AnimatedStreamingMarkdown extends StatefulWidget {
     required this.isDark,
     required this.textColor,
     this.baseFontSize = 14.0,
+    this.animate = true,
   });
 
   @override
@@ -38,6 +40,17 @@ class _AnimatedStreamingMarkdownState extends State<AnimatedStreamingMarkdown> {
   @override
   void didUpdateWidget(AnimatedStreamingMarkdown oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (!widget.animate) {
+      if (_displayedData != widget.data ||
+          oldWidget.animate != widget.animate) {
+        _displayedData = widget.data;
+        _timer?.cancel();
+        _timer = null;
+        if (mounted) setState(() {});
+      }
+      return;
+    }
+
     if (widget.data != oldWidget.data) {
       // If widget.data is shorter or not a prefix (e.g. edit/delete), sync immediately.
       // This should take precedence even if we're suspending animation.
@@ -61,7 +74,7 @@ class _AnimatedStreamingMarkdownState extends State<AnimatedStreamingMarkdown> {
   }
 
   void _startAnimation() {
-    if (_suspendAnimation) return;
+    if (_suspendAnimation || !widget.animate) return;
 
     // If widget.data is shorter or not a prefix (e.g. edit/delete), sync immediately
     if (_displayedData.length > widget.data.length ||
@@ -125,6 +138,7 @@ class _AnimatedStreamingMarkdownState extends State<AnimatedStreamingMarkdown> {
     return Listener(
       behavior: HitTestBehavior.translucent,
       onPointerDown: (event) {
+        if (!widget.animate) return;
         // Only interfere while the streaming timer is actively mutating the tree.
         if (_timer == null || !_timer!.isActive) return;
         // Only suspend for primary button on mouse; touch selection uses different gestures.
@@ -138,6 +152,7 @@ class _AnimatedStreamingMarkdownState extends State<AnimatedStreamingMarkdown> {
         _timer = null;
       },
       onPointerUp: (_) {
+        if (!widget.animate) return;
         if (_activePointers > 0) _activePointers--;
         if (_activePointers == 0 && _suspendAnimation) {
           _suspendAnimation = false;
@@ -149,6 +164,7 @@ class _AnimatedStreamingMarkdownState extends State<AnimatedStreamingMarkdown> {
         }
       },
       onPointerCancel: (_) {
+        if (!widget.animate) return;
         if (_activePointers > 0) _activePointers--;
         if (_activePointers == 0 && _suspendAnimation) {
           _suspendAnimation = false;

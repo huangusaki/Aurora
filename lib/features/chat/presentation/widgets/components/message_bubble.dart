@@ -30,6 +30,7 @@ class MessageBubble extends ConsumerStatefulWidget {
   final Message message;
   final bool isLast;
   final bool isGenerating;
+  final bool animateStreamingContent;
   final bool showAvatar;
   final bool mergeTop;
   final bool mergeBottom;
@@ -38,6 +39,7 @@ class MessageBubble extends ConsumerStatefulWidget {
     required this.message,
     required this.isLast,
     this.isGenerating = false,
+    this.animateStreamingContent = true,
     this.showAvatar = true,
     this.mergeTop = false,
     this.mergeBottom = false,
@@ -753,6 +755,7 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
                                     data: contentText,
                                     isDark: theme.brightness == Brightness.dark,
                                     textColor: theme.typography.body!.color!,
+                                    animate: widget.animateStreamingContent,
                                   ),
                                 ),
                               if (attachmentPaths.isNotEmpty &&

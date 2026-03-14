@@ -26,11 +26,13 @@ class MergedMessageBubble extends ConsumerStatefulWidget {
   final MergedGroupItem group;
   final bool isLast;
   final bool isGenerating;
+  final bool animateStreamingContent;
   const MergedMessageBubble({
     super.key,
     required this.group,
     this.isLast = false,
     this.isGenerating = false,
+    this.animateStreamingContent = true,
   });
   @override
   ConsumerState<MergedMessageBubble> createState() =>
@@ -148,7 +150,8 @@ class _MergedMessageBubbleState extends ConsumerState<MergedMessageBubble>
       providerName: headerMsg.provider ?? settingsState.activeProvider.name,
     );
     return Container(
-      margin: EdgeInsets.symmetric(vertical: 4, horizontal: PlatformUtils.isDesktop ? 10 : 2),
+      margin: EdgeInsets.symmetric(
+          vertical: 4, horizontal: PlatformUtils.isDesktop ? 10 : 2),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.start,
@@ -233,20 +236,21 @@ class _MergedMessageBubbleState extends ConsumerState<MergedMessageBubble>
                             color: theme.resources.dividerStrokeColorDefault),
                   ),
                   child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (!_isEditing) ...[
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (!_isEditing) ...[
                         ..._buildMergedContent(
                             messages, theme, lastMsg, transformContext),
                         if (widget.isGenerating &&
                             UiMessage.fromLegacy(lastMsg).role != UiRole.tool &&
                             chatMessageTransformers
-                                .visualTransform(
-                                    UiMessage.fromLegacy(lastMsg),
+                                .visualTransform(UiMessage.fromLegacy(lastMsg),
                                     transformContext)
                                 .text
                                 .isEmpty &&
-                            ((UiMessage.fromLegacy(lastMsg).reasoning?.isEmpty ??
+                            ((UiMessage.fromLegacy(lastMsg)
+                                    .reasoning
+                                    ?.isEmpty ??
                                 true)) &&
                             (lastMsg.toolCalls == null ||
                                 lastMsg.toolCalls!.isEmpty))
@@ -552,6 +556,7 @@ class _MergedMessageBubbleState extends ConsumerState<MergedMessageBubble>
             data: ui.text,
             isDark: theme.brightness == Brightness.dark,
             textColor: theme.typography.body!.color!,
+            animate: widget.animateStreamingContent,
           ),
         ));
       }
@@ -688,4 +693,3 @@ class _MergedMessageBubbleState extends ConsumerState<MergedMessageBubble>
     return parts;
   }
 }
-

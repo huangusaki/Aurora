@@ -157,6 +157,7 @@ class _ChatGenerationOrchestrator {
   }
 
   Future<_ChatTurnResult> _runStreamingTurn(Message aiMsg) async {
+    _notifier._setStreaming(true);
     final turnStartTime = DateTime.now();
     DateTime? turnFirstContentTime;
     DateTime? reasoningStartTime;
@@ -286,6 +287,7 @@ class _ChatGenerationOrchestrator {
   }
 
   Future<_ChatTurnResult> _runNonStreamingTurn(Message aiMsg) async {
+    _notifier._setStreaming(false);
     final turnStartTime = DateTime.now();
     final response = await _requestContext.llmService.getResponse(
       _requestContext.messagesForApi,
@@ -362,6 +364,7 @@ class _ChatGenerationOrchestrator {
   }
 
   Future<_ChatTurnResult> _runForcedFinalization(Message aiMsg) async {
+    _notifier._setStreaming(true);
     final context = MessageTransformContext(
       language: _requestContext.settings.language,
       model: _requestContext.currentModel,

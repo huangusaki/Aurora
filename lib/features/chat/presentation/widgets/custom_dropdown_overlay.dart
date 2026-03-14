@@ -166,11 +166,14 @@ class _AnimatedDropdownListState extends State<AnimatedDropdownList>
             borderRadius: BorderRadius.circular(8),
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-              child: ListView(
+              child: SingleChildScrollView(
                 controller: _scrollController,
                 padding: const EdgeInsets.symmetric(vertical: 4),
-                shrinkWrap: true,
-                children: _buildItems(),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: _buildItems(),
+                ),
               ),
             ),
           ),

@@ -88,6 +88,11 @@ class ChatNotifier extends StateNotifier<ChatState> {
     _savedScrollOffset = offset;
   }
 
+  void _setStreaming(bool isStreaming) {
+    if (!mounted || state.isStreaming == isStreaming) return;
+    state = state.copyWith(isStreaming: isStreaming);
+  }
+
   void abortGeneration() {
     if (_currentGenerationId.isNotEmpty) {
       AppLogger.warn(
@@ -104,7 +109,7 @@ class ChatNotifier extends StateNotifier<ChatState> {
     _currentCancelToken?.cancel('User aborted generation');
     _currentCancelToken = null;
     _flushPendingTrailingMessage();
-    state = state.copyWith(isLoading: false);
+    state = state.copyWith(isLoading: false, isStreaming: false);
   }
 
   void markAsRead() {
@@ -189,8 +194,12 @@ class ChatNotifier extends StateNotifier<ChatState> {
     }
 
     onStateChanged?.call();
-    state =
-        state.copyWith(isLoading: true, error: null, hasUnreadResponse: false);
+    state = state.copyWith(
+      isLoading: true,
+      isStreaming: false,
+      error: null,
+      hasUnreadResponse: false,
+    );
     final startSaveIndex = state.messages.length;
     final startTime = DateTime.now();
     _ChatRequestContext? requestContext;
@@ -321,7 +330,9 @@ class ChatNotifier extends StateNotifier<ChatState> {
     } finally {
       requestContext?.toolManager.close();
       _flushPendingTrailingMessage();
-      if (mounted) state = state.copyWith(isLoading: false);
+      if (mounted) {
+        state = state.copyWith(isLoading: false, isStreaming: false);
+      }
     }
 
     return _sessionId;
@@ -481,12 +492,12 @@ class ChatNotifier extends StateNotifier<ChatState> {
 
     final now = DateTime.now();
     final last = _lastTrailingFlushAt;
-    final elapsed = last == null ? _streamUiFlushInterval : now.difference(last);
+    final elapsed =
+        last == null ? _streamUiFlushInterval : now.difference(last);
     final remainingUs =
         _streamUiFlushInterval.inMicroseconds - elapsed.inMicroseconds;
-    final delay = remainingUs <= 0
-        ? Duration.zero
-        : Duration(microseconds: remainingUs);
+    final delay =
+        remainingUs <= 0 ? Duration.zero : Duration(microseconds: remainingUs);
 
     _pendingTrailingFlushTimer = Timer(delay, _flushPendingTrailingMessage);
   }
@@ -605,7 +616,11 @@ class ChatNotifier extends StateNotifier<ChatState> {
 
     if (mounted) {
       state = state.copyWith(
-          messages: messages, isLoading: false, error: errorMessage);
+        messages: messages,
+        isLoading: false,
+        isStreaming: false,
+        error: errorMessage,
+      );
     }
 
     final currentModel =
@@ -850,6 +865,7 @@ class ChatNotifier extends StateNotifier<ChatState> {
     state = state.copyWith(
         messages: historyToKeep,
         isLoading: true,
+        isStreaming: false,
         error: null,
         isAutoScrollEnabled: true);
     final idsToDelete =
@@ -990,7 +1006,7 @@ class ChatNotifier extends StateNotifier<ChatState> {
     }
     final tempProviders = List<ProviderConfig>.from(settings.providers);
     tempProviders[providerIndex] =
-        tempProviders[providerIndex].copyWith(selectedModel: modelId);
+        tempProviders[providerIndex].copyWith(selectedChatModel: modelId);
     final tempSettings = settings.copyWith(
       activeProviderId: providerId,
       providers: tempProviders,
