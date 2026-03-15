@@ -88,10 +88,16 @@ class AppLogger {
   static bool _prettyJson = true;
   static AppLogLevel _minLevel = AppLogLevel.debug;
   static bool _showRawLlmPayload = !kReleaseMode;
+  static const int _base64PreviewChars = 48;
+  static const int _minBase64CollapseLength = 256;
 
   static final List<AppLogEntry> _buffer = <AppLogEntry>[];
   static final Map<int, AppLogListener> _listeners = <int, AppLogListener>{};
   static int _nextListenerId = 0;
+  static final RegExp _base64DataUrlPattern = RegExp(
+    r'data:[^;,]+;base64,([A-Za-z0-9+/_=-]{256,})',
+    caseSensitive: false,
+  );
 
   static const String _reset = '\x1B[0m';
   static const String _dim = '\x1B[90m';
@@ -594,14 +600,16 @@ class AppLogger {
     if (value is String) {
       if (keyHint != null) {
         if (_isSensitiveKey(keyHint)) return '[REDACTED]';
-        if (_isErrorMessagePath(path)) return _sanitizeText(value);
+        if (_isErrorMessagePath(path)) {
+          return _sanitizeText(value, keyHint: keyHint, path: path);
+        }
         if (redactContent &&
             _isContentKey(keyHint) &&
             value.trim().isNotEmpty) {
           return '[REDACTED_TEXT len=${value.length}]';
         }
       }
-      return _sanitizeText(value);
+      return _sanitizeText(value, keyHint: keyHint, path: path);
     }
     return value;
   }
@@ -665,8 +673,9 @@ class AppLogger {
     return normalized.contains('error') || normalized.contains('errors');
   }
 
-  static String _sanitizeText(String input) {
-    var output = input;
+  static String _sanitizeText(String input,
+      {String? keyHint, List<String> path = const []}) {
+    var output = _collapseBase64Text(input, keyHint: keyHint, path: path);
 
     output = output.replaceAllMapped(
       RegExp(r'\b(bearer)\s+[A-Za-z0-9._~+\-/=]{12,}\b', caseSensitive: false),
@@ -686,6 +695,48 @@ class AppLogger {
     );
 
     return output;
+  }
+
+  static String _collapseBase64Text(String input,
+      {String? keyHint, List<String> path = const []}) {
+    var output = input.replaceAllMapped(_base64DataUrlPattern, (match) {
+      final whole = match.group(0)!;
+      final payload = match.group(1)!;
+      final commaIndex = whole.indexOf(',');
+      if (commaIndex < 0) return whole;
+      final prefix = whole.substring(0, commaIndex + 1);
+      return '$prefix${_truncateBase64Payload(payload, originalLength: whole.length)}';
+    });
+
+    if (_shouldCollapseRawBase64(output, keyHint: keyHint, path: path)) {
+      output = _truncateBase64Payload(output);
+    }
+    return output;
+  }
+
+  static bool _shouldCollapseRawBase64(String input,
+      {String? keyHint, List<String> path = const []}) {
+    final normalized = input.trim();
+    if (normalized.length < _minBase64CollapseLength) return false;
+    if (!_isKnownBase64Field(keyHint, path)) return false;
+    return RegExp(r'^[A-Za-z0-9+/_=-]+$').hasMatch(normalized);
+  }
+
+  static bool _isKnownBase64Field(String? keyHint, List<String> path) {
+    final lowerKey = keyHint?.trim().toLowerCase();
+    if (lowerKey == null || lowerKey.isEmpty) return false;
+    if (lowerKey.contains('base64') || lowerKey == 'b64_json') return true;
+    if (lowerKey != 'data') return false;
+    final normalizedPath =
+        path.map((segment) => segment.toLowerCase()).toList();
+    return normalizedPath.contains('inlinedata') ||
+        normalizedPath.contains('input_audio');
+  }
+
+  static String _truncateBase64Payload(String payload, {int? originalLength}) {
+    if (payload.length <= _minBase64CollapseLength) return payload;
+    final effectiveLength = originalLength ?? payload.length;
+    return '${payload.substring(0, _base64PreviewChars)}...[TRUNCATED $effectiveLength chars]';
   }
 
   static String _redactPathToken(String rawPath) {

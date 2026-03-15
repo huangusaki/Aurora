@@ -29,4 +29,45 @@ void main() {
     expect(received.last.message, 'error message');
     expect(AppLogger.bufferedEntriesSnapshot(), hasLength(2));
   });
+
+  test('collapses long base64 data URLs in log payloads', () {
+    AppLogger.install(useColor: false);
+
+    final base64Payload = 'A' * 320;
+    AppLogger.info(
+      'TEST',
+      'image payload',
+      data: {
+        'url': 'data:image/png;base64,$base64Payload',
+      },
+    );
+
+    final entry = AppLogger.bufferedEntriesSnapshot().single;
+    expect(entry.details, contains('data:image/png;base64,'));
+    expect(entry.details, contains('[TRUNCATED'));
+    expect(entry.details, isNot(contains(base64Payload)));
+  });
+
+  test('collapses long raw base64 only for known base64 fields', () {
+    AppLogger.install(useColor: false);
+
+    final base64Payload = 'A' * 400;
+    final ordinaryLongText = 'x' * 400;
+    AppLogger.info(
+      'TEST',
+      'structured payload',
+      data: {
+        'inlineData': {
+          'mimeType': 'image/png',
+          'data': base64Payload,
+        },
+        'note': ordinaryLongText,
+      },
+    );
+
+    final entry = AppLogger.bufferedEntriesSnapshot().single;
+    expect(entry.details, contains('[TRUNCATED 400 chars]'));
+    expect(entry.details, isNot(contains(base64Payload)));
+    expect(entry.details, contains(ordinaryLongText));
+  });
 }
