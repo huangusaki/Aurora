@@ -290,14 +290,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get logRecords => 'Log Records';
 
   @override
-  String get logRecordsHint => 'View the latest 2000 runtime log records';
+  String get logRecordsHint =>
+      'View the latest 2000 runtime log records, paged at 100 per page';
 
   @override
   String get logFilterHint =>
-      'Showing the latest 2000 logs. Filter by level below.';
+      'Showing the latest 2000 logs, 100 per page. Filter by level below.';
 
   @override
   String get noLogRecords => 'No log records yet';
+
+  @override
+  String get previousPage => 'Previous page';
+
+  @override
+  String get nextPage => 'Next page';
+
+  @override
+  String logPageSummary(
+      int current, int totalPages, int start, int end, int totalItems) {
+    return 'Page $current / $totalPages · $start-$end / $totalItems';
+  }
 
   @override
   String get logLevelDebug => 'Debug';
@@ -1587,6 +1600,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get modeReasoningEffort => 'Reasoning Effort (OpenAI)';
+
+  @override
+  String get imageTransmissionMode => 'Image Transport Mode';
+
+  @override
+  String get imageModeAuto => 'Auto (By Route)';
+
+  @override
+  String get imageModeOpenaiImageConfig => 'image_config (OpenAI)';
+
+  @override
+  String get imageModeGoogleExtraBody => 'extra_body.google (Gemini)';
 
   @override
   String get transportMode => 'Transport Mode';

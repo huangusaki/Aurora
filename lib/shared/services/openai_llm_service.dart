@@ -15,6 +15,7 @@ import '../../core/error/app_error_type.dart';
 import '../utils/app_logger.dart';
 import '../utils/llm_stream_log_accumulator.dart';
 import 'capability_route_resolver.dart';
+import 'llm_transport_mode.dart';
 
 part 'openai/openai_attachments.dart';
 part 'openai/openai_provider_compat.dart';

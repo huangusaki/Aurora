@@ -5,6 +5,8 @@ const String auroraTransportModeKey = '_aurora_transport_mode';
 const String auroraLegacyTransportModeKey = '_aurora_transport';
 const String auroraTransportBaseUrlKey = '_aurora_transport_base_url';
 const String auroraTransportApiKeyKey = '_aurora_transport_api_key';
+const String auroraImageConfigKey = '_aurora_image_config';
+const String auroraImageConfigModeKey = 'mode';
 const String auroraGeminiNativeToolsKey = '_aurora_gemini_native_tools';
 const String auroraGeminiNativeGoogleSearchKey = 'google_search';
 const String auroraGeminiNativeUrlContextKey = 'url_context';
@@ -30,6 +32,112 @@ enum LlmTransportMode {
         return LlmTransportMode.auto;
     }
   }
+}
+
+enum ImageConfigTransportMode {
+  auto('auto'),
+  openaiImageConfig('openai_image_config'),
+  googleExtraBody('google_extra_body');
+
+  final String wireName;
+  const ImageConfigTransportMode(this.wireName);
+
+  static ImageConfigTransportMode fromRaw(Object? raw) {
+    final value = raw?.toString().trim().toLowerCase();
+    switch (value) {
+      case 'openai_image_config':
+        return ImageConfigTransportMode.openaiImageConfig;
+      case 'google_extra_body':
+        return ImageConfigTransportMode.googleExtraBody;
+      case 'auto':
+      default:
+        return ImageConfigTransportMode.auto;
+    }
+  }
+}
+
+class AuroraImageConfig {
+  final ImageConfigTransportMode mode;
+  final String? aspectRatio;
+  final String? imageSize;
+
+  const AuroraImageConfig({
+    this.mode = ImageConfigTransportMode.auto,
+    this.aspectRatio,
+    this.imageSize,
+  });
+
+  bool get hasValues => aspectRatio != null || imageSize != null;
+
+  Map<String, dynamic> toSettingsMap() {
+    return {
+      if (mode != ImageConfigTransportMode.auto)
+        auroraImageConfigModeKey: mode.wireName,
+      if (aspectRatio != null) 'aspect_ratio': aspectRatio,
+      if (imageSize != null) 'image_size': imageSize,
+    };
+  }
+}
+
+Map<String, dynamic> _stringKeyedMap(dynamic value) {
+  if (value is! Map) return const <String, dynamic>{};
+  final result = <String, dynamic>{};
+  value.forEach((key, val) {
+    if (key is String) {
+      result[key] = val;
+    }
+  });
+  return result;
+}
+
+String? _normalizeImageAspectRatio(dynamic value) {
+  final raw = value?.toString().trim() ?? '';
+  if (raw.isEmpty) return null;
+  final normalized = raw.toLowerCase();
+  if (normalized == 'auto' || normalized == '自动') return null;
+  return raw;
+}
+
+String? _normalizeImageSize(dynamic value) {
+  final raw = value?.toString().trim() ?? '';
+  if (raw.isEmpty) return null;
+  return raw;
+}
+
+AuroraImageConfig resolveAuroraImageConfig(Map<String, dynamic>? settings) {
+  if (settings == null || settings.isEmpty) {
+    return const AuroraImageConfig();
+  }
+
+  final rawConfig = settings[auroraImageConfigKey] ?? settings['image_config'];
+  final imageConfig = _stringKeyedMap(rawConfig);
+  if (imageConfig.isEmpty) {
+    return const AuroraImageConfig();
+  }
+
+  return AuroraImageConfig(
+    mode: ImageConfigTransportMode.fromRaw(
+      imageConfig[auroraImageConfigModeKey],
+    ),
+    aspectRatio: _normalizeImageAspectRatio(imageConfig['aspect_ratio']),
+    imageSize: _normalizeImageSize(imageConfig['image_size']),
+  );
+}
+
+Map<String, dynamic> withAuroraImageConfig(
+  Map<String, dynamic> source,
+  AuroraImageConfig config,
+) {
+  final next = Map<String, dynamic>.from(source);
+  next.remove('image_config');
+
+  final configMap = config.toSettingsMap();
+  if (configMap.isEmpty) {
+    next.remove(auroraImageConfigKey);
+  } else {
+    next[auroraImageConfigKey] = configMap;
+  }
+  return next;
 }
 
 LlmTransportMode resolveTransportModeFromSettings(

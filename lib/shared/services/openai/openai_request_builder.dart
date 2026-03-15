@@ -284,6 +284,7 @@ Use search for:
       requestData: requestData,
       activeParams: activeParams,
       selectedModel: selectedModel,
+      routePreset: route.preset,
     );
     final apiKey = route.effectiveApiKey(provider);
     final endpointUri = route.buildUri(

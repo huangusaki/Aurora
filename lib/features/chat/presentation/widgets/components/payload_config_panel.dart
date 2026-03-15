@@ -180,12 +180,9 @@ class _PayloadConfigPanelState extends ConsumerState<PayloadConfigPanel> {
 
   Widget _buildImageConfig(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final Map<String, dynamic> imageConfig = Map<String, dynamic>.from(
-        _modelSettings['_aurora_image_config'] ??
-            _modelSettings['image_config'] ??
-            {});
-
-    final String currentSize = imageConfig['image_size'] ?? '2K';
+    final imageConfig = resolveAuroraImageConfig(_modelSettings);
+    final String currentSize = imageConfig.imageSize ?? '2K';
+    final String currentMode = imageConfig.mode.wireName;
 
     final aspectRatios = [
       l10n.auto,
@@ -206,12 +203,50 @@ class _PayloadConfigPanelState extends ConsumerState<PayloadConfigPanel> {
     ];
     final sizes = ["0.5K", "1K", "2K", "4K"];
 
-    final String displayAspectRatio = imageConfig['aspect_ratio'] ?? l10n.auto;
+    final String displayAspectRatio = imageConfig.aspectRatio ?? l10n.auto;
+
+    void saveImageConfig(AuroraImageConfig config) {
+      final newSettings = withAuroraImageConfig(_modelSettings, config);
+      _saveSettings(newSettings);
+    }
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        _buildSectionCard(
+          title: l10n.imageTransmissionMode,
+          icon: AuroraIcons.settings,
+          child: AuroraAdaptiveDropdownField<String>(
+            label: l10n.imageTransmissionMode,
+            value: currentMode,
+            options: [
+              AuroraDropdownOption(
+                value: ImageConfigTransportMode.auto.wireName,
+                label: l10n.imageModeAuto,
+              ),
+              AuroraDropdownOption(
+                value: ImageConfigTransportMode.openaiImageConfig.wireName,
+                label: l10n.imageModeOpenaiImageConfig,
+              ),
+              AuroraDropdownOption(
+                value: ImageConfigTransportMode.googleExtraBody.wireName,
+                label: l10n.imageModeGoogleExtraBody,
+              ),
+            ],
+            onChanged: (v) {
+              if (v == null) return;
+              saveImageConfig(
+                AuroraImageConfig(
+                  mode: ImageConfigTransportMode.fromRaw(v),
+                  aspectRatio: imageConfig.aspectRatio,
+                  imageSize: imageConfig.imageSize,
+                ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 8),
         _buildSectionCard(
           title: l10n.aspectRatio,
           icon: AuroraIcons.settings,
@@ -226,15 +261,13 @@ class _PayloadConfigPanelState extends ConsumerState<PayloadConfigPanel> {
                 .toList(),
             onChanged: (v) {
               if (v != null) {
-                if (v == l10n.auto) {
-                  imageConfig.remove('aspect_ratio');
-                } else {
-                  imageConfig['aspect_ratio'] = v;
-                }
-                final newSettings = Map<String, dynamic>.from(_modelSettings);
-                newSettings.remove('image_config');
-                newSettings['_aurora_image_config'] = imageConfig;
-                _saveSettings(newSettings);
+                saveImageConfig(
+                  AuroraImageConfig(
+                    mode: imageConfig.mode,
+                    aspectRatio: v == l10n.auto ? null : v,
+                    imageSize: imageConfig.imageSize,
+                  ),
+                );
               }
             },
           ),
@@ -257,12 +290,13 @@ class _PayloadConfigPanelState extends ConsumerState<PayloadConfigPanel> {
                   label: currentSize,
                   onChanged: (v) {
                     final newSize = sizes[v.toInt()];
-                    imageConfig['image_size'] = newSize;
-                    final newSettings =
-                        Map<String, dynamic>.from(_modelSettings);
-                    newSettings.remove('image_config');
-                    newSettings['_aurora_image_config'] = imageConfig;
-                    _saveSettings(newSettings);
+                    saveImageConfig(
+                      AuroraImageConfig(
+                        mode: imageConfig.mode,
+                        aspectRatio: imageConfig.aspectRatio,
+                        imageSize: newSize,
+                      ),
+                    );
                   },
                 ),
               ),

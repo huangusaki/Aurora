@@ -285,13 +285,25 @@ class AppLocalizationsZh extends AppLocalizations {
   String get logRecords => '日志记录';
 
   @override
-  String get logRecordsHint => '查看最近 2000 条运行日志';
+  String get logRecordsHint => '查看最近 2000 条运行日志，按每页 100 条分页显示';
 
   @override
-  String get logFilterHint => '显示最近 2000 条日志，可按级别筛选。';
+  String get logFilterHint => '显示最近 2000 条日志，每页 100 条，可按级别筛选。';
 
   @override
   String get noLogRecords => '暂无日志记录';
+
+  @override
+  String get previousPage => '上一页';
+
+  @override
+  String get nextPage => '下一页';
+
+  @override
+  String logPageSummary(
+      int current, int totalPages, int start, int end, int totalItems) {
+    return '第 $current / $totalPages 页 · $start-$end / $totalItems';
+  }
 
   @override
   String get logLevelDebug => 'Debug';
@@ -1543,6 +1555,18 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get modeReasoningEffort => 'Reasoning Effort (OpenAI)';
+
+  @override
+  String get imageTransmissionMode => '图片参数传输模式';
+
+  @override
+  String get imageModeAuto => '自动（按路由）';
+
+  @override
+  String get imageModeOpenaiImageConfig => 'image_config（OpenAI）';
+
+  @override
+  String get imageModeGoogleExtraBody => 'extra_body.google（Gemini）';
 
   @override
   String get transportMode => '传输模式';

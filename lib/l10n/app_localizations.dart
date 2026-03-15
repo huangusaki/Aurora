@@ -635,13 +635,13 @@ abstract class AppLocalizations {
   /// No description provided for @logRecordsHint.
   ///
   /// In zh, this message translates to:
-  /// **'查看最近 2000 条运行日志'**
+  /// **'查看最近 2000 条运行日志，按每页 100 条分页显示'**
   String get logRecordsHint;
 
   /// No description provided for @logFilterHint.
   ///
   /// In zh, this message translates to:
-  /// **'显示最近 2000 条日志，可按级别筛选。'**
+  /// **'显示最近 2000 条日志，每页 100 条，可按级别筛选。'**
   String get logFilterHint;
 
   /// No description provided for @noLogRecords.
@@ -649,6 +649,25 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'暂无日志记录'**
   String get noLogRecords;
+
+  /// No description provided for @previousPage.
+  ///
+  /// In zh, this message translates to:
+  /// **'上一页'**
+  String get previousPage;
+
+  /// No description provided for @nextPage.
+  ///
+  /// In zh, this message translates to:
+  /// **'下一页'**
+  String get nextPage;
+
+  /// No description provided for @logPageSummary.
+  ///
+  /// In zh, this message translates to:
+  /// **'第 {current} / {totalPages} 页 · {start}-{end} / {totalItems}'**
+  String logPageSummary(
+      int current, int totalPages, int start, int end, int totalItems);
 
   /// No description provided for @logLevelDebug.
   ///
@@ -3067,6 +3086,30 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'Reasoning Effort (OpenAI)'**
   String get modeReasoningEffort;
+
+  /// No description provided for @imageTransmissionMode.
+  ///
+  /// In zh, this message translates to:
+  /// **'图片参数传输模式'**
+  String get imageTransmissionMode;
+
+  /// No description provided for @imageModeAuto.
+  ///
+  /// In zh, this message translates to:
+  /// **'自动（按路由）'**
+  String get imageModeAuto;
+
+  /// No description provided for @imageModeOpenaiImageConfig.
+  ///
+  /// In zh, this message translates to:
+  /// **'image_config（OpenAI）'**
+  String get imageModeOpenaiImageConfig;
+
+  /// No description provided for @imageModeGoogleExtraBody.
+  ///
+  /// In zh, this message translates to:
+  /// **'extra_body.google（Gemini）'**
+  String get imageModeGoogleExtraBody;
 
   /// No description provided for @transportMode.
   ///

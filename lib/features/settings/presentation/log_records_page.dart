@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:aurora/features/settings/presentation/app_log_provider.dart';
 import 'package:aurora/l10n/app_localizations.dart';
@@ -372,10 +373,13 @@ class _LogEntriesPanel extends ConsumerStatefulWidget {
 }
 
 class _LogEntriesPanelState extends ConsumerState<_LogEntriesPanel> {
+  static const int _pageSize = 100;
   static const double _topPinnedThreshold = 100;
   static const Duration _recentInteractionHold = Duration(milliseconds: 300);
 
   late final ScrollController _scrollController;
+  int _currentPage = 0;
+  int _lastPaginationFilterSignature = 0;
   double? _prevMaxScrollExtent;
   double? _prevScrollPixels;
   AppLogEntry? _lastVisibleHeadEntry;
@@ -430,6 +434,28 @@ class _LogEntriesPanelState extends ConsumerState<_LogEntriesPanel> {
       _prevScrollPixels = position.pixels;
       if (!position.hasContentDimensions) return;
       _prevMaxScrollExtent = position.maxScrollExtent;
+    });
+  }
+
+  void _resetViewportTracking({bool jumpToTop = false}) {
+    _prevMaxScrollExtent = null;
+    _prevScrollPixels = null;
+    _lastVisibleHeadEntry = null;
+
+    if (!jumpToTop) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (!_scrollController.hasClients) return;
+      _scrollController.jumpTo(_scrollController.position.minScrollExtent);
+    });
+  }
+
+  void _setCurrentPage(int page) {
+    if (page == _currentPage) return;
+    setState(() {
+      _currentPage = page;
+      _resetViewportTracking(jumpToTop: true);
     });
   }
 
@@ -528,16 +554,11 @@ class _LogEntriesPanelState extends ConsumerState<_LogEntriesPanel> {
     final l10n = AppLocalizations.of(context)!;
     final filterSignature = Object.hashAllUnordered(selectedLevels);
 
-    if (!state.isLoading &&
-        !_hasActiveScrollInteraction() &&
-        !_hasRecentUserInteraction() &&
-        _shouldPreserveViewport(entries, filterSignature)) {
-      _scheduleScrollPositionCompensation();
+    if (_lastPaginationFilterSignature != filterSignature) {
+      _lastPaginationFilterSignature = filterSignature;
+      _currentPage = 0;
+      _resetViewportTracking();
     }
-    _scheduleScrollMetricsCapture();
-
-    _lastVisibleHeadEntry = entries.isEmpty ? null : entries.first;
-    _lastFilterSignature = filterSignature;
 
     if (state.isLoading && entries.isEmpty) {
       return const Center(
@@ -552,23 +573,45 @@ class _LogEntriesPanelState extends ConsumerState<_LogEntriesPanel> {
       );
     }
 
+    final pageCount = math.max(1, (entries.length / _pageSize).ceil());
+    if (_currentPage >= pageCount) {
+      _currentPage = pageCount - 1;
+      _resetViewportTracking();
+    }
+
+    final pageStart = _currentPage * _pageSize;
+    final pageEnd = math.min(pageStart + _pageSize, entries.length);
+    final pageEntries = entries.sublist(pageStart, pageEnd);
+    final viewSignature = Object.hash(filterSignature, _currentPage);
+
+    if (!state.isLoading &&
+        !_hasActiveScrollInteraction() &&
+        !_hasRecentUserInteraction() &&
+        _shouldPreserveViewport(pageEntries, viewSignature)) {
+      _scheduleScrollPositionCompensation();
+    }
+    _scheduleScrollMetricsCapture();
+
+    _lastVisibleHeadEntry = pageEntries.isEmpty ? null : pageEntries.first;
+    _lastFilterSignature = viewSignature;
+
     final scrollable = widget.isMobile
         ? ListView.separated(
-            key: const PageStorageKey<String>('log-records-list'),
+            key: ValueKey<String>('log-records-list-$_currentPage'),
             controller: _scrollController,
             padding: const EdgeInsets.all(12),
-            itemCount: entries.length,
+            itemCount: pageEntries.length,
             separatorBuilder: (_, __) => const SizedBox(height: 10),
             itemBuilder: (context, index) {
               return _LogEntryTile(
-                entry: entries[index],
+                entry: pageEntries[index],
                 isMobile: widget.isMobile,
               );
             },
             physics: const ClampingScrollPhysics(),
           )
         : SingleChildScrollView(
-            key: const PageStorageKey<String>('log-records-scroll-view'),
+            key: ValueKey<String>('log-records-scroll-view-$_currentPage'),
             controller: _scrollController,
             physics: const ClampingScrollPhysics(),
             child: Padding(
@@ -576,10 +619,10 @@ class _LogEntriesPanelState extends ConsumerState<_LogEntriesPanel> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  for (var index = 0; index < entries.length; index++) ...[
+                  for (var index = 0; index < pageEntries.length; index++) ...[
                     if (index > 0) const SizedBox(height: 10),
                     _LogEntryTile(
-                      entry: entries[index],
+                      entry: pageEntries[index],
                       isMobile: widget.isMobile,
                     ),
                   ],
@@ -588,12 +631,19 @@ class _LogEntriesPanelState extends ConsumerState<_LogEntriesPanel> {
             ),
           );
 
+    final selectableScrollable = SelectionArea(
+      child: MouseRegion(
+        cursor: widget.isMobile ? MouseCursor.defer : SystemMouseCursors.text,
+        child: scrollable,
+      ),
+    );
+
     Widget list = LayoutBuilder(
       builder: (context, constraints) {
         return NotificationListener<ScrollNotification>(
           onNotification: (notification) =>
-              _handleScrollNotification(notification, entries.length),
-          child: scrollable,
+              _handleScrollNotification(notification, pageEntries.length),
+          child: selectableScrollable,
         );
       },
     );
@@ -619,21 +669,195 @@ class _LogEntriesPanelState extends ConsumerState<_LogEntriesPanel> {
       );
     }
 
-    return Container(
-      decoration: BoxDecoration(
-        color: widget.isMobile
-            ? Theme.of(context).cardColor
-            : fluent.FluentTheme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: widget.isMobile
-              ? Theme.of(context).dividerColor.withValues(alpha: 0.3)
-              : fluent.FluentTheme.of(context)
-                  .resources
-                  .dividerStrokeColorDefault,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _LogPaginationBar(
+          isMobile: widget.isMobile,
+          currentPage: _currentPage + 1,
+          pageCount: pageCount,
+          rangeStart: pageStart + 1,
+          rangeEnd: pageEnd,
+          totalCount: entries.length,
+          onPreviousPage:
+              _currentPage > 0 ? () => _setCurrentPage(_currentPage - 1) : null,
+          onNextPage: _currentPage < pageCount - 1
+              ? () => _setCurrentPage(_currentPage + 1)
+              : null,
+        ),
+        const SizedBox(height: 12),
+        Expanded(
+          child: Container(
+            decoration: BoxDecoration(
+              color: widget.isMobile
+                  ? Theme.of(context).cardColor
+                  : fluent.FluentTheme.of(context).cardColor,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: widget.isMobile
+                    ? Theme.of(context).dividerColor.withValues(alpha: 0.3)
+                    : fluent.FluentTheme.of(context)
+                        .resources
+                        .dividerStrokeColorDefault,
+              ),
+            ),
+            child: list,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _LogPaginationBar extends StatelessWidget {
+  final bool isMobile;
+  final int currentPage;
+  final int pageCount;
+  final int rangeStart;
+  final int rangeEnd;
+  final int totalCount;
+  final VoidCallback? onPreviousPage;
+  final VoidCallback? onNextPage;
+
+  const _LogPaginationBar({
+    required this.isMobile,
+    required this.currentPage,
+    required this.pageCount,
+    required this.rangeStart,
+    required this.rangeEnd,
+    required this.totalCount,
+    required this.onPreviousPage,
+    required this.onNextPage,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final secondaryColor = isMobile
+        ? Theme.of(context).textTheme.bodySmall?.color
+        : fluent.FluentTheme.of(context).resources.textFillColorSecondary;
+    final summary = l10n.logPageSummary(
+      currentPage,
+      pageCount,
+      rangeStart,
+      rangeEnd,
+      totalCount,
+    );
+
+    final actions = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _LogPageButton(
+          isMobile: isMobile,
+          icon: Icons.chevron_left_rounded,
+          tooltip: l10n.previousPage,
+          onTap: onPreviousPage,
+        ),
+        const SizedBox(width: 8),
+        _LogPageButton(
+          isMobile: isMobile,
+          icon: Icons.chevron_right_rounded,
+          tooltip: l10n.nextPage,
+          onTap: onNextPage,
+        ),
+      ],
+    );
+
+    if (isMobile) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            summary,
+            style: TextStyle(
+              color: secondaryColor,
+              fontSize: 12,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerRight,
+            child: actions,
+          ),
+        ],
+      );
+    }
+
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            summary,
+            style: TextStyle(
+              color: secondaryColor,
+              fontSize: 12,
+            ),
+          ),
+        ),
+        actions,
+      ],
+    );
+  }
+}
+
+class _LogPageButton extends StatelessWidget {
+  final bool isMobile;
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback? onTap;
+
+  const _LogPageButton({
+    required this.isMobile,
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = onTap != null;
+    final primaryColor = isMobile
+        ? Theme.of(context).textTheme.bodyLarge?.color
+        : fluent.FluentTheme.of(context).resources.textFillColorPrimary;
+    final secondaryColor = isMobile
+        ? Theme.of(context).textTheme.bodySmall?.color
+        : fluent.FluentTheme.of(context).resources.textFillColorSecondary;
+    final borderColor = isMobile
+        ? Theme.of(context).dividerColor.withValues(alpha: 0.3)
+        : fluent.FluentTheme.of(context).resources.dividerStrokeColorDefault;
+    final backgroundColor = isMobile
+        ? Theme.of(context)
+            .colorScheme
+            .surfaceContainerHighest
+            .withValues(alpha: enabled ? 0.55 : 0.3)
+        : fluent.FluentTheme.of(context)
+            .resources
+            .cardBackgroundFillColorDefault
+            .withValues(alpha: enabled ? 1 : 0.7);
+
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(10),
+          child: Ink(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: backgroundColor,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: borderColor, width: 1),
+            ),
+            child: Icon(
+              icon,
+              size: 18,
+              color: enabled ? primaryColor : secondaryColor,
+            ),
+          ),
         ),
       ),
-      child: list,
     );
   }
 }

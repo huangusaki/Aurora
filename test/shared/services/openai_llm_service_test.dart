@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:aurora/features/chat/domain/message.dart';
 import 'package:aurora/features/settings/presentation/settings_provider.dart';
 import 'package:aurora/shared/services/llm_service.dart';
+import 'package:aurora/shared/services/llm_transport_mode.dart';
 import 'package:aurora/shared/services/openai_llm_service.dart';
 
 void main() {
@@ -420,6 +421,10 @@ void main() {
             selectedModel: 'gemini-3-pro-image-preview',
             baseUrl: 'http://${server.address.host}:${server.port}/v1',
             globalSettings: const {
+              auroraImageConfigKey: {
+                'aspect_ratio': '16:9',
+                'image_size': '4K',
+              },
               '_aurora_thinking_config': {
                 'enabled': true,
                 'budget': 'high',
@@ -480,6 +485,10 @@ void main() {
             selectedModel: 'gemini-3.1-flash-image-preview',
             baseUrl: 'http://${server.address.host}:${server.port}/v1',
             globalSettings: const {
+              auroraImageConfigKey: {
+                'aspect_ratio': '16:9',
+                'image_size': '4K',
+              },
               '_aurora_thinking_config': {
                 'enabled': true,
                 'budget': 'high',
@@ -499,10 +508,106 @@ void main() {
 
       expect(response.content, 'ok');
       expect(payload['model'], 'gemini-3.1-flash-image-preview');
+      expect(
+        payload['image_config'],
+        {
+          'aspect_ratio': '16:9',
+          'image_size': '4K',
+        },
+      );
+      expect(
+        ((payload['extra_body'] as Map?)?['google'] as Map?)?['image_config'],
+        isNull,
+      );
       // 3.1+ uses user's thinking level; CLIProxyAPI handles includeThoughts
       expect(payload['reasoning_effort'], 'high');
       // No extra_body needed
       expect(payload.containsKey('extra_body'), isFalse);
+    });
+
+    test('writes Gemini image config into extra_body.google when selected',
+        () async {
+      final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      final payloadCompleter = Completer<Map<String, dynamic>>();
+      final sub = server.listen((request) async {
+        final raw = await utf8.decoder.bind(request).join();
+        final payload = jsonDecode(raw) as Map<String, dynamic>;
+        if (!payloadCompleter.isCompleted) {
+          payloadCompleter.complete(payload);
+        }
+
+        request.response.statusCode = 200;
+        request.response.headers.contentType = ContentType.json;
+        request.response.write(jsonEncode({
+          'choices': [
+            {
+              'message': {'content': 'ok'}
+            }
+          ]
+        }));
+        await request.response.close();
+      });
+      addTearDown(() async {
+        await sub.cancel();
+        await server.close(force: true);
+      });
+
+      final settings = SettingsState(
+        providers: [
+          ProviderConfig(
+            id: 'openai',
+            name: 'OpenAI',
+            apiKeys: const ['test-key'],
+            selectedModel: 'gemini-3.1-flash-image-preview',
+            baseUrl: 'http://${server.address.host}:${server.port}/v1',
+            customParameters: const {
+              'extra_body': {
+                'google': {
+                  'thinking_config': {
+                    'thinkingLevel': 'high',
+                    'includeThoughts': true,
+                  },
+                },
+              },
+            },
+            modelSettings: const {
+              'gemini-3.1-flash-image-preview': {
+                auroraImageConfigKey: {
+                  auroraImageConfigModeKey: 'google_extra_body',
+                  'aspect_ratio': '9:16',
+                  'image_size': '4K',
+                },
+              },
+            },
+          ),
+        ],
+        activeProviderId: 'openai',
+        viewingProviderId: 'openai',
+        language: 'en',
+      );
+      final service = OpenAILLMService(settings);
+
+      final response = await service.getResponse([Message.user('hello')]);
+      final payload = await payloadCompleter.future;
+      final extraBody = payload['extra_body'] as Map<String, dynamic>;
+      final google = extraBody['google'] as Map<String, dynamic>;
+
+      expect(response.content, 'ok');
+      expect(payload.containsKey('image_config'), isFalse);
+      expect(
+        google['image_config'],
+        {
+          'aspect_ratio': '9:16',
+          'image_size': '4K',
+        },
+      );
+      expect(
+        google['thinking_config'],
+        {
+          'thinkingLevel': 'high',
+          'includeThoughts': true,
+        },
+      );
     });
 
     test('preserves explicit xhigh reasoning effort from custom params',

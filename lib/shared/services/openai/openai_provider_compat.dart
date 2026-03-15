@@ -304,6 +304,26 @@ void _removeGoogleThinkingConfigFromRequest(Map<String, dynamic> requestData) {
   }
 }
 
+void _removeGoogleImageConfigFromRequest(Map<String, dynamic> requestData) {
+  final extraBody = _safeStringKeyedMap(requestData['extra_body']);
+  if (extraBody.isEmpty) return;
+  final google = _safeStringKeyedMap(extraBody['google']);
+  if (google.isEmpty) return;
+
+  google.remove('image_config');
+  if (google.isEmpty) {
+    extraBody.remove('google');
+  } else {
+    extraBody['google'] = google;
+  }
+
+  if (extraBody.isEmpty) {
+    requestData.remove('extra_body');
+  } else {
+    requestData['extra_body'] = extraBody;
+  }
+}
+
 void _removeAnthropicThinkingConfigFromRequest(
     Map<String, dynamic> requestData) {
   final extraBody = _safeStringKeyedMap(requestData['extra_body']);
@@ -460,31 +480,39 @@ void _applyImageConfigToRequest({
   required Map<String, dynamic> requestData,
   required Map<String, dynamic> activeParams,
   required String selectedModel,
+  required ProtocolPreset routePreset,
 }) {
-  final imageConfig =
-      activeParams['_aurora_image_config'] ?? activeParams['image_config'];
-  if (imageConfig is! Map) return;
+  final imageConfig = resolveAuroraImageConfig(activeParams);
+  if (!imageConfig.hasValues) return;
 
   final isGemini = selectedModel.toLowerCase().contains('gemini');
   if (!isGemini) return;
+  if (routePreset == ProtocolPreset.geminiNativeGenerateContent) return;
 
-  final aspectRatioRaw = imageConfig['aspect_ratio']?.toString();
-  final imageSizeRaw = imageConfig['image_size']?.toString();
+  requestData.remove('image_config');
+  _removeGoogleImageConfigFromRequest(requestData);
 
-  final aspectRatio =
-      (aspectRatioRaw == null || _isAutoAspectRatio(aspectRatioRaw))
-          ? null
-          : aspectRatioRaw.trim();
-  final imageSize = (imageSizeRaw == null || imageSizeRaw.trim().isEmpty)
-      ? null
-      : imageSizeRaw.trim();
-
-  if (aspectRatio == null && imageSize == null) return;
-
-  requestData['image_config'] = {
-    if (aspectRatio != null) 'aspect_ratio': aspectRatio,
-    if (imageSize != null) 'image_size': imageSize,
+  final imagePayload = {
+    if (imageConfig.aspectRatio != null)
+      'aspect_ratio': imageConfig.aspectRatio,
+    if (imageConfig.imageSize != null) 'image_size': imageConfig.imageSize,
   };
+
+  final mode = imageConfig.mode == ImageConfigTransportMode.auto
+      ? ImageConfigTransportMode.openaiImageConfig
+      : imageConfig.mode;
+  if (mode == ImageConfigTransportMode.googleExtraBody) {
+    _mergeExtraBodyProvider(
+      requestData,
+      providerKey: 'google',
+      providerData: {
+        'image_config': imagePayload,
+      },
+    );
+    return;
+  }
+
+  requestData['image_config'] = imagePayload;
 }
 
 void _applyThinkingConfigToRequest({

@@ -163,7 +163,10 @@ class GeminiNativeLlmService implements LLMService {
     }
 
     _applyGenerationConfig(
-        requestData: requestData, activeParams: activeParams);
+      requestData: requestData,
+      activeParams: activeParams,
+      selectedModel: selectedModel,
+    );
     _applyToolsConfig(
       requestData: requestData,
       activeParams: activeParams,
@@ -179,6 +182,7 @@ class GeminiNativeLlmService implements LLMService {
     requestData.remove('stream');
     requestData.remove('stream_options');
     requestData.remove('extra_body');
+    requestData.remove('image_config');
     requestData.remove('reasoning_effort');
     requestData.remove('tool_choice');
     requestData.remove('system');
@@ -489,6 +493,7 @@ class GeminiNativeLlmService implements LLMService {
   void _applyGenerationConfig({
     required Map<String, dynamic> requestData,
     required Map<String, dynamic> activeParams,
+    required String selectedModel,
   }) {
     final generationConfig = <String, dynamic>{};
     final auroraGeneration = activeParams['_aurora_generation_config'];
@@ -514,9 +519,37 @@ class GeminiNativeLlmService implements LLMService {
       generationConfig['thinkingConfig'] = thinkingConfig;
     }
 
+    final imageConfig = _buildImageConfig(
+      activeParams: activeParams,
+      selectedModel: selectedModel,
+    );
+    if (imageConfig.isNotEmpty) {
+      generationConfig['imageConfig'] = imageConfig;
+    }
+
     if (generationConfig.isNotEmpty) {
       requestData['generationConfig'] = generationConfig;
     }
+  }
+
+  Map<String, dynamic> _buildImageConfig({
+    required Map<String, dynamic> activeParams,
+    required String selectedModel,
+  }) {
+    if (!selectedModel.toLowerCase().contains('image')) {
+      return const <String, dynamic>{};
+    }
+
+    final imageConfig = resolveAuroraImageConfig(activeParams);
+    if (!imageConfig.hasValues) {
+      return const <String, dynamic>{};
+    }
+
+    return {
+      if (imageConfig.aspectRatio != null)
+        'aspectRatio': imageConfig.aspectRatio,
+      if (imageConfig.imageSize != null) 'imageSize': imageConfig.imageSize,
+    };
   }
 
   Map<String, dynamic> _buildThinkingConfig(Map<String, dynamic> activeParams) {
