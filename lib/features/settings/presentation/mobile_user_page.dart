@@ -156,6 +156,13 @@ class _MobileUserPageState extends ConsumerState<MobileUserPage> {
                           !settingsState.keepChatScrollPositionOnResponse);
                 },
               ),
+              MobileSettingsTile(
+                leading: const Icon(Icons.timer_outlined),
+                title: l10n.llmRequestTimeoutSeconds,
+                subtitle: '${settingsState.llmRequestTimeoutSeconds}s',
+                onTap: () =>
+                    _showLlmRequestTimeoutPicker(context, settingsState, l10n),
+              ),
             ],
           ),
         ],
@@ -292,5 +299,87 @@ class _MobileUserPageState extends ConsumerState<MobileUserPage> {
     if (confirmed == true) {
       openAppSettings();
     }
+  }
+
+  void _showLlmRequestTimeoutPicker(
+    BuildContext context,
+    SettingsState settings,
+    AppLocalizations l10n,
+  ) {
+    var draftSeconds = settings.llmRequestTimeoutSeconds.toDouble();
+    AuroraBottomSheet.show(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                AuroraBottomSheet.buildTitle(
+                    context, l10n.llmRequestTimeoutSeconds),
+                const SizedBox(height: 12),
+                Text(
+                  l10n.llmRequestTimeoutSecondsHint,
+                  style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                ),
+                const SizedBox(height: 16),
+                Center(
+                  child: Text(
+                    '${draftSeconds.round()}s',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+                Slider(
+                  value: draftSeconds,
+                  min: minLlmRequestTimeoutSeconds.toDouble(),
+                  max: maxLlmRequestTimeoutSeconds.toDouble(),
+                  divisions: (maxLlmRequestTimeoutSeconds -
+                          minLlmRequestTimeoutSeconds) ~/
+                      30,
+                  label: '${draftSeconds.round()}s',
+                  onChanged: (value) {
+                    setModalState(() {
+                      draftSeconds = value;
+                    });
+                  },
+                  onChangeEnd: (value) {
+                    ref
+                        .read(settingsProvider.notifier)
+                        .setLlmRequestTimeoutSeconds(value.round());
+                  },
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () {
+                        setModalState(() {
+                          draftSeconds =
+                              defaultLlmRequestTimeoutSeconds.toDouble();
+                        });
+                        ref
+                            .read(settingsProvider.notifier)
+                            .setLlmRequestTimeoutSeconds(
+                                defaultLlmRequestTimeoutSeconds);
+                      },
+                      child: Text(l10n.reset),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: Text(l10n.done),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+              ],
+            ),
+          );
+        },
+      ),
+    );
   }
 }

@@ -344,6 +344,18 @@ abstract class AppLocalizations {
   /// **'开启后，模型在生成回复（流式输出等）时会保持你当前的滚动位置不变。'**
   String get keepChatScrollPositionOnResponseHint;
 
+  /// No description provided for @llmRequestTimeoutSeconds.
+  ///
+  /// In zh, this message translates to:
+  /// **'LLM 请求超时（秒）'**
+  String get llmRequestTimeoutSeconds;
+
+  /// No description provided for @llmRequestTimeoutSecondsHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'对所有对话 LLM 请求生效。增大该值可减少长回复或大图分析时的超时失败。'**
+  String get llmRequestTimeoutSecondsHint;
+
   /// No description provided for @chatJumpToTop.
   ///
   /// In zh, this message translates to:
@@ -3110,6 +3122,18 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'extra_body.google（Gemini）'**
   String get imageModeGoogleExtraBody;
+
+  /// No description provided for @imageIncludeThoughts.
+  ///
+  /// In zh, this message translates to:
+  /// **'包含 Thoughts'**
+  String get imageIncludeThoughts;
+
+  /// No description provided for @imageIncludeThoughtsHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'控制 Gemini 3 图片模型是否返回 thought summary 和相关 thought signature 元数据。'**
+  String get imageIncludeThoughtsHint;
 
   /// No description provided for @transportMode.
   ///

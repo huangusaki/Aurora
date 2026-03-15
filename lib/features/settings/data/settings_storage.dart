@@ -246,6 +246,7 @@ class SettingsStorage {
     String? transcriptionProviderId,
     String? translationModel,
     String? translationProviderId,
+    int? llmRequestTimeoutSeconds,
     int? memoryMinNewUserMessages,
     int? memoryIdleSeconds,
     int? memoryMaxBufferedMessages,
@@ -326,6 +327,8 @@ class SettingsStorage {
       ..translationModel = translationModel ?? existing?.translationModel
       ..translationProviderId =
           translationProviderId ?? existing?.translationProviderId
+      ..llmRequestTimeoutSeconds =
+          llmRequestTimeoutSeconds ?? existing?.llmRequestTimeoutSeconds ?? 300
       ..memoryMinNewUserMessages =
           memoryMinNewUserMessages ?? existing?.memoryMinNewUserMessages ?? 20
       ..memoryIdleSeconds =
@@ -762,6 +765,7 @@ class SettingsStorage {
       ..transcriptionProviderId = source.transcriptionProviderId
       ..translationModel = source.translationModel
       ..translationProviderId = source.translationProviderId
+      ..llmRequestTimeoutSeconds = source.llmRequestTimeoutSeconds
       ..memoryMinNewUserMessages = source.memoryMinNewUserMessages
       ..memoryIdleSeconds = source.memoryIdleSeconds
       ..memoryMaxBufferedMessages = source.memoryMaxBufferedMessages
@@ -928,10 +932,15 @@ class SettingsStorage {
     if (differs(msg.requestId, sanitizeMessageRequestId(msg.requestId))) {
       return true;
     }
-    if (differs(msg.model, sanitizeMessageModel(msg.model))) return true;
-    if (differs(msg.provider, sanitizeMessageProvider(msg.provider)))
+    if (differs(msg.model, sanitizeMessageModel(msg.model))) {
       return true;
-    if (differs(msg.role, sanitizeMessageRole(msg.role))) return true;
+    }
+    if (differs(msg.provider, sanitizeMessageProvider(msg.provider))) {
+      return true;
+    }
+    if (differs(msg.role, sanitizeMessageRole(msg.role))) {
+      return true;
+    }
     if (differs(msg.assistantId, sanitizeMessageAssistantId(msg.assistantId))) {
       return true;
     }

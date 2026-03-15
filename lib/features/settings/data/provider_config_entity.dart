@@ -78,6 +78,7 @@ class AppSettingsEntity {
   String? transcriptionProviderId;
   String? translationModel;
   String? translationProviderId;
+  int llmRequestTimeoutSeconds = 300;
   int memoryMinNewUserMessages = 20;
   int memoryIdleSeconds = 600;
   int memoryMaxBufferedMessages = 120;

@@ -15,6 +15,24 @@ import 'gemini_native_endpoint.dart';
 import 'llm_service.dart';
 import 'llm_transport_mode.dart';
 
+final RegExp _gemini3ImageModelPattern =
+    RegExp(r'gemini.*3.*image.*', caseSensitive: false);
+
+String _normalizeGeminiModelName(String modelName) {
+  return modelName
+      .trim()
+      .toLowerCase()
+      .replaceAll('（', '(')
+      .replaceAll('）', ')')
+      .replaceAll(RegExp(r'\s+'), '');
+}
+
+bool _isGemini3ImageModel(String modelName) {
+  final normalized = _normalizeGeminiModelName(modelName);
+  if (normalized.isEmpty) return false;
+  return _gemini3ImageModelPattern.hasMatch(normalized);
+}
+
 class GeminiNativeLlmService implements LLMService {
   final Dio _dio;
   final SettingsState _settings;
@@ -31,6 +49,10 @@ class GeminiNativeLlmService implements LLMService {
             },
           ),
         );
+
+  Duration _resolveRequestTimeout() {
+    return Duration(seconds: _settings.llmRequestTimeoutSeconds);
+  }
 
   ProviderConfig _resolveProvider(String? providerId) {
     if (providerId == null) {
@@ -514,7 +536,10 @@ class GeminiNativeLlmService implements LLMService {
       }
     }
 
-    final thinkingConfig = _buildThinkingConfig(activeParams);
+    final thinkingConfig = _buildThinkingConfig(
+      activeParams: activeParams,
+      selectedModel: selectedModel,
+    );
     if (thinkingConfig.isNotEmpty) {
       generationConfig['thinkingConfig'] = thinkingConfig;
     }
@@ -541,35 +566,44 @@ class GeminiNativeLlmService implements LLMService {
     }
 
     final imageConfig = resolveAuroraImageConfig(activeParams);
-    if (!imageConfig.hasValues) {
-      return const <String, dynamic>{};
-    }
-
-    return {
+    final result = <String, dynamic>{
       if (imageConfig.aspectRatio != null)
         'aspectRatio': imageConfig.aspectRatio,
       if (imageConfig.imageSize != null) 'imageSize': imageConfig.imageSize,
     };
+    if (result.isEmpty) {
+      return const <String, dynamic>{};
+    }
+    return result;
   }
 
-  Map<String, dynamic> _buildThinkingConfig(Map<String, dynamic> activeParams) {
+  Map<String, dynamic> _buildThinkingConfig({
+    required Map<String, dynamic> activeParams,
+    required String selectedModel,
+  }) {
+    final result = <String, dynamic>{};
     final thinkingConfig = activeParams['_aurora_thinking_config'];
-    if (thinkingConfig is! Map) return {};
-    if (thinkingConfig['enabled'] != true) return {};
-
-    final raw = thinkingConfig['budget']?.toString().trim() ?? '';
-    if (raw.isEmpty) return {};
-
-    final result = <String, dynamic>{'includeThoughts': true};
-    final numeric = int.tryParse(raw);
-    if (numeric != null) {
-      if (numeric >= 0) {
-        result['thinkingBudget'] = numeric;
+    if (thinkingConfig is Map && thinkingConfig['enabled'] == true) {
+      final raw = thinkingConfig['budget']?.toString().trim() ?? '';
+      if (raw.isNotEmpty) {
+        result['includeThoughts'] = true;
+        final numeric = int.tryParse(raw);
+        if (numeric != null) {
+          if (numeric >= 0) {
+            result['thinkingBudget'] = numeric;
+          }
+        } else {
+          result['thinkingLevel'] = _normalizeThinkingLevel(raw.toLowerCase());
+        }
       }
-      return result;
     }
 
-    result['thinkingLevel'] = _normalizeThinkingLevel(raw.toLowerCase());
+    final imageConfig = resolveAuroraImageConfig(activeParams);
+    if (_isGemini3ImageModel(selectedModel) &&
+        imageConfig.includeThoughts != null) {
+      result['includeThoughts'] = imageConfig.includeThoughts;
+    }
+
     return result;
   }
 
@@ -1058,6 +1092,7 @@ class GeminiNativeLlmService implements LLMService {
         tools: tools,
         toolChoice: toolChoice,
       );
+      final timeout = _resolveRequestTimeout();
       streamLog = LlmStreamLogAccumulator(
         providerId: provider.id,
         model: selectedModel,
@@ -1075,6 +1110,8 @@ class GeminiNativeLlmService implements LLMService {
               'Accept': 'text/event-stream',
             },
           ),
+          sendTimeout: timeout,
+          receiveTimeout: timeout,
           responseType: ResponseType.stream,
         ),
         cancelToken: cancelToken,
@@ -1279,6 +1316,7 @@ class GeminiNativeLlmService implements LLMService {
         tools: tools,
         toolChoice: toolChoice,
       );
+      final timeout = _resolveRequestTimeout();
       _logRequest(uri, requestData);
 
       final response = await _dio.postUri(
@@ -1292,6 +1330,8 @@ class GeminiNativeLlmService implements LLMService {
               'Accept': 'application/json',
             },
           ),
+          sendTimeout: timeout,
+          receiveTimeout: timeout,
         ),
         cancelToken: cancelToken,
       );

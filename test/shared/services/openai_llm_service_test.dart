@@ -444,9 +444,9 @@ void main() {
 
       expect(response.content, 'ok');
       expect(payload['model'], 'gemini-3-pro-image-preview');
-      // 3.0 image models: forced to auto; CLIProxyAPI handles includeThoughts
+      // 3.0 image models: forced to auto when no explicit image include_thoughts
       expect(payload['reasoning_effort'], 'auto');
-      // No extra_body needed
+      // No extra_body needed without an explicit image thoughts override.
       expect(payload.containsKey('extra_body'), isFalse);
     });
 
@@ -519,10 +519,148 @@ void main() {
         ((payload['extra_body'] as Map?)?['google'] as Map?)?['image_config'],
         isNull,
       );
-      // 3.1+ uses user's thinking level; CLIProxyAPI handles includeThoughts
+      // 3.1+ uses the user's thinking level.
       expect(payload['reasoning_effort'], 'high');
-      // No extra_body needed
+      // No extra_body needed without an explicit image thoughts override.
       expect(payload.containsKey('extra_body'), isFalse);
+    });
+
+    test('adds include_thoughts for gemini 3.0 image models', () async {
+      final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      final payloadCompleter = Completer<Map<String, dynamic>>();
+      final sub = server.listen((request) async {
+        final raw = await utf8.decoder.bind(request).join();
+        final payload = jsonDecode(raw) as Map<String, dynamic>;
+        if (!payloadCompleter.isCompleted) {
+          payloadCompleter.complete(payload);
+        }
+
+        request.response.statusCode = 200;
+        request.response.headers.contentType = ContentType.json;
+        request.response.write(jsonEncode({
+          'choices': [
+            {
+              'message': {'content': 'ok'}
+            }
+          ]
+        }));
+        await request.response.close();
+      });
+      addTearDown(() async {
+        await sub.cancel();
+        await server.close(force: true);
+      });
+
+      final settings = SettingsState(
+        providers: [
+          ProviderConfig(
+            id: 'openai',
+            name: 'OpenAI',
+            apiKeys: const ['test-key'],
+            selectedModel: 'gemini-3-pro-image-preview',
+            baseUrl: 'http://${server.address.host}:${server.port}/v1',
+            modelSettings: const {
+              'gemini-3-pro-image-preview': {
+                auroraImageConfigKey: {
+                  auroraImageConfigIncludeThoughtsKey: false,
+                },
+              }
+            },
+          ),
+        ],
+        activeProviderId: 'openai',
+        viewingProviderId: 'openai',
+        language: 'en',
+      );
+      final service = OpenAILLMService(settings);
+
+      final response = await service.getResponse([Message.user('hello')]);
+      final payload = await payloadCompleter.future;
+      final extraBody = payload['extra_body'] as Map<String, dynamic>;
+      final google = extraBody['google'] as Map<String, dynamic>;
+
+      expect(response.content, 'ok');
+      expect(payload['reasoning_effort'], 'auto');
+      expect(
+        google['thinking_config'],
+        {
+          'include_thoughts': false,
+        },
+      );
+    });
+
+    test('adds include_thoughts for gemini 3.1+ image models', () async {
+      final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      final payloadCompleter = Completer<Map<String, dynamic>>();
+      final sub = server.listen((request) async {
+        final raw = await utf8.decoder.bind(request).join();
+        final payload = jsonDecode(raw) as Map<String, dynamic>;
+        if (!payloadCompleter.isCompleted) {
+          payloadCompleter.complete(payload);
+        }
+
+        request.response.statusCode = 200;
+        request.response.headers.contentType = ContentType.json;
+        request.response.write(jsonEncode({
+          'choices': [
+            {
+              'message': {'content': 'ok'}
+            }
+          ]
+        }));
+        await request.response.close();
+      });
+      addTearDown(() async {
+        await sub.cancel();
+        await server.close(force: true);
+      });
+
+      final settings = SettingsState(
+        providers: [
+          ProviderConfig(
+            id: 'openai',
+            name: 'OpenAI',
+            apiKeys: const ['test-key'],
+            selectedModel: 'gemini-3.1-flash-image-preview',
+            baseUrl: 'http://${server.address.host}:${server.port}/v1',
+            modelSettings: const {
+              'gemini-3.1-flash-image-preview': {
+                auroraImageConfigKey: {
+                  auroraImageConfigModeKey: 'google_extra_body',
+                  auroraImageConfigIncludeThoughtsKey: true,
+                  'aspect_ratio': '9:16',
+                  'image_size': '4K',
+                },
+              },
+            },
+          ),
+        ],
+        activeProviderId: 'openai',
+        viewingProviderId: 'openai',
+        language: 'en',
+      );
+      final service = OpenAILLMService(settings);
+
+      final response = await service.getResponse([Message.user('hello')]);
+      final payload = await payloadCompleter.future;
+      final extraBody = payload['extra_body'] as Map<String, dynamic>;
+      final google = extraBody['google'] as Map<String, dynamic>;
+
+      expect(response.content, 'ok');
+      expect(payload['reasoning_effort'], 'high');
+      expect(
+        google['image_config'],
+        {
+          'aspect_ratio': '9:16',
+          'image_size': '4K',
+        },
+      );
+      expect(
+        google['thinking_config'],
+        {
+          'include_thoughts': true,
+        },
+      );
     });
 
     test('writes Gemini image config into extra_body.google when selected',
@@ -564,8 +702,8 @@ void main() {
               'extra_body': {
                 'google': {
                   'thinking_config': {
-                    'thinkingLevel': 'high',
-                    'includeThoughts': true,
+                    'thinking_level': 'high',
+                    'include_thoughts': true,
                   },
                 },
               },
@@ -604,10 +742,78 @@ void main() {
       expect(
         google['thinking_config'],
         {
-          'thinkingLevel': 'high',
-          'includeThoughts': true,
+          'thinking_level': 'high',
+          'include_thoughts': true,
         },
       );
+    });
+
+    test('uses snake_case for Gemini 3 OpenAI thinking_config fields',
+        () async {
+      final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      final payloadCompleter = Completer<Map<String, dynamic>>();
+      final sub = server.listen((request) async {
+        final raw = await utf8.decoder.bind(request).join();
+        final payload = jsonDecode(raw) as Map<String, dynamic>;
+        if (!payloadCompleter.isCompleted) {
+          payloadCompleter.complete(payload);
+        }
+
+        request.response.statusCode = 200;
+        request.response.headers.contentType = ContentType.json;
+        request.response.write(jsonEncode({
+          'choices': [
+            {
+              'message': {'content': 'ok'}
+            }
+          ]
+        }));
+        await request.response.close();
+      });
+      addTearDown(() async {
+        await sub.cancel();
+        await server.close(force: true);
+      });
+
+      final settings = SettingsState(
+        providers: [
+          ProviderConfig(
+            id: 'openai',
+            name: 'OpenAI',
+            apiKeys: const ['test-key'],
+            selectedModel: 'gemini-3.0-pro',
+            baseUrl: 'http://${server.address.host}:${server.port}/v1',
+            modelSettings: const {
+              'gemini-3.0-pro': {
+                '_aurora_thinking_config': {
+                  'enabled': true,
+                  'budget': 'high',
+                  'mode': 'extra_body',
+                },
+              },
+            },
+          ),
+        ],
+        activeProviderId: 'openai',
+        viewingProviderId: 'openai',
+        language: 'en',
+      );
+      final service = OpenAILLMService(settings);
+
+      final response = await service.getResponse([Message.user('hello')]);
+      final payload = await payloadCompleter.future;
+      final extraBody = payload['extra_body'] as Map<String, dynamic>;
+      final google = extraBody['google'] as Map<String, dynamic>;
+
+      expect(response.content, 'ok');
+      expect(
+        google['thinking_config'],
+        {
+          'thinking_level': 'high',
+          'include_thoughts': true,
+        },
+      );
+      expect(payload['reasoning_effort'], 'high');
     });
 
     test('preserves explicit xhigh reasoning effort from custom params',

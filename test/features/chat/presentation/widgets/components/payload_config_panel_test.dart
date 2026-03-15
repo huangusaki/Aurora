@@ -39,7 +39,12 @@ class _TestSettingsNotifier extends SettingsNotifier {
   Future<void> loadPresets() async {}
 }
 
-Widget _buildTestApp(ProviderContainer container) {
+Widget _buildTestApp(
+  ProviderContainer container, {
+  required String providerId,
+  required String modelName,
+  bool forceImageConfig = false,
+}) {
   return UncontrolledProviderScope(
     container: container,
     child: FluentApp(
@@ -52,14 +57,14 @@ Widget _buildTestApp(ProviderContainer container) {
         FluentLocalizations.delegate,
       ],
       supportedLocales: AppLocalizations.supportedLocales,
-      home: const material.Material(
+      home: material.Material(
         type: material.MaterialType.transparency,
         child: NavigationView(
           content: ScaffoldPage(
             content: PayloadConfigPanel(
-              providerId: 'gemini',
-              modelName: 'gemini-3.1-flash-image-preview',
-              forceImageConfig: true,
+              providerId: providerId,
+              modelName: modelName,
+              forceImageConfig: forceImageConfig,
             ),
           ),
         ),
@@ -103,7 +108,14 @@ void main() {
     );
     addTearDown(container.dispose);
 
-    await tester.pumpWidget(_buildTestApp(container));
+    await tester.pumpWidget(
+      _buildTestApp(
+        container,
+        providerId: 'gemini',
+        modelName: 'gemini-3.1-flash-image-preview',
+        forceImageConfig: true,
+      ),
+    );
     await tester.pumpAndSettle();
 
     final context = tester.element(find.byType(PayloadConfigPanel));
@@ -138,5 +150,106 @@ void main() {
       updatedDropdown.value,
       ImageConfigTransportMode.googleExtraBody.wireName,
     );
+  });
+
+  testWidgets('shows Gemini 3 image thoughts toggle and persists state',
+      (tester) async {
+    final storage = _MemorySettingsStorage();
+    final notifier = _TestSettingsNotifier(
+      storage: storage,
+      initialProviders: [
+        ProviderConfig(
+          id: 'gemini',
+          name: 'Gemini',
+          apiKeys: const ['test-key'],
+          baseUrl: 'https://generativelanguage.googleapis.com/v1beta',
+          providerProtocol: ProviderProtocol.gemini,
+          selectedModel: 'gemini-3.1-flash-image-preview',
+          modelSettings: const {
+            'gemini-3.1-flash-image-preview': {
+              auroraImageConfigKey: {
+                'image_size': '4K',
+              },
+            },
+          },
+        ),
+      ],
+      initialActiveId: 'gemini',
+    );
+
+    final container = ProviderContainer(
+      overrides: [
+        settingsProvider.overrideWith((ref) => notifier),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    await tester.pumpWidget(
+      _buildTestApp(
+        container,
+        providerId: 'gemini',
+        modelName: 'gemini-3.1-flash-image-preview',
+        forceImageConfig: true,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final context = tester.element(find.byType(PayloadConfigPanel));
+    final l10n = AppLocalizations.of(context)!;
+
+    expect(find.text(l10n.imageIncludeThoughts), findsOneWidget);
+    expect(find.text(l10n.imageIncludeThoughtsHint), findsOneWidget);
+
+    final initialToggle =
+        tester.widget<ToggleSwitch>(find.byType(ToggleSwitch));
+    expect(initialToggle.checked, isFalse);
+
+    initialToggle.onChanged?.call(true);
+    await tester.pumpAndSettle();
+
+    final savedConfig = notifier.state.activeProvider.modelSettings[
+            'gemini-3.1-flash-image-preview']![auroraImageConfigKey]
+        as Map<String, dynamic>;
+    expect(savedConfig[auroraImageConfigIncludeThoughtsKey], isTrue);
+
+    final updatedToggle =
+        tester.widget<ToggleSwitch>(find.byType(ToggleSwitch));
+    expect(updatedToggle.checked, isTrue);
+  });
+
+  testWidgets(
+      'does not show image thoughts toggle for non Gemini 3 image model',
+      (tester) async {
+    final notifier = _TestSettingsNotifier(
+      storage: _MemorySettingsStorage(),
+      initialProviders: [
+        ProviderConfig(
+          id: 'openai',
+          name: 'OpenAI',
+          apiKeys: const ['test-key'],
+          selectedModel: 'gpt-4.1',
+        ),
+      ],
+      initialActiveId: 'openai',
+    );
+
+    final container = ProviderContainer(
+      overrides: [
+        settingsProvider.overrideWith((ref) => notifier),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    await tester.pumpWidget(
+      _buildTestApp(
+        container,
+        providerId: 'openai',
+        modelName: 'gpt-4.1',
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Include Thoughts'), findsNothing);
+    expect(find.byType(ToggleSwitch), findsOneWidget);
   });
 }

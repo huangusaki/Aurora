@@ -286,6 +286,143 @@ void main() {
         },
       );
     });
+
+    test('maps image include_thoughts into generationConfig.thinkingConfig',
+        () async {
+      final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      Map<String, dynamic>? requestPayload;
+
+      final sub = server.listen((request) async {
+        final raw = await utf8.decoder.bind(request).join();
+        requestPayload = jsonDecode(raw) as Map<String, dynamic>;
+
+        request.response.statusCode = 200;
+        request.response.headers.contentType = ContentType.json;
+        request.response.write(jsonEncode({
+          'candidates': [
+            {
+              'content': {
+                'parts': [
+                  {'text': 'ok'},
+                ],
+              },
+              'finishReason': 'STOP',
+            },
+          ],
+        }));
+        await request.response.close();
+      });
+      addTearDown(() async {
+        await sub.cancel();
+        await server.close(force: true);
+      });
+
+      final settings = SettingsState(
+        providers: [
+          ProviderConfig(
+            id: 'gemini-proxy',
+            name: 'Gemini Proxy',
+            apiKeys: const ['proxy-key'],
+            baseUrl: 'http://${server.address.host}:${server.port}',
+            selectedModel: 'gemini-3.1-flash-image-preview',
+            modelSettings: const {
+              'gemini-3.1-flash-image-preview': {
+                auroraImageConfigKey: {
+                  auroraImageConfigIncludeThoughtsKey: false,
+                },
+              },
+            },
+          ),
+        ],
+        activeProviderId: 'gemini-proxy',
+        viewingProviderId: 'gemini-proxy',
+        language: 'zh',
+      );
+      final service = GeminiNativeLlmService(settings);
+
+      final response = await service.getResponse([Message.user('你好')]);
+      final generationConfig =
+          requestPayload?['generationConfig'] as Map<String, dynamic>;
+
+      expect(response.content, 'ok');
+      expect(
+        generationConfig['thinkingConfig'],
+        {
+          'includeThoughts': false,
+        },
+      );
+    });
+
+    test('image include_thoughts overrides thinking includeThoughts only',
+        () async {
+      final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      Map<String, dynamic>? requestPayload;
+
+      final sub = server.listen((request) async {
+        final raw = await utf8.decoder.bind(request).join();
+        requestPayload = jsonDecode(raw) as Map<String, dynamic>;
+
+        request.response.statusCode = 200;
+        request.response.headers.contentType = ContentType.json;
+        request.response.write(jsonEncode({
+          'candidates': [
+            {
+              'content': {
+                'parts': [
+                  {'text': 'ok'},
+                ],
+              },
+              'finishReason': 'STOP',
+            },
+          ],
+        }));
+        await request.response.close();
+      });
+      addTearDown(() async {
+        await sub.cancel();
+        await server.close(force: true);
+      });
+
+      final settings = SettingsState(
+        providers: [
+          ProviderConfig(
+            id: 'gemini-proxy',
+            name: 'Gemini Proxy',
+            apiKeys: const ['proxy-key'],
+            baseUrl: 'http://${server.address.host}:${server.port}',
+            selectedModel: 'gemini-3.1-flash-image-preview',
+            modelSettings: const {
+              'gemini-3.1-flash-image-preview': {
+                auroraImageConfigKey: {
+                  auroraImageConfigIncludeThoughtsKey: false,
+                },
+                '_aurora_thinking_config': {
+                  'enabled': true,
+                  'budget': 'high',
+                },
+              },
+            },
+          ),
+        ],
+        activeProviderId: 'gemini-proxy',
+        viewingProviderId: 'gemini-proxy',
+        language: 'zh',
+      );
+      final service = GeminiNativeLlmService(settings);
+
+      final response = await service.getResponse([Message.user('你好')]);
+      final generationConfig =
+          requestPayload?['generationConfig'] as Map<String, dynamic>;
+
+      expect(response.content, 'ok');
+      expect(
+        generationConfig['thinkingConfig'],
+        {
+          'includeThoughts': false,
+          'thinkingLevel': 'high',
+        },
+      );
+    });
   });
 }
 

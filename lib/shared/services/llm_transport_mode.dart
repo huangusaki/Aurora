@@ -7,6 +7,7 @@ const String auroraTransportBaseUrlKey = '_aurora_transport_base_url';
 const String auroraTransportApiKeyKey = '_aurora_transport_api_key';
 const String auroraImageConfigKey = '_aurora_image_config';
 const String auroraImageConfigModeKey = 'mode';
+const String auroraImageConfigIncludeThoughtsKey = 'include_thoughts';
 const String auroraGeminiNativeToolsKey = '_aurora_gemini_native_tools';
 const String auroraGeminiNativeGoogleSearchKey = 'google_search';
 const String auroraGeminiNativeUrlContextKey = 'url_context';
@@ -60,14 +61,17 @@ class AuroraImageConfig {
   final ImageConfigTransportMode mode;
   final String? aspectRatio;
   final String? imageSize;
+  final bool? includeThoughts;
 
   const AuroraImageConfig({
     this.mode = ImageConfigTransportMode.auto,
     this.aspectRatio,
     this.imageSize,
+    this.includeThoughts,
   });
 
-  bool get hasValues => aspectRatio != null || imageSize != null;
+  bool get hasValues =>
+      aspectRatio != null || imageSize != null || includeThoughts != null;
 
   Map<String, dynamic> toSettingsMap() {
     return {
@@ -75,6 +79,8 @@ class AuroraImageConfig {
         auroraImageConfigModeKey: mode.wireName,
       if (aspectRatio != null) 'aspect_ratio': aspectRatio,
       if (imageSize != null) 'image_size': imageSize,
+      if (includeThoughts != null)
+        auroraImageConfigIncludeThoughtsKey: includeThoughts,
     };
   }
 }
@@ -104,6 +110,27 @@ String? _normalizeImageSize(dynamic value) {
   return raw;
 }
 
+bool? _normalizeOptionalBool(dynamic value) {
+  if (value == null) return null;
+  if (value is bool) return value;
+  if (value is num) return value != 0;
+  final normalized = value.toString().trim().toLowerCase();
+  if (normalized.isEmpty) return null;
+  if (normalized == '1' ||
+      normalized == 'true' ||
+      normalized == 'yes' ||
+      normalized == 'on') {
+    return true;
+  }
+  if (normalized == '0' ||
+      normalized == 'false' ||
+      normalized == 'no' ||
+      normalized == 'off') {
+    return false;
+  }
+  return null;
+}
+
 AuroraImageConfig resolveAuroraImageConfig(Map<String, dynamic>? settings) {
   if (settings == null || settings.isEmpty) {
     return const AuroraImageConfig();
@@ -121,6 +148,9 @@ AuroraImageConfig resolveAuroraImageConfig(Map<String, dynamic>? settings) {
     ),
     aspectRatio: _normalizeImageAspectRatio(imageConfig['aspect_ratio']),
     imageSize: _normalizeImageSize(imageConfig['image_size']),
+    includeThoughts: _normalizeOptionalBool(
+      imageConfig[auroraImageConfigIncludeThoughtsKey],
+    ),
   );
 }
 

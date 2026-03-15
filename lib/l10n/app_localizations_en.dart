@@ -138,6 +138,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'When enabled, the chat won\'t auto-scroll to the bottom while the assistant is generating a response (streaming, etc.).';
 
   @override
+  String get llmRequestTimeoutSeconds => 'LLM request timeout (seconds)';
+
+  @override
+  String get llmRequestTimeoutSecondsHint =>
+      'Applies to all chat LLM requests. Increase it to reduce timeout failures on long responses or large-image analysis.';
+
+  @override
   String get chatJumpToTop => 'Jump to top';
 
   @override
@@ -1612,6 +1619,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get imageModeGoogleExtraBody => 'extra_body.google (Gemini)';
+
+  @override
+  String get imageIncludeThoughts => 'Include Thoughts';
+
+  @override
+  String get imageIncludeThoughtsHint =>
+      'Return Gemini thought summaries and related thought-signature metadata for Gemini 3 image models.';
 
   @override
   String get transportMode => 'Transport Mode';

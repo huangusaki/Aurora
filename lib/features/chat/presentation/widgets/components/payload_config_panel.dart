@@ -180,9 +180,13 @@ class _PayloadConfigPanelState extends ConsumerState<PayloadConfigPanel> {
 
   Widget _buildImageConfig(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final theme = FluentTheme.of(context);
     final imageConfig = resolveAuroraImageConfig(_modelSettings);
     final String currentSize = imageConfig.imageSize ?? '2K';
     final String currentMode = imageConfig.mode.wireName;
+    final bool currentIncludeThoughts = imageConfig.includeThoughts ?? false;
+    final bool showIncludeThoughtsToggle =
+        _isGemini3ImageModel(widget.modelName);
 
     final aspectRatios = [
       l10n.auto,
@@ -241,11 +245,39 @@ class _PayloadConfigPanelState extends ConsumerState<PayloadConfigPanel> {
                   mode: ImageConfigTransportMode.fromRaw(v),
                   aspectRatio: imageConfig.aspectRatio,
                   imageSize: imageConfig.imageSize,
+                  includeThoughts: imageConfig.includeThoughts,
                 ),
               );
             },
           ),
         ),
+        if (showIncludeThoughtsToggle) ...[
+          const SizedBox(height: 8),
+          _buildSectionCard(
+            title: l10n.imageIncludeThoughts,
+            icon: AuroraIcons.lightbulb,
+            headerAction: ToggleSwitch(
+              checked: currentIncludeThoughts,
+              onChanged: (value) {
+                saveImageConfig(
+                  AuroraImageConfig(
+                    mode: imageConfig.mode,
+                    aspectRatio: imageConfig.aspectRatio,
+                    imageSize: imageConfig.imageSize,
+                    includeThoughts: value,
+                  ),
+                );
+              },
+            ),
+            child: Text(
+              l10n.imageIncludeThoughtsHint,
+              style: TextStyle(
+                fontSize: 12,
+                color: theme.resources.textFillColorSecondary,
+              ),
+            ),
+          ),
+        ],
         const SizedBox(height: 8),
         _buildSectionCard(
           title: l10n.aspectRatio,
@@ -266,6 +298,7 @@ class _PayloadConfigPanelState extends ConsumerState<PayloadConfigPanel> {
                     mode: imageConfig.mode,
                     aspectRatio: v == l10n.auto ? null : v,
                     imageSize: imageConfig.imageSize,
+                    includeThoughts: imageConfig.includeThoughts,
                   ),
                 );
               }
@@ -295,6 +328,7 @@ class _PayloadConfigPanelState extends ConsumerState<PayloadConfigPanel> {
                         mode: imageConfig.mode,
                         aspectRatio: imageConfig.aspectRatio,
                         imageSize: newSize,
+                        includeThoughts: imageConfig.includeThoughts,
                       ),
                     );
                   },

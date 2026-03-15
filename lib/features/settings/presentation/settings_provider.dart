@@ -7,7 +7,6 @@ import 'package:flutter/foundation.dart';
 import 'package:aurora/shared/riverpod_compat.dart';
 import 'package:aurora/shared/services/model_capability_registry.dart';
 import 'package:aurora/shared/services/capability_route_resolver.dart';
-import 'package:aurora/shared/services/gemini_native_endpoint.dart';
 import 'package:aurora/shared/services/provider_capability_gateway.dart';
 import 'package:aurora/shared/utils/app_logger.dart';
 import '../data/settings_storage.dart';
@@ -22,6 +21,9 @@ const List<String> _legacyTransportRoutingKeys = <String>[
   '_aurora_transport_base_url',
   '_aurora_transport_api_key',
 ];
+const int minLlmRequestTimeoutSeconds = 30;
+const int maxLlmRequestTimeoutSeconds = 1800;
+const int defaultLlmRequestTimeoutSeconds = 300;
 
 class _ProviderEntityLoadResult {
   final ProviderConfig config;
@@ -543,6 +545,7 @@ class SettingsState {
   final String? transcriptionProviderId;
   final String? translationModel;
   final String? translationProviderId;
+  final int llmRequestTimeoutSeconds;
   final int memoryMinNewUserMessages;
   final int memoryIdleSeconds;
   final int memoryMaxBufferedMessages;
@@ -598,6 +601,7 @@ class SettingsState {
     this.transcriptionProviderId,
     this.translationModel,
     this.translationProviderId,
+    this.llmRequestTimeoutSeconds = defaultLlmRequestTimeoutSeconds,
     this.memoryMinNewUserMessages = 20,
     this.memoryIdleSeconds = 600,
     this.memoryMaxBufferedMessages = 120,
@@ -693,6 +697,7 @@ class SettingsState {
     Object? transcriptionProviderId = _settingsSentinel,
     Object? translationModel = _settingsSentinel,
     Object? translationProviderId = _settingsSentinel,
+    int? llmRequestTimeoutSeconds,
     int? memoryMinNewUserMessages,
     int? memoryIdleSeconds,
     int? memoryMaxBufferedMessages,
@@ -787,6 +792,13 @@ class SettingsState {
       translationProviderId: translationProviderId == _settingsSentinel
           ? this.translationProviderId
           : translationProviderId as String?,
+      llmRequestTimeoutSeconds: llmRequestTimeoutSeconds != null
+          ? _clampInt(
+              llmRequestTimeoutSeconds,
+              minLlmRequestTimeoutSeconds,
+              maxLlmRequestTimeoutSeconds,
+            )
+          : this.llmRequestTimeoutSeconds,
       memoryMinNewUserMessages: memoryMinNewUserMessages != null
           ? _clampInt(memoryMinNewUserMessages, 1, 200)
           : this.memoryMinNewUserMessages,
@@ -995,6 +1007,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     String? transcriptionProviderId,
     String? translationModel,
     String? translationProviderId,
+    int llmRequestTimeoutSeconds = defaultLlmRequestTimeoutSeconds,
     int memoryMinNewUserMessages = 20,
     int memoryIdleSeconds = 600,
     int memoryMaxBufferedMessages = 120,
@@ -1054,6 +1067,11 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
           transcriptionProviderId: transcriptionProviderId,
           translationModel: translationModel,
           translationProviderId: translationProviderId,
+          llmRequestTimeoutSeconds: _clampInt(
+            llmRequestTimeoutSeconds,
+            minLlmRequestTimeoutSeconds,
+            maxLlmRequestTimeoutSeconds,
+          ),
           memoryMinNewUserMessages: _clampInt(memoryMinNewUserMessages, 1, 200),
           memoryIdleSeconds: _clampInt(memoryIdleSeconds, 30, 7200),
           memoryMaxBufferedMessages:
@@ -1143,6 +1161,12 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
       transcriptionProviderId: appSettings?.transcriptionProviderId,
       translationModel: appSettings?.translationModel,
       translationProviderId: appSettings?.translationProviderId,
+      llmRequestTimeoutSeconds: _clampInt(
+        appSettings?.llmRequestTimeoutSeconds ??
+            defaultLlmRequestTimeoutSeconds,
+        minLlmRequestTimeoutSeconds,
+        maxLlmRequestTimeoutSeconds,
+      ),
       memoryMinNewUserMessages:
           _clampInt(appSettings?.memoryMinNewUserMessages ?? 20, 1, 200),
       memoryIdleSeconds:
@@ -2128,6 +2152,19 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
       activeProviderId: state.activeProvider.id,
       translationModel: model,
       translationProviderId: providerId,
+    );
+  }
+
+  Future<void> setLlmRequestTimeoutSeconds(int seconds) async {
+    final clamped = _clampInt(
+      seconds,
+      minLlmRequestTimeoutSeconds,
+      maxLlmRequestTimeoutSeconds,
+    );
+    state = state.copyWith(llmRequestTimeoutSeconds: clamped);
+    await _storage.saveAppSettings(
+      activeProviderId: state.activeProvider.id,
+      llmRequestTimeoutSeconds: clamped,
     );
   }
 

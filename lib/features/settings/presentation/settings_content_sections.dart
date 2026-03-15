@@ -930,6 +930,44 @@ extension _SettingsContentSections on _SettingsContentState {
           _buildSectionCard(
             context,
             child: fluent.InfoLabel(
+              label: l10n.llmRequestTimeoutSeconds,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l10n.llmRequestTimeoutSecondsHint,
+                    style: const TextStyle(
+                      color: fluent.Colors.grey,
+                      fontSize: 12,
+                      height: 1.35,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  DeferredFluentSlider(
+                    value: settingsState.llmRequestTimeoutSeconds.toDouble(),
+                    min: minLlmRequestTimeoutSeconds.toDouble(),
+                    max: maxLlmRequestTimeoutSeconds.toDouble(),
+                    divisions: (maxLlmRequestTimeoutSeconds -
+                            minLlmRequestTimeoutSeconds) ~/
+                        30,
+                    labelBuilder: (value) => '${value.round()}s',
+                    onChangeCommitted: (v) {
+                      ref
+                          .read(settingsProvider.notifier)
+                          .setLlmRequestTimeoutSeconds(v.round());
+                    },
+                    trailingBuilder: (context, value) {
+                      return Text('${value.round()}s');
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          _buildSectionCard(
+            context,
+            child: fluent.InfoLabel(
               label: l10n.smartTopicGeneration,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

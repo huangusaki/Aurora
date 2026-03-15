@@ -40,6 +40,10 @@ class OpenAILLMService implements LLMService {
           },
         ));
 
+  Duration _resolveRequestTimeout() {
+    return Duration(seconds: _settings.llmRequestTimeoutSeconds);
+  }
+
   String? _normalizeThoughtSignature(dynamic raw) {
     if (raw == null) return null;
     final value = raw.toString().trim();
@@ -358,6 +362,7 @@ class OpenAILLMService implements LLMService {
       final requestData = prepared.requestData;
       final endpointUri = prepared.endpointUri;
       final route = prepared.route;
+      final timeout = _resolveRequestTimeout();
       streamLog = LlmStreamLogAccumulator(
         providerId: provider.id,
         model: selectedModel,
@@ -376,6 +381,8 @@ class OpenAILLMService implements LLMService {
                 'Accept': 'text/event-stream',
               },
             ),
+            sendTimeout: timeout,
+            receiveTimeout: timeout,
             responseType: ResponseType.stream,
           ),
           data: requestData,
@@ -402,6 +409,8 @@ class OpenAILLMService implements LLMService {
                   'Accept': 'text/event-stream',
                 },
               ),
+              sendTimeout: timeout,
+              receiveTimeout: timeout,
               responseType: ResponseType.stream,
             ),
             data: retryData,
@@ -1111,6 +1120,7 @@ class OpenAILLMService implements LLMService {
       final requestData = prepared.requestData;
       final endpointUri = prepared.endpointUri;
       final route = prepared.route;
+      final timeout = _resolveRequestTimeout();
 
       _logRequest(endpointUri.toString(), requestData);
       final response = await _dio.postUri(
@@ -1123,6 +1133,8 @@ class OpenAILLMService implements LLMService {
               'Accept': 'application/json',
             },
           ),
+          sendTimeout: timeout,
+          receiveTimeout: timeout,
         ),
         data: requestData,
         cancelToken: cancelToken,

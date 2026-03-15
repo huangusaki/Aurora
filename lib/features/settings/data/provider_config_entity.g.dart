@@ -4352,128 +4352,133 @@ const AppSettingsEntitySchema = CollectionSchema(
       name: r'llmName',
       type: IsarType.string,
     ),
-    r'memoryContextWindowSize': PropertySchema(
+    r'llmRequestTimeoutSeconds': PropertySchema(
       id: 30,
+      name: r'llmRequestTimeoutSeconds',
+      type: IsarType.long,
+    ),
+    r'memoryContextWindowSize': PropertySchema(
+      id: 31,
       name: r'memoryContextWindowSize',
       type: IsarType.long,
     ),
     r'memoryIdleSeconds': PropertySchema(
-      id: 31,
+      id: 32,
       name: r'memoryIdleSeconds',
       type: IsarType.long,
     ),
     r'memoryMaxBufferedMessages': PropertySchema(
-      id: 32,
+      id: 33,
       name: r'memoryMaxBufferedMessages',
       type: IsarType.long,
     ),
     r'memoryMaxRunsPerDay': PropertySchema(
-      id: 33,
+      id: 34,
       name: r'memoryMaxRunsPerDay',
       type: IsarType.long,
     ),
     r'memoryMinNewUserMessages': PropertySchema(
-      id: 34,
+      id: 35,
       name: r'memoryMinNewUserMessages',
       type: IsarType.long,
     ),
     r'restoreLastSessionOnLaunch': PropertySchema(
-      id: 35,
+      id: 36,
       name: r'restoreLastSessionOnLaunch',
       type: IsarType.bool,
     ),
     r'searchEngine': PropertySchema(
-      id: 36,
+      id: 37,
       name: r'searchEngine',
       type: IsarType.string,
     ),
     r'searchMaxResults': PropertySchema(
-      id: 37,
+      id: 38,
       name: r'searchMaxResults',
       type: IsarType.long,
     ),
     r'searchRegion': PropertySchema(
-      id: 38,
+      id: 39,
       name: r'searchRegion',
       type: IsarType.string,
     ),
     r'searchSafeSearch': PropertySchema(
-      id: 39,
+      id: 40,
       name: r'searchSafeSearch',
       type: IsarType.string,
     ),
     r'searchTimeoutSeconds': PropertySchema(
-      id: 40,
+      id: 41,
       name: r'searchTimeoutSeconds',
       type: IsarType.long,
     ),
     r'selectedChatModel': PropertySchema(
-      id: 41,
+      id: 42,
       name: r'selectedChatModel',
       type: IsarType.string,
     ),
     r'selectedModel': PropertySchema(
-      id: 42,
+      id: 43,
       name: r'selectedModel',
       type: IsarType.string,
     ),
     r'speechModel': PropertySchema(
-      id: 43,
+      id: 44,
       name: r'speechModel',
       type: IsarType.string,
     ),
     r'speechProviderId': PropertySchema(
-      id: 44,
+      id: 45,
       name: r'speechProviderId',
       type: IsarType.string,
     ),
     r'themeColor': PropertySchema(
-      id: 45,
+      id: 46,
       name: r'themeColor',
       type: IsarType.string,
     ),
     r'themeMode': PropertySchema(
-      id: 46,
+      id: 47,
       name: r'themeMode',
       type: IsarType.string,
     ),
     r'topicGenerationModel': PropertySchema(
-      id: 47,
+      id: 48,
       name: r'topicGenerationModel',
       type: IsarType.string,
     ),
     r'transcriptionModel': PropertySchema(
-      id: 48,
+      id: 49,
       name: r'transcriptionModel',
       type: IsarType.string,
     ),
     r'transcriptionProviderId': PropertySchema(
-      id: 49,
+      id: 50,
       name: r'transcriptionProviderId',
       type: IsarType.string,
     ),
     r'translationModel': PropertySchema(
-      id: 50,
+      id: 51,
       name: r'translationModel',
       type: IsarType.string,
     ),
     r'translationProviderId': PropertySchema(
-      id: 51,
+      id: 52,
       name: r'translationProviderId',
       type: IsarType.string,
     ),
     r'useCustomTheme': PropertySchema(
-      id: 52,
+      id: 53,
       name: r'useCustomTheme',
       type: IsarType.bool,
     ),
     r'userAvatar': PropertySchema(
-      id: 53,
+      id: 54,
       name: r'userAvatar',
       type: IsarType.string,
     ),
     r'userName': PropertySchema(
-      id: 54,
+      id: 55,
       name: r'userName',
       type: IsarType.string,
     )
@@ -4718,31 +4723,32 @@ void _appSettingsEntitySerialize(
   writer.writeString(offsets[27], object.lastTopicId);
   writer.writeString(offsets[28], object.llmAvatar);
   writer.writeString(offsets[29], object.llmName);
-  writer.writeLong(offsets[30], object.memoryContextWindowSize);
-  writer.writeLong(offsets[31], object.memoryIdleSeconds);
-  writer.writeLong(offsets[32], object.memoryMaxBufferedMessages);
-  writer.writeLong(offsets[33], object.memoryMaxRunsPerDay);
-  writer.writeLong(offsets[34], object.memoryMinNewUserMessages);
-  writer.writeBool(offsets[35], object.restoreLastSessionOnLaunch);
-  writer.writeString(offsets[36], object.searchEngine);
-  writer.writeLong(offsets[37], object.searchMaxResults);
-  writer.writeString(offsets[38], object.searchRegion);
-  writer.writeString(offsets[39], object.searchSafeSearch);
-  writer.writeLong(offsets[40], object.searchTimeoutSeconds);
-  writer.writeString(offsets[41], object.selectedChatModel);
-  writer.writeString(offsets[42], object.selectedModel);
-  writer.writeString(offsets[43], object.speechModel);
-  writer.writeString(offsets[44], object.speechProviderId);
-  writer.writeString(offsets[45], object.themeColor);
-  writer.writeString(offsets[46], object.themeMode);
-  writer.writeString(offsets[47], object.topicGenerationModel);
-  writer.writeString(offsets[48], object.transcriptionModel);
-  writer.writeString(offsets[49], object.transcriptionProviderId);
-  writer.writeString(offsets[50], object.translationModel);
-  writer.writeString(offsets[51], object.translationProviderId);
-  writer.writeBool(offsets[52], object.useCustomTheme);
-  writer.writeString(offsets[53], object.userAvatar);
-  writer.writeString(offsets[54], object.userName);
+  writer.writeLong(offsets[30], object.llmRequestTimeoutSeconds);
+  writer.writeLong(offsets[31], object.memoryContextWindowSize);
+  writer.writeLong(offsets[32], object.memoryIdleSeconds);
+  writer.writeLong(offsets[33], object.memoryMaxBufferedMessages);
+  writer.writeLong(offsets[34], object.memoryMaxRunsPerDay);
+  writer.writeLong(offsets[35], object.memoryMinNewUserMessages);
+  writer.writeBool(offsets[36], object.restoreLastSessionOnLaunch);
+  writer.writeString(offsets[37], object.searchEngine);
+  writer.writeLong(offsets[38], object.searchMaxResults);
+  writer.writeString(offsets[39], object.searchRegion);
+  writer.writeString(offsets[40], object.searchSafeSearch);
+  writer.writeLong(offsets[41], object.searchTimeoutSeconds);
+  writer.writeString(offsets[42], object.selectedChatModel);
+  writer.writeString(offsets[43], object.selectedModel);
+  writer.writeString(offsets[44], object.speechModel);
+  writer.writeString(offsets[45], object.speechProviderId);
+  writer.writeString(offsets[46], object.themeColor);
+  writer.writeString(offsets[47], object.themeMode);
+  writer.writeString(offsets[48], object.topicGenerationModel);
+  writer.writeString(offsets[49], object.transcriptionModel);
+  writer.writeString(offsets[50], object.transcriptionProviderId);
+  writer.writeString(offsets[51], object.translationModel);
+  writer.writeString(offsets[52], object.translationProviderId);
+  writer.writeBool(offsets[53], object.useCustomTheme);
+  writer.writeString(offsets[54], object.userAvatar);
+  writer.writeString(offsets[55], object.userName);
 }
 
 AppSettingsEntity _appSettingsEntityDeserialize(
@@ -4783,31 +4789,32 @@ AppSettingsEntity _appSettingsEntityDeserialize(
   object.lastTopicId = reader.readStringOrNull(offsets[27]);
   object.llmAvatar = reader.readStringOrNull(offsets[28]);
   object.llmName = reader.readString(offsets[29]);
-  object.memoryContextWindowSize = reader.readLong(offsets[30]);
-  object.memoryIdleSeconds = reader.readLong(offsets[31]);
-  object.memoryMaxBufferedMessages = reader.readLong(offsets[32]);
-  object.memoryMaxRunsPerDay = reader.readLong(offsets[33]);
-  object.memoryMinNewUserMessages = reader.readLong(offsets[34]);
-  object.restoreLastSessionOnLaunch = reader.readBoolOrNull(offsets[35]);
-  object.searchEngine = reader.readString(offsets[36]);
-  object.searchMaxResults = reader.readLong(offsets[37]);
-  object.searchRegion = reader.readString(offsets[38]);
-  object.searchSafeSearch = reader.readString(offsets[39]);
-  object.searchTimeoutSeconds = reader.readLong(offsets[40]);
-  object.selectedChatModel = reader.readStringOrNull(offsets[41]);
-  object.selectedModel = reader.readStringOrNull(offsets[42]);
-  object.speechModel = reader.readStringOrNull(offsets[43]);
-  object.speechProviderId = reader.readStringOrNull(offsets[44]);
-  object.themeColor = reader.readStringOrNull(offsets[45]);
-  object.themeMode = reader.readString(offsets[46]);
-  object.topicGenerationModel = reader.readStringOrNull(offsets[47]);
-  object.transcriptionModel = reader.readStringOrNull(offsets[48]);
-  object.transcriptionProviderId = reader.readStringOrNull(offsets[49]);
-  object.translationModel = reader.readStringOrNull(offsets[50]);
-  object.translationProviderId = reader.readStringOrNull(offsets[51]);
-  object.useCustomTheme = reader.readBool(offsets[52]);
-  object.userAvatar = reader.readStringOrNull(offsets[53]);
-  object.userName = reader.readString(offsets[54]);
+  object.llmRequestTimeoutSeconds = reader.readLong(offsets[30]);
+  object.memoryContextWindowSize = reader.readLong(offsets[31]);
+  object.memoryIdleSeconds = reader.readLong(offsets[32]);
+  object.memoryMaxBufferedMessages = reader.readLong(offsets[33]);
+  object.memoryMaxRunsPerDay = reader.readLong(offsets[34]);
+  object.memoryMinNewUserMessages = reader.readLong(offsets[35]);
+  object.restoreLastSessionOnLaunch = reader.readBoolOrNull(offsets[36]);
+  object.searchEngine = reader.readString(offsets[37]);
+  object.searchMaxResults = reader.readLong(offsets[38]);
+  object.searchRegion = reader.readString(offsets[39]);
+  object.searchSafeSearch = reader.readString(offsets[40]);
+  object.searchTimeoutSeconds = reader.readLong(offsets[41]);
+  object.selectedChatModel = reader.readStringOrNull(offsets[42]);
+  object.selectedModel = reader.readStringOrNull(offsets[43]);
+  object.speechModel = reader.readStringOrNull(offsets[44]);
+  object.speechProviderId = reader.readStringOrNull(offsets[45]);
+  object.themeColor = reader.readStringOrNull(offsets[46]);
+  object.themeMode = reader.readString(offsets[47]);
+  object.topicGenerationModel = reader.readStringOrNull(offsets[48]);
+  object.transcriptionModel = reader.readStringOrNull(offsets[49]);
+  object.transcriptionProviderId = reader.readStringOrNull(offsets[50]);
+  object.translationModel = reader.readStringOrNull(offsets[51]);
+  object.translationProviderId = reader.readStringOrNull(offsets[52]);
+  object.useCustomTheme = reader.readBool(offsets[53]);
+  object.userAvatar = reader.readStringOrNull(offsets[54]);
+  object.userName = reader.readString(offsets[55]);
   return object;
 }
 
@@ -4889,19 +4896,19 @@ P _appSettingsEntityDeserializeProp<P>(
     case 34:
       return (reader.readLong(offset)) as P;
     case 35:
-      return (reader.readBoolOrNull(offset)) as P;
-    case 36:
-      return (reader.readString(offset)) as P;
-    case 37:
       return (reader.readLong(offset)) as P;
-    case 38:
+    case 36:
+      return (reader.readBoolOrNull(offset)) as P;
+    case 37:
       return (reader.readString(offset)) as P;
+    case 38:
+      return (reader.readLong(offset)) as P;
     case 39:
       return (reader.readString(offset)) as P;
     case 40:
-      return (reader.readLong(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 41:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readLong(offset)) as P;
     case 42:
       return (reader.readStringOrNull(offset)) as P;
     case 43:
@@ -4911,9 +4918,9 @@ P _appSettingsEntityDeserializeProp<P>(
     case 45:
       return (reader.readStringOrNull(offset)) as P;
     case 46:
-      return (reader.readString(offset)) as P;
-    case 47:
       return (reader.readStringOrNull(offset)) as P;
+    case 47:
+      return (reader.readString(offset)) as P;
     case 48:
       return (reader.readStringOrNull(offset)) as P;
     case 49:
@@ -4923,10 +4930,12 @@ P _appSettingsEntityDeserializeProp<P>(
     case 51:
       return (reader.readStringOrNull(offset)) as P;
     case 52:
-      return (reader.readBool(offset)) as P;
-    case 53:
       return (reader.readStringOrNull(offset)) as P;
+    case 53:
+      return (reader.readBool(offset)) as P;
     case 54:
+      return (reader.readStringOrNull(offset)) as P;
+    case 55:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -8582,6 +8591,62 @@ extension AppSettingsEntityQueryFilter
   }
 
   QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      llmRequestTimeoutSecondsEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'llmRequestTimeoutSeconds',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      llmRequestTimeoutSecondsGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'llmRequestTimeoutSeconds',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      llmRequestTimeoutSecondsLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'llmRequestTimeoutSeconds',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
+      llmRequestTimeoutSecondsBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'llmRequestTimeoutSeconds',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
       memoryContextWindowSizeEqualTo(int value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -11790,6 +11855,20 @@ extension AppSettingsEntityQuerySortBy
   }
 
   QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      sortByLlmRequestTimeoutSeconds() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'llmRequestTimeoutSeconds', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      sortByLlmRequestTimeoutSecondsDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'llmRequestTimeoutSeconds', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
       sortByMemoryContextWindowSize() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'memoryContextWindowSize', Sort.asc);
@@ -12548,6 +12627,20 @@ extension AppSettingsEntityQuerySortThenBy
   }
 
   QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      thenByLlmRequestTimeoutSeconds() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'llmRequestTimeoutSeconds', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
+      thenByLlmRequestTimeoutSecondsDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'llmRequestTimeoutSeconds', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
       thenByMemoryContextWindowSize() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'memoryContextWindowSize', Sort.asc);
@@ -13122,6 +13215,13 @@ extension AppSettingsEntityQueryWhereDistinct
   }
 
   QueryBuilder<AppSettingsEntity, AppSettingsEntity, QDistinct>
+      distinctByLlmRequestTimeoutSeconds() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'llmRequestTimeoutSeconds');
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QDistinct>
       distinctByMemoryContextWindowSize() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'memoryContextWindowSize');
@@ -13518,6 +13618,13 @@ extension AppSettingsEntityQueryProperty
   QueryBuilder<AppSettingsEntity, String, QQueryOperations> llmNameProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'llmName');
+    });
+  }
+
+  QueryBuilder<AppSettingsEntity, int, QQueryOperations>
+      llmRequestTimeoutSecondsProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'llmRequestTimeoutSeconds');
     });
   }
 

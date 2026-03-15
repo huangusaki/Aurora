@@ -135,6 +135,13 @@ class AppLocalizationsZh extends AppLocalizations {
       '开启后，模型在生成回复（流式输出等）时会保持你当前的滚动位置不变。';
 
   @override
+  String get llmRequestTimeoutSeconds => 'LLM 请求超时（秒）';
+
+  @override
+  String get llmRequestTimeoutSecondsHint =>
+      '对所有对话 LLM 请求生效。增大该值可减少长回复或大图分析时的超时失败。';
+
+  @override
   String get chatJumpToTop => '跳至最顶端';
 
   @override
@@ -1567,6 +1574,13 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get imageModeGoogleExtraBody => 'extra_body.google（Gemini）';
+
+  @override
+  String get imageIncludeThoughts => '包含 Thoughts';
+
+  @override
+  String get imageIncludeThoughtsHint =>
+      '控制 Gemini 3 图片模型是否返回 thought summary 和相关 thought signature 元数据。';
 
   @override
   String get transportMode => '传输模式';

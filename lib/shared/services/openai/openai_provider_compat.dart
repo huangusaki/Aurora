@@ -471,9 +471,81 @@ void _mergeExtraBodyProvider(
   requestData['extra_body'] = extraBody;
 }
 
-bool _isAutoAspectRatio(String raw) {
-  final v = raw.trim().toLowerCase();
-  return v.isEmpty || v == 'auto' || v == '自动';
+Map<String, dynamic> _normalizeGoogleThinkingConfigKeys(
+    Map<String, dynamic> thinkingConfig) {
+  final normalized = Map<String, dynamic>.from(thinkingConfig);
+
+  if (normalized.containsKey('thinkingLevel')) {
+    normalized.putIfAbsent(
+      'thinking_level',
+      () => normalized['thinkingLevel'],
+    );
+    normalized.remove('thinkingLevel');
+  }
+  if (normalized.containsKey('thinkingBudget')) {
+    normalized.putIfAbsent(
+      'thinking_budget',
+      () => normalized['thinkingBudget'],
+    );
+    normalized.remove('thinkingBudget');
+  }
+  if (normalized.containsKey('includeThoughts')) {
+    normalized.putIfAbsent(
+      'include_thoughts',
+      () => normalized['includeThoughts'],
+    );
+    normalized.remove('includeThoughts');
+  }
+
+  return normalized;
+}
+
+void _normalizeGoogleThinkingConfigInRequest(Map<String, dynamic> requestData) {
+  final extraBody = _safeStringKeyedMap(requestData['extra_body']);
+  if (extraBody.isEmpty) return;
+  final google = _safeStringKeyedMap(extraBody['google']);
+  if (google.isEmpty || !google.containsKey('thinking_config')) return;
+
+  google['thinking_config'] = _normalizeGoogleThinkingConfigKeys(
+    _safeStringKeyedMap(google['thinking_config']),
+  );
+  extraBody['google'] = google;
+  requestData['extra_body'] = extraBody;
+}
+
+void _mergeGoogleThinkingConfigIntoRequest(
+  Map<String, dynamic> requestData, {
+  required Map<String, dynamic> thinkingConfig,
+}) {
+  final extraBody = _safeStringKeyedMap(requestData['extra_body']);
+  final google = _safeStringKeyedMap(extraBody['google']);
+  final mergedThinkingConfig = _normalizeGoogleThinkingConfigKeys(
+    _safeStringKeyedMap(google['thinking_config']),
+  );
+
+  mergedThinkingConfig.addAll(thinkingConfig);
+  google['thinking_config'] = mergedThinkingConfig;
+  extraBody['google'] = google;
+  requestData['extra_body'] = extraBody;
+}
+
+void _applyGeminiImageIncludeThoughts({
+  required Map<String, dynamic> requestData,
+  required Map<String, dynamic> activeParams,
+  required String selectedModel,
+}) {
+  if (!_isGemini3ImageModel(selectedModel)) return;
+
+  final includeThoughts =
+      resolveAuroraImageConfig(activeParams).includeThoughts;
+  if (includeThoughts == null) return;
+
+  _mergeGoogleThinkingConfigIntoRequest(
+    requestData,
+    thinkingConfig: {
+      'include_thoughts': includeThoughts,
+    },
+  );
 }
 
 void _applyImageConfigToRequest({
@@ -483,7 +555,12 @@ void _applyImageConfigToRequest({
   required ProtocolPreset routePreset,
 }) {
   final imageConfig = resolveAuroraImageConfig(activeParams);
-  if (!imageConfig.hasValues) return;
+  final imagePayload = {
+    if (imageConfig.aspectRatio != null)
+      'aspect_ratio': imageConfig.aspectRatio,
+    if (imageConfig.imageSize != null) 'image_size': imageConfig.imageSize,
+  };
+  if (imagePayload.isEmpty) return;
 
   final isGemini = selectedModel.toLowerCase().contains('gemini');
   if (!isGemini) return;
@@ -491,12 +568,6 @@ void _applyImageConfigToRequest({
 
   requestData.remove('image_config');
   _removeGoogleImageConfigFromRequest(requestData);
-
-  final imagePayload = {
-    if (imageConfig.aspectRatio != null)
-      'aspect_ratio': imageConfig.aspectRatio,
-    if (imageConfig.imageSize != null) 'image_size': imageConfig.imageSize,
-  };
 
   final mode = imageConfig.mode == ImageConfigTransportMode.auto
       ? ImageConfigTransportMode.openaiImageConfig
@@ -523,17 +594,16 @@ void _applyThinkingConfigToRequest({
 }) {
   final modelFamily = _inferModelFamily(selectedModel);
   final explicitReasoningEffort = _configuredReasoningEffort(requestData);
+  if (modelFamily == _ModelFamily.gemini ||
+      modelFamily == _ModelFamily.gemini3) {
+    _normalizeGoogleThinkingConfigInRequest(requestData);
+  }
   final isGeminiImageModel = _isImageModel(selectedModel) &&
       (modelFamily == _ModelFamily.gemini ||
           modelFamily == _ModelFamily.gemini3);
   if (isGeminiImageModel) {
     _removeAnthropicThinkingConfigFromRequest(requestData);
     requestData.remove('reasoning_effort');
-
-    // CLIProxyAPI automatically sets includeThoughts based on reasoning_effort:
-    //   effort != "none" → includeThoughts=true
-    //   effort == "auto" → thinkingBudget=-1 + includeThoughts=true
-    // So we only need to set reasoning_effort here; no extra_body needed.
 
     if (_isGemini31PlusImageModel(selectedModel)) {
       // Gemini 3.1+ image models support explicit thinking levels (high, etc.)
@@ -562,6 +632,12 @@ void _applyThinkingConfigToRequest({
       // Gemini 3.0 image models: only auto is safe.
       requestData['reasoning_effort'] = 'auto';
     }
+
+    _applyGeminiImageIncludeThoughts(
+      requestData: requestData,
+      activeParams: activeParams,
+      selectedModel: selectedModel,
+    );
     return;
   }
   if (_isThinkingUnsupportedModel(selectedModel)) {
@@ -644,27 +720,21 @@ void _applyThinkingConfigToRequest({
         } else {
           level = input.raw.toLowerCase();
         }
-        _mergeExtraBodyProvider(
+        _mergeGoogleThinkingConfigIntoRequest(
           requestData,
-          providerKey: 'google',
-          providerData: {
-            'thinking_config': {
-              'thinkingLevel': level,
-              'includeThoughts': true,
-            }
+          thinkingConfig: {
+            'thinking_level': level,
+            'include_thoughts': true,
           },
         );
       } else {
         final budgetTokens = _budgetTokensFromThinkingInput(input);
         if (budgetTokens == null) return;
-        _mergeExtraBodyProvider(
+        _mergeGoogleThinkingConfigIntoRequest(
           requestData,
-          providerKey: 'google',
-          providerData: {
-            'thinking_config': {
-              'thinking_budget': budgetTokens,
-              'include_thoughts': true,
-            }
+          thinkingConfig: {
+            'thinking_budget': budgetTokens,
+            'include_thoughts': true,
           },
         );
       }
