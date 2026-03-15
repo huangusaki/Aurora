@@ -539,31 +539,51 @@ extension _SettingsContentSections on _SettingsContentState {
                         child: _buildStyledTextBox(
                           controller: _baseUrlController,
                           placeholder: l10n.baseUrlPlaceholder,
-                          onChanged: (value) {
-                            ref.read(settingsProvider.notifier).updateProvider(
-                                id: viewingProvider.id, baseUrl: value);
+                          onSubmitted: (value) {
+                            ref
+                                .read(settingsProvider.notifier)
+                                .commitProviderBaseUrl(
+                                  id: viewingProvider.id,
+                                  baseUrl: value,
+                                );
+                          },
+                          onTapOutside: (_) {
+                            ref
+                                .read(settingsProvider.notifier)
+                                .commitProviderBaseUrl(
+                                  id: viewingProvider.id,
+                                  baseUrl: _baseUrlController.text,
+                                );
                           },
                         ),
                       ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                fluent.Expander(
-                  initiallyExpanded: false,
-                  header: fluent.Text(
-                    l10n.capabilityRoutesTitle,
-                    style: fluent.FluentTheme.of(context).typography.bodyStrong,
-                  ),
-                  content: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        l10n.capabilityRoutesSubtitle,
-                        style: theme.typography.caption,
+                      const SizedBox(height: 16),
+                      fluent.InfoLabel(
+                        label: l10n.providerProtocol,
+                        child: AuroraFluentDropdownField<ProviderProtocol>(
+                          value: viewingProvider.providerProtocol,
+                          placement: fluent.FlyoutPlacementMode.bottomLeft,
+                          options: ProviderProtocol.values
+                              .map(
+                                (protocol) =>
+                                    AuroraDropdownOption<ProviderProtocol>(
+                                  value: protocol,
+                                  label: providerProtocolLabel(
+                                    context,
+                                    protocol,
+                                  ),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (value) {
+                            if (value == null) return;
+                            ref.read(settingsProvider.notifier).updateProvider(
+                                  id: viewingProvider.id,
+                                  providerProtocol: value,
+                                );
+                          },
+                        ),
                       ),
-                      const SizedBox(height: 12),
-                      CapabilityRouteEditorPanel(provider: viewingProvider),
                     ],
                   ),
                 ),

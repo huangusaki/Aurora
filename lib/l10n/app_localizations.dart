@@ -3500,6 +3500,42 @@ abstract class AppLocalizations {
   /// **'API Base URL'**
   String get apiBaseUrl;
 
+  /// No description provided for @providerProtocol.
+  ///
+  /// In zh, this message translates to:
+  /// **'Provider 协议'**
+  String get providerProtocol;
+
+  /// No description provided for @providerProtocolOpenaiCompatible.
+  ///
+  /// In zh, this message translates to:
+  /// **'OpenAI 兼容'**
+  String get providerProtocolOpenaiCompatible;
+
+  /// No description provided for @providerProtocolGemini.
+  ///
+  /// In zh, this message translates to:
+  /// **'Gemini'**
+  String get providerProtocolGemini;
+
+  /// No description provided for @providerProtocolGeminiOpenai.
+  ///
+  /// In zh, this message translates to:
+  /// **'Gemini OpenAI'**
+  String get providerProtocolGeminiOpenai;
+
+  /// No description provided for @providerProtocolGeminiNative.
+  ///
+  /// In zh, this message translates to:
+  /// **'Gemini 原生'**
+  String get providerProtocolGeminiNative;
+
+  /// No description provided for @providerProtocolAnthropic.
+  ///
+  /// In zh, this message translates to:
+  /// **'Anthropic'**
+  String get providerProtocolAnthropic;
+
   /// No description provided for @apiKeys.
   ///
   /// In zh, this message translates to:

@@ -33,6 +33,15 @@ String capabilityDescription(
   };
 }
 
+String providerProtocolLabel(BuildContext context, ProviderProtocol protocol) {
+  final l10n = AppLocalizations.of(context)!;
+  return switch (protocol) {
+    ProviderProtocol.openaiCompatible => l10n.providerProtocolOpenaiCompatible,
+    ProviderProtocol.gemini => l10n.providerProtocolGemini,
+    ProviderProtocol.anthropic => l10n.providerProtocolAnthropic,
+  };
+}
+
 String protocolPresetLabel(BuildContext context, ProtocolPreset preset) {
   final l10n = AppLocalizations.of(context)!;
   return switch (preset) {

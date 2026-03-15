@@ -262,6 +262,7 @@ class ProviderConfigBackup {
   final int currentKeyIndex;
   final bool autoRotateKeys;
   final String baseUrl;
+  final String? providerProtocol;
   final bool isCustom;
   final String? customParametersJson;
   final String? modelSettingsJson;
@@ -283,6 +284,7 @@ class ProviderConfigBackup {
     this.currentKeyIndex = 0,
     this.autoRotateKeys = false,
     required this.baseUrl,
+    this.providerProtocol,
     this.isCustom = false,
     this.customParametersJson,
     this.modelSettingsJson,
@@ -305,6 +307,7 @@ class ProviderConfigBackup {
         'currentKeyIndex': currentKeyIndex,
         'autoRotateKeys': autoRotateKeys,
         'baseUrl': baseUrl,
+        'providerProtocol': providerProtocol,
         'isCustom': isCustom,
         'customParametersJson': customParametersJson,
         'modelSettingsJson': modelSettingsJson,
@@ -328,6 +331,7 @@ class ProviderConfigBackup {
         currentKeyIndex: json['currentKeyIndex'] as int? ?? 0,
         autoRotateKeys: json['autoRotateKeys'] as bool? ?? false,
         baseUrl: json['baseUrl'] as String,
+        providerProtocol: json['providerProtocol'] as String?,
         isCustom: json['isCustom'] as bool? ?? false,
         customParametersJson: json['customParametersJson'] as String?,
         modelSettingsJson: json['modelSettingsJson'] as String?,

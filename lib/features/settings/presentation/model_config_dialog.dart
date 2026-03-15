@@ -4,8 +4,8 @@ import 'package:fluent_ui/fluent_ui.dart';
 import 'package:aurora/shared/riverpod_compat.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 import 'package:aurora/shared/services/llm_transport_mode.dart';
+import 'package:aurora/shared/services/model_capability_registry.dart';
 import 'package:aurora/shared/widgets/aurora_dropdown.dart';
-import 'widgets/capability_route_editor_panel.dart';
 import 'settings_provider.dart';
 
 class ModelConfigDialog extends ConsumerStatefulWidget {
@@ -28,7 +28,6 @@ class _ModelConfigDialogState extends ConsumerState<ModelConfigDialog> {
   // Thinking config temporary state
   bool _thinkingEnabled = false;
   String _thinkingMode = 'auto';
-  LlmTransportMode _transportMode = LlmTransportMode.auto;
 
   // Controllers
   late final TextEditingController _thinkingBudgetController;
@@ -85,20 +84,17 @@ class _ModelConfigDialogState extends ConsumerState<ModelConfigDialog> {
       _thinkingEnabled = false;
       _thinkingMode = 'auto';
     }
-    _transportMode = resolveTransportModeFromSettings(_modelSettings);
   }
 
   void _saveSettings({
     bool? thinkingEnabled,
     String? thinkingMode,
-    LlmTransportMode? transportMode,
     GeminiNativeToolsConfig? geminiNativeTools,
     Map<String, dynamic>? customParams,
   }) {
     // Update local state
     if (thinkingEnabled != null) _thinkingEnabled = thinkingEnabled;
     if (thinkingMode != null) _thinkingMode = thinkingMode;
-    if (transportMode != null) _transportMode = transportMode;
 
     // Construct new settings map
     final newSettings = Map<String, dynamic>.from(_modelSettings);
@@ -137,7 +133,7 @@ class _ModelConfigDialogState extends ConsumerState<ModelConfigDialog> {
       newSettings.addAll(customParams);
     }
 
-    var normalizedSettings = withTransportMode(newSettings, _transportMode);
+    var normalizedSettings = Map<String, dynamic>.from(newSettings);
     if (geminiNativeTools != null) {
       normalizedSettings =
           withGeminiNativeTools(normalizedSettings, geminiNativeTools);
@@ -170,7 +166,13 @@ class _ModelConfigDialogState extends ConsumerState<ModelConfigDialog> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = FluentTheme.of(context);
+    final provider = ref.watch(settingsProvider).providers.firstWhere(
+          (item) => item.id == widget.provider.id,
+          orElse: () => widget.provider,
+        );
     final nativeTools = resolveGeminiNativeToolsFromSettings(_modelSettings);
+    final showGeminiNativeTools =
+        provider.providerFamily == ProviderModelFamily.geminiNative;
 
     // Extract custom params for display (exclude _aurora_ keys)
     final customParams = Map<String, dynamic>.fromEntries(
@@ -203,54 +205,7 @@ class _ModelConfigDialogState extends ConsumerState<ModelConfigDialog> {
       content: SingleChildScrollView(
         child: Column(
           children: [
-            _buildSectionCard(
-              title: l10n.modelCapabilityRoutesTitle,
-              subtitle: l10n.modelCapabilityRoutesSubtitle,
-              icon: AuroraIcons.globe,
-              headerAction: null,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 16),
-                  CapabilityRouteEditorPanel(
-                    provider: widget.provider,
-                    modelName: widget.modelName,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            _buildSectionCard(
-              title: l10n.transportMode,
-              subtitle: l10n.transportModeSubtitle,
-              icon: AuroraIcons.globe,
-              headerAction: null,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 16),
-                  InfoLabel(
-                    label: l10n.transportModeType,
-                    child: AuroraFluentDropdownField<LlmTransportMode>(
-                      value: _transportMode,
-                      options: LlmTransportMode.values
-                          .map((mode) => AuroraDropdownOption<LlmTransportMode>(
-                                value: mode,
-                                label: _transportModeLabel(mode, l10n),
-                              ))
-                          .toList(),
-                      onChanged: (mode) {
-                        if (mode != null) {
-                          _saveSettings(transportMode: mode);
-                        }
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (_transportMode == LlmTransportMode.geminiNative) ...[
-              const SizedBox(height: 16),
+            if (showGeminiNativeTools) ...[
               _buildSectionCard(
                 title: l10n.geminiNativeTools,
                 subtitle: l10n.geminiNativeToolsSubtitle,
@@ -333,9 +288,8 @@ class _ModelConfigDialogState extends ConsumerState<ModelConfigDialog> {
                   ],
                 ),
               ),
+              const SizedBox(height: 16),
             ],
-
-            const SizedBox(height: 16),
 
             // Thinking Configuration Card
             _buildSectionCard(
@@ -491,17 +445,6 @@ class _ModelConfigDialogState extends ConsumerState<ModelConfigDialog> {
         ),
       ],
     );
-  }
-
-  String _transportModeLabel(LlmTransportMode mode, AppLocalizations l10n) {
-    switch (mode) {
-      case LlmTransportMode.auto:
-        return l10n.transportModeAuto;
-      case LlmTransportMode.openaiCompat:
-        return l10n.transportModeOpenaiCompat;
-      case LlmTransportMode.geminiNative:
-        return l10n.transportModeGeminiNative;
-    }
   }
 
   Widget _buildSectionCard({

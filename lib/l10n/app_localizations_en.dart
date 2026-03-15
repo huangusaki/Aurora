@@ -1809,6 +1809,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get apiBaseUrl => 'API Base URL';
 
   @override
+  String get providerProtocol => 'Provider Protocol';
+
+  @override
+  String get providerProtocolOpenaiCompatible => 'OpenAI Compatible';
+
+  @override
+  String get providerProtocolGemini => 'Gemini';
+
+  @override
+  String get providerProtocolGeminiOpenai => 'Gemini OpenAI';
+
+  @override
+  String get providerProtocolGeminiNative => 'Gemini Native';
+
+  @override
+  String get providerProtocolAnthropic => 'Anthropic';
+
+  @override
   String get apiKeys => 'API Keys';
 
   @override

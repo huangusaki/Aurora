@@ -21,6 +21,28 @@ enum ProviderCapability {
   }
 }
 
+enum ProviderProtocol {
+  openaiCompatible('openai_compatible'),
+  gemini('gemini'),
+  anthropic('anthropic');
+
+  final String wireName;
+  const ProviderProtocol(this.wireName);
+
+  static ProviderProtocol? fromRaw(Object? raw) {
+    final normalized = raw?.toString().trim().toLowerCase();
+    if (normalized == 'gemini_openai' || normalized == 'gemini_native') {
+      return ProviderProtocol.gemini;
+    }
+    for (final value in values) {
+      if (value.wireName == normalized) {
+        return value;
+      }
+    }
+    return null;
+  }
+}
+
 enum ProtocolPreset {
   openaiResponses('openai_responses'),
   openaiChatCompletions('openai_chat_completions'),

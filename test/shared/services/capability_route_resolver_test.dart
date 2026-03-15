@@ -6,13 +6,13 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('CapabilityRouteResolver', () {
-    test('legacy custom providers keep model-list fallback to Gemini models',
-        () {
+    test('openai protocol resolves model lists without hidden fallback', () {
       final provider = ProviderConfig(
         id: 'proxy',
         name: 'Proxy',
         isCustom: true,
         baseUrl: 'http://127.0.0.1:8080',
+        providerProtocol: ProviderProtocol.openaiCompatible,
       );
 
       final route = const CapabilityRouteResolver().resolve(
@@ -21,7 +21,7 @@ void main() {
       );
 
       expect(route.preset, ProtocolPreset.openaiModels);
-      expect(route.fallbackPreset, ProtocolPreset.geminiModels);
+      expect(route.fallbackPreset, isNull);
     });
 
     test('model capability overrides win over provider routes', () {
@@ -58,11 +58,12 @@ void main() {
       expect(route.baseUrl, 'https://api.anthropic.com/v1');
     });
 
-    test('legacy anthropic providers disable unsupported non-chat routes', () {
+    test('anthropic protocol disables unsupported non-chat routes', () {
       final provider = ProviderConfig(
         id: 'anthropic',
         name: 'Anthropic',
         baseUrl: 'https://api.anthropic.com/v1',
+        providerProtocol: ProviderProtocol.anthropic,
       );
 
       expect(
@@ -87,19 +88,30 @@ void main() {
       );
     });
 
-    test('openai chat preset normalizes official Gemini host to /openai base',
-        () {
+    test('gemini protocol keeps native v1beta urls on native routes', () {
       final provider = ProviderConfig(
         id: 'gemini',
         name: 'Gemini',
         baseUrl: officialGeminiNativeBaseUrl,
-        capabilityConfig: const ProviderCapabilityConfig(
-          routes: {
-            ProviderCapability.transcriptions: CapabilityRouteConfig(
-              preset: ProtocolPreset.openaiChatCompletions,
-            ),
-          },
-        ),
+        providerProtocol: ProviderProtocol.gemini,
+      );
+
+      final route = const CapabilityRouteResolver().resolve(
+        provider: provider,
+        capability: ProviderCapability.transcriptions,
+        modelName: 'gemini-2.5-flash',
+      );
+
+      expect(route.baseUrl, officialGeminiNativeBaseUrl);
+      expect(route.preset, ProtocolPreset.geminiNativeGenerateContent);
+    });
+
+    test('gemini protocol keeps /openai urls on openai-compatible routes', () {
+      final provider = ProviderConfig(
+        id: 'gemini-openai',
+        name: 'Gemini OpenAI',
+        baseUrl: officialGeminiOpenAIBaseUrl,
+        providerProtocol: ProviderProtocol.gemini,
       );
 
       final route = const CapabilityRouteResolver().resolve(
@@ -109,6 +121,7 @@ void main() {
       );
 
       expect(route.baseUrl, officialGeminiOpenAIBaseUrl);
+      expect(route.preset, ProtocolPreset.geminiOpenaiChatCompletions);
     });
   });
 }

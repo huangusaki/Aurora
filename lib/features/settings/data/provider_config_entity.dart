@@ -14,6 +14,7 @@ class ProviderConfigEntity {
   int currentKeyIndex = 0;
   bool autoRotateKeys = false;
   late String baseUrl;
+  String? providerProtocol;
   bool isCustom = false;
   String? customParametersJson;
   String? modelSettingsJson;

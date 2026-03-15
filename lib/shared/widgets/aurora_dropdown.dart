@@ -129,6 +129,7 @@ class AuroraFluentDropdownField<T> extends StatelessWidget {
     this.placeholder,
     this.isExpanded = true,
     this.textStyle,
+    this.placement = fluent.FlyoutPlacementMode.bottomCenter,
   });
 
   final List<AuroraDropdownOption<T>> options;
@@ -138,6 +139,7 @@ class AuroraFluentDropdownField<T> extends StatelessWidget {
   final String? placeholder;
   final bool isExpanded;
   final TextStyle? textStyle;
+  final fluent.FlyoutPlacementMode placement;
 
   @override
   Widget build(BuildContext context) {
@@ -146,6 +148,7 @@ class AuroraFluentDropdownField<T> extends StatelessWidget {
       isExpanded: isExpanded,
       placeholder: placeholder,
       options: options,
+      placement: placement,
       onChanged: (val) {
         if (onChanged != null) onChanged!(val);
       },
@@ -174,6 +177,7 @@ class AuroraAdaptiveDropdownField<T> extends StatelessWidget {
     this.borderRadius = 12,
     this.contentPadding,
     this.textStyle,
+    this.placement = fluent.FlyoutPlacementMode.bottomCenter,
   });
 
   final List<AuroraDropdownOption<T>> options;
@@ -185,6 +189,7 @@ class AuroraAdaptiveDropdownField<T> extends StatelessWidget {
   final double borderRadius;
   final EdgeInsetsGeometry? contentPadding;
   final TextStyle? textStyle;
+  final fluent.FlyoutPlacementMode placement;
 
   @override
   Widget build(BuildContext context) {
@@ -208,6 +213,7 @@ class AuroraAdaptiveDropdownField<T> extends StatelessWidget {
       onChanged: onChanged,
       placeholder: placeholder,
       textStyle: textStyle,
+      placement: placement,
     );
   }
 }
@@ -258,14 +264,14 @@ class _AuroraDropdownState<T> extends State<AuroraDropdown<T>> {
 
   Future<void> _open() async {
     if (!_isEnabled || _flyoutController.isOpen) return;
-    
+
     // Explicitly update state to show active chevron animation
     setState(() {});
-    
+
     final placementMode = widget.placement == fluent.FlyoutPlacementMode.auto
         ? widget.placement
         : widget.placement.resolve(Directionality.of(context));
-    
+
     await _flyoutController.showFlyout<void>(
       barrierColor: Colors.transparent,
       placementMode: placementMode,
@@ -279,7 +285,7 @@ class _AuroraDropdownState<T> extends State<AuroraDropdown<T>> {
         );
       },
     );
-    
+
     // Explicitly update state when flyout closes
     if (mounted) {
       setState(() {});
@@ -290,9 +296,9 @@ class _AuroraDropdownState<T> extends State<AuroraDropdown<T>> {
     final isSelected = option.value == widget.value;
     final theme = fluent.FluentTheme.of(context);
     return fluent.MenuFlyoutItem(
-      leading: isSelected 
-        ? Icon(AuroraIcons.check, size: 14, color: theme.accentColor) 
-        : const SizedBox(width: 14),
+      leading: isSelected
+          ? Icon(AuroraIcons.check, size: 14, color: theme.accentColor)
+          : const SizedBox(width: 14),
       text: Text(
         option.label,
         maxLines: 1,
@@ -306,31 +312,31 @@ class _AuroraDropdownState<T> extends State<AuroraDropdown<T>> {
   Widget build(BuildContext context) {
     final label = _resolveLabel();
     final theme = fluent.FluentTheme.of(context);
-    
+
     final bool isOpen = _flyoutController.isOpen;
 
     // Determine colors based on state
-    final Color backgroundColor = _isEnabled 
-      ? (isOpen 
-          ? theme.resources.subtleFillColorTertiary
-          : _isHovering 
-            ? theme.resources.subtleFillColorSecondary
-            : theme.resources.subtleFillColorTransparent)
-      : theme.resources.subtleFillColorDisabled;
-      
+    final Color backgroundColor = _isEnabled
+        ? (isOpen
+            ? theme.resources.subtleFillColorTertiary
+            : _isHovering
+                ? theme.resources.subtleFillColorSecondary
+                : theme.resources.subtleFillColorTransparent)
+        : theme.resources.subtleFillColorDisabled;
+
     final Color borderColor = _isEnabled
-      ? (isOpen || _isHovering
-          ? theme.resources.textFillColorSecondary.withValues(alpha: 0.2)
-          : theme.resources.textFillColorSecondary.withValues(alpha: 0.1))
-      : theme.resources.textFillColorDisabled.withValues(alpha: 0.05);
-      
+        ? (isOpen || _isHovering
+            ? theme.resources.textFillColorSecondary.withValues(alpha: 0.2)
+            : theme.resources.textFillColorSecondary.withValues(alpha: 0.1))
+        : theme.resources.textFillColorDisabled.withValues(alpha: 0.05);
+
     final Color textColor = _isEnabled
-      ? (isOpen 
-          ? theme.resources.textFillColorPrimary
-          : _isHovering 
-            ? theme.resources.textFillColorPrimary 
-            : theme.resources.textFillColorSecondary)
-      : theme.resources.textFillColorDisabled;
+        ? (isOpen
+            ? theme.resources.textFillColorPrimary
+            : _isHovering
+                ? theme.resources.textFillColorPrimary
+                : theme.resources.textFillColorSecondary)
+        : theme.resources.textFillColorDisabled;
 
     Widget buttonContent = Row(
       mainAxisSize: widget.isExpanded ? MainAxisSize.max : MainAxisSize.min,
@@ -349,7 +355,8 @@ class _AuroraDropdownState<T> extends State<AuroraDropdown<T>> {
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: (widget.textStyle ?? const TextStyle()).copyWith(color: textColor),
+                  style: (widget.textStyle ?? const TextStyle())
+                      .copyWith(color: textColor),
                 ),
               ),
             ],
@@ -386,7 +393,8 @@ class _AuroraDropdownState<T> extends State<AuroraDropdown<T>> {
       child: MouseRegion(
         onEnter: (_) => setState(() => _isHovering = true),
         onExit: (_) => setState(() => _isHovering = false),
-        cursor: _isEnabled ? SystemMouseCursors.click : SystemMouseCursors.basic,
+        cursor:
+            _isEnabled ? SystemMouseCursors.click : SystemMouseCursors.basic,
         child: GestureDetector(
           onTap: _isEnabled ? _open : null,
           behavior: HitTestBehavior.opaque,

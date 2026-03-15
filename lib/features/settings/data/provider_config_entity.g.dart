@@ -108,13 +108,18 @@ const ProviderConfigEntitySchema = CollectionSchema(
       name: r'providerId',
       type: IsarType.string,
     ),
-    r'savedModels': PropertySchema(
+    r'providerProtocol': PropertySchema(
       id: 18,
+      name: r'providerProtocol',
+      type: IsarType.string,
+    ),
+    r'savedModels': PropertySchema(
+      id: 19,
       name: r'savedModels',
       type: IsarType.stringList,
     ),
     r'selectedChatModel': PropertySchema(
-      id: 19,
+      id: 20,
       name: r'selectedChatModel',
       type: IsarType.string,
     )
@@ -213,6 +218,12 @@ int _providerConfigEntityEstimateSize(
   }
   bytesCount += 3 + object.name.length * 3;
   bytesCount += 3 + object.providerId.length * 3;
+  {
+    final value = object.providerProtocol;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   bytesCount += 3 + object.savedModels.length * 3;
   {
     for (var i = 0; i < object.savedModels.length; i++) {
@@ -253,8 +264,9 @@ void _providerConfigEntitySerialize(
   writer.writeString(offsets[15], object.modelSettingsJson);
   writer.writeString(offsets[16], object.name);
   writer.writeString(offsets[17], object.providerId);
-  writer.writeStringList(offsets[18], object.savedModels);
-  writer.writeString(offsets[19], object.selectedChatModel);
+  writer.writeString(offsets[18], object.providerProtocol);
+  writer.writeStringList(offsets[19], object.savedModels);
+  writer.writeString(offsets[20], object.selectedChatModel);
 }
 
 ProviderConfigEntity _providerConfigEntityDeserialize(
@@ -283,8 +295,9 @@ ProviderConfigEntity _providerConfigEntityDeserialize(
   object.modelSettingsJson = reader.readStringOrNull(offsets[15]);
   object.name = reader.readString(offsets[16]);
   object.providerId = reader.readString(offsets[17]);
-  object.savedModels = reader.readStringList(offsets[18]) ?? [];
-  object.selectedChatModel = reader.readStringOrNull(offsets[19]);
+  object.providerProtocol = reader.readStringOrNull(offsets[18]);
+  object.savedModels = reader.readStringList(offsets[19]) ?? [];
+  object.selectedChatModel = reader.readStringOrNull(offsets[20]);
   return object;
 }
 
@@ -332,8 +345,10 @@ P _providerConfigEntityDeserializeProp<P>(
     case 17:
       return (reader.readString(offset)) as P;
     case 18:
-      return (reader.readStringList(offset) ?? []) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 19:
+      return (reader.readStringList(offset) ?? []) as P;
+    case 20:
       return (reader.readStringOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -2794,6 +2809,162 @@ extension ProviderConfigEntityQueryFilter on QueryBuilder<ProviderConfigEntity,
   }
 
   QueryBuilder<ProviderConfigEntity, ProviderConfigEntity,
+      QAfterFilterCondition> providerProtocolIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'providerProtocol',
+      ));
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity,
+      QAfterFilterCondition> providerProtocolIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'providerProtocol',
+      ));
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity,
+      QAfterFilterCondition> providerProtocolEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'providerProtocol',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity,
+      QAfterFilterCondition> providerProtocolGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'providerProtocol',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity,
+      QAfterFilterCondition> providerProtocolLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'providerProtocol',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity,
+      QAfterFilterCondition> providerProtocolBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'providerProtocol',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity,
+      QAfterFilterCondition> providerProtocolStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'providerProtocol',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity,
+      QAfterFilterCondition> providerProtocolEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'providerProtocol',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity,
+          QAfterFilterCondition>
+      providerProtocolContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'providerProtocol',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity,
+          QAfterFilterCondition>
+      providerProtocolMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'providerProtocol',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity,
+      QAfterFilterCondition> providerProtocolIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'providerProtocol',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity,
+      QAfterFilterCondition> providerProtocolIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'providerProtocol',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity,
       QAfterFilterCondition> savedModelsElementEqualTo(
     String value, {
     bool caseSensitive = true,
@@ -3410,6 +3581,20 @@ extension ProviderConfigEntityQuerySortBy
   }
 
   QueryBuilder<ProviderConfigEntity, ProviderConfigEntity, QAfterSortBy>
+      sortByProviderProtocol() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'providerProtocol', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity, QAfterSortBy>
+      sortByProviderProtocolDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'providerProtocol', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity, QAfterSortBy>
       sortBySelectedChatModel() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'selectedChatModel', Sort.asc);
@@ -3665,6 +3850,20 @@ extension ProviderConfigEntityQuerySortThenBy
   }
 
   QueryBuilder<ProviderConfigEntity, ProviderConfigEntity, QAfterSortBy>
+      thenByProviderProtocol() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'providerProtocol', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity, QAfterSortBy>
+      thenByProviderProtocolDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'providerProtocol', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity, QAfterSortBy>
       thenBySelectedChatModel() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'selectedChatModel', Sort.asc);
@@ -3814,6 +4013,14 @@ extension ProviderConfigEntityQueryWhereDistinct
   }
 
   QueryBuilder<ProviderConfigEntity, ProviderConfigEntity, QDistinct>
+      distinctByProviderProtocol({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'providerProtocol',
+          caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, ProviderConfigEntity, QDistinct>
       distinctBySavedModels() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'savedModels');
@@ -3959,6 +4166,13 @@ extension ProviderConfigEntityQueryProperty on QueryBuilder<
       providerIdProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'providerId');
+    });
+  }
+
+  QueryBuilder<ProviderConfigEntity, String?, QQueryOperations>
+      providerProtocolProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'providerProtocol');
     });
   }
 

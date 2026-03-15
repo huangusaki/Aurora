@@ -16,6 +16,23 @@ import '../domain/chat_preset.dart';
 import '../domain/provider_route_config.dart';
 import '../data/chat_preset_entity.dart';
 
+const List<String> _legacyTransportRoutingKeys = <String>[
+  '_aurora_transport_mode',
+  '_aurora_transport',
+  '_aurora_transport_base_url',
+  '_aurora_transport_api_key',
+];
+
+class _ProviderEntityLoadResult {
+  final ProviderConfig config;
+  final bool needsWriteBack;
+
+  const _ProviderEntityLoadResult({
+    required this.config,
+    required this.needsWriteBack,
+  });
+}
+
 class ProviderConfig {
   final String id;
   final String name;
@@ -24,6 +41,7 @@ class ProviderConfig {
   final int currentKeyIndex;
   final bool autoRotateKeys;
   final String baseUrl;
+  final ProviderProtocol providerProtocol;
   final bool isCustom;
   final Map<String, dynamic> customParameters;
   final Map<String, Map<String, dynamic>> modelSettings;
@@ -36,50 +54,99 @@ class ProviderConfig {
   final bool isEnabled;
 
   String? get selectedModel => selectedChatModel;
+  ProviderModelFamily get providerFamily => _resolveProviderModelFamily(
+        providerProtocol: providerProtocol,
+        baseUrl: baseUrl,
+      );
 
-  /// Returns the current API key based on currentKeyIndex (with bounds checking)
   String get apiKey {
     if (apiKeys.isEmpty) return '';
     final safeIndex = currentKeyIndex.clamp(0, apiKeys.length - 1);
     return apiKeys[safeIndex];
   }
 
-  /// Returns a safe current key index (clamped to valid range)
   int get safeCurrentKeyIndex {
     if (apiKeys.isEmpty) return 0;
     return currentKeyIndex.clamp(0, apiKeys.length - 1);
   }
 
-  ProviderConfig({
-    required this.id,
-    required this.name,
-    this.color,
-    this.apiKeys = const [],
-    this.currentKeyIndex = 0,
-    this.autoRotateKeys = false,
-    this.baseUrl = 'https://api.openai.com/v1',
-    this.isCustom = false,
-    this.customParameters = const {},
-    this.modelSettings = const {},
-    this.globalSettings = const {},
+  factory ProviderConfig({
+    required String id,
+    required String name,
+    String? color,
+    List<String> apiKeys = const [],
+    int currentKeyIndex = 0,
+    bool autoRotateKeys = false,
+    String baseUrl = 'https://api.openai.com/v1',
+    ProviderProtocol? providerProtocol,
+    bool isCustom = false,
+    Map<String, dynamic> customParameters = const {},
+    Map<String, Map<String, dynamic>> modelSettings = const {},
+    Map<String, dynamic> globalSettings = const {},
     ProviderCapabilityConfig capabilityConfig =
         const ProviderCapabilityConfig(),
     Map<String, ModelCapabilityOverride> modelCapabilityOverrides = const {},
-    this.globalExcludeModels = const [],
-    this.models = const [],
+    List<String> globalExcludeModels = const [],
+    List<String> models = const [],
     String? selectedChatModel,
     @Deprecated('Use selectedChatModel instead.') String? selectedModel,
-    this.isEnabled = true,
-  })  : capabilityConfig = capabilityConfig.routes.isNotEmpty
-            ? capabilityConfig
-            : _migrateLegacyCapabilityConfig(
-                baseUrl: baseUrl,
-                modelSettings: modelSettings,
-              ),
-        modelCapabilityOverrides = modelCapabilityOverrides.isNotEmpty
-            ? modelCapabilityOverrides
-            : _migrateLegacyModelOverrides(modelSettings),
-        selectedChatModel = selectedChatModel ?? selectedModel;
+    bool isEnabled = true,
+  }) {
+    final normalizedModelSettings = _sanitizeModelSettings(modelSettings);
+    final effectiveProtocol = providerProtocol ??
+        _inferProviderProtocol(
+          baseUrl: baseUrl,
+          modelSettings: modelSettings,
+        );
+    final effectiveCapabilityConfig = capabilityConfig.routes.isNotEmpty
+        ? capabilityConfig
+        : _buildCapabilityConfig(
+            providerProtocol: effectiveProtocol,
+            baseUrl: baseUrl,
+          );
+
+    return ProviderConfig._(
+      id: id,
+      name: name,
+      color: color,
+      apiKeys: apiKeys,
+      currentKeyIndex: currentKeyIndex,
+      autoRotateKeys: autoRotateKeys,
+      baseUrl: baseUrl,
+      providerProtocol: effectiveProtocol,
+      isCustom: isCustom,
+      customParameters: customParameters,
+      modelSettings: normalizedModelSettings,
+      globalSettings: globalSettings,
+      capabilityConfig: effectiveCapabilityConfig,
+      modelCapabilityOverrides: modelCapabilityOverrides,
+      globalExcludeModels: globalExcludeModels,
+      models: models,
+      selectedChatModel: selectedChatModel ?? selectedModel,
+      isEnabled: isEnabled,
+    );
+  }
+
+  const ProviderConfig._({
+    required this.id,
+    required this.name,
+    required this.color,
+    required this.apiKeys,
+    required this.currentKeyIndex,
+    required this.autoRotateKeys,
+    required this.baseUrl,
+    required this.providerProtocol,
+    required this.isCustom,
+    required this.customParameters,
+    required this.modelSettings,
+    required this.globalSettings,
+    required this.capabilityConfig,
+    required this.modelCapabilityOverrides,
+    required this.globalExcludeModels,
+    required this.models,
+    required this.selectedChatModel,
+    required this.isEnabled,
+  });
 
   ProviderConfig copyWith({
     String? name,
@@ -88,6 +155,7 @@ class ProviderConfig {
     int? currentKeyIndex,
     bool? autoRotateKeys,
     String? baseUrl,
+    ProviderProtocol? providerProtocol,
     Map<String, dynamic>? customParameters,
     Map<String, Map<String, dynamic>>? modelSettings,
     Map<String, dynamic>? globalSettings,
@@ -107,11 +175,12 @@ class ProviderConfig {
       currentKeyIndex: currentKeyIndex ?? this.currentKeyIndex,
       autoRotateKeys: autoRotateKeys ?? this.autoRotateKeys,
       baseUrl: baseUrl ?? this.baseUrl,
+      providerProtocol: providerProtocol ?? this.providerProtocol,
       isCustom: isCustom,
       customParameters: customParameters ?? this.customParameters,
       modelSettings: modelSettings ?? this.modelSettings,
       globalSettings: globalSettings ?? this.globalSettings,
-      capabilityConfig: capabilityConfig ?? this.capabilityConfig,
+      capabilityConfig: capabilityConfig ?? const ProviderCapabilityConfig(),
       modelCapabilityOverrides:
           modelCapabilityOverrides ?? this.modelCapabilityOverrides,
       globalExcludeModels: globalExcludeModels ?? this.globalExcludeModels,
@@ -138,17 +207,15 @@ class ProviderConfig {
     if (entities.isEmpty) {
       return defaultProviders();
     }
-    final providers = entities.map(ProviderConfig.fromEntity).toList();
+    final providers =
+        entities.map((entity) => _loadFromEntity(entity).config).toList();
     if (!providers.any((provider) => provider.id == 'custom')) {
       providers.add(
         ProviderConfig(
           id: 'custom',
           name: 'Custom',
           isCustom: true,
-          capabilityConfig: _migrateLegacyCapabilityConfig(
-            baseUrl: 'https://api.openai.com/v1',
-            modelSettings: const {},
-          ),
+          providerProtocol: ProviderProtocol.openaiCompatible,
         ),
       );
     }
@@ -161,33 +228,27 @@ class ProviderConfig {
         id: 'openai',
         name: 'OpenAI',
         isCustom: false,
-        capabilityConfig: _migrateLegacyCapabilityConfig(
-          baseUrl: 'https://api.openai.com/v1',
-          modelSettings: const {},
-        ),
+        providerProtocol: ProviderProtocol.openaiCompatible,
       ),
       ProviderConfig(
         id: 'custom',
         name: 'Custom',
         isCustom: true,
-        capabilityConfig: _migrateLegacyCapabilityConfig(
-          baseUrl: 'https://api.openai.com/v1',
-          modelSettings: const {},
-        ),
+        providerProtocol: ProviderProtocol.openaiCompatible,
       ),
     ];
   }
 
   static ProviderConfig fromEntity(ProviderConfigEntity entity) {
+    return _loadFromEntity(entity).config;
+  }
+
+  static _ProviderEntityLoadResult _loadFromEntity(
+      ProviderConfigEntity entity) {
     final customParams = _decodeJsonMap(entity.customParametersJson);
-    final modelSettings = _decodeModelSettings(entity.modelSettingsJson);
+    final rawModelSettings = _decodeModelSettings(entity.modelSettingsJson);
+    final sanitizedModelSettings = _sanitizeModelSettings(rawModelSettings);
     final globalSettings = _decodeJsonMap(entity.globalSettingsJson);
-    final explicitCapabilityConfig = _decodeCapabilityConfig(
-      entity.capabilityRoutesJson,
-    );
-    final explicitModelOverrides = _decodeModelCapabilityOverrides(
-      entity.modelCapabilityOverridesJson,
-    );
 
     List<String> apiKeys = List<String>.from(entity.apiKeys);
     // ignore: deprecated_member_use_from_same_package
@@ -198,34 +259,41 @@ class ProviderConfig {
 
     final selectedChatModel =
         entity.selectedChatModel ?? entity.lastSelectedModel;
-    final capabilityConfig = explicitCapabilityConfig.routes.isNotEmpty
-        ? explicitCapabilityConfig
-        : _migrateLegacyCapabilityConfig(
-            baseUrl: entity.baseUrl,
-            modelSettings: modelSettings,
-          );
-    final modelCapabilityOverrides = explicitModelOverrides.isNotEmpty
-        ? explicitModelOverrides
-        : _migrateLegacyModelOverrides(modelSettings);
+    final storedProtocolRaw = entity.providerProtocol?.trim().toLowerCase();
+    final storedProtocol = ProviderProtocol.fromRaw(entity.providerProtocol);
+    final effectiveProtocol = storedProtocol ??
+        _inferProviderProtocol(
+          baseUrl: entity.baseUrl,
+          modelSettings: rawModelSettings,
+        );
+    final needsWriteBack = storedProtocolRaw != effectiveProtocol.wireName ||
+        (entity.capabilityRoutesJson?.trim().isNotEmpty ?? false) ||
+        (entity.modelCapabilityOverridesJson?.trim().isNotEmpty ?? false) ||
+        jsonEncode(rawModelSettings) != jsonEncode(sanitizedModelSettings) ||
+        // ignore: deprecated_member_use_from_same_package
+        (entity.apiKey.isNotEmpty && entity.apiKeys.isEmpty) ||
+        entity.selectedChatModel != selectedChatModel;
 
-    return ProviderConfig(
-      id: entity.providerId,
-      name: entity.name,
-      color: entity.color,
-      apiKeys: apiKeys,
-      currentKeyIndex: entity.currentKeyIndex,
-      autoRotateKeys: entity.autoRotateKeys,
-      baseUrl: entity.baseUrl,
-      isCustom: entity.isCustom,
-      customParameters: customParams,
-      modelSettings: modelSettings,
-      globalSettings: globalSettings,
-      capabilityConfig: capabilityConfig,
-      modelCapabilityOverrides: modelCapabilityOverrides,
-      globalExcludeModels: entity.globalExcludeModels,
-      models: entity.savedModels,
-      selectedChatModel: selectedChatModel,
-      isEnabled: entity.isEnabled,
+    return _ProviderEntityLoadResult(
+      config: ProviderConfig(
+        id: entity.providerId,
+        name: entity.name,
+        color: entity.color,
+        apiKeys: apiKeys,
+        currentKeyIndex: entity.currentKeyIndex,
+        autoRotateKeys: entity.autoRotateKeys,
+        baseUrl: entity.baseUrl,
+        providerProtocol: effectiveProtocol,
+        isCustom: entity.isCustom,
+        customParameters: customParams,
+        modelSettings: sanitizedModelSettings,
+        globalSettings: globalSettings,
+        globalExcludeModels: entity.globalExcludeModels,
+        models: entity.savedModels,
+        selectedChatModel: selectedChatModel,
+        isEnabled: entity.isEnabled,
+      ),
+      needsWriteBack: needsWriteBack,
     );
   }
 
@@ -266,52 +334,102 @@ class ProviderConfig {
     return {};
   }
 
-  static ProviderCapabilityConfig _decodeCapabilityConfig(String? raw) {
-    if (raw == null || raw.isEmpty) {
-      return const ProviderCapabilityConfig();
-    }
-    try {
-      final decoded = jsonDecode(raw);
-      if (decoded is Map) {
-        return ProviderCapabilityConfig.fromJson(
-          decoded.map((key, value) => MapEntry(key.toString(), value)),
-        );
-      }
-    } catch (_) {}
-    return const ProviderCapabilityConfig();
-  }
-
-  static Map<String, ModelCapabilityOverride> _decodeModelCapabilityOverrides(
-    String? raw,
+  static Map<String, Map<String, dynamic>> _sanitizeModelSettings(
+    Map<String, Map<String, dynamic>> source,
   ) {
-    if (raw == null || raw.isEmpty) {
-      return const {};
-    }
-    try {
-      final decoded = jsonDecode(raw);
-      return decodeModelCapabilityOverrides(decoded);
-    } catch (_) {
-      return const {};
-    }
+    final result = <String, Map<String, dynamic>>{};
+    source.forEach((modelName, settings) {
+      final sanitized = Map<String, dynamic>.from(settings)
+        ..removeWhere(
+          (key, _) => _legacyTransportRoutingKeys.contains(key),
+        );
+      if (sanitized.isNotEmpty) {
+        result[modelName] = sanitized;
+      }
+    });
+    return result;
   }
 
-  static ProviderCapabilityConfig _migrateLegacyCapabilityConfig({
+  static ProviderProtocol _inferProviderProtocol({
     required String baseUrl,
     required Map<String, Map<String, dynamic>> modelSettings,
   }) {
-    final lowerBaseUrl = baseUrl.trim().toLowerCase();
-    final isOpenAiLikeBase =
-        lowerBaseUrl.contains('openai.com') || lowerBaseUrl.contains('/v1');
-    final forceGeminiNative = looksLikeGeminiNativeBaseUrl(baseUrl) ||
-        modelSettings.values.any((settings) {
-          final rawTransport = settings['_aurora_transport_mode'] ??
-              settings['_aurora_transport'];
-          return rawTransport?.toString().trim().toLowerCase() ==
-              'gemini_native';
-        });
-    final family = detectProviderFamilyFromBaseUrl(
-      baseUrl,
-      forceGeminiNative: forceGeminiNative,
+    final protocolFromBaseUrl = _inferProviderProtocolFromBaseUrl(baseUrl);
+    if (protocolFromBaseUrl != ProviderProtocol.openaiCompatible) {
+      return protocolFromBaseUrl;
+    }
+
+    final hasLegacyGeminiTransport = modelSettings.values.any((settings) {
+      final rawTransport =
+          settings['_aurora_transport_mode'] ?? settings['_aurora_transport'];
+      return rawTransport?.toString().trim().toLowerCase() == 'gemini_native';
+    });
+    return hasLegacyGeminiTransport
+        ? ProviderProtocol.gemini
+        : ProviderProtocol.openaiCompatible;
+  }
+
+  static ProviderProtocol _inferProviderProtocolFromBaseUrl(String baseUrl) {
+    if (_looksLikeAnthropicMessagesPath(baseUrl)) {
+      return ProviderProtocol.anthropic;
+    }
+
+    final family = detectProviderFamilyFromBaseUrl(baseUrl);
+    return switch (family) {
+      ProviderModelFamily.geminiOpenAi ||
+      ProviderModelFamily.geminiNative =>
+        ProviderProtocol.gemini,
+      ProviderModelFamily.anthropic => ProviderProtocol.anthropic,
+      _ => ProviderProtocol.openaiCompatible,
+    };
+  }
+
+  static ProviderModelFamily _resolveProviderModelFamily({
+    required ProviderProtocol providerProtocol,
+    required String baseUrl,
+  }) {
+    switch (providerProtocol) {
+      case ProviderProtocol.openaiCompatible:
+        return ProviderModelFamily.openai;
+      case ProviderProtocol.anthropic:
+        return ProviderModelFamily.anthropic;
+      case ProviderProtocol.gemini:
+        final family = detectProviderFamilyFromBaseUrl(baseUrl);
+        return family == ProviderModelFamily.geminiNative
+            ? ProviderModelFamily.geminiNative
+            : ProviderModelFamily.geminiOpenAi;
+    }
+  }
+
+  static bool _looksLikeAnthropicMessagesPath(String baseUrl) {
+    final uri = Uri.tryParse(baseUrl.trim());
+    if (uri == null || uri.host.isEmpty) return false;
+
+    final lowerHost = uri.host.toLowerCase();
+    if (lowerHost.contains('anthropic.com')) {
+      return true;
+    }
+
+    final segments = uri.pathSegments
+        .where((segment) => segment.isNotEmpty)
+        .map((segment) => segment.toLowerCase())
+        .toList(growable: false);
+    if (segments.isEmpty || segments.last != 'messages') {
+      return false;
+    }
+    if (segments.length == 1) {
+      return true;
+    }
+    return segments.length >= 2 && segments[segments.length - 2] == 'v1';
+  }
+
+  static ProviderCapabilityConfig _buildCapabilityConfig({
+    required ProviderProtocol providerProtocol,
+    required String baseUrl,
+  }) {
+    final family = _resolveProviderModelFamily(
+      providerProtocol: providerProtocol,
+      baseUrl: baseUrl,
     );
     final chatPreset = switch (family) {
       ProviderModelFamily.geminiNative =>
@@ -343,94 +461,39 @@ class ProviderConfig {
       ProviderModelFamily.anthropic => ProtocolPreset.customJson,
       _ => ProtocolPreset.openaiChatCompletions,
     };
-    final shouldKeepLegacyModelFallback = !forceGeminiNative &&
-        family != ProviderModelFamily.anthropic &&
-        !isOpenAiLikeBase;
+    final supportsNonChatCapabilities = family != ProviderModelFamily.anthropic;
 
     return ProviderCapabilityConfig(
       routes: {
         ProviderCapability.chat: CapabilityRouteConfig(
           preset: chatPreset,
           enabled: true,
-          baseUrlOverride: baseUrl,
         ),
         ProviderCapability.models: CapabilityRouteConfig(
           preset: modelPreset,
           enabled: true,
-          baseUrlOverride: baseUrl,
-          fallbackPreset: shouldKeepLegacyModelFallback
-              ? ProtocolPreset.geminiModels
-              : null,
         ),
         ProviderCapability.embeddings: CapabilityRouteConfig(
           preset: embeddingPreset,
-          enabled: family != ProviderModelFamily.anthropic,
-          baseUrlOverride: baseUrl,
+          enabled: supportsNonChatCapabilities,
         ),
         ProviderCapability.images: CapabilityRouteConfig(
           preset: ProtocolPreset.openaiImages,
-          enabled: family != ProviderModelFamily.anthropic,
-          baseUrlOverride: baseUrl,
+          enabled: supportsNonChatCapabilities,
         ),
         ProviderCapability.speech: CapabilityRouteConfig(
           preset: ProtocolPreset.openaiAudioSpeech,
-          enabled: family != ProviderModelFamily.anthropic,
-          baseUrlOverride: baseUrl,
+          enabled: supportsNonChatCapabilities,
         ),
         ProviderCapability.transcriptions: CapabilityRouteConfig(
           preset: audioChatPreset,
-          enabled: family != ProviderModelFamily.anthropic,
-          baseUrlOverride: baseUrl,
+          enabled: supportsNonChatCapabilities,
         ),
         ProviderCapability.translations: CapabilityRouteConfig(
           preset: audioChatPreset,
-          enabled: family != ProviderModelFamily.anthropic,
-          baseUrlOverride: baseUrl,
+          enabled: supportsNonChatCapabilities,
         ),
       },
-    );
-  }
-
-  static Map<String, ModelCapabilityOverride> _migrateLegacyModelOverrides(
-    Map<String, Map<String, dynamic>> modelSettings,
-  ) {
-    final result = <String, ModelCapabilityOverride>{};
-    for (final entry in modelSettings.entries) {
-      final route = _legacyChatRouteFromModelSettings(entry.value);
-      if (route == null) continue;
-      result[entry.key] = ModelCapabilityOverride(
-        routes: {ProviderCapability.chat: route},
-      );
-    }
-    return result;
-  }
-
-  static CapabilityRouteConfig? _legacyChatRouteFromModelSettings(
-    Map<String, dynamic> settings,
-  ) {
-    final rawTransport =
-        settings['_aurora_transport_mode'] ?? settings['_aurora_transport'];
-    final preset = switch (rawTransport?.toString().trim().toLowerCase()) {
-      'gemini_native' => ProtocolPreset.geminiNativeGenerateContent,
-      'openai_compat' => ProtocolPreset.openaiChatCompletions,
-      _ => null,
-    };
-    final baseUrlOverride =
-        settings['_aurora_transport_base_url']?.toString().trim();
-    final authOverride =
-        settings['_aurora_transport_api_key']?.toString().trim();
-    if (preset == null &&
-        (baseUrlOverride == null || baseUrlOverride.isEmpty) &&
-        (authOverride == null || authOverride.isEmpty)) {
-      return null;
-    }
-    return CapabilityRouteConfig(
-      preset: preset,
-      baseUrlOverride: baseUrlOverride == null || baseUrlOverride.isEmpty
-          ? null
-          : baseUrlOverride,
-      apiKeyOverride:
-          authOverride == null || authOverride.isEmpty ? null : authOverride,
     );
   }
 }
@@ -752,16 +815,27 @@ class SettingsState {
 
 const Object _settingsSentinel = Object();
 
-Map<String, dynamic> _encodeModelCapabilityOverrides(
-  Map<String, ModelCapabilityOverride> source,
-) {
-  final result = <String, dynamic>{};
-  source.forEach((key, value) {
-    if (!value.isEmpty) {
-      result[key] = value.toJson();
-    }
-  });
-  return result;
+ProviderConfigEntity _buildProviderEntity(ProviderConfig source) {
+  return ProviderConfigEntity()
+    ..providerId = source.id
+    ..name = source.name
+    ..color = source.color
+    ..apiKeys = source.apiKeys
+    ..currentKeyIndex = source.currentKeyIndex
+    ..autoRotateKeys = source.autoRotateKeys
+    ..baseUrl = source.baseUrl
+    ..providerProtocol = source.providerProtocol.wireName
+    ..isCustom = source.isCustom
+    ..customParametersJson = jsonEncode(source.customParameters)
+    ..modelSettingsJson = jsonEncode(source.modelSettings)
+    ..globalSettingsJson = jsonEncode(source.globalSettings)
+    ..capabilityRoutesJson = null
+    ..modelCapabilityOverridesJson = null
+    ..globalExcludeModels = source.globalExcludeModels
+    ..savedModels = source.models
+    ..lastSelectedModel = source.selectedModel
+    ..selectedChatModel = source.selectedChatModel
+    ..isEnabled = source.isEnabled;
 }
 
 int _clampInt(int value, int min, int max) {
@@ -1001,7 +1075,12 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     final providerEntities = await _storage.loadProviders();
     final appSettings = await _storage.loadAppSettings();
 
-    final newProviders = ProviderConfig.fromEntities(providerEntities);
+    final loadedProviders = providerEntities.isEmpty
+        ? const <_ProviderEntityLoadResult>[]
+        : providerEntities.map(ProviderConfig._loadFromEntity).toList();
+    final newProviders = loadedProviders.isEmpty
+        ? ProviderConfig.defaultProviders()
+        : loadedProviders.map((entry) => entry.config).toList();
 
     final rawActiveProviderId = appSettings?.activeProviderId ?? '';
     final normalizedActiveProviderId = _normalizeProviderId(
@@ -1115,6 +1194,14 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     debugPrint(
         'DEBUG: refreshSettings loaded - executionModel: ${appSettings?.executionModel}, executionProviderId: ${appSettings?.executionProviderId}');
 
+    final providersNeedingWriteBack = loadedProviders
+        .where((entry) => entry.needsWriteBack)
+        .map((entry) => entry.config)
+        .toList(growable: false);
+    for (final provider in providersNeedingWriteBack) {
+      await _storage.saveProvider(_buildProviderEntity(provider));
+    }
+
     await loadPresets();
   }
 
@@ -1159,6 +1246,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     int? currentKeyIndex,
     bool? autoRotateKeys,
     String? baseUrl,
+    ProviderProtocol? providerProtocol,
     Map<String, dynamic>? customParameters,
     Map<String, Map<String, dynamic>>? modelSettings,
     Map<String, dynamic>? globalSettings,
@@ -1179,6 +1267,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
           currentKeyIndex: currentKeyIndex,
           autoRotateKeys: autoRotateKeys,
           baseUrl: baseUrl,
+          providerProtocol: providerProtocol,
           customParameters: customParameters,
           modelSettings: modelSettings,
           globalSettings: globalSettings,
@@ -1194,29 +1283,21 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     }).toList();
     state = state.copyWith(providers: newProviders);
     final updatedProvider = newProviders.firstWhere((p) => p.id == id);
-    final entity = ProviderConfigEntity()
-      ..providerId = updatedProvider.id
-      ..name = updatedProvider.name
-      ..color = updatedProvider.color
-      ..apiKeys = updatedProvider.apiKeys
-      ..currentKeyIndex = updatedProvider.currentKeyIndex
-      ..autoRotateKeys = updatedProvider.autoRotateKeys
-      ..baseUrl = updatedProvider.baseUrl
-      ..isCustom = updatedProvider.isCustom
-      ..customParametersJson = jsonEncode(updatedProvider.customParameters)
-      ..modelSettingsJson = jsonEncode(updatedProvider.modelSettings)
-      ..globalSettingsJson = jsonEncode(updatedProvider.globalSettings)
-      ..capabilityRoutesJson =
-          jsonEncode(updatedProvider.capabilityConfig.toJson())
-      ..modelCapabilityOverridesJson = jsonEncode(
-          _encodeModelCapabilityOverrides(
-              updatedProvider.modelCapabilityOverrides))
-      ..globalExcludeModels = updatedProvider.globalExcludeModels
-      ..savedModels = updatedProvider.models
-      ..lastSelectedModel = updatedProvider.selectedModel
-      ..selectedChatModel = updatedProvider.selectedChatModel
-      ..isEnabled = updatedProvider.isEnabled;
-    await _storage.saveProvider(entity);
+    await _storage.saveProvider(_buildProviderEntity(updatedProvider));
+  }
+
+  Future<void> commitProviderBaseUrl({
+    required String id,
+    required String baseUrl,
+  }) async {
+    final normalizedBaseUrl = baseUrl.trim();
+    final inferredProtocol =
+        ProviderConfig._inferProviderProtocolFromBaseUrl(normalizedBaseUrl);
+    await updateProvider(
+      id: id,
+      baseUrl: normalizedBaseUrl,
+      providerProtocol: inferredProtocol,
+    );
   }
 
   Future<void> setSelectedModel(String model) async {
@@ -1401,54 +1482,6 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     }
 
     await updateProvider(id: providerId, modelSettings: newModelSettings);
-  }
-
-  Future<void> updateCapabilityRoute({
-    required String providerId,
-    required ProviderCapability capability,
-    required CapabilityRouteConfig route,
-  }) async {
-    final provider = state.providers.firstWhere((p) => p.id == providerId);
-    final routes = Map<ProviderCapability, CapabilityRouteConfig>.from(
-        provider.capabilityConfig.routes);
-    if (route.isEmpty) {
-      routes.remove(capability);
-    } else {
-      routes[capability] = route;
-    }
-    await updateProvider(
-      id: providerId,
-      capabilityConfig: ProviderCapabilityConfig(routes: routes),
-    );
-  }
-
-  Future<void> updateModelCapabilityRoute({
-    required String providerId,
-    required String modelName,
-    required ProviderCapability capability,
-    required CapabilityRouteConfig route,
-  }) async {
-    final provider = state.providers.firstWhere((p) => p.id == providerId);
-    final overrides = Map<String, ModelCapabilityOverride>.from(
-        provider.modelCapabilityOverrides);
-    final modelOverride =
-        overrides[modelName] ?? const ModelCapabilityOverride(routes: {});
-    final routes = Map<ProviderCapability, CapabilityRouteConfig>.from(
-        modelOverride.routes);
-    if (route.isEmpty) {
-      routes.remove(capability);
-    } else {
-      routes[capability] = route;
-    }
-    if (routes.isEmpty) {
-      overrides.remove(modelName);
-    } else {
-      overrides[modelName] = ModelCapabilityOverride(routes: routes);
-    }
-    await updateProvider(
-      id: providerId,
-      modelCapabilityOverrides: overrides,
-    );
   }
 
   Future<bool> fetchModels() async {

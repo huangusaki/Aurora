@@ -1764,6 +1764,24 @@ class AppLocalizationsZh extends AppLocalizations {
   String get apiBaseUrl => 'API Base URL';
 
   @override
+  String get providerProtocol => 'Provider 协议';
+
+  @override
+  String get providerProtocolOpenaiCompatible => 'OpenAI 兼容';
+
+  @override
+  String get providerProtocolGemini => 'Gemini';
+
+  @override
+  String get providerProtocolGeminiOpenai => 'Gemini OpenAI';
+
+  @override
+  String get providerProtocolGeminiNative => 'Gemini 原生';
+
+  @override
+  String get providerProtocolAnthropic => 'Anthropic';
+
+  @override
   String get apiKeys => 'API Keys';
 
   @override

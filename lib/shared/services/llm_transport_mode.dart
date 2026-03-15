@@ -1,4 +1,5 @@
 import '../../features/settings/presentation/settings_provider.dart';
+import 'model_capability_registry.dart';
 
 const String auroraTransportModeKey = '_aurora_transport_mode';
 const String auroraLegacyTransportModeKey = '_aurora_transport';
@@ -33,33 +34,20 @@ enum LlmTransportMode {
 
 LlmTransportMode resolveTransportModeFromSettings(
     Map<String, dynamic>? modelSettings) {
-  if (modelSettings == null || modelSettings.isEmpty) {
-    return LlmTransportMode.auto;
-  }
-  final raw = modelSettings[auroraTransportModeKey] ??
-      modelSettings[auroraLegacyTransportModeKey];
-  return LlmTransportMode.fromRaw(raw);
+  return LlmTransportMode.auto;
+}
+
+LlmTransportMode resolveProviderTransportMode(ProviderConfig provider) {
+  return provider.providerFamily == ProviderModelFamily.geminiNative
+      ? LlmTransportMode.geminiNative
+      : LlmTransportMode.openaiCompat;
 }
 
 LlmTransportMode resolveModelTransportMode({
   required ProviderConfig provider,
   required String modelName,
 }) {
-  return resolveTransportModeFromSettings(provider.modelSettings[modelName]);
-}
-
-Map<String, dynamic> withTransportMode(
-  Map<String, dynamic> source,
-  LlmTransportMode mode,
-) {
-  final next = Map<String, dynamic>.from(source);
-  next.remove(auroraLegacyTransportModeKey);
-  if (mode == LlmTransportMode.auto) {
-    next.remove(auroraTransportModeKey);
-  } else {
-    next[auroraTransportModeKey] = mode.wireName;
-  }
-  return next;
+  return resolveProviderTransportMode(provider);
 }
 
 class GeminiNativeToolsConfig {

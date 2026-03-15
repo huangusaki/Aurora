@@ -742,6 +742,12 @@
   "apiKeyPlaceholder": "sk-xxxxxxxx",
   "baseUrlPlaceholder": "https://api.openai.com/v1",
   "apiBaseUrl": "API Base URL",
+  "providerProtocol": "Provider 协议",
+  "providerProtocolOpenaiCompatible": "OpenAI 兼容",
+  "providerProtocolGemini": "Gemini",
+  "providerProtocolGeminiOpenai": "Gemini OpenAI",
+  "providerProtocolGeminiNative": "Gemini 原生",
+  "providerProtocolAnthropic": "Anthropic",
   "apiKeys": "API Keys",
   "apiKeysCount": "{count} 个 Key",
   "@apiKeysCount": {

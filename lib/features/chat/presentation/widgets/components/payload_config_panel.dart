@@ -1,6 +1,7 @@
 import 'package:aurora/features/settings/presentation/settings_provider.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 import 'package:aurora/shared/services/llm_transport_mode.dart';
+import 'package:aurora/shared/services/model_capability_registry.dart';
 import 'package:aurora/shared/widgets/aurora_dropdown.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:aurora/shared/riverpod_compat.dart';
@@ -278,12 +279,17 @@ class _PayloadConfigPanelState extends ConsumerState<PayloadConfigPanel> {
   Widget _buildReasoningConfig(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = FluentTheme.of(context);
+    final settings = ref.watch(settingsProvider);
+    final provider = settings.providers.firstWhere(
+      (item) => item.id == widget.providerId,
+      orElse: () => settings.activeProvider,
+    );
     final Map<String, dynamic> thinkingConfig = Map<String, dynamic>.from(
         _modelSettings['_aurora_thinking_config'] ?? {});
     final Map<String, dynamic> generationConfig = Map<String, dynamic>.from(
         _modelSettings['_aurora_generation_config'] ?? {});
-    final LlmTransportMode transportMode =
-        resolveTransportModeFromSettings(_modelSettings);
+    final showGeminiNativeTools =
+        provider.providerFamily == ProviderModelFamily.geminiNative;
     final nativeToolRaw = _modelSettings[auroraGeminiNativeToolsKey];
     final nativeToolMap = nativeToolRaw is Map
         ? Map<String, dynamic>.from(nativeToolRaw)
@@ -297,17 +303,6 @@ class _PayloadConfigPanelState extends ConsumerState<PayloadConfigPanel> {
 
     final bool thinkingEnabled = thinkingConfig['enabled'] == true;
     final String thinkingMode = thinkingConfig['mode']?.toString() ?? 'auto';
-
-    String transportModeLabel(LlmTransportMode mode) {
-      switch (mode) {
-        case LlmTransportMode.auto:
-          return l10n.transportModeAuto;
-        case LlmTransportMode.openaiCompat:
-          return l10n.transportModeOpenaiCompat;
-        case LlmTransportMode.geminiNative:
-          return l10n.transportModeGeminiNative;
-      }
-    }
 
     void saveNativeTools({
       bool? googleSearch,
@@ -327,30 +322,7 @@ class _PayloadConfigPanelState extends ConsumerState<PayloadConfigPanel> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // ── 传输模式 ──
-        _buildSectionCard(
-          title: l10n.transportMode,
-          icon: AuroraIcons.globe,
-          child: AuroraAdaptiveDropdownField<LlmTransportMode>(
-            label: l10n.transportModeType,
-            value: transportMode,
-            options: LlmTransportMode.values
-                .map((mode) => AuroraDropdownOption<LlmTransportMode>(
-                      value: mode,
-                      label: transportModeLabel(mode),
-                    ))
-                .toList(),
-            onChanged: (mode) {
-              if (mode == null) return;
-              final newSettings = withTransportMode(_modelSettings, mode);
-              _saveSettings(newSettings);
-            },
-          ),
-        ),
-
-        // ── Gemini 原生工具（仅当传输模式为 geminiNative 时显示）──
-        if (transportMode == LlmTransportMode.geminiNative) ...[
-          const SizedBox(height: 8),
+        if (showGeminiNativeTools) ...[
           _buildSectionCard(
             title: l10n.geminiNativeTools,
             icon: AuroraIcons.skills,
@@ -393,9 +365,8 @@ class _PayloadConfigPanelState extends ConsumerState<PayloadConfigPanel> {
               ],
             ),
           ),
+          const SizedBox(height: 8),
         ],
-
-        const SizedBox(height: 8),
 
         // ── 思考配置 ──
         _buildSectionCard(

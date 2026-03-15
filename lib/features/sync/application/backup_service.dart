@@ -279,12 +279,13 @@ class BackupService {
               currentKeyIndex: c.currentKeyIndex,
               autoRotateKeys: c.autoRotateKeys,
               baseUrl: c.baseUrl,
+              providerProtocol: c.providerProtocol,
               isCustom: c.isCustom,
               customParametersJson: c.customParametersJson,
               modelSettingsJson: c.modelSettingsJson,
               globalSettingsJson: c.globalSettingsJson,
-              capabilityRoutesJson: c.capabilityRoutesJson,
-              modelCapabilityOverridesJson: c.modelCapabilityOverridesJson,
+              capabilityRoutesJson: null,
+              modelCapabilityOverridesJson: null,
               globalExcludeModels: c.globalExcludeModels,
               savedModels: c.savedModels,
               lastSelectedModel: c.lastSelectedModel,
@@ -549,12 +550,13 @@ class BackupService {
             ..currentKeyIndex = c.currentKeyIndex
             ..autoRotateKeys = c.autoRotateKeys
             ..baseUrl = c.baseUrl
+            ..providerProtocol = c.providerProtocol
             ..isCustom = c.isCustom
             ..customParametersJson = c.customParametersJson
             ..modelSettingsJson = c.modelSettingsJson
             ..globalSettingsJson = c.globalSettingsJson
-            ..capabilityRoutesJson = c.capabilityRoutesJson
-            ..modelCapabilityOverridesJson = c.modelCapabilityOverridesJson
+            ..capabilityRoutesJson = null
+            ..modelCapabilityOverridesJson = null
             ..globalExcludeModels = c.globalExcludeModels
             ..savedModels = c.savedModels
             ..lastSelectedModel = c.lastSelectedModel
