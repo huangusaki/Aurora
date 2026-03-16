@@ -7,14 +7,29 @@ const Set<String> _supportedVisionImageMimes = {
   'image/webp',
 };
 
-String _normalizeBase64Data(String raw) {
-  var normalized = raw.replaceAll(RegExp(r'\s+'), '');
-  normalized = normalized.replaceAll('-', '+').replaceAll('_', '/');
-  final mod = normalized.length % 4;
-  if (mod != 0) {
-    normalized = normalized.padRight(normalized.length + (4 - mod), '=');
+class _AttachmentBinaryPayload {
+  final String mimeType;
+  final String base64Data;
+
+  const _AttachmentBinaryPayload({
+    required this.mimeType,
+    required this.base64Data,
+  });
+}
+
+Uint8List? _decodeImagePrefixBytes(
+  String payload, {
+  int maxPayloadChars = 512,
+}) {
+  if (payload.isEmpty) return null;
+  final sample = payload.length <= maxPayloadChars
+      ? payload
+      : payload.substring(0, maxPayloadChars);
+  try {
+    return decodeBase64Lenient(sample);
+  } catch (_) {
+    return null;
   }
-  return normalized;
 }
 
 String? _detectImageMime(Uint8List bytes) {
@@ -61,6 +76,48 @@ String? _detectImageMime(Uint8List bytes) {
   return null;
 }
 
+_AttachmentBinaryPayload _normalizeAttachmentBinaryPayload({
+  required String mimeType,
+  required Uint8List bytes,
+}) {
+  if (!mimeType.startsWith('image/')) {
+    return _AttachmentBinaryPayload(
+      mimeType: mimeType,
+      base64Data: base64Encode(bytes),
+    );
+  }
+
+  final detectedMime = _detectImageMime(bytes);
+  if (detectedMime != null &&
+      _supportedVisionImageMimes.contains(detectedMime)) {
+    return _AttachmentBinaryPayload(
+      mimeType: detectedMime,
+      base64Data: base64Encode(bytes),
+    );
+  }
+
+  final decoded = img.decodeImage(bytes);
+  if (decoded == null) {
+    return _AttachmentBinaryPayload(
+      mimeType: detectedMime ?? mimeType,
+      base64Data: base64Encode(bytes),
+    );
+  }
+
+  final transcoded = img.encodeJpg(decoded, quality: 90);
+  if (transcoded.isEmpty) {
+    return _AttachmentBinaryPayload(
+      mimeType: detectedMime ?? mimeType,
+      base64Data: base64Encode(bytes),
+    );
+  }
+
+  return _AttachmentBinaryPayload(
+    mimeType: 'image/jpeg',
+    base64Data: base64Encode(transcoded),
+  );
+}
+
 String? _normalizeImageDataUrl(String url) {
   if (!url.startsWith('data:')) return url;
   final commaIndex = url.indexOf(',');
@@ -74,7 +131,20 @@ String? _normalizeImageDataUrl(String url) {
   final declaredMime = (headerMatch.group(1) ?? '').toLowerCase();
   if (!declaredMime.startsWith('image/')) return url;
 
-  final payload = _normalizeBase64Data(rawPayload);
+  final payload = normalizeBase64Payload(rawPayload);
+  if (_supportedVisionImageMimes.contains(declaredMime)) {
+    final prefixBytes = _decodeImagePrefixBytes(payload);
+    if (prefixBytes != null && prefixBytes.isNotEmpty) {
+      final detectedMime = _detectImageMime(prefixBytes);
+      if (detectedMime == null || detectedMime == declaredMime) {
+        return 'data:$declaredMime;base64,$payload';
+      }
+      if (_supportedVisionImageMimes.contains(detectedMime)) {
+        return 'data:$detectedMime;base64,$payload';
+      }
+    }
+  }
+
   Uint8List bytes;
   try {
     bytes = Uint8List.fromList(base64Decode(payload));
@@ -83,17 +153,11 @@ String? _normalizeImageDataUrl(String url) {
   }
   if (bytes.isEmpty) return null;
 
-  final detectedMime = _detectImageMime(bytes);
-  if (detectedMime != null &&
-      _supportedVisionImageMimes.contains(detectedMime)) {
-    return 'data:$detectedMime;base64,${base64Encode(bytes)}';
-  }
-
-  final decoded = img.decodeImage(bytes);
-  if (decoded == null) return null;
-  final transcoded = img.encodeJpg(decoded, quality: 90);
-  if (transcoded.isEmpty) return null;
-  return 'data:image/jpeg;base64,${base64Encode(transcoded)}';
+  final normalized = _normalizeAttachmentBinaryPayload(
+    mimeType: declaredMime,
+    bytes: bytes,
+  );
+  return 'data:${normalized.mimeType};base64,${normalized.base64Data}';
 }
 
 List<Map<String, dynamic>> _sanitizeOutgoingImageMessages(

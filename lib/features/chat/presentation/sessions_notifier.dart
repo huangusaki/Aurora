@@ -12,6 +12,8 @@ class SessionsNotifier extends StateNotifier<SessionsState> {
 
   final ChatStorage _storage;
   final Ref _ref;
+  Future<void>? _pendingLoadSessions;
+  List<String> _sessionOrder = const [];
   SessionsNotifier(this._ref, this._storage) : super(SessionsState()) {
     _init();
   }
@@ -162,13 +164,15 @@ class SessionsNotifier extends StateNotifier<SessionsState> {
     }
   }
 
-  Future<void> loadSessions() async {
-    final sw = Stopwatch()..start();
-    state = SessionsState(sessions: state.sessions, isLoading: true);
-    final sessions = await _storage.loadSessions();
-    final order = await _storage.loadSessionOrder();
-    if (order.isNotEmpty) {
-      final orderMap = {for (var i = 0; i < order.length; i++) order[i]: i};
+  void _sortSessionsInPlace(
+    List<SessionEntity> sessions, {
+    List<String>? order,
+  }) {
+    final effectiveOrder = order ?? _sessionOrder;
+    if (effectiveOrder.isNotEmpty) {
+      final orderMap = {
+        for (var i = 0; i < effectiveOrder.length; i++) effectiveOrder[i]: i,
+      };
       sessions.sort((a, b) {
         final idxA = orderMap[a.sessionId];
         final idxB = orderMap[b.sessionId];
@@ -177,7 +181,54 @@ class SessionsNotifier extends StateNotifier<SessionsState> {
         if (idxB != null) return -1;
         return b.lastMessageTime.compareTo(a.lastMessageTime);
       });
+      return;
     }
+    sessions.sort((a, b) => b.lastMessageTime.compareTo(a.lastMessageTime));
+  }
+
+  SessionEntity _cloneSession(SessionEntity source) {
+    return SessionEntity()
+      ..id = source.id
+      ..sessionId = source.sessionId
+      ..parentSessionId = source.parentSessionId
+      ..title = source.title
+      ..lastMessageTime = source.lastMessageTime
+      ..snippet = source.snippet
+      ..topicId = source.topicId
+      ..presetId = source.presetId
+      ..totalTokens = source.totalTokens;
+  }
+
+  void touchSessionLastMessageTime(String sessionId, DateTime timestamp) {
+    final index = state.sessions.indexWhere((s) => s.sessionId == sessionId);
+    if (index == -1) return;
+    final sessions = List<SessionEntity>.from(state.sessions);
+    final updated = _cloneSession(sessions[index])..lastMessageTime = timestamp;
+    sessions[index] = updated;
+    _sortSessionsInPlace(sessions);
+    state = SessionsState(sessions: sessions, isLoading: false);
+  }
+
+  Future<void> loadSessions() {
+    final pending = _pendingLoadSessions;
+    if (pending != null) return pending;
+    late final Future<void> tracked;
+    tracked = _loadSessionsInternal().whenComplete(() {
+      if (identical(_pendingLoadSessions, tracked)) {
+        _pendingLoadSessions = null;
+      }
+    });
+    _pendingLoadSessions = tracked;
+    return tracked;
+  }
+
+  Future<void> _loadSessionsInternal() async {
+    final sw = Stopwatch()..start();
+    state = SessionsState(sessions: state.sessions, isLoading: true);
+    final sessions = await _storage.loadSessions();
+    final order = await _storage.loadSessionOrder();
+    _sessionOrder = order;
+    _sortSessionsInPlace(sessions, order: order);
     _cleanupCollapsedSessionIds(sessions);
     state = SessionsState(sessions: sessions, isLoading: false);
     sw.stop();
@@ -194,6 +245,7 @@ class SessionsNotifier extends StateNotifier<SessionsState> {
     items.insert(newIndex, item);
     state = SessionsState(sessions: items, isLoading: false);
     final newOrder = items.map((s) => s.sessionId).toList();
+    _sessionOrder = newOrder;
     await _storage.saveSessionOrder(newOrder);
   }
 
@@ -220,6 +272,7 @@ class SessionsNotifier extends StateNotifier<SessionsState> {
 
     state = SessionsState(sessions: items, isLoading: false);
     final newOrder = items.map((s) => s.sessionId).toList();
+    _sessionOrder = newOrder;
     await _storage.saveSessionOrder(newOrder);
   }
 

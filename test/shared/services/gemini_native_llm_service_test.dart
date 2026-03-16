@@ -287,6 +287,70 @@ void main() {
       );
     });
 
+    test('collapses inline image payloads in request logs', () async {
+      final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      final sub = server.listen((request) async {
+        request.response.statusCode = 200;
+        request.response.headers.contentType = ContentType.json;
+        request.response.write(jsonEncode({
+          'candidates': [
+            {
+              'content': {
+                'parts': [
+                  {'text': 'ok'},
+                ],
+              },
+              'finishReason': 'STOP',
+            },
+          ],
+        }));
+        await request.response.close();
+      });
+      addTearDown(() async {
+        await sub.cancel();
+        await server.close(force: true);
+      });
+
+      final received = <AppLogEntry>[];
+      final removeListener = AppLogger.addListener(received.add);
+      addTearDown(removeListener);
+
+      final settings = SettingsState(
+        providers: [
+          ProviderConfig(
+            id: 'gemini-proxy',
+            name: 'Gemini Proxy',
+            apiKeys: const ['proxy-key'],
+            baseUrl: 'http://${server.address.host}:${server.port}',
+            selectedModel: 'gemini-3.1-flash-image-preview',
+          ),
+        ],
+        activeProviderId: 'gemini-proxy',
+        viewingProviderId: 'gemini-proxy',
+        language: 'zh',
+      );
+      final service = GeminiNativeLlmService(settings);
+      final base64Payload = 'A' * 2048;
+
+      await service.getResponse([
+        Message.user('describe image').copyWith(
+          images: ['data:image/png;base64,$base64Payload'],
+        ),
+      ]);
+
+      final requestEntry = received.lastWhere(
+        (entry) => entry.channel == 'LLM' && entry.category == 'REQUEST',
+      );
+      final details = _decodeLogDetails(requestEntry);
+      final contents = details['contents'] as List<dynamic>;
+      final parts =
+          (contents.single as Map<String, dynamic>)['parts'] as List<dynamic>;
+      final inlineData = (parts[1] as Map<String, dynamic>)['inlineData']
+          as Map<String, dynamic>;
+
+      expect(inlineData['data'], '[BASE64_OMITTED]');
+    });
+
     test('maps image include_thoughts into generationConfig.thinkingConfig',
         () async {
       final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);

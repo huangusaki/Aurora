@@ -32,8 +32,6 @@ import 'package:aurora/shared/services/tool_manager.dart';
 import 'package:aurora/shared/services/worker_service.dart';
 import 'package:aurora/features/knowledge/presentation/knowledge_provider.dart';
 import 'package:aurora/features/knowledge/domain/knowledge_models.dart';
-import 'package:fluent_ui/fluent_ui.dart'
-    hide Colors, Padding, StateSetter, ListBody;
 import 'package:uuid/uuid.dart';
 import 'package:aurora/core/error/app_error_type.dart';
 import 'package:aurora/core/error/app_exception.dart';

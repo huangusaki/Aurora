@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'dart:math' show max;
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -13,6 +12,8 @@ import 'llm_service.dart';
 import '../../core/error/app_exception.dart';
 import '../../core/error/app_error_type.dart';
 import '../utils/app_logger.dart';
+import '../utils/base64_utils.dart';
+import '../utils/file_snapshot_cache.dart';
 import '../utils/llm_stream_log_accumulator.dart';
 import 'capability_route_resolver.dart';
 import 'llm_transport_mode.dart';
@@ -25,6 +26,8 @@ class OpenAILLMService implements LLMService {
   final Dio _dio;
   final SettingsState _settings;
   final Map<String, String> _imageThoughtSignatureByUrl = {};
+  final FileSnapshotCache<List<Map<String, dynamic>>> _attachmentPartsCache =
+      FileSnapshotCache<List<Map<String, dynamic>>>(maxEntries: 32);
   static final RegExp _markdownDataImageRegExp = RegExp(
     r'!\[[^\]]*]\(\s*<?(data:image/[^)>]+)>?\s*\)',
     caseSensitive: false,
@@ -230,16 +233,14 @@ class OpenAILLMService implements LLMService {
     }
     if (data is Map) {
       return data.map((k, v) {
-        if (k == 'b64_json' && v is String && v.length > 200) {
-          return MapEntry(
-              k, '${v.substring(0, 50)}...[TRUNCATED ${v.length} chars]');
+        if (k == 'b64_json' && v is String) {
+          return MapEntry(k, '[BASE64_OMITTED]');
         }
-        if (k == 'url' &&
-            v is String &&
-            v.startsWith('data:') &&
-            v.length > 200) {
-          return MapEntry(
-              k, '${v.substring(0, 50)}...[TRUNCATED ${v.length} chars]');
+        if (k == 'data' && v is String && _looksLikeBase64ForLog(v)) {
+          return MapEntry(k, '[BASE64_OMITTED]');
+        }
+        if (k == 'url' && v is String && v.startsWith('data:')) {
+          return MapEntry(k, '[DATA_URL_OMITTED]');
         }
         return MapEntry(
           k,
@@ -251,14 +252,24 @@ class OpenAILLMService implements LLMService {
           .map((i) => _sanitizeForLog(i, preserveLongText: preserveLongText))
           .toList();
     } else if (data is String) {
+      if (data.startsWith('data:')) {
+        return '[DATA_URL_OMITTED]';
+      }
+      if (_looksLikeBase64ForLog(data)) {
+        return '[BASE64_OMITTED]';
+      }
       if (!preserveLongText && data.length > 800) {
         return '${data.substring(0, 200)}...[TRUNCATED ${data.length} chars]';
       }
-      if (data.startsWith('data:') && data.length > 200) {
-        return '${data.substring(0, 50)}...[TRUNCATED ${data.length} chars]';
-      }
     }
     return data;
+  }
+
+  bool _looksLikeBase64ForLog(String value) {
+    final normalized = value.trim();
+    if (normalized.length < 128) return false;
+    if (normalized.length % 4 != 0) return false;
+    return RegExp(r'^[A-Za-z0-9+/_=-]+$').hasMatch(normalized);
   }
 
   void _logEvent(String category, dynamic payload, {String level = 'DEBUG'}) {
@@ -877,6 +888,125 @@ class OpenAILLMService implements LLMService {
     return 'application/octet-stream';
   }
 
+  Map<String, dynamic> _buildBinaryAttachmentPart({
+    required String mimeType,
+    required String base64Data,
+  }) {
+    return {
+      'type': 'image_url',
+      'image_url': {
+        'url': 'data:$mimeType;base64,$base64Data',
+      },
+    };
+  }
+
+  Map<String, dynamic> _buildAttachmentPlaceholderPart({
+    required String fileName,
+    required String mimeType,
+  }) {
+    return {
+      'type': 'text',
+      'text': '[Attached File: $fileName ($mimeType)]',
+    };
+  }
+
+  Map<String, dynamic> _buildAttachmentLoadErrorPart(String path) {
+    return {
+      'type': 'text',
+      'text': '[Failed to load file: $path]',
+    };
+  }
+
+  Map<String, dynamic> _buildTextAttachmentPart({
+    required String fileName,
+    required String textContent,
+  }) {
+    return {
+      'type': 'text',
+      'text': '--- File: $fileName ---\n$textContent\n--- End File ---',
+    };
+  }
+
+  Future<List<Map<String, dynamic>>?> _loadCachedAttachmentParts(
+    String path,
+  ) async {
+    return _attachmentPartsCache.getOrLoad(path, (snapshot) async {
+      final mimeType = _getMimeType(snapshot.path);
+      final fileName = snapshot.fileName;
+
+      if (mimeType.startsWith('text/') ||
+          mimeType == 'application/json' ||
+          mimeType == 'application/xml') {
+        try {
+          final textContent = await snapshot.file.readAsString();
+          return [
+            _buildTextAttachmentPart(
+              fileName: fileName,
+              textContent: textContent,
+            ),
+          ];
+        } catch (_) {
+          return [
+            _buildAttachmentPlaceholderPart(
+              fileName: fileName,
+              mimeType: mimeType,
+            ),
+          ];
+        }
+      }
+
+      final bytes = await snapshot.file.readAsBytes();
+      final normalizedBinary = _normalizeAttachmentBinaryPayload(
+        mimeType: mimeType,
+        bytes: bytes,
+      );
+
+      if (mimeType.startsWith('image/') ||
+          mimeType.startsWith('audio/') ||
+          mimeType.startsWith('video/') ||
+          mimeType == 'application/pdf') {
+        return [
+          _buildBinaryAttachmentPart(
+            mimeType: normalizedBinary.mimeType,
+            base64Data: normalizedBinary.base64Data,
+          ),
+        ];
+      }
+
+      if (mimeType.endsWith('officedocument.wordprocessingml.document') ||
+          mimeType == 'application/msword') {
+        final docxParts = _extractDocxContent(bytes, fileName);
+        if (docxParts.isNotEmpty) {
+          return docxParts;
+        }
+        return [
+          _buildBinaryAttachmentPart(
+            mimeType: normalizedBinary.mimeType,
+            base64Data: normalizedBinary.base64Data,
+          ),
+        ];
+      }
+
+      if (mimeType.contains('officedocument') ||
+          mimeType == 'application/vnd.ms-excel' ||
+          mimeType == 'application/vnd.ms-powerpoint') {
+        return [
+          _buildBinaryAttachmentPart(
+            mimeType: normalizedBinary.mimeType,
+            base64Data: normalizedBinary.base64Data,
+          ),
+        ];
+      }
+
+      return [
+        _buildAttachmentPlaceholderPart(
+          fileName: fileName,
+          mimeType: mimeType,
+        ),
+      ];
+    });
+  }
+
   Future<List<Map<String, dynamic>>> _buildApiMessages(
       List<Message> messages) async {
     final List<Map<String, dynamic>> result = [];
@@ -949,85 +1079,14 @@ class OpenAILLMService implements LLMService {
         }
         for (final path in m.attachments) {
           try {
-            final file = File(path);
-            if (await file.exists()) {
-              final bytes = await file.readAsBytes();
-              final base64Data = base64Encode(bytes);
-              final mimeType = _getMimeType(path);
-
-              if (mimeType.startsWith('image/') ||
-                  mimeType.startsWith('audio/') ||
-                  mimeType.startsWith('video/') ||
-                  mimeType == 'application/pdf') {
-                // 由于反代层 (CLIProxyAPI) 目前仅处理 'image_url' 类型并从中提取 MIME，
-                // 我们必须统一使用该字段以确保音频/视频/PDF能被正确转发给 Gemini。
-                contentList.add({
-                  'type': 'image_url',
-                  'image_url': {
-                    'url': 'data:$mimeType;base64,$base64Data',
-                  },
-                });
-              } else if (mimeType
-                      .endsWith('officedocument.wordprocessingml.document') ||
-                  mimeType == 'application/msword') {
-                // Perform deep extraction (Text + Images) for Word documents
-                final docxParts = _extractDocxContent(
-                    bytes, path.split(Platform.pathSeparator).last);
-                if (docxParts.isNotEmpty) {
-                  contentList.addAll(docxParts);
-                } else {
-                  // Fallback to binary transmission via image_url (the only multimodal channel we have)
-                  contentList.add({
-                    'type': 'image_url',
-                    'image_url': {
-                      'url': 'data:$mimeType;base64,$base64Data',
-                    },
-                  });
-                }
-              } else if (mimeType.contains('officedocument') ||
-                  mimeType == 'application/vnd.ms-excel' ||
-                  mimeType == 'application/vnd.ms-powerpoint' ||
-                  mimeType == 'application/vnd.ms-excel') {
-                // Other Office documents: send as binary via image_url and hope for the best
-                contentList.add({
-                  'type': 'image_url',
-                  'image_url': {
-                    'url': 'data:$mimeType;base64,$base64Data',
-                  },
-                });
-              } else if (mimeType.startsWith('text/') ||
-                  mimeType == 'application/json' ||
-                  mimeType == 'application/xml') {
-                try {
-                  final textContent = await file.readAsString();
-                  contentList.add({
-                    'type': 'text',
-                    'text':
-                        '--- File: ${path.split(Platform.pathSeparator).last} ---\n$textContent\n--- End File ---',
-                  });
-                } catch (e) {
-                  // Fallback to placeholder if read fails (e.g. encoding issue)
-                  contentList.add({
-                    'type': 'text',
-                    'text':
-                        '[Attached File: ${path.split(Platform.pathSeparator).last} ($mimeType)]',
-                  });
-                }
-              } else {
-                // Fallback for other documents: send as text or metadata if possible
-                // For now, just a placeholder indicator
-                contentList.add({
-                  'type': 'text',
-                  'text':
-                      '[Attached File: ${path.split(Platform.pathSeparator).last} ($mimeType)]',
-                });
-              }
+            final cachedParts = await _loadCachedAttachmentParts(path);
+            if (cachedParts == null || cachedParts.isEmpty) {
+              contentList.add(_buildAttachmentLoadErrorPart(path));
+              continue;
             }
+            contentList.addAll(cloneStructuredMapList(cachedParts));
           } catch (e) {
-            contentList.add({
-              'type': 'text',
-              'text': '[Failed to load file: $path]',
-            });
+            contentList.add(_buildAttachmentLoadErrorPart(path));
           }
         }
         if (m.images.isNotEmpty) {

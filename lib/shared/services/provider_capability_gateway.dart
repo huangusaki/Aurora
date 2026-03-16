@@ -1001,13 +1001,23 @@ class ProviderCapabilityGateway {
   }
 
   String _truncateLoggedString(String value, {int maxLength = 800}) {
-    if (value.startsWith('data:') && value.length > 200) {
-      return '${value.substring(0, 64)}...[TRUNCATED ${value.length} chars]';
+    if (value.startsWith('data:')) {
+      return '[DATA_URL_OMITTED]';
+    }
+    if (_looksLikeBase64ForLog(value)) {
+      return '[BASE64_OMITTED]';
     }
     if (value.length <= maxLength) {
       return value;
     }
     return '${value.substring(0, 200)}...[TRUNCATED ${value.length} chars]';
+  }
+
+  bool _looksLikeBase64ForLog(String value) {
+    final normalized = value.trim();
+    if (normalized.length < 128) return false;
+    if (normalized.length % 4 != 0) return false;
+    return RegExp(r'^[A-Za-z0-9+/_=-]+$').hasMatch(normalized);
   }
 
   Map<String, dynamic> _buildOpenAiCompatibleAudioTextBody({

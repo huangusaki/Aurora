@@ -9,7 +9,6 @@ class ChatNotifier extends StateNotifier<ChatState> {
   String _currentGenerationId = '';
   CancelToken? _currentCancelToken;
   double? _savedScrollOffset;
-  final List<VoidCallback> _listeners = [];
 
   static const Duration _streamUiFlushInterval =
       Duration(milliseconds: 60); // ~16fps (good enough for streaming text)
@@ -30,20 +29,6 @@ class ChatNotifier extends StateNotifier<ChatState> {
       _loadHistory();
     }
   }
-  void addLocalListener(VoidCallback listener) {
-    _listeners.add(listener);
-  }
-
-  void removeLocalListener(VoidCallback listener) {
-    _listeners.remove(listener);
-  }
-
-  void _notifyLocalListeners() {
-    for (final listener in _listeners) {
-      listener();
-    }
-  }
-
   bool _isDisposed = false;
   @override
   bool get mounted => !_isDisposed;
@@ -62,7 +47,6 @@ class ChatNotifier extends StateNotifier<ChatState> {
     if (_isDisposed) return;
     super.state = value;
     onStateChanged?.call();
-    _notifyLocalListeners();
   }
 
   @override
@@ -94,6 +78,7 @@ class ChatNotifier extends StateNotifier<ChatState> {
   }
 
   void abortGeneration() {
+    final hadActiveGeneration = _currentGenerationId.isNotEmpty;
     if (_currentGenerationId.isNotEmpty) {
       AppLogger.warn(
         'CHAT',
@@ -109,7 +94,9 @@ class ChatNotifier extends StateNotifier<ChatState> {
     _currentCancelToken?.cancel('User aborted generation');
     _currentCancelToken = null;
     _flushPendingTrailingMessage();
-    state = state.copyWith(isLoading: false, isStreaming: false);
+    if (state.isLoading || state.isStreaming || hadActiveGeneration) {
+      state = state.copyWith(isLoading: false, isStreaming: false);
+    }
   }
 
   void markAsRead() {
@@ -164,10 +151,8 @@ class ChatNotifier extends StateNotifier<ChatState> {
     if (text != null && text.trim().isEmpty && attachments.isEmpty) {
       return _sessionId;
     }
-
     final generationId = const Uuid().v4();
     _startGeneration(generationId);
-
     final sessionPreparation = await _prepareSessionForMessage(text);
     if (sessionPreparation.earlyReturnSessionId != null) {
       return sessionPreparation.earlyReturnSessionId!;
@@ -194,12 +179,17 @@ class ChatNotifier extends StateNotifier<ChatState> {
     }
 
     onStateChanged?.call();
-    state = state.copyWith(
-      isLoading: true,
-      isStreaming: false,
-      error: null,
-      hasUnreadResponse: false,
-    );
+    if (!state.isLoading ||
+        state.isStreaming ||
+        state.error != null ||
+        state.hasUnreadResponse) {
+      state = state.copyWith(
+        isLoading: true,
+        isStreaming: false,
+        error: null,
+        hasUnreadResponse: false,
+      );
+    }
     final startSaveIndex = state.messages.length;
     final startTime = DateTime.now();
     _ChatRequestContext? requestContext;
@@ -833,15 +823,17 @@ class ChatNotifier extends StateNotifier<ChatState> {
   }
 
   Future<void> regenerateResponse(String rootMessageId) async {
-    final index = state.messages.indexWhere((m) => m.id == rootMessageId);
+    final initialMessages = List<Message>.from(state.messages);
+    final index = initialMessages.indexWhere((m) => m.id == rootMessageId);
     if (index == -1) return;
+
     abortGeneration();
     await Future.delayed(const Duration(milliseconds: 100));
     final rootMsg = state.messages[index];
     List<Message> historyToKeep;
 
     // Determine the user message to update
-    Message? userMsgToUpdate;
+    late final Message userMsgToUpdate;
 
     if (rootMsg.isUser) {
       historyToKeep = state.messages.sublist(0, index + 1);
@@ -853,28 +845,33 @@ class ChatNotifier extends StateNotifier<ChatState> {
       userMsgToUpdate = historyToKeep.last;
     }
 
-    if (userMsgToUpdate.isUser) {
-      final updatedUserMsg =
-          userMsgToUpdate.copyWith(timestamp: DateTime.now());
-      await _storage.updateMessage(updatedUserMsg);
-      historyToKeep[historyToKeep.length - 1] = updatedUserMsg;
-      _ref.read(sessionsProvider.notifier).loadSessions();
+    final oldMessages = List<Message>.from(state.messages);
+
+    if (userMsgToUpdate.isUser && _sessionId != 'translation') {
+      final retryTimestamp = DateTime.now();
+      await _storage.updateSessionLastMessageTime(_sessionId, retryTimestamp);
+      _ref
+          .read(sessionsProvider.notifier)
+          .touchSessionLastMessageTime(_sessionId, retryTimestamp);
     }
 
-    final oldMessages = state.messages;
-    state = state.copyWith(
+    final shouldUpdateRetryState = !listEquals(state.messages, historyToKeep) ||
+        state.isStreaming ||
+        state.error != null ||
+        !state.isAutoScrollEnabled;
+    if (shouldUpdateRetryState) {
+      state = state.copyWith(
         messages: historyToKeep,
-        isLoading: true,
+        isLoading: false,
         isStreaming: false,
         error: null,
-        isAutoScrollEnabled: true);
+        isAutoScrollEnabled: true,
+      );
+    }
     final idsToDelete =
         oldMessages.skip(historyToKeep.length).map((m) => m.id).toList();
     for (final mid in idsToDelete) {
       await _storage.deleteMessage(mid, sessionId: _sessionId);
-    }
-    if (_sessionId != 'translation') {
-      await _ref.read(sessionsProvider.notifier).loadSessions();
     }
     await sendMessage(null);
   }

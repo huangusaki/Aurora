@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:dio/dio.dart';
 
@@ -9,6 +8,7 @@ import '../../features/chat/domain/message.dart';
 import '../../features/settings/domain/provider_route_config.dart';
 import '../../features/settings/presentation/settings_provider.dart';
 import '../utils/app_logger.dart';
+import '../utils/file_snapshot_cache.dart';
 import '../utils/llm_stream_log_accumulator.dart';
 import 'capability_route_resolver.dart';
 import 'gemini_native_endpoint.dart';
@@ -17,6 +17,7 @@ import 'llm_transport_mode.dart';
 
 final RegExp _gemini3ImageModelPattern =
     RegExp(r'gemini.*3.*image.*', caseSensitive: false);
+const String _omittedBase64LogValue = '[BASE64_OMITTED]';
 
 String _normalizeGeminiModelName(String modelName) {
   return modelName
@@ -36,6 +37,8 @@ bool _isGemini3ImageModel(String modelName) {
 class GeminiNativeLlmService implements LLMService {
   final Dio _dio;
   final SettingsState _settings;
+  final FileSnapshotCache<List<Map<String, dynamic>>> _attachmentPartsCache =
+      FileSnapshotCache<List<Map<String, dynamic>>>(maxEntries: 32);
 
   GeminiNativeLlmService(this._settings)
       : _dio = Dio(
@@ -160,8 +163,43 @@ class GeminiNativeLlmService implements LLMService {
     return provider.apiKey;
   }
 
+  Object? _summarizePayloadForLog(
+    Object? value, {
+    String? keyHint,
+  }) {
+    if (value is Map) {
+      final summarized = <String, dynamic>{};
+      value.forEach((key, child) {
+        final textKey = key.toString();
+        summarized[textKey] = _summarizePayloadForLog(
+          child,
+          keyHint: textKey,
+        );
+      });
+      return summarized;
+    }
+    if (value is List) {
+      return value
+          .map((item) => _summarizePayloadForLog(item, keyHint: keyHint))
+          .toList();
+    }
+    if (value is String) {
+      final lowerKey = keyHint?.trim().toLowerCase();
+      if (lowerKey == 'data') {
+        return _omittedBase64LogValue;
+      }
+      if (lowerKey == 'text' && value.length > 8192) {
+        return '${value.substring(0, 512)}...[TRUNCATED ${value.length} chars]';
+      }
+    }
+    return value;
+  }
+
   void _logRequest(Uri uri, Map<String, dynamic> data) {
-    AppLogger.llmRequest(url: uri.toString(), payload: data);
+    AppLogger.llmRequest(
+      url: uri.toString(),
+      payload: _summarizePayloadForLog(data),
+    );
   }
 
   void _logResponse(Object? payload) {
@@ -369,50 +407,59 @@ class GeminiNativeLlmService implements LLMService {
         parts.add(part);
       }
     }
-
     return parts;
   }
 
   Future<List<Map<String, dynamic>>> _buildPartsFromAttachment(
     String attachmentPath,
   ) async {
-    final parts = <Map<String, dynamic>>[];
-    final file = File(attachmentPath);
-    final filename = attachmentPath.split(Platform.pathSeparator).last;
-    if (!await file.exists()) {
-      parts.add({'text': '[Failed to load file: $attachmentPath]'});
-      return parts;
-    }
-
-    final mimeType = _getMimeType(attachmentPath);
-    if (mimeType.startsWith('text/') ||
-        mimeType == 'application/json' ||
-        mimeType == 'application/xml') {
-      try {
-        final textContent = await file.readAsString();
-        parts.add({
-          'text': '--- File: $filename ---\n$textContent\n--- End File ---',
-        });
-        return parts;
-      } catch (_) {
-        parts.add({'text': '[Attached File: $filename ($mimeType)]'});
-        return parts;
-      }
-    }
-
-    try {
-      final bytes = await file.readAsBytes();
-      parts.add({
-        'inlineData': {
-          'mimeType': mimeType,
-          'data': base64Encode(bytes),
+    final cachedParts = await _attachmentPartsCache.getOrLoad(
+      attachmentPath,
+      (snapshot) async {
+        final mimeType = _getMimeType(snapshot.path);
+        final filename = snapshot.fileName;
+        if (mimeType.startsWith('text/') ||
+            mimeType == 'application/json' ||
+            mimeType == 'application/xml') {
+          try {
+            final textContent = await snapshot.file.readAsString();
+            return [
+              {
+                'text':
+                    '--- File: $filename ---\n$textContent\n--- End File ---',
+              }
+            ];
+          } catch (_) {
+            return [
+              {'text': '[Attached File: $filename ($mimeType)]'}
+            ];
+          }
         }
-      });
-      return parts;
-    } catch (_) {
-      parts.add({'text': '[Attached File: $filename ($mimeType)]'});
-      return parts;
+
+        try {
+          final bytes = await snapshot.file.readAsBytes();
+          return [
+            {
+              'inlineData': {
+                'mimeType': mimeType,
+                'data': base64Encode(bytes),
+              }
+            }
+          ];
+        } catch (_) {
+          return [
+            {'text': '[Attached File: $filename ($mimeType)]'}
+          ];
+        }
+      },
+    );
+
+    if (cachedParts == null || cachedParts.isEmpty) {
+      return [
+        {'text': '[Failed to load file: $attachmentPath]'}
+      ];
     }
+    return cloneStructuredMapList(cachedParts);
   }
 
   Map<String, dynamic>? _buildImagePart(String image) {

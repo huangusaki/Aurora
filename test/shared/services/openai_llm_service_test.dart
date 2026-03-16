@@ -525,6 +525,82 @@ void main() {
       expect(payload.containsKey('extra_body'), isFalse);
     });
 
+    test('keeps supported image attachments as png data urls', () async {
+      final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      final payloadCompleter = Completer<Map<String, dynamic>>();
+      final sub = server.listen((request) async {
+        final raw = await utf8.decoder.bind(request).join();
+        final payload = jsonDecode(raw) as Map<String, dynamic>;
+        if (!payloadCompleter.isCompleted) {
+          payloadCompleter.complete(payload);
+        }
+
+        request.response.statusCode = 200;
+        request.response.headers.contentType = ContentType.json;
+        request.response.write(jsonEncode({
+          'choices': [
+            {
+              'message': {'content': 'ok'}
+            }
+          ]
+        }));
+        await request.response.close();
+      });
+      addTearDown(() async {
+        await sub.cancel();
+        await server.close(force: true);
+      });
+
+      final tempDir =
+          await Directory.systemTemp.createTemp('aurora-openai-test-');
+      addTearDown(() async {
+        if (await tempDir.exists()) {
+          await tempDir.delete(recursive: true);
+        }
+      });
+
+      const pngBase64 =
+          'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO7Z7nQAAAAASUVORK5CYII=';
+      final imageFile =
+          File('${tempDir.path}${Platform.pathSeparator}tiny.png');
+      await imageFile.writeAsBytes(base64Decode(pngBase64));
+
+      final settings = SettingsState(
+        providers: [
+          ProviderConfig(
+            id: 'openai',
+            name: 'OpenAI',
+            apiKeys: const ['test-key'],
+            selectedModel: 'gpt-4.1',
+            baseUrl: 'http://${server.address.host}:${server.port}/v1',
+          ),
+        ],
+        activeProviderId: 'openai',
+        viewingProviderId: 'openai',
+        language: 'en',
+      );
+      final service = OpenAILLMService(settings);
+
+      final response = await service.getResponse([
+        Message.user(
+          'describe this image',
+          attachments: [imageFile.path],
+        ),
+      ]);
+      final payload = await payloadCompleter.future;
+
+      expect(response.content, 'ok');
+      final messages = payload['messages'] as List<dynamic>;
+      final userMessage = messages.last as Map<String, dynamic>;
+      final content = userMessage['content'] as List<dynamic>;
+      final imagePart = content.firstWhere(
+        (item) => item is Map && item['type'] == 'image_url',
+      ) as Map<String, dynamic>;
+      final imageUrl =
+          (imagePart['image_url'] as Map<String, dynamic>)['url'] as String;
+      expect(imageUrl, 'data:image/png;base64,$pngBase64');
+    });
+
     test('adds include_thoughts for gemini 3.0 image models', () async {
       final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
       final payloadCompleter = Completer<Map<String, dynamic>>();

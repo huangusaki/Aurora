@@ -46,7 +46,12 @@ class _MergedMessageBubbleState extends ConsumerState<MergedMessageBubble>
   final FocusNode _focusNode = FocusNode();
   final ScrollController _editScrollController = ScrollController();
   @override
-  bool get wantKeepAlive => true;
+  bool get wantKeepAlive =>
+      _isEditing ||
+      widget.group.messages.any(
+        (message) =>
+            message.attachments.isNotEmpty || message.images.isNotEmpty,
+      );
   @override
   void initState() {
     super.initState();
@@ -167,6 +172,10 @@ class _MergedMessageBubbleState extends ConsumerState<MergedMessageBubble>
                   child: Image.file(
                     File(avatarPath),
                     fit: BoxFit.cover,
+                    cacheWidth: 64,
+                    cacheHeight: 64,
+                    filterQuality: FilterQuality.low,
+                    gaplessPlayback: true,
                     errorBuilder: (_, __, ___) => Container(
                       width: 32,
                       height: 32,
@@ -570,7 +579,7 @@ class _MergedMessageBubbleState extends ConsumerState<MergedMessageBubble>
               runSpacing: 8,
               children: ui.images
                   .map((img) => ChatImageBubble(
-                        key: ValueKey(img.hashCode),
+                        key: ValueKey(img),
                         imageUrl: img,
                       ))
                   .toList(),

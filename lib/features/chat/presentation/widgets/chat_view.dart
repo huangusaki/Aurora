@@ -36,6 +36,7 @@ class ChatView extends ConsumerStatefulWidget {
 
 class ChatViewState extends ConsumerState<ChatView> {
   static const double _autoScrollPinnedThreshold = 100;
+  static const double _chatListCacheExtent = 1600;
   static const Duration _recentUserInteractionHold =
       Duration(milliseconds: 300);
 
@@ -135,12 +136,6 @@ class ChatViewState extends ConsumerState<ChatView> {
     _lastSessionId = widget.sessionId;
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
-  }
-
-  void _onNotifierStateChanged() {
-    if (mounted) {
-      setState(() {});
-    }
   }
 
   void _restoreScrollPosition() {
@@ -499,7 +494,6 @@ class ChatViewState extends ConsumerState<ChatView> {
 
   @override
   void dispose() {
-    _notifier?.removeLocalListener(_onNotifierStateChanged);
     _controller.dispose();
     _scrollController
       ..removeListener(_onScroll)
@@ -787,11 +781,7 @@ class ChatViewState extends ConsumerState<ChatView> {
       _displayIndexById = {};
     }
     final notifier = ref.watch(chatSessionNotifierProvider(widget.sessionId));
-    if (_notifier != notifier) {
-      _notifier?.removeLocalListener(_onNotifierStateChanged);
-      _notifier = notifier;
-      _notifier!.addLocalListener(_onNotifierStateChanged);
-    }
+    _notifier = notifier;
     final keepChatScrollPositionOnResponse = ref.watch(
       settingsProvider
           .select((value) => value.keepChatScrollPositionOnResponse),
@@ -972,7 +962,7 @@ class ChatViewState extends ConsumerState<ChatView> {
                                     behavior: ScrollConfiguration.of(context)
                                         .copyWith(scrollbars: false),
                                     child: CustomScrollView(
-                                      cacheExtent: 20000,
+                                      cacheExtent: _chatListCacheExtent,
                                       key: ValueKey(ref.watch(
                                           selectedHistorySessionIdProvider)),
                                       controller: _scrollController,
@@ -1099,7 +1089,7 @@ class ChatViewState extends ConsumerState<ChatView> {
                                                 );
                                               },
                                               childCount: displayItems.length,
-                                              addAutomaticKeepAlives: false,
+                                              addAutomaticKeepAlives: true,
                                               addRepaintBoundaries: false,
                                               addSemanticIndexes: false,
                                             ),
@@ -1111,7 +1101,7 @@ class ChatViewState extends ConsumerState<ChatView> {
                                 ),
                               )
                             : CustomScrollView(
-                                cacheExtent: 20000,
+                                cacheExtent: _chatListCacheExtent,
                                 key: ValueKey(ref
                                     .watch(selectedHistorySessionIdProvider)),
                                 controller: _scrollController,
@@ -1249,7 +1239,7 @@ class ChatViewState extends ConsumerState<ChatView> {
                                           );
                                         },
                                         childCount: displayItems.length,
-                                        addAutomaticKeepAlives: false,
+                                        addAutomaticKeepAlives: true,
                                         addRepaintBoundaries: false,
                                         addSemanticIndexes: false,
                                       ),

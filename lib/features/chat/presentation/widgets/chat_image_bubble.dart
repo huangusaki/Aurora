@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:isolate';
+import 'dart:collection';
 import 'package:file_selector/file_selector.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/material.dart' as material
@@ -14,7 +15,18 @@ import 'package:aurora/l10n/app_localizations.dart';
 import 'desktop_image_viewer.dart';
 import 'mobile_image_viewer.dart';
 
-final Map<int, Uint8List> _imageCache = {};
+const int _thumbnailDecodeSize = 120;
+final LinkedHashMap<String, Uint8List> _imageCache =
+    LinkedHashMap<String, Uint8List>();
+
+void _rememberImageCache(String key, Uint8List bytes) {
+  _imageCache.remove(key);
+  _imageCache[key] = bytes;
+  while (_imageCache.length > 96) {
+    _imageCache.remove(_imageCache.keys.first);
+  }
+}
+
 void clearImageCache() {
   _imageCache.clear();
 }
@@ -41,6 +53,7 @@ class _ChatImageBubbleState extends State<ChatImageBubble> {
   bool get _isBase64 => widget.imageUrl.startsWith('data:');
   bool get _isLocalFile => !widget.imageUrl.startsWith('http') && !_isBase64;
   final FlyoutController _flyoutController = FlyoutController();
+
   @override
   void initState() {
     super.initState();
@@ -63,7 +76,7 @@ class _ChatImageBubbleState extends State<ChatImageBubble> {
 
   Future<void> _decodeImage() async {
     if (_isBase64) {
-      final cacheKey = widget.imageUrl.hashCode;
+      final cacheKey = widget.imageUrl;
       if (_imageCache.containsKey(cacheKey)) {
         if (mounted) {
           setState(() => _cachedBytes = _imageCache[cacheKey]);
@@ -73,14 +86,15 @@ class _ChatImageBubbleState extends State<ChatImageBubble> {
       if (mounted) {
         try {
           final Uint8List bytes;
-          if (widget.imageUrl.length > 50 * 1024) {
+          final useIsolate = widget.imageUrl.length > 50 * 1024;
+          if (useIsolate) {
             final transferable =
                 await compute(_decodeBase64Isolate, widget.imageUrl);
             bytes = transferable.materialize().asUint8List();
           } else {
             bytes = decodeDataUrlBytesLenient(widget.imageUrl);
           }
-          _imageCache[cacheKey] = bytes;
+          _rememberImageCache(cacheKey, bytes);
           if (mounted) {
             setState(() => _cachedBytes = bytes);
           }
@@ -98,13 +112,15 @@ class _ChatImageBubbleState extends State<ChatImageBubble> {
   }
 
   Future<Uint8List?> _getImageBytes() async {
-    if (_cachedBytes != null) return _cachedBytes;
+    if (_cachedBytes != null) {
+      return _cachedBytes;
+    }
     if (_isLocalFile) {
       try {
         final file = File(widget.imageUrl);
         if (await file.exists()) {
           final bytes = await file.readAsBytes();
-          _imageCache[widget.imageUrl.hashCode] = bytes;
+          _rememberImageCache(widget.imageUrl, bytes);
           if (mounted) {
             setState(() => _cachedBytes = bytes);
           }
@@ -207,7 +223,7 @@ class _ChatImageBubbleState extends State<ChatImageBubble> {
         final file = File(widget.imageUrl);
         if (await file.exists()) {
           bytes = await file.readAsBytes();
-          _imageCache[widget.imageUrl.hashCode] = bytes;
+          _rememberImageCache(widget.imageUrl, bytes);
           if (mounted) {
             setState(() => _cachedBytes = bytes);
           }
@@ -316,6 +332,10 @@ class _ChatImageBubbleState extends State<ChatImageBubble> {
                 child: Image.memory(
                   bytes,
                   fit: BoxFit.cover,
+                  cacheWidth: _thumbnailDecodeSize,
+                  cacheHeight: _thumbnailDecodeSize,
+                  filterQuality: FilterQuality.low,
+                  gaplessPlayback: true,
                   errorBuilder: (ctx, err, stack) {
                     debugPrint('Image.memory render error: $err');
                     return const Icon(FluentIcons.error);
@@ -336,20 +356,20 @@ class _ChatImageBubbleState extends State<ChatImageBubble> {
           onSecondaryTapUp: (details) {
             _flyoutController.showFlyout(
               position: details.globalPosition,
-                builder: (context) {
-                  final l10n = AppLocalizations.of(context)!;
-                  return MenuFlyout(
-                    items: [
-                      MenuFlyoutItem(
-                        leading: const Icon(FluentIcons.copy),
-                        text: Text(l10n.copyImage),
-                        onPressed: () {
-                          Flyout.of(context).close();
-                          _handleCopy(context);
-                        },
-                      ),
-                      MenuFlyoutItem(
-                        leading: const Icon(FluentIcons.save),
+              builder: (context) {
+                final l10n = AppLocalizations.of(context)!;
+                return MenuFlyout(
+                  items: [
+                    MenuFlyoutItem(
+                      leading: const Icon(FluentIcons.copy),
+                      text: Text(l10n.copyImage),
+                      onPressed: () {
+                        Flyout.of(context).close();
+                        _handleCopy(context);
+                      },
+                    ),
+                    MenuFlyoutItem(
+                      leading: const Icon(FluentIcons.save),
                       text: Text(l10n.saveImageAs),
                       onPressed: () {
                         Flyout.of(context).close();
@@ -381,14 +401,24 @@ class _ChatImageBubbleState extends State<ChatImageBubble> {
                   ? Image.file(
                       File(widget.imageUrl),
                       fit: BoxFit.cover,
-                      errorBuilder: (ctx, err, stack) =>
-                          const Icon(FluentIcons.error),
+                      cacheWidth: _thumbnailDecodeSize,
+                      cacheHeight: _thumbnailDecodeSize,
+                      filterQuality: FilterQuality.low,
+                      gaplessPlayback: true,
+                      errorBuilder: (ctx, err, stack) {
+                        return const Icon(FluentIcons.error);
+                      },
                     )
                   : Image.network(
                       widget.imageUrl,
                       fit: BoxFit.cover,
-                      errorBuilder: (ctx, err, stack) =>
-                          const Icon(FluentIcons.error),
+                      cacheWidth: _thumbnailDecodeSize,
+                      cacheHeight: _thumbnailDecodeSize,
+                      filterQuality: FilterQuality.low,
+                      gaplessPlayback: true,
+                      errorBuilder: (ctx, err, stack) {
+                        return const Icon(FluentIcons.error);
+                      },
                     ),
             ),
           ),

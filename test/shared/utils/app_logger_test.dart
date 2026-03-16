@@ -43,8 +43,8 @@ void main() {
     );
 
     final entry = AppLogger.bufferedEntriesSnapshot().single;
-    expect(entry.details, contains('data:image/png;base64,'));
-    expect(entry.details, contains('[TRUNCATED'));
+    expect(entry.details, contains('[DATA_URL_OMITTED]'));
+    expect(entry.details, isNot(contains('data:image/png;base64,')));
     expect(entry.details, isNot(contains(base64Payload)));
   });
 
@@ -66,8 +66,37 @@ void main() {
     );
 
     final entry = AppLogger.bufferedEntriesSnapshot().single;
-    expect(entry.details, contains('[TRUNCATED 400 chars]'));
+    expect(entry.details, contains('[BASE64_OMITTED]'));
     expect(entry.details, isNot(contains(base64Payload)));
     expect(entry.details, contains(ordinaryLongText));
+  });
+
+  test('sanitizes base64 image payloads in response logs', () {
+    AppLogger.install(useColor: false);
+
+    final base64Payload = 'A' * 400;
+    AppLogger.llmResponse(payload: {
+      'choices': [
+        {
+          'message': {
+            'inline_data': {
+              'mime_type': 'image/png',
+              'data': base64Payload,
+            },
+          },
+        },
+      ],
+      'data': [
+        {
+          'b64_json': base64Payload,
+        },
+      ],
+    });
+
+    final entry = AppLogger.bufferedEntriesSnapshot().single;
+    expect(entry.channel, 'LLM');
+    expect(entry.category, 'RESPONSE');
+    expect(entry.details, contains('[BASE64_OMITTED]'));
+    expect(entry.details, isNot(contains(base64Payload)));
   });
 }

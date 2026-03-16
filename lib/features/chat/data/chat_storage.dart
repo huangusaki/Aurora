@@ -587,6 +587,21 @@ class ChatStorage {
         .findFirst();
   }
 
+  Future<void> updateSessionLastMessageTime(
+    String sessionId,
+    DateTime timestamp,
+  ) async {
+    await _isar.writeTxn(() async {
+      final session = await _isar.sessionEntitys
+          .filter()
+          .sessionIdEqualTo(sessionId)
+          .findFirst();
+      if (session == null) return;
+      session.lastMessageTime = timestamp;
+      await _isar.sessionEntitys.put(session);
+    });
+  }
+
   Future<List<String>> _collectSessionTreeIds(String sessionId) async {
     final sessions = await _isar.sessionEntitys.where().findAll();
     if (sessions.isEmpty) return const [];

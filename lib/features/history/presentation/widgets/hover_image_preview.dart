@@ -1,6 +1,9 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 
+const int _hoverPreviewCacheWidth = 468;
+const int _hoverPreviewCacheHeight = 400;
+
 class HoverAttachmentPreview extends StatefulWidget {
   final String filePath;
   final Widget child;
@@ -16,6 +19,22 @@ class HoverAttachmentPreview extends StatefulWidget {
 class _HoverAttachmentPreviewState extends State<HoverAttachmentPreview> {
   OverlayEntry? _overlayEntry;
   final LayerLink _layerLink = LayerLink();
+  late Future<String> _fileSizeFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _fileSizeFuture = _loadFileSize(widget.filePath);
+  }
+
+  @override
+  void didUpdateWidget(covariant HoverAttachmentPreview oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.filePath != widget.filePath) {
+      _fileSizeFuture = _loadFileSize(widget.filePath);
+    }
+  }
+
   void _showPreview() {
     _overlayEntry = _createOverlayEntry();
     Overlay.of(context).insert(_overlayEntry!);
@@ -76,6 +95,10 @@ class _HoverAttachmentPreviewState extends State<HoverAttachmentPreview> {
                             height: 200,
                             width: 234,
                             fit: BoxFit.cover,
+                            cacheWidth: _hoverPreviewCacheWidth,
+                            cacheHeight: _hoverPreviewCacheHeight,
+                            filterQuality: FilterQuality.low,
+                            gaplessPlayback: true,
                             errorBuilder: (context, error, stackTrace) =>
                                 _buildIconPreview(Icons.broken_image),
                           )
@@ -88,9 +111,21 @@ class _HoverAttachmentPreviewState extends State<HoverAttachmentPreview> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  Text(
-                    _getFileSize(widget.filePath),
-                    style: const TextStyle(color: Colors.white70, fontSize: 10),
+                  FutureBuilder<String>(
+                    future: _fileSizeFuture,
+                    builder: (context, snapshot) {
+                      final text = snapshot.data ?? '';
+                      if (text.isEmpty) {
+                        return const SizedBox.shrink();
+                      }
+                      return Text(
+                        text,
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 10,
+                        ),
+                      );
+                    },
                   )
                 ],
               ),
@@ -111,11 +146,12 @@ class _HoverAttachmentPreviewState extends State<HoverAttachmentPreview> {
     );
   }
 
-  String _getFileSize(String path) {
+  Future<String> _loadFileSize(String path) async {
     try {
       final file = File(path);
-      if (file.existsSync()) {
-        final bytes = file.lengthSync();
+      final stat = await file.stat();
+      if (stat.type == FileSystemEntityType.file) {
+        final bytes = stat.size;
         if (bytes < 1024) return '$bytes B';
         if (bytes < 1024 * 1024) {
           return '${(bytes / 1024).toStringAsFixed(1)} KB';

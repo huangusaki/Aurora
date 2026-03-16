@@ -48,13 +48,20 @@ class MessageBubble extends ConsumerStatefulWidget {
   ConsumerState<MessageBubble> createState() => MessageBubbleState();
 }
 
-class MessageBubbleState extends ConsumerState<MessageBubble> {
+class MessageBubbleState extends ConsumerState<MessageBubble>
+    with AutomaticKeepAliveClientMixin {
   bool _isEditing = false;
   late TextEditingController _editController;
 
   final FocusNode _focusNode = FocusNode();
   final ScrollController _editScrollController = ScrollController();
   late List<String> _newAttachments;
+
+  @override
+  bool get wantKeepAlive =>
+      _isEditing ||
+      widget.message.attachments.isNotEmpty ||
+      widget.message.images.isNotEmpty;
   @override
   void initState() {
     super.initState();
@@ -371,8 +378,19 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
     }
   }
 
+  Widget _buildUserContentText({
+    required String contentText,
+    required TextStyle style,
+  }) {
+    return SelectableText(
+      contentText,
+      style: style,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final message = widget.message;
     final isUser = message.isUser;
     final settingsState = ref.watch(settingsProvider);
@@ -738,14 +756,12 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
                               else if (isTool)
                                 BuildToolOutput(content: contentText)
                               else if (isUser)
-                                SelectionArea(
-                                  child: Text(
-                                    contentText,
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      height: 1.5,
-                                      color: theme.typography.body!.color,
-                                    ),
+                                _buildUserContentText(
+                                  contentText: contentText,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    height: 1.5,
+                                    color: theme.typography.body!.color,
                                   ),
                                 )
                               else
@@ -773,7 +789,7 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
                                         ext.endsWith('.gif');
                                     if (isImage) {
                                       return ChatImageBubble(
-                                        key: ValueKey(path.hashCode),
+                                        key: ValueKey(path),
                                         imageUrl: path,
                                       );
                                     }
@@ -790,7 +806,7 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
                                   runSpacing: 8,
                                   children: imageUrls
                                       .map((img) => ChatImageBubble(
-                                            key: ValueKey(img.hashCode),
+                                            key: ValueKey(img),
                                             imageUrl: img,
                                           ))
                                       .toList(),
@@ -1129,6 +1145,10 @@ class MessageBubbleState extends ConsumerState<MessageBubble> {
           child: Image.file(
             File(avatarPath),
             fit: BoxFit.cover,
+            cacheWidth: 64,
+            cacheHeight: 64,
+            filterQuality: FilterQuality.low,
+            gaplessPlayback: true,
             errorBuilder: (_, __, ___) => CircleAvatar(
               radius: 16,
               backgroundColor: backgroundColor,
