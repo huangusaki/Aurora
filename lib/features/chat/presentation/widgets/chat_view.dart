@@ -780,6 +780,7 @@ class ChatViewState extends ConsumerState<ChatView> {
       _displayOrderIds = const [];
       _displayIndexById = {};
     }
+    ref.watch(chatStateUpdateTriggerProvider);
     final notifier = ref.watch(chatSessionNotifierProvider(widget.sessionId));
     _notifier = notifier;
     final keepChatScrollPositionOnResponse = ref.watch(

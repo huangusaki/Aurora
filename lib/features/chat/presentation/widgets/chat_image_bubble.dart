@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:isolate';
+import 'dart:ui' as ui;
 import 'dart:collection';
 import 'package:file_selector/file_selector.dart';
 import 'package:fluent_ui/fluent_ui.dart';
@@ -7,6 +8,7 @@ import 'package:flutter/material.dart' as material
     show CircularProgressIndicator;
 import 'package:super_clipboard/super_clipboard.dart';
 import 'package:flutter/foundation.dart';
+import 'package:image/image.dart' as img;
 import 'package:aurora/shared/utils/platform_utils.dart';
 import 'package:aurora/shared/utils/image_format_utils.dart';
 import 'package:aurora/shared/utils/base64_utils.dart';
@@ -15,7 +17,8 @@ import 'package:aurora/l10n/app_localizations.dart';
 import 'desktop_image_viewer.dart';
 import 'mobile_image_viewer.dart';
 
-const int _thumbnailDecodeSize = 120;
+const double _thumbnailMaxEdge = 72;
+const double _thumbnailMinEdge = 44;
 final LinkedHashMap<String, Uint8List> _imageCache =
     LinkedHashMap<String, Uint8List>();
 
@@ -50,6 +53,9 @@ class ChatImageBubble extends StatefulWidget {
 
 class _ChatImageBubbleState extends State<ChatImageBubble> {
   Uint8List? _cachedBytes;
+  double? _imageAspectRatio;
+  ImageStream? _imageInfoStream;
+  ImageStreamListener? _imageInfoListener;
   bool get _isBase64 => widget.imageUrl.startsWith('data:');
   bool get _isLocalFile => !widget.imageUrl.startsWith('http') && !_isBase64;
   final FlyoutController _flyoutController = FlyoutController();
@@ -62,6 +68,7 @@ class _ChatImageBubbleState extends State<ChatImageBubble> {
 
   @override
   void dispose() {
+    _clearImageInfoListener();
     _flyoutController.dispose();
     super.dispose();
   }
@@ -70,8 +77,93 @@ class _ChatImageBubbleState extends State<ChatImageBubble> {
   void didUpdateWidget(ChatImageBubble oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.imageUrl != oldWidget.imageUrl) {
+      _clearImageInfoListener();
+      _cachedBytes = null;
+      _imageAspectRatio = null;
       _decodeImage();
     }
+  }
+
+  void _clearImageInfoListener() {
+    final stream = _imageInfoStream;
+    final listener = _imageInfoListener;
+    if (stream != null && listener != null) {
+      stream.removeListener(listener);
+    }
+    _imageInfoStream = null;
+    _imageInfoListener = null;
+  }
+
+  void _resolveImageAspectRatio({Uint8List? bytes}) {
+    _clearImageInfoListener();
+
+    final ImageProvider provider;
+    if (bytes != null) {
+      provider = MemoryImage(bytes);
+    } else if (_isLocalFile) {
+      provider = FileImage(File(widget.imageUrl));
+    } else {
+      provider = NetworkImage(widget.imageUrl);
+    }
+
+    final stream = provider.resolve(const ImageConfiguration());
+    late final ImageStreamListener listener;
+    listener = ImageStreamListener(
+      (ImageInfo info, bool synchronousCall) {
+        final ui.Image image = info.image;
+        if (image.width <= 0 || image.height <= 0 || !mounted) {
+          _clearImageInfoListener();
+          return;
+        }
+        final ratio = image.width / image.height;
+        if (_imageAspectRatio != ratio) {
+          setState(() {
+            _imageAspectRatio = ratio;
+          });
+        }
+        _clearImageInfoListener();
+      },
+      onError: (Object error, StackTrace? stackTrace) {
+        _clearImageInfoListener();
+      },
+    );
+
+    _imageInfoStream = stream;
+    _imageInfoListener = listener;
+    stream.addListener(listener);
+  }
+
+  void _setAspectRatioFromBytes(Uint8List bytes) {
+    try {
+      final decoded = img.decodeImage(bytes);
+      if (decoded == null || decoded.width <= 0 || decoded.height <= 0) {
+        _resolveImageAspectRatio(bytes: bytes);
+        return;
+      }
+      final ratio = decoded.width / decoded.height;
+      if (!mounted) return;
+      if (_imageAspectRatio != ratio) {
+        setState(() {
+          _imageAspectRatio = ratio;
+        });
+      }
+    } catch (_) {
+      _resolveImageAspectRatio(bytes: bytes);
+    }
+  }
+
+  Size _thumbnailSize() {
+    final ratio = (_imageAspectRatio ?? 1.0).clamp(0.4, 2.5);
+    if (ratio >= 1) {
+      return Size(
+        _thumbnailMaxEdge,
+        (_thumbnailMaxEdge / ratio).clamp(_thumbnailMinEdge, _thumbnailMaxEdge),
+      );
+    }
+    return Size(
+      (_thumbnailMaxEdge * ratio).clamp(_thumbnailMinEdge, _thumbnailMaxEdge),
+      _thumbnailMaxEdge,
+    );
   }
 
   Future<void> _decodeImage() async {
@@ -79,7 +171,11 @@ class _ChatImageBubbleState extends State<ChatImageBubble> {
       final cacheKey = widget.imageUrl;
       if (_imageCache.containsKey(cacheKey)) {
         if (mounted) {
-          setState(() => _cachedBytes = _imageCache[cacheKey]);
+          final cachedBytes = _imageCache[cacheKey];
+          setState(() => _cachedBytes = cachedBytes);
+          if (cachedBytes != null) {
+            _setAspectRatioFromBytes(cachedBytes);
+          }
         }
         return;
       }
@@ -98,6 +194,7 @@ class _ChatImageBubbleState extends State<ChatImageBubble> {
           if (mounted) {
             setState(() => _cachedBytes = bytes);
           }
+          _setAspectRatioFromBytes(bytes);
         } catch (e) {
           debugPrint('Failed to decode base64 image: $e');
         }
@@ -108,6 +205,7 @@ class _ChatImageBubbleState extends State<ChatImageBubble> {
           _cachedBytes = null;
         });
       }
+      _resolveImageAspectRatio();
     }
   }
 
@@ -131,6 +229,41 @@ class _ChatImageBubbleState extends State<ChatImageBubble> {
       }
     }
     return null;
+  }
+
+  Widget _buildThumbnailImage() {
+    if (_isBase64 && _cachedBytes != null) {
+      return Image.memory(
+        _cachedBytes!,
+        fit: BoxFit.contain,
+        filterQuality: FilterQuality.low,
+        gaplessPlayback: true,
+        errorBuilder: (ctx, err, stack) {
+          debugPrint('Image.memory render error: $err');
+          return const Icon(FluentIcons.error);
+        },
+      );
+    }
+    if (_isLocalFile) {
+      return Image.file(
+        File(widget.imageUrl),
+        fit: BoxFit.contain,
+        filterQuality: FilterQuality.low,
+        gaplessPlayback: true,
+        errorBuilder: (ctx, err, stack) {
+          return const Icon(FluentIcons.error);
+        },
+      );
+    }
+    return Image.network(
+      widget.imageUrl,
+      fit: BoxFit.contain,
+      filterQuality: FilterQuality.low,
+      gaplessPlayback: true,
+      errorBuilder: (ctx, err, stack) {
+        return const Icon(FluentIcons.error);
+      },
+    );
   }
 
   Future<void> _handleCopy(BuildContext context) async {
@@ -259,90 +392,22 @@ class _ChatImageBubbleState extends State<ChatImageBubble> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isBase64) {
-      final bytes = _cachedBytes;
-      if (bytes == null) {
-        return Container(
-          width: 60,
-          height: 60,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
-          ),
-          child: Center(
-            child: SizedBox(
-              width: 24,
-              height: 24,
-              child: PlatformUtils.isDesktop
-                  ? const ProgressRing(strokeWidth: 2)
-                  : const material.CircularProgressIndicator(strokeWidth: 2),
-            ),
-          ),
-        );
-      }
-      return FlyoutTarget(
-        controller: _flyoutController,
-        child: MouseRegion(
-          cursor: SystemMouseCursors.click,
-          child: GestureDetector(
-            onTap: () => _showFullImage(context),
-            onSecondaryTapUp: (details) {
-              _flyoutController.showFlyout(
-                position: details.globalPosition,
-                builder: (context) {
-                  final l10n = AppLocalizations.of(context)!;
-                  return MenuFlyout(
-                    items: [
-                      MenuFlyoutItem(
-                        leading: const Icon(FluentIcons.copy),
-                        text: Text(l10n.copyImage),
-                        onPressed: () {
-                          Flyout.of(context).close();
-                          _handleCopy(context);
-                        },
-                      ),
-                      MenuFlyoutItem(
-                        leading: const Icon(FluentIcons.save),
-                        text: Text(l10n.saveImageAs),
-                        onPressed: () {
-                          Flyout.of(context).close();
-                          _handleSave(imagesLabel: l10n.images);
-                        },
-                      ),
-                    ],
-                  );
-                },
-              );
-            },
-            child: Container(
-              width: 60,
-              height: 60,
-              decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.1),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    )
-                  ]),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.memory(
-                  bytes,
-                  fit: BoxFit.cover,
-                  cacheWidth: _thumbnailDecodeSize,
-                  cacheHeight: _thumbnailDecodeSize,
-                  filterQuality: FilterQuality.low,
-                  gaplessPlayback: true,
-                  errorBuilder: (ctx, err, stack) {
-                    debugPrint('Image.memory render error: $err');
-                    return const Icon(FluentIcons.error);
-                  },
-                ),
-              ),
-            ),
+    final thumbnailSize = _thumbnailSize();
+    if (_isBase64 && _cachedBytes == null) {
+      return Container(
+        width: thumbnailSize.width,
+        height: thumbnailSize.height,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
+        ),
+        child: Center(
+          child: SizedBox(
+            width: 24,
+            height: 24,
+            child: PlatformUtils.isDesktop
+                ? const ProgressRing(strokeWidth: 2)
+                : const material.CircularProgressIndicator(strokeWidth: 2),
           ),
         ),
       );
@@ -382,8 +447,8 @@ class _ChatImageBubbleState extends State<ChatImageBubble> {
             );
           },
           child: Container(
-            width: 60,
-            height: 60,
+            width: thumbnailSize.width,
+            height: thumbnailSize.height,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(8),
               border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
@@ -397,29 +462,10 @@ class _ChatImageBubbleState extends State<ChatImageBubble> {
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(8),
-              child: _isLocalFile
-                  ? Image.file(
-                      File(widget.imageUrl),
-                      fit: BoxFit.cover,
-                      cacheWidth: _thumbnailDecodeSize,
-                      cacheHeight: _thumbnailDecodeSize,
-                      filterQuality: FilterQuality.low,
-                      gaplessPlayback: true,
-                      errorBuilder: (ctx, err, stack) {
-                        return const Icon(FluentIcons.error);
-                      },
-                    )
-                  : Image.network(
-                      widget.imageUrl,
-                      fit: BoxFit.cover,
-                      cacheWidth: _thumbnailDecodeSize,
-                      cacheHeight: _thumbnailDecodeSize,
-                      filterQuality: FilterQuality.low,
-                      gaplessPlayback: true,
-                      errorBuilder: (ctx, err, stack) {
-                        return const Icon(FluentIcons.error);
-                      },
-                    ),
+              child: ColoredBox(
+                color: Colors.black.withValues(alpha: 0.04),
+                child: _buildThumbnailImage(),
+              ),
             ),
           ),
         ),

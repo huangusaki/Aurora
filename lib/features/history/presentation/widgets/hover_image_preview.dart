@@ -90,17 +90,20 @@ class _HoverAttachmentPreviewState extends State<HoverAttachmentPreview> {
                   ClipRRect(
                     borderRadius: BorderRadius.circular(4),
                     child: isImage
-                        ? Image.file(
-                            File(widget.filePath),
-                            height: 200,
-                            width: 234,
-                            fit: BoxFit.cover,
-                            cacheWidth: _hoverPreviewCacheWidth,
-                            cacheHeight: _hoverPreviewCacheHeight,
-                            filterQuality: FilterQuality.low,
-                            gaplessPlayback: true,
-                            errorBuilder: (context, error, stackTrace) =>
-                                _buildIconPreview(Icons.broken_image),
+                        ? ColoredBox(
+                            color: Colors.white.withValues(alpha: 0.06),
+                            child: Image.file(
+                              File(widget.filePath),
+                              height: 200,
+                              width: 234,
+                              fit: BoxFit.contain,
+                              cacheWidth: _hoverPreviewCacheWidth,
+                              cacheHeight: _hoverPreviewCacheHeight,
+                              filterQuality: FilterQuality.low,
+                              gaplessPlayback: true,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  _buildIconPreview(Icons.broken_image),
+                            ),
                           )
                         : _buildIconPreview(iconData),
                   ),
