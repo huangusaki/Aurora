@@ -816,24 +816,27 @@ class _LogPageButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final enabled = onTap != null;
+    final fluentTheme = isMobile ? null : fluent.FluentTheme.of(context);
     final primaryColor = isMobile
         ? Theme.of(context).textTheme.bodyLarge?.color
-        : fluent.FluentTheme.of(context).resources.textFillColorPrimary;
+        : fluentTheme!.resources.textFillColorPrimary;
     final secondaryColor = isMobile
         ? Theme.of(context).textTheme.bodySmall?.color
-        : fluent.FluentTheme.of(context).resources.textFillColorSecondary;
+        : fluentTheme!.resources.textFillColorSecondary;
     final borderColor = isMobile
         ? Theme.of(context).dividerColor.withValues(alpha: 0.3)
-        : fluent.FluentTheme.of(context).resources.dividerStrokeColorDefault;
+        : fluentTheme!.resources.dividerStrokeColorDefault;
     final backgroundColor = isMobile
         ? Theme.of(context)
             .colorScheme
             .surfaceContainerHighest
             .withValues(alpha: enabled ? 0.55 : 0.3)
-        : fluent.FluentTheme.of(context)
-            .resources
-            .cardBackgroundFillColorDefault
-            .withValues(alpha: enabled ? 1 : 0.7);
+        // Preserve Fluent's built-in translucency for dark/custom backgrounds.
+        : Color.lerp(
+            Colors.transparent,
+            fluentTheme!.resources.cardBackgroundFillColorDefault,
+            enabled ? 1 : 0.7,
+          )!;
 
     return Tooltip(
       message: tooltip,
