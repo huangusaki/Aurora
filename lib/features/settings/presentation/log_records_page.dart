@@ -7,6 +7,7 @@ import 'package:aurora/shared/riverpod_compat.dart';
 import 'package:aurora/shared/theme/aurora_icons.dart';
 import 'package:aurora/shared/utils/app_logger.dart';
 import 'package:aurora/shared/widgets/aurora_notice.dart';
+import 'package:aurora/shared/widgets/aurora_selection.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:fluent_ui/fluent_ui.dart' as fluent;
 import 'package:flutter/material.dart';
@@ -631,7 +632,7 @@ class _LogEntriesPanelState extends ConsumerState<_LogEntriesPanel> {
             ),
           );
 
-    final selectableScrollable = SelectionArea(
+    final selectableScrollable = AuroraSelectionArea(
       child: MouseRegion(
         cursor: widget.isMobile ? MouseCursor.defer : SystemMouseCursors.text,
         child: scrollable,

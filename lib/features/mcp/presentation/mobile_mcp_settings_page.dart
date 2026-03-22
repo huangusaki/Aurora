@@ -6,6 +6,7 @@ import 'package:aurora/shared/riverpod_compat.dart';
 import 'package:aurora/shared/theme/aurora_icons.dart';
 import 'package:aurora/shared/widgets/aurora_bottom_sheet.dart';
 import 'package:aurora/shared/widgets/aurora_notice.dart';
+import 'package:aurora/shared/widgets/aurora_selection.dart';
 import 'package:flutter/material.dart';
 import '../../settings/presentation/widgets/mobile_settings_widgets.dart';
 import '../domain/mcp_server_config.dart';
@@ -88,7 +89,7 @@ class _MobileMcpSettingsPageState extends ConsumerState<MobileMcpSettingsPage> {
                   color: Theme.of(ctx).cardColor.withValues(alpha: 0.5),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: SelectableText(
+                child: AuroraSelectableText(
                   content,
                   style: const TextStyle(fontFamily: 'Consolas', fontSize: 13),
                 ),
@@ -470,7 +471,7 @@ class _MobileMcpSettingsPageState extends ConsumerState<MobileMcpSettingsPage> {
                         color: Theme.of(ctx).cardColor.withValues(alpha: 0.5),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: SelectableText(
+                      child: AuroraSelectableText(
                         stderrText,
                         style: const TextStyle(
                             fontFamily: 'Consolas', fontSize: 13),

@@ -7,6 +7,7 @@ import 'package:super_clipboard/super_clipboard.dart';
 import 'package:aurora/shared/riverpod_compat.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 import 'package:aurora/features/settings/presentation/settings_provider.dart';
+import 'package:aurora/shared/widgets/aurora_selection.dart';
 import 'package:aurora/shared/widgets/aurora_bottom_sheet.dart';
 import 'package:aurora/shared/widgets/aurora_dropdown.dart';
 import 'package:aurora/features/studio/presentation/widgets/studio_surface_components.dart';
@@ -1361,12 +1362,15 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
             ),
             const Divider(),
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
-                child: SelectableText(
-                  content.isEmpty ? l10n.noContentYet : content,
-                  style: theme.typography.body
-                      ?.copyWith(fontSize: 16, height: 1.6),
+              child: AuroraSelectionArea(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24),
+                  child: AuroraSelectableText(
+                    content.isEmpty ? l10n.noContentYet : content,
+                    useSelectionArea: false,
+                    style: theme.typography.body
+                        ?.copyWith(fontSize: 16, height: 1.6),
+                  ),
                 ),
               ),
             ),
@@ -1693,7 +1697,7 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
                       color: theme.resources.layerFillColorAlt,
                       borderRadius: BorderRadius.circular(4),
                     ),
-                    child: SelectableText(
+                    child: AuroraSelectableText(
                       task.content ?? '',
                       style: theme.typography.body,
                     ),
@@ -1923,7 +1927,7 @@ class _StyleImitationDialogContentState
                   border: Border.all(
                       color: theme.resources.controlStrokeColorDefault),
                 ),
-                child: SelectableText(
+                child: AuroraSelectableText(
                   project.analyzedStyle!,
                   style: theme.typography.body,
                 ),

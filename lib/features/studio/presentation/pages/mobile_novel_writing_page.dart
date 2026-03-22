@@ -11,6 +11,7 @@ import 'mobile_model_config_sheet.dart';
 import 'package:flutter/services.dart';
 import '../../../../shared/widgets/aurora_bottom_sheet.dart';
 import '../../../../shared/widgets/aurora_notice.dart';
+import '../../../../shared/widgets/aurora_selection.dart';
 
 class MobileNovelWritingPage extends ConsumerStatefulWidget {
   final VoidCallback? onBack;
@@ -1017,7 +1018,7 @@ class _MobileNovelWritingPageState extends ConsumerState<MobileNovelWritingPage>
                     color: theme.dividerColor.withValues(alpha: 0.2),
                   ),
                 ),
-                child: SelectableText(
+                child: AuroraSelectableText(
                   project.analyzedStyle!,
                   style: theme.textTheme.bodyMedium,
                 ),
@@ -1239,8 +1240,13 @@ class _MobileNovelWritingPageState extends ConsumerState<MobileNovelWritingPage>
               const SizedBox(height: 12),
               ConstrainedBox(
                 constraints: const BoxConstraints(maxHeight: 320),
-                child: SingleChildScrollView(
-                  child: SelectableText(summary.toString()),
+                child: AuroraSelectionArea(
+                  child: SingleChildScrollView(
+                    child: AuroraSelectableText(
+                      summary.toString(),
+                      useSelectionArea: false,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
@@ -1339,11 +1345,14 @@ class _MobileNovelWritingPageState extends ConsumerState<MobileNovelWritingPage>
         ),
         const Divider(height: 1),
         Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: SelectableText(
-              content.isEmpty ? l10n.noContentYet : content,
-              style: const TextStyle(height: 1.6),
+          child: AuroraSelectionArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: AuroraSelectableText(
+                content.isEmpty ? l10n.noContentYet : content,
+                useSelectionArea: false,
+                style: const TextStyle(height: 1.6),
+              ),
             ),
           ),
         ),
@@ -1398,4 +1407,3 @@ class _MobileNovelWritingPageState extends ConsumerState<MobileNovelWritingPage>
     );
   }
 }
-

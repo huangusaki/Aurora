@@ -6,6 +6,7 @@ import 'package:aurora/shared/riverpod_compat.dart';
 import 'package:aurora/shared/theme/aurora_icons.dart';
 import 'package:aurora/shared/utils/platform_utils.dart';
 import 'package:aurora/shared/widgets/aurora_notice.dart';
+import 'package:aurora/shared/widgets/aurora_selection.dart';
 import 'package:fluent_ui/fluent_ui.dart' as fluent;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -503,10 +504,13 @@ class _McpSettingsPageState extends ConsumerState<McpSettingsPage> {
               color: Colors.black.withValues(alpha: 0.03),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: SingleChildScrollView(
-              child: SelectableText(
-                stderrText.isEmpty ? l10n.none : stderrText,
-                style: const TextStyle(fontFamily: 'Consolas', fontSize: 13),
+            child: AuroraSelectionArea(
+              child: SingleChildScrollView(
+                child: AuroraSelectableText(
+                  stderrText.isEmpty ? l10n.none : stderrText,
+                  useSelectionArea: false,
+                  style: const TextStyle(fontFamily: 'Consolas', fontSize: 13),
+                ),
               ),
             ),
           ),
@@ -572,7 +576,7 @@ class _McpSettingsPageState extends ConsumerState<McpSettingsPage> {
             color: Colors.black.withValues(alpha: 0.03),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Text(
+          child: AuroraSelectableText(
             toolNames.isEmpty ? l10n.none : toolNames.join('\n'),
             style: const TextStyle(fontFamily: 'Consolas', fontSize: 13),
           ),
@@ -588,7 +592,7 @@ class _McpSettingsPageState extends ConsumerState<McpSettingsPage> {
               color: Colors.black.withValues(alpha: 0.03),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Text(
+            child: AuroraSelectableText(
               stderr,
               style: const TextStyle(fontFamily: 'Consolas', fontSize: 13),
             ),
@@ -616,7 +620,7 @@ class _McpSettingsPageState extends ConsumerState<McpSettingsPage> {
               color: Colors.black.withValues(alpha: 0.03),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Text(
+            child: AuroraSelectableText(
               stderr,
               style: const TextStyle(fontFamily: 'Consolas', fontSize: 13),
             ),

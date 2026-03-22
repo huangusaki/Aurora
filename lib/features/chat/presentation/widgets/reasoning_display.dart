@@ -1,5 +1,6 @@
 import 'package:aurora/shared/theme/aurora_icons.dart';
 import 'package:aurora/shared/utils/platform_utils.dart';
+import 'package:aurora/shared/widgets/aurora_selection.dart';
 import 'package:fluent_ui/fluent_ui.dart' as fluent;
 import 'package:flutter/material.dart';
 import 'dart:async';
@@ -211,16 +212,14 @@ class _ReasoningDisplayState extends ConsumerState<ReasoningDisplay>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const SizedBox(height: 8),
-                        SelectionArea(
-                          child: Text(
-                            widget.content,
-                            style: TextStyle(
-                              fontSize: 13,
-                              height: 1.5,
-                              fontFamily:
-                                  PlatformUtils.isWindows ? 'Consolas' : null,
-                              color: isDark ? Colors.white60 : Colors.black54,
-                            ),
+                        AuroraSelectableText(
+                          widget.content,
+                          style: TextStyle(
+                            fontSize: 13,
+                            height: 1.5,
+                            fontFamily:
+                                PlatformUtils.isWindows ? 'Consolas' : null,
+                            color: isDark ? Colors.white60 : Colors.black54,
                           ),
                         ),
                       ],
@@ -235,4 +234,3 @@ class _ReasoningDisplayState extends ConsumerState<ReasoningDisplay>
     );
   }
 }
-

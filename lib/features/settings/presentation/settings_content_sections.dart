@@ -5,6 +5,7 @@ part of 'settings_content.dart';
 extension _SettingsContentSections on _SettingsContentState {
   Widget _buildStyledTextBox({
     required TextEditingController controller,
+    FocusNode? focusNode,
     String? placeholder,
     ValueChanged<String>? onChanged,
     bool autofocus = false,
@@ -27,6 +28,7 @@ extension _SettingsContentSections on _SettingsContentState {
         : const Color(0xFFF3F3F3);
     return fluent.TextBox(
       controller: controller,
+      focusNode: focusNode,
       placeholder: placeholder,
       onChanged: onChanged,
       autofocus: autofocus,
@@ -538,22 +540,13 @@ extension _SettingsContentSections on _SettingsContentState {
                         label: l10n.apiBaseUrl,
                         child: _buildStyledTextBox(
                           controller: _baseUrlController,
+                          focusNode: _baseUrlFocusNode,
                           placeholder: l10n.baseUrlPlaceholder,
-                          onSubmitted: (value) {
-                            ref
-                                .read(settingsProvider.notifier)
-                                .commitProviderBaseUrl(
-                                  id: viewingProvider.id,
-                                  baseUrl: value,
-                                );
+                          onSubmitted: (_) {
+                            unawaited(_commitBaseUrlDraft());
                           },
                           onTapOutside: (_) {
-                            ref
-                                .read(settingsProvider.notifier)
-                                .commitProviderBaseUrl(
-                                  id: viewingProvider.id,
-                                  baseUrl: _baseUrlController.text,
-                                );
+                            unawaited(_commitBaseUrlDraft());
                           },
                         ),
                       ),

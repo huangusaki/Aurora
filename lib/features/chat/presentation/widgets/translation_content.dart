@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:aurora/shared/riverpod_compat.dart';
 import 'package:super_clipboard/super_clipboard.dart';
 import 'package:aurora/shared/widgets/aurora_dropdown.dart';
+import 'package:aurora/shared/widgets/aurora_selection.dart';
 import '../chat_provider.dart';
 import '../../domain/message.dart';
 import 'package:aurora/l10n/app_localizations.dart';
@@ -382,15 +383,18 @@ class _TranslationContentState extends ConsumerState<TranslationContent> {
       return const Center(child: fluent.ProgressRing());
     }
     if (!_showComparison) {
-      return SingleChildScrollView(
-        child: SelectableText(
-          targetText,
-          style: TextStyle(
-            fontSize: 16,
-            height: 1.6,
-            fontWeight: FontWeight.w500,
-            fontFamily: fontFamily,
-            color: theme.typography.body?.color,
+      return AuroraSelectionArea(
+        child: SingleChildScrollView(
+          child: AuroraSelectableText(
+            targetText,
+            useSelectionArea: false,
+            style: TextStyle(
+              fontSize: 16,
+              height: 1.6,
+              fontWeight: FontWeight.w500,
+              fontFamily: fontFamily,
+              color: theme.typography.body?.color,
+            ),
           ),
         ),
       );
@@ -407,43 +411,47 @@ class _TranslationContentState extends ConsumerState<TranslationContent> {
     final int itemCount = sourceLines.length > targetLines.length
         ? sourceLines.length
         : targetLines.length;
-    return ListView.separated(
-      itemCount: itemCount,
-      separatorBuilder: (c, i) => const SizedBox(height: 24),
-      itemBuilder: (context, index) {
-        final src = index < sourceLines.length ? sourceLines[index] : '';
-        final tgt = index < targetLines.length ? targetLines[index] : '';
-        if (src.trim().isEmpty && tgt.trim().isEmpty) {
-          return const SizedBox.shrink();
-        }
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (src.isNotEmpty)
-              SelectableText(
-                src,
-                style: TextStyle(
-                  color: theme.resources.textFillColorSecondary,
-                  fontSize: 14,
-                  height: 1.5,
-                  fontFamily: fontFamily,
+    return AuroraSelectionArea(
+      child: ListView.separated(
+        itemCount: itemCount,
+        separatorBuilder: (c, i) => const SizedBox(height: 24),
+        itemBuilder: (context, index) {
+          final src = index < sourceLines.length ? sourceLines[index] : '';
+          final tgt = index < targetLines.length ? targetLines[index] : '';
+          if (src.trim().isEmpty && tgt.trim().isEmpty) {
+            return const SizedBox.shrink();
+          }
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (src.isNotEmpty)
+                AuroraSelectableText(
+                  src,
+                  useSelectionArea: false,
+                  style: TextStyle(
+                    color: theme.resources.textFillColorSecondary,
+                    fontSize: 14,
+                    height: 1.5,
+                    fontFamily: fontFamily,
+                  ),
                 ),
-              ),
-            if (src.isNotEmpty && tgt.isNotEmpty) const SizedBox(height: 8),
-            if (tgt.isNotEmpty)
-              SelectableText(
-                tgt,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  height: 1.6,
-                  fontFamily: fontFamily,
-                  color: theme.typography.body?.color,
+              if (src.isNotEmpty && tgt.isNotEmpty) const SizedBox(height: 8),
+              if (tgt.isNotEmpty)
+                AuroraSelectableText(
+                  tgt,
+                  useSelectionArea: false,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    height: 1.6,
+                    fontFamily: fontFamily,
+                    color: theme.typography.body?.color,
+                  ),
                 ),
-              ),
-          ],
-        );
-      },
+            ],
+          );
+        },
+      ),
     );
   }
 }

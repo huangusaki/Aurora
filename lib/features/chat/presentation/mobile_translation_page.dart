@@ -8,6 +8,7 @@ import 'package:aurora/l10n/app_localizations.dart';
 import 'package:aurora/shared/utils/translation_prompt_utils.dart';
 import 'package:aurora/shared/widgets/aurora_dropdown.dart';
 import 'package:aurora/shared/widgets/aurora_notice.dart';
+import 'package:aurora/shared/widgets/aurora_selection.dart';
 
 class MobileTranslationPage extends ConsumerStatefulWidget {
   final VoidCallback? onBack;
@@ -432,37 +433,49 @@ class _MobileTranslationPageState extends ConsumerState<MobileTranslationPage> {
     if (itemCount == 0 && aiMessage.content.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
-    return ListView.separated(
-      itemCount: itemCount,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
-      itemBuilder: (context, index) {
-        final tgt = index < targetLines.length ? targetLines[index] : '';
-        if (!_showComparison) {
-          return SelectableText(
-            tgt,
-            style: const TextStyle(fontSize: 16, height: 1.5),
+    return AuroraSelectionArea(
+      child: ListView.separated(
+        itemCount: itemCount,
+        separatorBuilder: (_, __) => const SizedBox(height: 12),
+        itemBuilder: (context, index) {
+          final tgt = index < targetLines.length ? targetLines[index] : '';
+          if (!_showComparison) {
+            return AuroraSelectableText(
+              tgt,
+              useSelectionArea: false,
+              style: const TextStyle(fontSize: 16, height: 1.5),
+            );
+          }
+          final src = index < sourceLines.length ? sourceLines[index] : '';
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (src.isNotEmpty)
+                AuroraSelectableText(
+                  src,
+                  useSelectionArea: false,
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 14,
+                    height: 1.4,
+                  ),
+                ),
+              if (_showComparison && src.isNotEmpty && tgt.isNotEmpty)
+                const SizedBox(height: 4),
+              if (_showComparison && tgt.isNotEmpty)
+                AuroraSelectableText(
+                  tgt,
+                  useSelectionArea: false,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    height: 1.5,
+                  ),
+                ),
+            ],
           );
-        }
-        final src = index < sourceLines.length ? sourceLines[index] : '';
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (src.isNotEmpty)
-              SelectableText(
-                src,
-                style: TextStyle(
-                    color: Colors.grey[600], fontSize: 14, height: 1.4),
-              ),
-            if (src.isNotEmpty && tgt.isNotEmpty) const SizedBox(height: 4),
-            if (tgt.isNotEmpty)
-              SelectableText(
-                tgt,
-                style: const TextStyle(
-                    fontSize: 16, fontWeight: FontWeight.w500, height: 1.5),
-              ),
-          ],
-        );
-      },
+        },
+      ),
     );
   }
 }

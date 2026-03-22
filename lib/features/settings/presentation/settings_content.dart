@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:fluent_ui/fluent_ui.dart' as fluent;
@@ -39,6 +40,7 @@ class SettingsContent extends ConsumerStatefulWidget {
 class _SettingsContentState extends ConsumerState<SettingsContent> {
   final TextEditingController _apiKeyController = TextEditingController();
   final TextEditingController _baseUrlController = TextEditingController();
+  final FocusNode _baseUrlFocusNode = FocusNode();
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _userNameController = TextEditingController();
   final TextEditingController _llmNameController = TextEditingController();
@@ -46,6 +48,7 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
   // Inline renaming state
   String? _editingProviderId;
   String? _currentProviderId;
+  bool _isBaseUrlDirty = false;
 
   Future<void> _refreshModelsWithNotice(AppLocalizations l10n) async {
     final success = await ref.read(settingsProvider.notifier).fetchModels();
@@ -79,12 +82,19 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
   @override
   void initState() {
     super.initState();
+    _baseUrlController.addListener(_handleBaseUrlChanged);
+    _baseUrlFocusNode.addListener(() {
+      if (!_baseUrlFocusNode.hasFocus) {
+        unawaited(_commitBaseUrlDraft());
+      }
+    });
   }
 
   @override
   void dispose() {
     _apiKeyController.dispose();
     _baseUrlController.dispose();
+    _baseUrlFocusNode.dispose();
     _nameController.dispose();
     _userNameController.dispose();
     _llmNameController.dispose();
@@ -92,16 +102,64 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
     super.dispose();
   }
 
+  ProviderConfig? _currentProviderForDraft() {
+    final providerId = _currentProviderId;
+    if (providerId == null) return null;
+    final settings = ref.read(settingsProvider);
+    for (final provider in settings.providers) {
+      if (provider.id == providerId) {
+        return provider;
+      }
+    }
+    return null;
+  }
+
+  void _handleBaseUrlChanged() {
+    final provider = _currentProviderForDraft();
+    _isBaseUrlDirty =
+        provider != null && _baseUrlController.text != provider.baseUrl;
+  }
+
+  Future<void> _commitBaseUrlDraft() async {
+    final provider = _currentProviderForDraft();
+    if (provider == null) return;
+
+    final normalizedBaseUrl = _baseUrlController.text.trim();
+    final hasVisualChange = _baseUrlController.text != normalizedBaseUrl;
+    final hasStateChange = normalizedBaseUrl != provider.baseUrl;
+    if (!hasVisualChange && !hasStateChange && !_isBaseUrlDirty) {
+      return;
+    }
+
+    if (hasStateChange) {
+      await ref.read(settingsProvider.notifier).commitProviderBaseUrl(
+            id: provider.id,
+            baseUrl: normalizedBaseUrl,
+          );
+      if (!mounted) return;
+    }
+
+    if (_baseUrlController.text != normalizedBaseUrl) {
+      _baseUrlController.value = _baseUrlController.value.copyWith(
+        text: normalizedBaseUrl,
+        selection: TextSelection.collapsed(offset: normalizedBaseUrl.length),
+        composing: TextRange.empty,
+      );
+    }
+    _isBaseUrlDirty = false;
+  }
+
   void _updateControllers(ProviderConfig provider) {
     if (_currentProviderId != provider.id) {
       _visibleKeyIndices.clear();
       _currentProviderId = provider.id;
+      _isBaseUrlDirty = false;
     }
 
     if (_apiKeyController.text != provider.apiKey) {
       _apiKeyController.text = provider.apiKey;
     }
-    if (_baseUrlController.text != provider.baseUrl) {
+    if (!_isBaseUrlDirty && _baseUrlController.text != provider.baseUrl) {
       _baseUrlController.text = provider.baseUrl;
     }
     if (_nameController.text != provider.name) {
