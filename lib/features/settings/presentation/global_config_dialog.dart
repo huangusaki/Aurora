@@ -4,6 +4,7 @@ import 'package:fluent_ui/fluent_ui.dart';
 import 'package:aurora/shared/riverpod_compat.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 import 'package:aurora/shared/widgets/aurora_dropdown.dart';
+import 'settings_config_draft.dart';
 import 'settings_provider.dart';
 
 class GlobalConfigDialog extends ConsumerStatefulWidget {
@@ -16,18 +17,8 @@ class GlobalConfigDialog extends ConsumerStatefulWidget {
 }
 
 class _GlobalConfigDialogState extends ConsumerState<GlobalConfigDialog> {
-  late Map<String, dynamic> _globalSettings;
+  late SettingsConfigDraft _draft;
   late List<String> _globalExcludeModels;
-
-  // Thinking config temporary state
-  bool _thinkingEnabled = false;
-  String _thinkingBudget = '';
-  String _thinkingMode = 'auto';
-
-  // Generation config temporary state
-  String _temperature = '';
-  String _maxTokens = '';
-  String _contextLength = '';
 
   @override
   void initState() {
@@ -36,93 +27,36 @@ class _GlobalConfigDialogState extends ConsumerState<GlobalConfigDialog> {
   }
 
   void _loadSettings() {
-    _globalSettings = Map<String, dynamic>.from(widget.provider.globalSettings);
+    _draft = SettingsConfigDraft.fromSettings(widget.provider.globalSettings);
     _globalExcludeModels =
         List<String>.from(widget.provider.globalExcludeModels);
+  }
 
-    final thinkingConfig = _globalSettings['_aurora_thinking_config'];
-    if (thinkingConfig != null && thinkingConfig is Map) {
-      _thinkingEnabled = thinkingConfig['enabled'] == true;
-      _thinkingBudget = thinkingConfig['budget']?.toString() ?? '';
-      _thinkingMode = thinkingConfig['mode']?.toString() ?? 'auto';
-    } else {
-      _thinkingEnabled = false;
-      _thinkingBudget = '';
-      _thinkingMode = 'auto';
-    }
-
-    final generationConfig = _globalSettings['_aurora_generation_config'];
-    if (generationConfig != null && generationConfig is Map) {
-      _temperature = generationConfig['temperature']?.toString() ?? '';
-      _maxTokens = generationConfig['max_tokens']?.toString() ?? '';
-      _contextLength = generationConfig['context_length']?.toString() ?? '';
-    } else {
-      _temperature = '';
-      _maxTokens = '';
-      _contextLength = '';
-    }
+  @override
+  void dispose() {
+    _draft.dispose();
+    super.dispose();
   }
 
   void _saveSettings({
     bool? thinkingEnabled,
-    String? thinkingBudget,
     String? thinkingMode,
-    String? temperature,
-    String? maxTokens,
-    String? contextLength,
     Map<String, dynamic>? customParams,
   }) {
-    // Update local state
-    if (thinkingEnabled != null) _thinkingEnabled = thinkingEnabled;
-    if (thinkingBudget != null) _thinkingBudget = thinkingBudget;
-    if (thinkingMode != null) _thinkingMode = thinkingMode;
-    if (temperature != null) _temperature = temperature;
-    if (maxTokens != null) _maxTokens = maxTokens;
-    if (contextLength != null) _contextLength = contextLength;
-
-    final newSettings = Map<String, dynamic>.from(_globalSettings);
-
-    // Apply Custom Params override if provided
-    if (customParams != null) {
-      // Remove all non-internal keys
-      newSettings.removeWhere((key, value) => !key.startsWith('_aurora_'));
-      // Add new custom params
-      newSettings.addAll(customParams);
+    if (thinkingEnabled != null) {
+      _draft.thinkingEnabled = thinkingEnabled;
     }
-
-    // Handle Thinking Config
-    if (_thinkingEnabled) {
-      newSettings['_aurora_thinking_config'] = {
-        'enabled': true,
-        'budget': _thinkingBudget,
-        'mode': _thinkingMode,
-      };
-    } else {
-      newSettings.remove('_aurora_thinking_config');
+    if (thinkingMode != null) {
+      _draft.thinkingMode = thinkingMode;
     }
-
-    // Handle Generation Config
-    if (_temperature.isNotEmpty ||
-        _maxTokens.isNotEmpty ||
-        _contextLength.isNotEmpty) {
-      newSettings['_aurora_generation_config'] = {
-        if (_temperature.isNotEmpty) 'temperature': _temperature,
-        if (_maxTokens.isNotEmpty) 'max_tokens': _maxTokens,
-        if (_contextLength.isNotEmpty) 'context_length': _contextLength,
-      };
-    } else {
-      newSettings.remove('_aurora_generation_config');
-    }
-
-    setState(() {
-      _globalSettings = newSettings;
-    });
+    final newSettings = _draft.buildSettings(customParams: customParams);
 
     ref.read(settingsProvider.notifier).updateProvider(
           id: widget.provider.id,
           globalSettings: newSettings,
           globalExcludeModels: _globalExcludeModels,
         );
+    setState(() {});
   }
 
   void _updateExcludeModels(List<String> newModels) {
@@ -210,7 +144,7 @@ class _GlobalConfigDialogState extends ConsumerState<GlobalConfigDialog> {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              _formatValue(value),
+              formatSettingsParamValue(value),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
@@ -230,11 +164,6 @@ class _GlobalConfigDialogState extends ConsumerState<GlobalConfigDialog> {
         ],
       ),
     );
-  }
-
-  String _formatValue(dynamic value) {
-    if (value is String) return '"$value"';
-    return jsonEncode(value);
   }
 
   void _addParam(Map<String, dynamic> currentParams) async {
@@ -276,8 +205,7 @@ class _GlobalConfigDialogState extends ConsumerState<GlobalConfigDialog> {
     final theme = FluentTheme.of(context);
 
     // Extract custom settings (exclude internal _aurora_ keys)
-    final customParams = Map<String, dynamic>.fromEntries(
-        _globalSettings.entries.where((e) => !e.key.startsWith('_aurora_')));
+    final customParams = _draft.customParams;
 
     return ContentDialog(
       constraints: const BoxConstraints(maxWidth: 600, maxHeight: 800),
@@ -352,10 +280,10 @@ class _GlobalConfigDialogState extends ConsumerState<GlobalConfigDialog> {
               title: l10n.thinkingConfig,
               icon: AuroraIcons.lightbulb,
               headerAction: ToggleSwitch(
-                checked: _thinkingEnabled,
+                checked: _draft.thinkingEnabled,
                 onChanged: (v) => _saveSettings(thinkingEnabled: v),
               ),
-              child: _thinkingEnabled
+              child: _draft.thinkingEnabled
                   ? Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -366,18 +294,15 @@ class _GlobalConfigDialogState extends ConsumerState<GlobalConfigDialog> {
                           label: l10n.thinkingBudget,
                           child: TextBox(
                             placeholder: l10n.thinkingBudgetHint,
-                            controller:
-                                TextEditingController(text: _thinkingBudget)
-                                  ..selection = TextSelection.collapsed(
-                                      offset: _thinkingBudget.length),
-                            onChanged: (v) => _saveSettings(thinkingBudget: v),
+                            controller: _draft.thinkingBudgetController,
+                            onChanged: (_) => _saveSettings(),
                           ),
                         ),
                         const SizedBox(height: 12),
                         InfoLabel(
                           label: l10n.transmissionMode,
                           child: AuroraFluentDropdownField<String>(
-                            value: _thinkingMode,
+                            value: _draft.thinkingMode,
                             options: [
                               AuroraDropdownOption(
                                 value: 'auto',
@@ -417,10 +342,8 @@ class _GlobalConfigDialogState extends ConsumerState<GlobalConfigDialog> {
                     label: l10n.temperature,
                     child: TextBox(
                       placeholder: l10n.temperatureHint,
-                      controller: TextEditingController(text: _temperature)
-                        ..selection = TextSelection.collapsed(
-                            offset: _temperature.length),
-                      onChanged: (v) => _saveSettings(temperature: v),
+                      controller: _draft.temperatureController,
+                      onChanged: (_) => _saveSettings(),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -428,10 +351,8 @@ class _GlobalConfigDialogState extends ConsumerState<GlobalConfigDialog> {
                     label: l10n.maxTokens,
                     child: TextBox(
                       placeholder: l10n.maxTokensHint,
-                      controller: TextEditingController(text: _maxTokens)
-                        ..selection =
-                            TextSelection.collapsed(offset: _maxTokens.length),
-                      onChanged: (v) => _saveSettings(maxTokens: v),
+                      controller: _draft.maxTokensController,
+                      onChanged: (_) => _saveSettings(),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -439,10 +360,8 @@ class _GlobalConfigDialogState extends ConsumerState<GlobalConfigDialog> {
                     label: l10n.contextLength,
                     child: TextBox(
                       placeholder: l10n.contextLengthHint,
-                      controller: TextEditingController(text: _contextLength)
-                        ..selection = TextSelection.collapsed(
-                            offset: _contextLength.length),
-                      onChanged: (v) => _saveSettings(contextLength: v),
+                      controller: _draft.contextLengthController,
+                      onChanged: (_) => _saveSettings(),
                     ),
                   ),
                 ],
@@ -506,7 +425,8 @@ class _AddParamDialog extends StatefulWidget {
 class _AddParamDialogState extends State<_AddParamDialog> {
   final _keyController = TextEditingController();
   final _valueController = TextEditingController();
-  String _type = 'String';
+  SettingsParamValueType _type = SettingsParamValueType.string;
+
   @override
   void initState() {
     super.initState();
@@ -514,20 +434,32 @@ class _AddParamDialogState extends State<_AddParamDialog> {
       _keyController.text = widget.initialKey!;
     }
     if (widget.initialValue != null) {
-      if (widget.initialValue is String) {
-        _valueController.text = widget.initialValue;
-        _type = 'String';
-      } else {
+      _type = detectSettingsParamValueType(widget.initialValue);
+      if (_type == SettingsParamValueType.json) {
         _valueController.text = jsonEncode(widget.initialValue);
-        _type = 'JSON';
+      } else {
+        _valueController.text = widget.initialValue.toString();
       }
     }
+  }
+
+  @override
+  void dispose() {
+    _keyController.dispose();
+    _valueController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final isEditing = widget.initialKey != null;
     final l10n = AppLocalizations.of(context)!;
+    final typeLabels = <SettingsParamValueType, String>{
+      SettingsParamValueType.string: l10n.typeText,
+      SettingsParamValueType.number: l10n.typeNumber,
+      SettingsParamValueType.boolean: l10n.typeBoolean,
+      SettingsParamValueType.json: l10n.typeJson,
+    };
 
     return ContentDialog(
       title: Text(isEditing ? l10n.editParam : l10n.addCustomParam),
@@ -545,12 +477,16 @@ class _AddParamDialogState extends State<_AddParamDialog> {
           const SizedBox(height: 12),
           InfoLabel(
             label: l10n.typeLabel,
-            child: AuroraFluentDropdownField<String>(
+            child: AuroraFluentDropdownField<SettingsParamValueType>(
               value: _type,
-              options: [
-                AuroraDropdownOption(value: 'String', label: l10n.typeText),
-                AuroraDropdownOption(value: 'JSON', label: l10n.typeJson),
-              ],
+              options: typeLabels.entries
+                  .map(
+                    (entry) => AuroraDropdownOption<SettingsParamValueType>(
+                      value: entry.key,
+                      label: entry.value,
+                    ),
+                  )
+                  .toList(growable: false),
               onChanged: (v) => setState(() => _type = v!),
             ),
           ),
@@ -559,9 +495,10 @@ class _AddParamDialogState extends State<_AddParamDialog> {
             label: l10n.paramValue,
             child: TextBox(
               controller: _valueController,
-              placeholder:
-                  _type == 'JSON' ? '{"key": "value"}' : l10n.paramValue,
-              maxLines: _type == 'JSON' ? 3 : 1,
+              placeholder: _type == SettingsParamValueType.json
+                  ? '{"key": "value"}'
+                  : l10n.paramValue,
+              maxLines: _type == SettingsParamValueType.json ? 3 : 1,
             ),
           ),
         ],
@@ -575,17 +512,13 @@ class _AddParamDialogState extends State<_AddParamDialog> {
           onPressed: () {
             final key = _keyController.text.trim();
             if (key.isEmpty) return;
-            dynamic value;
-            if (_type == 'String') {
-              value = _valueController.text;
-            } else {
-              try {
-                value = jsonDecode(_valueController.text);
-              } catch (_) {
-                return;
-              }
+            try {
+              final value =
+                  parseSettingsParamValue(_type, _valueController.text);
+              Navigator.pop(context, MapEntry(key, value));
+            } catch (_) {
+              return;
             }
-            Navigator.pop(context, MapEntry(key, value));
           },
           child: Text(isEditing ? l10n.save : l10n.add),
         ),

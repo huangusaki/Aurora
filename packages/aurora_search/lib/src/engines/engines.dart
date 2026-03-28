@@ -68,7 +68,6 @@ final Map<
     'qwant': ({proxy, timeout, verify = true}) =>
         QwantNewsEngine(proxy: proxy, timeout: timeout, verify: verify),
   },
-  'books': {},
 };
 List<String> getAvailableEngines(String category) =>
     engines[category]?.keys.toList() ?? [];

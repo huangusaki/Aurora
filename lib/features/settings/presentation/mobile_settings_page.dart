@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:fluent_ui/fluent_ui.dart' as fluent;
 import 'package:aurora/shared/riverpod_compat.dart';
 import '../domain/provider_route_config.dart';
 import 'settings_provider.dart';
@@ -10,6 +9,7 @@ import 'package:aurora/shared/widgets/aurora_dropdown.dart';
 import 'package:aurora/shared/widgets/aurora_notice.dart';
 import 'model_display_name.dart';
 import 'provider_route_labels.dart';
+import 'settings_config_draft.dart';
 import 'widgets/mobile_settings_widgets.dart';
 
 class MobileSettingsPage extends ConsumerStatefulWidget {
@@ -703,17 +703,8 @@ class _ModelConfigDialog extends StatefulWidget {
 }
 
 class _ModelConfigDialogState extends State<_ModelConfigDialog> {
+  late SettingsConfigDraft _draft;
   late Map<String, dynamic> _modelSettings;
-
-  // Thinking config temporary state
-  bool _thinkingEnabled = false;
-  String _thinkingBudget = '';
-  String _thinkingMode = 'auto';
-
-  // Generation config temporary state
-  String _temperature = '';
-  String _maxTokens = '';
-  String _contextLength = '';
 
   @override
   void initState() {
@@ -723,98 +714,27 @@ class _ModelConfigDialogState extends State<_ModelConfigDialog> {
 
   void _loadSettings() {
     _modelSettings = Map<String, dynamic>.from(widget.initialSettings);
+    _draft = SettingsConfigDraft.fromSettings(_modelSettings);
+  }
 
-    final thinkingConfig = _modelSettings['_aurora_thinking_config'];
-    // Check for new structure first
-    if (thinkingConfig != null && thinkingConfig is Map) {
-      _thinkingEnabled = thinkingConfig['enabled'] == true;
-      _thinkingBudget = thinkingConfig['budget']?.toString() ?? '';
-      _thinkingMode = thinkingConfig['mode']?.toString() ?? 'auto';
-    } else {
-      // Fallback/Migration for old structure if present
-      // Old keys: _aurora_thinking_enabled, _aurora_thinking_value, _aurora_thinking_mode
-      if (_modelSettings.containsKey('_aurora_thinking_enabled')) {
-        _thinkingEnabled = _modelSettings['_aurora_thinking_enabled'] == true;
-        _thinkingBudget =
-            _modelSettings['_aurora_thinking_value']?.toString() ?? '';
-        _thinkingMode =
-            _modelSettings['_aurora_thinking_mode']?.toString() ?? 'auto';
-
-        // Clean up old keys immediately from local copy so they don't persist
-        _modelSettings.remove('_aurora_thinking_enabled');
-        _modelSettings.remove('_aurora_thinking_value');
-        _modelSettings.remove('_aurora_thinking_mode');
-      } else {
-        _thinkingEnabled = false;
-        _thinkingBudget = '';
-        _thinkingMode = 'auto';
-      }
-    }
-
-    // Load generation config
-    final generationConfig = _modelSettings['_aurora_generation_config'];
-    if (generationConfig != null && generationConfig is Map) {
-      _temperature = generationConfig['temperature']?.toString() ?? '';
-      _maxTokens = generationConfig['max_tokens']?.toString() ?? '';
-      _contextLength = generationConfig['context_length']?.toString() ?? '';
-    } else {
-      _temperature = '';
-      _maxTokens = '';
-      _contextLength = '';
-    }
+  @override
+  void dispose() {
+    _draft.dispose();
+    super.dispose();
   }
 
   void _saveSettings({
     bool? thinkingEnabled,
-    String? thinkingBudget,
     String? thinkingMode,
-    String? temperature,
-    String? maxTokens,
-    String? contextLength,
     Map<String, dynamic>? customParams,
   }) {
-    // Update local state
-    if (thinkingEnabled != null) _thinkingEnabled = thinkingEnabled;
-    if (thinkingBudget != null) _thinkingBudget = thinkingBudget;
-    if (thinkingMode != null) _thinkingMode = thinkingMode;
-    if (temperature != null) _temperature = temperature;
-    if (maxTokens != null) _maxTokens = maxTokens;
-    if (contextLength != null) _contextLength = contextLength;
-
-    // Construct new settings map
-    final newSettings = Map<String, dynamic>.from(_modelSettings);
-
-    // Handle Thinking Config
-    if (_thinkingEnabled) {
-      newSettings['_aurora_thinking_config'] = {
-        'enabled': true,
-        'budget': _thinkingBudget,
-        'mode': _thinkingMode,
-      };
-    } else {
-      newSettings.remove('_aurora_thinking_config');
+    if (thinkingEnabled != null) {
+      _draft.thinkingEnabled = thinkingEnabled;
     }
-
-    // Handle Generation Config
-    if (_temperature.isNotEmpty ||
-        _maxTokens.isNotEmpty ||
-        _contextLength.isNotEmpty) {
-      newSettings['_aurora_generation_config'] = {
-        if (_temperature.isNotEmpty) 'temperature': _temperature,
-        if (_maxTokens.isNotEmpty) 'max_tokens': _maxTokens,
-        if (_contextLength.isNotEmpty) 'context_length': _contextLength,
-      };
-    } else {
-      newSettings.remove('_aurora_generation_config');
+    if (thinkingMode != null) {
+      _draft.thinkingMode = thinkingMode;
     }
-
-    // Handle Custom Params
-    if (customParams != null) {
-      // Remove all non-internal keys (those not starting with _aurora_)
-      newSettings.removeWhere((key, _) => !key.startsWith('_aurora_'));
-      // Add new custom params
-      newSettings.addAll(customParams);
-    }
+    final newSettings = _draft.buildSettings(customParams: customParams);
 
     setState(() {
       _modelSettings = newSettings;
@@ -830,9 +750,7 @@ class _ModelConfigDialogState extends State<_ModelConfigDialog> {
         initialKey: key,
         initialValue: value,
         onSave: (newKey, newValue) {
-          final currentParams = Map<String, dynamic>.fromEntries(_modelSettings
-              .entries
-              .where((e) => !e.key.startsWith('_aurora_')));
+          final currentParams = _draft.customParams;
 
           if (key != null && key != newKey) {
             currentParams.remove(key);
@@ -845,8 +763,7 @@ class _ModelConfigDialogState extends State<_ModelConfigDialog> {
   }
 
   void _removeParam(String key) {
-    final currentParams = Map<String, dynamic>.fromEntries(
-        _modelSettings.entries.where((e) => !e.key.startsWith('_aurora_')));
+    final currentParams = _draft.customParams;
     currentParams.remove(key);
     _saveSettings(customParams: currentParams);
   }
@@ -857,8 +774,7 @@ class _ModelConfigDialogState extends State<_ModelConfigDialog> {
     final theme = Theme.of(context);
 
     // Extract custom params for display (exclude _aurora_ keys)
-    final customParams = Map<String, dynamic>.fromEntries(
-        _modelSettings.entries.where((e) => !e.key.startsWith('_aurora_')));
+    final customParams = _draft.customParams;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -881,10 +797,10 @@ class _ModelConfigDialogState extends State<_ModelConfigDialog> {
                   title: l10n.thinkingConfig,
                   icon: Icons.lightbulb_outline,
                   headerAction: Switch(
-                    value: _thinkingEnabled,
+                    value: _draft.thinkingEnabled,
                     onChanged: (v) => _saveSettings(thinkingEnabled: v),
                   ),
-                  child: _thinkingEnabled
+                  child: _draft.thinkingEnabled
                       ? Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -892,22 +808,18 @@ class _ModelConfigDialogState extends State<_ModelConfigDialog> {
                             const Divider(),
                             const SizedBox(height: 16),
                             TextField(
-                              controller:
-                                  TextEditingController(text: _thinkingBudget)
-                                    ..selection = TextSelection.collapsed(
-                                        offset: _thinkingBudget.length),
+                              controller: _draft.thinkingBudgetController,
                               decoration: InputDecoration(
                                 labelText: l10n.thinkingBudget,
                                 hintText: l10n.thinkingBudgetHint,
                                 border: const OutlineInputBorder(),
                                 isDense: true,
                               ),
-                              onChanged: (v) =>
-                                  _saveSettings(thinkingBudget: v),
+                              onChanged: (_) => _saveSettings(),
                             ),
                             const SizedBox(height: 12),
                             AuroraMaterialDropdownField<String>(
-                              value: _thinkingMode,
+                              value: _draft.thinkingMode,
                               label: l10n.transmissionMode,
                               options: [
                                 AuroraDropdownOption(
@@ -942,42 +854,36 @@ class _ModelConfigDialogState extends State<_ModelConfigDialog> {
                     children: [
                       const SizedBox(height: 16),
                       TextField(
-                        controller: TextEditingController(text: _temperature)
-                          ..selection = TextSelection.collapsed(
-                              offset: _temperature.length),
+                        controller: _draft.temperatureController,
                         decoration: InputDecoration(
                           labelText: l10n.temperature,
                           hintText: l10n.temperatureHint,
                           border: const OutlineInputBorder(),
                           isDense: true,
                         ),
-                        onChanged: (v) => _saveSettings(temperature: v),
+                        onChanged: (_) => _saveSettings(),
                       ),
                       const SizedBox(height: 12),
                       TextField(
-                        controller: TextEditingController(text: _maxTokens)
-                          ..selection = TextSelection.collapsed(
-                              offset: _maxTokens.length),
+                        controller: _draft.maxTokensController,
                         decoration: InputDecoration(
                           labelText: l10n.maxTokens,
                           hintText: l10n.maxTokensHint,
                           border: const OutlineInputBorder(),
                           isDense: true,
                         ),
-                        onChanged: (v) => _saveSettings(maxTokens: v),
+                        onChanged: (_) => _saveSettings(),
                       ),
                       const SizedBox(height: 12),
                       TextField(
-                        controller: TextEditingController(text: _contextLength)
-                          ..selection = TextSelection.collapsed(
-                              offset: _contextLength.length),
+                        controller: _draft.contextLengthController,
                         decoration: InputDecoration(
                           labelText: l10n.contextLength,
                           hintText: l10n.contextLengthHint,
                           border: const OutlineInputBorder(),
                           isDense: true,
                         ),
-                        onChanged: (v) => _saveSettings(contextLength: v),
+                        onChanged: (_) => _saveSettings(),
                       ),
                     ],
                   ),
@@ -1136,7 +1042,7 @@ class _ModelConfigDialogState extends State<_ModelConfigDialog> {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              _formatValue(value),
+              formatSettingsParamValue(value),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
@@ -1164,11 +1070,6 @@ class _ModelConfigDialogState extends State<_ModelConfigDialog> {
       ),
     );
   }
-
-  String _formatValue(dynamic value) {
-    if (value is String) return '"$value"';
-    return jsonEncode(value);
-  }
 }
 
 class _ParameterConfigDialog extends StatefulWidget {
@@ -1187,21 +1088,15 @@ class _ParameterConfigDialog extends StatefulWidget {
 class _ParameterConfigDialogState extends State<_ParameterConfigDialog> {
   final _keyController = TextEditingController();
   final _valueController = TextEditingController();
-  String _type = 'string';
+  SettingsParamValueType _type = SettingsParamValueType.string;
   @override
   void initState() {
     super.initState();
     if (widget.initialKey != null) {
       _keyController.text = widget.initialKey!;
       final val = widget.initialValue;
-      if (val is bool) {
-        _type = 'boolean';
-        _valueController.text = val.toString();
-      } else if (val is num) {
-        _type = 'number';
-        _valueController.text = val.toString();
-      } else if (val is Map || val is List) {
-        _type = 'json';
+      _type = detectSettingsParamValueType(val);
+      if (_type == SettingsParamValueType.json) {
         try {
           _valueController.text =
               const JsonEncoder.withIndent('  ').convert(val);
@@ -1209,7 +1104,6 @@ class _ParameterConfigDialogState extends State<_ParameterConfigDialog> {
           _valueController.text = jsonEncode(val);
         }
       } else {
-        _type = 'string';
         _valueController.text = val.toString();
       }
     }
@@ -1227,10 +1121,10 @@ class _ParameterConfigDialogState extends State<_ParameterConfigDialog> {
     final isEditing = widget.initialKey != null;
     final l10n = AppLocalizations.of(context)!;
     final typeMap = {
-      'string': l10n.typeText,
-      'number': l10n.typeNumber,
-      'boolean': l10n.typeBoolean,
-      'json': l10n.typeJson,
+      SettingsParamValueType.string: l10n.typeText,
+      SettingsParamValueType.number: l10n.typeNumber,
+      SettingsParamValueType.boolean: l10n.typeBoolean,
+      SettingsParamValueType.json: l10n.typeJson,
     };
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -1252,12 +1146,12 @@ class _ParameterConfigDialogState extends State<_ParameterConfigDialog> {
                 ),
               ),
               const SizedBox(height: 12),
-              AuroraMaterialDropdownField<String>(
+              AuroraMaterialDropdownField<SettingsParamValueType>(
                 value: _type,
                 label: l10n.typeLabel,
                 options: typeMap.entries
                     .map(
-                      (entry) => AuroraDropdownOption<String>(
+                      (entry) => AuroraDropdownOption<SettingsParamValueType>(
                         value: entry.key,
                         label: entry.value,
                       ),
@@ -1268,8 +1162,8 @@ class _ParameterConfigDialogState extends State<_ParameterConfigDialog> {
               const SizedBox(height: 12),
               TextField(
                 controller: _valueController,
-                maxLines: _type == 'json' ? 5 : 1,
-                minLines: _type == 'json' ? 3 : 1,
+                maxLines: _type == SettingsParamValueType.json ? 5 : 1,
+                minLines: _type == SettingsParamValueType.json ? 3 : 1,
                 decoration: InputDecoration(
                   labelText: l10n.paramValue,
                   hintText: l10n.paramValue,
@@ -1296,21 +1190,8 @@ class _ParameterConfigDialogState extends State<_ParameterConfigDialog> {
                     final key = _keyController.text.trim();
                     final valueStr = _valueController.text.trim();
                     if (key.isEmpty) return;
-                    dynamic value;
                     try {
-                      switch (_type) {
-                        case 'number':
-                          value = num.parse(valueStr);
-                          break;
-                        case 'boolean':
-                          value = valueStr.toLowerCase() == 'true';
-                          break;
-                        case 'json':
-                          value = jsonDecode(valueStr);
-                          break;
-                        default:
-                          value = valueStr;
-                      }
+                      final value = parseSettingsParamValue(_type, valueStr);
                       widget.onSave(key, value);
                       Navigator.pop(context);
                     } catch (e) {
@@ -1425,13 +1306,7 @@ class _GlobalConfigBottomSheet extends ConsumerStatefulWidget {
 
 class _GlobalConfigBottomSheetState
     extends ConsumerState<_GlobalConfigBottomSheet> {
-  late bool _thinkingEnabled;
-  late String _thinkingBudget;
-  late String _thinkingMode;
-  late String _temperature;
-  late String _maxTokens;
-  late String _contextLength;
-  late Map<String, dynamic> _customParams;
+  late SettingsConfigDraft _draft;
   late List<String> _excludedModels;
 
   @override
@@ -1441,63 +1316,34 @@ class _GlobalConfigBottomSheetState
   }
 
   void _loadSettings() {
-    final settings = widget.provider.globalSettings;
-    // Thinking
-    final thinking = settings['_aurora_thinking_config'];
-    if (thinking != null && thinking is Map) {
-      _thinkingEnabled = thinking['enabled'] == true;
-      _thinkingBudget = thinking['budget']?.toString() ?? '';
-      _thinkingMode = thinking['mode']?.toString() ?? 'auto';
-    } else {
-      _thinkingEnabled = false;
-      _thinkingBudget = '';
-      _thinkingMode = 'auto';
-    }
-
-    // Generation
-    final gen = settings['_aurora_generation_config'];
-    if (gen != null && gen is Map) {
-      _temperature = gen['temperature']?.toString() ?? '';
-      _maxTokens = gen['max_tokens']?.toString() ?? '';
-      _contextLength = gen['context_length']?.toString() ?? '';
-    } else {
-      _temperature = '';
-      _maxTokens = '';
-      _contextLength = '';
-    }
-
-    // Excluded Models
+    _draft = SettingsConfigDraft.fromSettings(widget.provider.globalSettings);
     _excludedModels = List<String>.from(widget.provider.globalExcludeModels);
+  }
 
-    // Custom Params
-    _customParams = Map<String, dynamic>.fromEntries(
-        settings.entries.where((e) => !e.key.startsWith('_aurora_')));
+  @override
+  void dispose() {
+    _draft.dispose();
+    super.dispose();
   }
 
   void _saveSettings({
     bool? thinkingEnabled,
-    String? thinkingBudget,
     String? thinkingMode,
-    String? temperature,
-    String? maxTokens,
-    String? contextLength,
   }) {
-    setState(() {
-      if (thinkingEnabled != null) _thinkingEnabled = thinkingEnabled;
-      if (thinkingBudget != null) _thinkingBudget = thinkingBudget;
-      if (thinkingMode != null) _thinkingMode = thinkingMode;
-      if (temperature != null) _temperature = temperature;
-      if (maxTokens != null) _maxTokens = maxTokens;
-      if (contextLength != null) _contextLength = contextLength;
-    });
+    if (thinkingEnabled != null) {
+      _draft.thinkingEnabled = thinkingEnabled;
+    }
+    if (thinkingMode != null) {
+      _draft.thinkingMode = thinkingMode;
+    }
     _persist();
+    setState(() {});
   }
 
   void _saveCustomParams(Map<String, dynamic> newParams) {
-    setState(() {
-      _customParams = newParams;
-    });
+    _draft.buildSettings(customParams: newParams);
     _persist();
+    setState(() {});
   }
 
   void _saveExclusions(List<String> newExclusions) {
@@ -1511,26 +1357,7 @@ class _GlobalConfigBottomSheetState
   }
 
   void _persist() {
-    final Map<String, dynamic> newGlobalSettings = {};
-    if (_thinkingEnabled ||
-        _thinkingBudget.isNotEmpty ||
-        _thinkingMode != 'auto') {
-      newGlobalSettings['_aurora_thinking_config'] = {
-        'enabled': _thinkingEnabled,
-        'budget': int.tryParse(_thinkingBudget),
-        'mode': _thinkingMode,
-      };
-    }
-    if (_temperature.isNotEmpty ||
-        _maxTokens.isNotEmpty ||
-        _contextLength.isNotEmpty) {
-      newGlobalSettings['_aurora_generation_config'] = {
-        if (_temperature.isNotEmpty) 'temperature': _temperature,
-        if (_maxTokens.isNotEmpty) 'max_tokens': _maxTokens,
-        if (_contextLength.isNotEmpty) 'context_length': _contextLength,
-      };
-    }
-    newGlobalSettings.addAll(_customParams);
+    final newGlobalSettings = _draft.buildSettings();
 
     ref.read(settingsProvider.notifier).updateProvider(
           id: widget.provider.id,
@@ -1558,7 +1385,7 @@ class _GlobalConfigBottomSheetState
         initialKey: key,
         initialValue: value,
         onSave: (k, v) {
-          final newParams = Map<String, dynamic>.from(_customParams);
+          final newParams = _draft.customParams;
           if (key != null && key != k) {
             newParams.remove(key);
           }
@@ -1571,7 +1398,7 @@ class _GlobalConfigBottomSheetState
   }
 
   void _removeParam(String key) {
-    final newParams = Map<String, dynamic>.from(_customParams);
+    final newParams = _draft.customParams;
     newParams.remove(key);
     _saveCustomParams(newParams);
   }
@@ -1629,10 +1456,10 @@ class _GlobalConfigBottomSheetState
                   title: l10n.thinkingConfig,
                   icon: Icons.lightbulb_outline,
                   headerAction: Switch(
-                    value: _thinkingEnabled,
+                    value: _draft.thinkingEnabled,
                     onChanged: (v) => _saveSettings(thinkingEnabled: v),
                   ),
-                  child: _thinkingEnabled
+                  child: _draft.thinkingEnabled
                       ? Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -1640,22 +1467,18 @@ class _GlobalConfigBottomSheetState
                             const Divider(),
                             const SizedBox(height: 16),
                             TextField(
-                              controller:
-                                  TextEditingController(text: _thinkingBudget)
-                                    ..selection = TextSelection.collapsed(
-                                        offset: _thinkingBudget.length),
+                              controller: _draft.thinkingBudgetController,
                               decoration: InputDecoration(
                                 labelText: l10n.thinkingBudget,
                                 hintText: l10n.thinkingBudgetHint,
                                 border: const OutlineInputBorder(),
                                 isDense: true,
                               ),
-                              onChanged: (v) =>
-                                  _saveSettings(thinkingBudget: v),
+                              onChanged: (_) => _saveSettings(),
                             ),
                             const SizedBox(height: 12),
                             AuroraMaterialDropdownField<String>(
-                              value: _thinkingMode,
+                              value: _draft.thinkingMode,
                               label: l10n.transmissionMode,
                               options: [
                                 AuroraDropdownOption(
@@ -1690,42 +1513,36 @@ class _GlobalConfigBottomSheetState
                     children: [
                       const SizedBox(height: 16),
                       TextField(
-                        controller: TextEditingController(text: _temperature)
-                          ..selection = TextSelection.collapsed(
-                              offset: _temperature.length),
+                        controller: _draft.temperatureController,
                         decoration: InputDecoration(
                           labelText: l10n.temperature,
                           hintText: l10n.temperatureHint,
                           border: const OutlineInputBorder(),
                           isDense: true,
                         ),
-                        onChanged: (v) => _saveSettings(temperature: v),
+                        onChanged: (_) => _saveSettings(),
                       ),
                       const SizedBox(height: 12),
                       TextField(
-                        controller: TextEditingController(text: _maxTokens)
-                          ..selection = TextSelection.collapsed(
-                              offset: _maxTokens.length),
+                        controller: _draft.maxTokensController,
                         decoration: InputDecoration(
                           labelText: l10n.maxTokens,
                           hintText: l10n.maxTokensHint,
                           border: const OutlineInputBorder(),
                           isDense: true,
                         ),
-                        onChanged: (v) => _saveSettings(maxTokens: v),
+                        onChanged: (_) => _saveSettings(),
                       ),
                       const SizedBox(height: 12),
                       TextField(
-                        controller: TextEditingController(text: _contextLength)
-                          ..selection = TextSelection.collapsed(
-                              offset: _contextLength.length),
+                        controller: _draft.contextLengthController,
                         decoration: InputDecoration(
                           labelText: l10n.contextLength,
                           hintText: l10n.contextLengthHint,
                           border: const OutlineInputBorder(),
                           isDense: true,
                         ),
-                        onChanged: (v) => _saveSettings(contextLength: v),
+                        onChanged: (_) => _saveSettings(),
                       ),
                     ],
                   ),
@@ -1740,7 +1557,7 @@ class _GlobalConfigBottomSheetState
                   child: Column(
                     children: [
                       const SizedBox(height: 16),
-                      if (_customParams.isEmpty)
+                      if (_draft.customParams.isEmpty)
                         Container(
                           padding: const EdgeInsets.all(24),
                           width: double.infinity,
@@ -1767,7 +1584,7 @@ class _GlobalConfigBottomSheetState
                           ),
                         )
                       else
-                        ..._customParams.entries.map((e) {
+                        ..._draft.customParams.entries.map((e) {
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 8.0),
                             child: _buildParamItem(e.key, e.value, theme),

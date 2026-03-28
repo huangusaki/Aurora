@@ -427,22 +427,6 @@ String displayCapabilityMarker(ModelCapabilityAssessment assessment) {
   return assessment.isKnownSupported ? '✅' : '❓';
 }
 
-String? pickBestModelForCapability({
-  required ProviderCapability capability,
-  required Iterable<String> models,
-  required ModelCapabilityAssessment Function(String model) assessModel,
-}) {
-  String? firstUnknown;
-  for (final model in models) {
-    final assessment = assessModel(model);
-    if (assessment.isKnownSupported) {
-      return model;
-    }
-    firstUnknown ??= assessment.isUnknown ? model : null;
-  }
-  return firstUnknown;
-}
-
 bool _isOpenAiCompatiblePreset(ProtocolPreset? preset) {
   return switch (preset) {
     ProtocolPreset.openaiResponses ||

@@ -9,6 +9,7 @@ import 'package:aurora/shared/utils/translation_prompt_utils.dart';
 import 'package:aurora/shared/widgets/aurora_dropdown.dart';
 import 'package:aurora/shared/widgets/aurora_notice.dart';
 import 'package:aurora/shared/widgets/aurora_selection.dart';
+import 'widgets/translation_shared.dart';
 
 class MobileTranslationPage extends ConsumerStatefulWidget {
   final VoidCallback? onBack;
@@ -21,31 +22,12 @@ class MobileTranslationPage extends ConsumerStatefulWidget {
 class _MobileTranslationPageState extends ConsumerState<MobileTranslationPage> {
   final TextEditingController _sourceController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
-  String _sourceLang = 'auto';
-  String _targetLang = 'zh_hans';
-  bool _showComparison = true;
+  String _sourceLang = translationDefaultSourceLanguageCode;
+  String _targetLang = translationDefaultTargetLanguageCode;
+  bool _showComparison = translationDefaultShowComparison;
   bool _hasRestored = false;
-  final List<String> _sourceLanguages = [
-    'auto',
-    'en',
-    'ja',
-    'ko',
-    'zh_hans',
-    'zh_hant',
-    'ru',
-    'fr',
-    'de',
-  ];
-  final List<String> _targetLanguages = [
-    'zh_hans',
-    'en',
-    'ja',
-    'ko',
-    'zh_hant',
-    'ru',
-    'fr',
-    'de',
-  ];
+  final List<String> _sourceLanguages = translationSourceLanguageCodes;
+  final List<String> _targetLanguages = translationTargetLanguageCodes;
   @override
   void initState() {
     super.initState();
@@ -79,52 +61,23 @@ class _MobileTranslationPageState extends ConsumerState<MobileTranslationPage> {
     if (_sourceController.text.trim().isEmpty) return;
     final notifier = ref.read(translationProvider.notifier);
     final l10n = AppLocalizations.of(context)!;
-    final sourceLabel = _languageLabel(_sourceLang, l10n);
-    final targetLabel = _languageLabel(_targetLang, l10n);
     notifier.clearContext().then((_) {
-      final sb = StringBuffer();
-      sb.writeln(_sourceLang == 'auto'
-          ? l10n.translationPromptIntroAuto(targetLabel)
-          : l10n.translationPromptIntro(sourceLabel, targetLabel));
-      sb.writeln(l10n.translationPromptRequirements);
-      sb.writeln(l10n.translationPromptRequirement1);
-      sb.writeln(l10n.translationPromptRequirement2);
-      sb.writeln(l10n.translationPromptRequirement3);
-      sb.writeln();
-      sb.writeln(l10n.translationPromptSourceText);
-      sb.writeln(_sourceController.text);
-      notifier.sendMessage(_sourceController.text, apiContent: sb.toString());
+      notifier.sendMessage(
+        _sourceController.text,
+        apiContent: buildTranslationPrompt(
+          l10n,
+          sourceLanguageCode: _sourceLang,
+          targetLanguageCode: _targetLang,
+          sourceText: _sourceController.text,
+        ),
+      );
     });
-  }
-
-  String _languageLabel(String code, AppLocalizations l10n) {
-    switch (code) {
-      case 'auto':
-        return l10n.autoDetect;
-      case 'en':
-        return l10n.english;
-      case 'ja':
-        return l10n.japanese;
-      case 'ko':
-        return l10n.korean;
-      case 'zh_hans':
-        return l10n.simplifiedChinese;
-      case 'zh_hant':
-        return l10n.traditionalChinese;
-      case 'ru':
-        return l10n.russian;
-      case 'fr':
-        return l10n.french;
-      case 'de':
-        return l10n.german;
-      default:
-        return code;
-    }
   }
 
   void _openModelSwitcher() {
     final settingsState = ref.read(settingsProvider);
     final provider = settingsState.activeProvider;
+    final selectedChatModel = provider.selectedChatModel;
     final l10n = AppLocalizations.of(context)!;
     if (provider.models.isEmpty) {
       showAuroraNotice(
@@ -151,10 +104,10 @@ class _MobileTranslationPageState extends ConsumerState<MobileTranslationPage> {
                     if (provider.isModelEnabled(model))
                       ListTile(
                         leading: Icon(
-                          model == settingsState.selectedModel
+                          model == selectedChatModel
                               ? Icons.check_circle
                               : Icons.circle_outlined,
-                          color: model == settingsState.selectedModel
+                          color: model == selectedChatModel
                               ? Theme.of(context).primaryColor
                               : null,
                         ),
@@ -162,7 +115,7 @@ class _MobileTranslationPageState extends ConsumerState<MobileTranslationPage> {
                         onTap: () {
                           ref.read(settingsProvider.notifier).updateProvider(
                                 id: provider.id,
-                                selectedModel: model,
+                                selectedChatModel: model,
                               );
                           ref
                               .read(settingsProvider.notifier)
@@ -197,6 +150,7 @@ class _MobileTranslationPageState extends ConsumerState<MobileTranslationPage> {
     });
     final chatState = ref.watch(translationProvider);
     final settingsState = ref.watch(settingsProvider);
+    final selectedChatModel = settingsState.activeProvider.selectedChatModel;
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
     final aiMessage =
@@ -222,7 +176,7 @@ class _MobileTranslationPageState extends ConsumerState<MobileTranslationPage> {
             children: [
               Flexible(
                 child: Text(
-                  settingsState.selectedModel ?? l10n.modelNotSelected,
+                  selectedChatModel ?? l10n.modelNotSelected,
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
@@ -270,7 +224,8 @@ class _MobileTranslationPageState extends ConsumerState<MobileTranslationPage> {
                     value: _sourceLang,
                     items: _sourceLanguages,
                     onChanged: (v) => setState(() => _sourceLang = v!),
-                    labelBuilder: (value) => _languageLabel(value, l10n),
+                    labelBuilder: (value) =>
+                        translationLanguageLabel(l10n, value),
                   ),
                 ),
                 IconButton(
@@ -290,7 +245,8 @@ class _MobileTranslationPageState extends ConsumerState<MobileTranslationPage> {
                     value: _targetLang,
                     items: _targetLanguages,
                     onChanged: (v) => setState(() => _targetLang = v!),
-                    labelBuilder: (value) => _languageLabel(value, l10n),
+                    labelBuilder: (value) =>
+                        translationLanguageLabel(l10n, value),
                   ),
                 ),
               ],

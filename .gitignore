@@ -1,8 +1,12 @@
 # Miscellaneous
 *.class
 *.log
+*.log.*
 *.pyc
 *.swp
+*.trace
+*.dmp
+*.stackdump
 .DS_Store
 .atom/
 .build/
@@ -11,8 +15,10 @@
 .svn/
 .swiftpm/
 migrate_working_dir/
-release_output/
+/release_output/
+/release_symbols/
 .metadata
+build_output.txt
 
 # IntelliJ related
 *.iml
@@ -27,7 +33,8 @@ tools
 # Flutter/Dart/Pub related
 **/doc/api/
 **/ios/Flutter/.last_build_id
-.dart_tool/
+/.dart_tool/
+**/.dart_tool/
 .flutter-plugins-dependencies
 .pub-cache/
 .pub/
@@ -48,7 +55,6 @@ app.*.map.json
 /android/app/release
 
 # Local configuration and logs
-build_output.txt
 *.bak
 build_release.ps1
 

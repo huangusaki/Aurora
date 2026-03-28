@@ -76,7 +76,6 @@ class AuroraIcons {
   static const IconData folder = LucideIcons.folder;
   static const IconData folderOpen = LucideIcons.folderOpen;
   static const IconData bookmark = LucideIcons.bookmark;
-  static const IconData calendar = LucideIcons.calendar;
   static const IconData database = LucideIcons.database;
   static const IconData list = LucideIcons.list;
   static const IconData book = LucideIcons.book;
@@ -93,7 +92,6 @@ class AuroraIcons {
   // --- 状态与语义图标 (Status & Semantic) ---
   static const IconData robot = LucideIcons.bot;
   static const IconData person = LucideIcons.user;
-  static const IconData org = LucideIcons.building;
   static const IconData info = LucideIcons.info;
   static const IconData warning = LucideIcons.alertTriangle;
   static const IconData error = LucideIcons.alertCircle;

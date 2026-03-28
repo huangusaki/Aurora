@@ -14,6 +14,7 @@ import 'dart:io';
 import 'mobile_search_settings_page.dart';
 import 'mobile_knowledge_settings_page.dart';
 import 'log_records_page.dart';
+import 'background_style_options.dart';
 import '../../knowledge/presentation/knowledge_provider.dart';
 import 'package:aurora/shared/widgets/aurora_page_route.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -351,48 +352,7 @@ class MobileAppSettingsPage extends ConsumerWidget {
   }
 
   String _getBackgroundStyleLabel(String style, AppLocalizations l10n) {
-    switch (style) {
-      case 'default':
-        return l10n.bgDefault;
-      case 'pure_black':
-        return l10n.bgPureBlack;
-      case 'warm':
-        return l10n.bgWarm;
-      case 'cool':
-        return l10n.bgCool;
-      case 'rose':
-        return l10n.bgRose;
-      case 'lavender':
-        return l10n.bgLavender;
-      case 'mint':
-        return l10n.bgMint;
-      case 'sky':
-        return l10n.bgSky;
-      case 'gray':
-        return l10n.bgGray;
-      case 'sunset':
-        return l10n.bgSunset;
-      case 'ocean':
-        return l10n.bgOcean;
-      case 'forest':
-        return l10n.bgForest;
-      case 'dream':
-        return l10n.bgDream;
-      case 'aurora':
-        return l10n.bgAurora;
-      case 'volcano':
-        return l10n.bgVolcano;
-      case 'midnight':
-        return l10n.bgMidnight;
-      case 'dawn':
-        return l10n.bgDawn;
-      case 'neon':
-        return l10n.bgNeon;
-      case 'blossom':
-        return l10n.bgBlossom;
-      default:
-        return l10n.bgDefault;
-    }
+    return backgroundStyleLabel(l10n, style);
   }
 
   void _showThemeModePicker(BuildContext context, WidgetRef ref,
@@ -537,127 +497,7 @@ class MobileAppSettingsPage extends ConsumerWidget {
         settings.backgroundImagePath!.isNotEmpty;
     if (hasCustomBackground) return;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final styles = [
-      (
-        l10n.bgDefault,
-        'default',
-        [const Color(0xFF2B2B2B)],
-        [const Color(0xFFE0F7FA), const Color(0xFFF1F8E9)]
-      ),
-      (
-        l10n.bgPureBlack,
-        'pure_black',
-        [const Color(0xFF000000)],
-        [const Color(0xFFFFFFFF)]
-      ),
-      (
-        l10n.bgWarm,
-        'warm',
-        [const Color(0xFF1E1C1A), const Color(0xFF2E241E)],
-        [const Color(0xFFFFF8E1), const Color(0xFFFFF3E0)]
-      ),
-      (
-        l10n.bgCool,
-        'cool',
-        [const Color(0xFF1A1C1E), const Color(0xFF1E252E)],
-        [const Color(0xFFE1F5FE), const Color(0xFFE3F2FD)]
-      ),
-      (
-        l10n.bgRose,
-        'rose',
-        [const Color(0xFF2D1A1E), const Color(0xFF3B1E26)],
-        [const Color(0xFFFCE4EC), const Color(0xFFFFEBEE)]
-      ),
-      (
-        l10n.bgLavender,
-        'lavender',
-        [const Color(0xFF1F1A2D), const Color(0xFF261E3B)],
-        [const Color(0xFFF3E5F5), const Color(0xFFEDE7F6)]
-      ),
-      (
-        l10n.bgMint,
-        'mint',
-        [const Color(0xFF1A2D24), const Color(0xFF1E3B2E)],
-        [const Color(0xFFE0F2F1), const Color(0xFFE8F5E9)]
-      ),
-      (
-        l10n.bgSky,
-        'sky',
-        [const Color(0xFF1A202D), const Color(0xFF1E263B)],
-        [const Color(0xFFE0F7FA), const Color(0xFFE1F5FE)]
-      ),
-      (
-        l10n.bgGray,
-        'gray',
-        [const Color(0xFF1E1E1E), const Color(0xFF2C2C2C)],
-        [const Color(0xFFFAFAFA), const Color(0xFFF5F5F5)]
-      ),
-      (
-        l10n.bgSunset,
-        'sunset',
-        [const Color(0xFF1A0B0E), const Color(0xFF4A1F28)],
-        [const Color(0xFFFFF3E0), const Color(0xFFFBE9E7)]
-      ),
-      (
-        l10n.bgOcean,
-        'ocean',
-        [const Color(0xFF05101A), const Color(0xFF0D2B42)],
-        [const Color(0xFFE3F2FD), const Color(0xFFE8EAF6)]
-      ),
-      (
-        l10n.bgForest,
-        'forest',
-        [const Color(0xFF051408), const Color(0xFF0E3316)],
-        [const Color(0xFFE8F5E9), const Color(0xFFF1F8E9)]
-      ),
-      (
-        l10n.bgDream,
-        'dream',
-        [const Color(0xFF120817), const Color(0xFF261233)],
-        [const Color(0xFFEDE7F6), const Color(0xFFE8EAF6)]
-      ),
-      (
-        l10n.bgAurora,
-        'aurora',
-        [const Color(0xFF051715), const Color(0xFF181533)],
-        [const Color(0xFFE0F2F1), const Color(0xFFEDE7F6)]
-      ),
-      (
-        l10n.bgVolcano,
-        'volcano',
-        [const Color(0xFF1F0808), const Color(0xFF3E1212)],
-        [const Color(0xFFFBE9E7), const Color(0xFFFFEBEE)]
-      ),
-      (
-        l10n.bgMidnight,
-        'midnight',
-        [const Color(0xFF020205), const Color(0xFF141426)],
-        [const Color(0xFFECEFF1), const Color(0xFFFAFAFA)]
-      ),
-      (
-        l10n.bgDawn,
-        'dawn',
-        [const Color(0xFF141005), const Color(0xFF33260D)],
-        [const Color(0xFFFFFDE7), const Color(0xFFFFF8E1)]
-      ),
-      (
-        l10n.bgNeon,
-        'neon',
-        [const Color(0xFF08181A), const Color(0xFF240C21)],
-        [const Color(0xFFE0F7FA), const Color(0xFFF3E5F5)]
-      ),
-      (
-        l10n.bgBlossom,
-        'blossom',
-        [const Color(0xFF1F050B), const Color(0xFF3D0F19)],
-        [const Color(0xFFFFEBEE), const Color(0xFFFCE4EC)]
-      ),
-    ];
-    final visibleStyles = isDark
-        ? styles
-        : styles
-            .where((style) => style.$2 != 'pure_black')
-            .toList(growable: false);
+    final visibleStyles = visibleBackgroundStyleOptions(isDark);
     AuroraBottomSheet.show(
       context: context,
       builder: (ctx) => Padding(
@@ -679,8 +519,10 @@ class MobileAppSettingsPage extends ConsumerWidget {
                     spacing: 12,
                     runSpacing: 12,
                     children: visibleStyles.map((style) {
-                      final isSelected = settings.backgroundColor == style.$2;
-                      final colors = isDark ? style.$3 : style.$4;
+                      final isSelected = settings.backgroundColor == style.key;
+                      final colors = isDark
+                          ? style.darkPreviewColors
+                          : style.lightPreviewColors;
                       return SizedBox(
                         width: 92,
                         child: InkWell(
@@ -688,7 +530,7 @@ class MobileAppSettingsPage extends ConsumerWidget {
                           onTap: () {
                             ref
                                 .read(settingsProvider.notifier)
-                                .setBackgroundColor(style.$2);
+                                .setBackgroundColor(style.key);
                             Navigator.pop(ctx);
                           },
                           child: Padding(
@@ -730,7 +572,7 @@ class MobileAppSettingsPage extends ConsumerWidget {
                                 ),
                                 const SizedBox(height: 6),
                                 Text(
-                                  style.$1,
+                                  backgroundStyleLabel(l10n, style.key),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   textAlign: TextAlign.center,

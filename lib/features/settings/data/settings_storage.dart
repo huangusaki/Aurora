@@ -204,8 +204,6 @@ class SettingsStorage {
 
   Future<void> saveAppSettings({
     String? activeProviderId,
-    String? selectedModel,
-    String? selectedChatModel,
     List<String>? availableModels,
     String? userName,
     String? userAvatar,
@@ -262,11 +260,6 @@ class SettingsStorage {
     final existing = await loadAppSettings();
     final settings = AppSettingsEntity()
       ..activeProviderId = activeProviderId ?? existing?.activeProviderId ?? ''
-      ..selectedModel = selectedModel ?? existing?.selectedModel
-      ..selectedChatModel = selectedChatModel ??
-          selectedModel ??
-          existing?.selectedChatModel ??
-          existing?.selectedModel
       ..availableModels = availableModels ?? existing?.availableModels ?? []
       ..userName = userName ?? existing?.userName ?? 'User'
       ..userAvatar = userAvatar ?? existing?.userAvatar
@@ -721,8 +714,6 @@ class SettingsStorage {
   AppSettingsEntity _copyAppSettingsEntity(AppSettingsEntity source) {
     return AppSettingsEntity()
       ..activeProviderId = source.activeProviderId
-      ..selectedModel = source.selectedModel
-      ..selectedChatModel = source.selectedChatModel
       ..availableModels = List<String>.from(source.availableModels)
       ..userName = source.userName
       ..userAvatar = source.userAvatar
@@ -747,6 +738,8 @@ class SettingsStorage {
       ..enableSmartTopic = source.enableSmartTopic
       ..topicGenerationModel = source.topicGenerationModel
       ..restoreLastSessionOnLaunch = source.restoreLastSessionOnLaunch
+      ..keepChatScrollPositionOnResponse =
+          source.keepChatScrollPositionOnResponse
       ..lastSessionId = source.lastSessionId
       ..lastTopicId = source.lastTopicId
       ..language = source.language

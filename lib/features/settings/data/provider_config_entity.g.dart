@@ -4412,73 +4412,63 @@ const AppSettingsEntitySchema = CollectionSchema(
       name: r'searchTimeoutSeconds',
       type: IsarType.long,
     ),
-    r'selectedChatModel': PropertySchema(
-      id: 42,
-      name: r'selectedChatModel',
-      type: IsarType.string,
-    ),
-    r'selectedModel': PropertySchema(
-      id: 43,
-      name: r'selectedModel',
-      type: IsarType.string,
-    ),
     r'speechModel': PropertySchema(
-      id: 44,
+      id: 42,
       name: r'speechModel',
       type: IsarType.string,
     ),
     r'speechProviderId': PropertySchema(
-      id: 45,
+      id: 43,
       name: r'speechProviderId',
       type: IsarType.string,
     ),
     r'themeColor': PropertySchema(
-      id: 46,
+      id: 44,
       name: r'themeColor',
       type: IsarType.string,
     ),
     r'themeMode': PropertySchema(
-      id: 47,
+      id: 45,
       name: r'themeMode',
       type: IsarType.string,
     ),
     r'topicGenerationModel': PropertySchema(
-      id: 48,
+      id: 46,
       name: r'topicGenerationModel',
       type: IsarType.string,
     ),
     r'transcriptionModel': PropertySchema(
-      id: 49,
+      id: 47,
       name: r'transcriptionModel',
       type: IsarType.string,
     ),
     r'transcriptionProviderId': PropertySchema(
-      id: 50,
+      id: 48,
       name: r'transcriptionProviderId',
       type: IsarType.string,
     ),
     r'translationModel': PropertySchema(
-      id: 51,
+      id: 49,
       name: r'translationModel',
       type: IsarType.string,
     ),
     r'translationProviderId': PropertySchema(
-      id: 52,
+      id: 50,
       name: r'translationProviderId',
       type: IsarType.string,
     ),
     r'useCustomTheme': PropertySchema(
-      id: 53,
+      id: 51,
       name: r'useCustomTheme',
       type: IsarType.bool,
     ),
     r'userAvatar': PropertySchema(
-      id: 54,
+      id: 52,
       name: r'userAvatar',
       type: IsarType.string,
     ),
     r'userName': PropertySchema(
-      id: 55,
+      id: 53,
       name: r'userName',
       type: IsarType.string,
     )
@@ -4617,18 +4607,6 @@ int _appSettingsEntityEstimateSize(
   bytesCount += 3 + object.searchRegion.length * 3;
   bytesCount += 3 + object.searchSafeSearch.length * 3;
   {
-    final value = object.selectedChatModel;
-    if (value != null) {
-      bytesCount += 3 + value.length * 3;
-    }
-  }
-  {
-    final value = object.selectedModel;
-    if (value != null) {
-      bytesCount += 3 + value.length * 3;
-    }
-  }
-  {
     final value = object.speechModel;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
@@ -4735,20 +4713,18 @@ void _appSettingsEntitySerialize(
   writer.writeString(offsets[39], object.searchRegion);
   writer.writeString(offsets[40], object.searchSafeSearch);
   writer.writeLong(offsets[41], object.searchTimeoutSeconds);
-  writer.writeString(offsets[42], object.selectedChatModel);
-  writer.writeString(offsets[43], object.selectedModel);
-  writer.writeString(offsets[44], object.speechModel);
-  writer.writeString(offsets[45], object.speechProviderId);
-  writer.writeString(offsets[46], object.themeColor);
-  writer.writeString(offsets[47], object.themeMode);
-  writer.writeString(offsets[48], object.topicGenerationModel);
-  writer.writeString(offsets[49], object.transcriptionModel);
-  writer.writeString(offsets[50], object.transcriptionProviderId);
-  writer.writeString(offsets[51], object.translationModel);
-  writer.writeString(offsets[52], object.translationProviderId);
-  writer.writeBool(offsets[53], object.useCustomTheme);
-  writer.writeString(offsets[54], object.userAvatar);
-  writer.writeString(offsets[55], object.userName);
+  writer.writeString(offsets[42], object.speechModel);
+  writer.writeString(offsets[43], object.speechProviderId);
+  writer.writeString(offsets[44], object.themeColor);
+  writer.writeString(offsets[45], object.themeMode);
+  writer.writeString(offsets[46], object.topicGenerationModel);
+  writer.writeString(offsets[47], object.transcriptionModel);
+  writer.writeString(offsets[48], object.transcriptionProviderId);
+  writer.writeString(offsets[49], object.translationModel);
+  writer.writeString(offsets[50], object.translationProviderId);
+  writer.writeBool(offsets[51], object.useCustomTheme);
+  writer.writeString(offsets[52], object.userAvatar);
+  writer.writeString(offsets[53], object.userName);
 }
 
 AppSettingsEntity _appSettingsEntityDeserialize(
@@ -4801,20 +4777,18 @@ AppSettingsEntity _appSettingsEntityDeserialize(
   object.searchRegion = reader.readString(offsets[39]);
   object.searchSafeSearch = reader.readString(offsets[40]);
   object.searchTimeoutSeconds = reader.readLong(offsets[41]);
-  object.selectedChatModel = reader.readStringOrNull(offsets[42]);
-  object.selectedModel = reader.readStringOrNull(offsets[43]);
-  object.speechModel = reader.readStringOrNull(offsets[44]);
-  object.speechProviderId = reader.readStringOrNull(offsets[45]);
-  object.themeColor = reader.readStringOrNull(offsets[46]);
-  object.themeMode = reader.readString(offsets[47]);
-  object.topicGenerationModel = reader.readStringOrNull(offsets[48]);
-  object.transcriptionModel = reader.readStringOrNull(offsets[49]);
-  object.transcriptionProviderId = reader.readStringOrNull(offsets[50]);
-  object.translationModel = reader.readStringOrNull(offsets[51]);
-  object.translationProviderId = reader.readStringOrNull(offsets[52]);
-  object.useCustomTheme = reader.readBool(offsets[53]);
-  object.userAvatar = reader.readStringOrNull(offsets[54]);
-  object.userName = reader.readString(offsets[55]);
+  object.speechModel = reader.readStringOrNull(offsets[42]);
+  object.speechProviderId = reader.readStringOrNull(offsets[43]);
+  object.themeColor = reader.readStringOrNull(offsets[44]);
+  object.themeMode = reader.readString(offsets[45]);
+  object.topicGenerationModel = reader.readStringOrNull(offsets[46]);
+  object.transcriptionModel = reader.readStringOrNull(offsets[47]);
+  object.transcriptionProviderId = reader.readStringOrNull(offsets[48]);
+  object.translationModel = reader.readStringOrNull(offsets[49]);
+  object.translationProviderId = reader.readStringOrNull(offsets[50]);
+  object.useCustomTheme = reader.readBool(offsets[51]);
+  object.userAvatar = reader.readStringOrNull(offsets[52]);
+  object.userName = reader.readString(offsets[53]);
   return object;
 }
 
@@ -4916,11 +4890,11 @@ P _appSettingsEntityDeserializeProp<P>(
     case 44:
       return (reader.readStringOrNull(offset)) as P;
     case 45:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 46:
       return (reader.readStringOrNull(offset)) as P;
     case 47:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 48:
       return (reader.readStringOrNull(offset)) as P;
     case 49:
@@ -4928,14 +4902,10 @@ P _appSettingsEntityDeserializeProp<P>(
     case 50:
       return (reader.readStringOrNull(offset)) as P;
     case 51:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 52:
       return (reader.readStringOrNull(offset)) as P;
     case 53:
-      return (reader.readBool(offset)) as P;
-    case 54:
-      return (reader.readStringOrNull(offset)) as P;
-    case 55:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -9475,314 +9445,6 @@ extension AppSettingsEntityQueryFilter
   }
 
   QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
-      selectedChatModelIsNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNull(
-        property: r'selectedChatModel',
-      ));
-    });
-  }
-
-  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
-      selectedChatModelIsNotNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNotNull(
-        property: r'selectedChatModel',
-      ));
-    });
-  }
-
-  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
-      selectedChatModelEqualTo(
-    String? value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'selectedChatModel',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
-      selectedChatModelGreaterThan(
-    String? value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'selectedChatModel',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
-      selectedChatModelLessThan(
-    String? value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'selectedChatModel',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
-      selectedChatModelBetween(
-    String? lower,
-    String? upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'selectedChatModel',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
-      selectedChatModelStartsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.startsWith(
-        property: r'selectedChatModel',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
-      selectedChatModelEndsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.endsWith(
-        property: r'selectedChatModel',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
-      selectedChatModelContains(String value, {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.contains(
-        property: r'selectedChatModel',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
-      selectedChatModelMatches(String pattern, {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.matches(
-        property: r'selectedChatModel',
-        wildcard: pattern,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
-      selectedChatModelIsEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'selectedChatModel',
-        value: '',
-      ));
-    });
-  }
-
-  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
-      selectedChatModelIsNotEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        property: r'selectedChatModel',
-        value: '',
-      ));
-    });
-  }
-
-  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
-      selectedModelIsNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNull(
-        property: r'selectedModel',
-      ));
-    });
-  }
-
-  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
-      selectedModelIsNotNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNotNull(
-        property: r'selectedModel',
-      ));
-    });
-  }
-
-  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
-      selectedModelEqualTo(
-    String? value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'selectedModel',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
-      selectedModelGreaterThan(
-    String? value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'selectedModel',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
-      selectedModelLessThan(
-    String? value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'selectedModel',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
-      selectedModelBetween(
-    String? lower,
-    String? upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'selectedModel',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
-      selectedModelStartsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.startsWith(
-        property: r'selectedModel',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
-      selectedModelEndsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.endsWith(
-        property: r'selectedModel',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
-      selectedModelContains(String value, {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.contains(
-        property: r'selectedModel',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
-      selectedModelMatches(String pattern, {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.matches(
-        property: r'selectedModel',
-        wildcard: pattern,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
-      selectedModelIsEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'selectedModel',
-        value: '',
-      ));
-    });
-  }
-
-  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
-      selectedModelIsNotEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        property: r'selectedModel',
-        value: '',
-      ));
-    });
-  }
-
-  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterFilterCondition>
       speechModelIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
@@ -12023,34 +11685,6 @@ extension AppSettingsEntityQuerySortBy
   }
 
   QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
-      sortBySelectedChatModel() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'selectedChatModel', Sort.asc);
-    });
-  }
-
-  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
-      sortBySelectedChatModelDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'selectedChatModel', Sort.desc);
-    });
-  }
-
-  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
-      sortBySelectedModel() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'selectedModel', Sort.asc);
-    });
-  }
-
-  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
-      sortBySelectedModelDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'selectedModel', Sort.desc);
-    });
-  }
-
-  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
       sortBySpeechModel() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'speechModel', Sort.asc);
@@ -12795,34 +12429,6 @@ extension AppSettingsEntityQuerySortThenBy
   }
 
   QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
-      thenBySelectedChatModel() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'selectedChatModel', Sort.asc);
-    });
-  }
-
-  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
-      thenBySelectedChatModelDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'selectedChatModel', Sort.desc);
-    });
-  }
-
-  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
-      thenBySelectedModel() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'selectedModel', Sort.asc);
-    });
-  }
-
-  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
-      thenBySelectedModelDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'selectedModel', Sort.desc);
-    });
-  }
-
-  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QAfterSortBy>
       thenBySpeechModel() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'speechModel', Sort.asc);
@@ -13300,22 +12906,6 @@ extension AppSettingsEntityQueryWhereDistinct
   }
 
   QueryBuilder<AppSettingsEntity, AppSettingsEntity, QDistinct>
-      distinctBySelectedChatModel({bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'selectedChatModel',
-          caseSensitive: caseSensitive);
-    });
-  }
-
-  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QDistinct>
-      distinctBySelectedModel({bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'selectedModel',
-          caseSensitive: caseSensitive);
-    });
-  }
-
-  QueryBuilder<AppSettingsEntity, AppSettingsEntity, QDistinct>
       distinctBySpeechModel({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'speechModel', caseSensitive: caseSensitive);
@@ -13702,20 +13292,6 @@ extension AppSettingsEntityQueryProperty
       searchTimeoutSecondsProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'searchTimeoutSeconds');
-    });
-  }
-
-  QueryBuilder<AppSettingsEntity, String?, QQueryOperations>
-      selectedChatModelProperty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'selectedChatModel');
-    });
-  }
-
-  QueryBuilder<AppSettingsEntity, String?, QQueryOperations>
-      selectedModelProperty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'selectedModel');
     });
   }
 

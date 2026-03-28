@@ -13,7 +13,7 @@ import '../application/heuristic_cleaner_directory_planner.dart';
 import '../application/llm_cleaner_ai_advisor.dart';
 import '../application/llm_cleaner_directory_planner.dart';
 import '../data/cleaner_scan_service.dart';
-import '../data/hard_delete_executor.dart';
+import '../data/soft_delete_executor.dart';
 import '../domain/cleaner_ai_advisor.dart';
 import '../domain/cleaner_directory_planner.dart';
 import '../domain/cleaner_models.dart';
@@ -26,7 +26,7 @@ final cleanerScannerProvider = Provider<CleanerScanner>((ref) {
 });
 
 final cleanerDeleteExecutorProvider = Provider<CleanerDeleteExecutor>((ref) {
-  return const CleanerHardDeleteExecutor();
+  return const CleanerSoftDeleteExecutor();
 });
 
 final cleanerPolicyEngineProvider = Provider<CleanerPolicyEngine>((ref) {
@@ -159,6 +159,7 @@ class CleanerNotifier extends StateNotifier<CleanerState> {
   }) async {
     if (state.isAnalyzing) return;
 
+    final orchestrator = _ref.read(cleanerOrchestratorProvider);
     _lastOptions = options;
     _lastContext = _buildAiContext();
     _sessionCandidates = null;
@@ -179,10 +180,10 @@ class CleanerNotifier extends StateNotifier<CleanerState> {
     );
 
     try {
-      final candidates = await _ref.read(cleanerScannerProvider).scan(
-            options,
-            shouldStop: _isStopRequested,
-          );
+      final candidates = await orchestrator.scan(
+        options,
+        shouldStop: _isStopRequested,
+      );
       _sessionCandidates = candidates;
 
       if (_stopRequested) {
@@ -192,15 +193,17 @@ class CleanerNotifier extends StateNotifier<CleanerState> {
         _sessionSuggestionsById.clear();
         state = state.copyWith(
           isAnalyzing: false,
-          canContinueAnalyze: true,
+          canContinueAnalyze: candidates.isNotEmpty,
           stopRequested: false,
           processedCandidates: 0,
           totalCandidates: candidates.length,
           processedBatches: 0,
           totalBatches: 0,
-          runResult: candidates.isEmpty
-              ? CleanerRunResult.empty()
-              : _buildRunResult(candidates, const <CleanerAiSuggestion>[]),
+          runResult: orchestrator.reviewCandidates(
+            candidates: candidates,
+            suggestions: const <CleanerAiSuggestion>[],
+            languageCode: _effectiveLanguageCode,
+          ),
         );
         return;
       }
@@ -218,10 +221,56 @@ class CleanerNotifier extends StateNotifier<CleanerState> {
 
       state = state.copyWith(
         totalCandidates: candidates.length,
-        runResult: _buildRunResult(candidates, _sessionSuggestionsById.values),
       );
 
-      await _analyzeRemainingCandidates();
+      await orchestrator.analyzeCandidates(
+        candidates: candidates,
+        context: _lastContext!,
+        shouldStop: _isStopRequested,
+        onProgress: (partialSuggestions, progress) {
+          for (final suggestion in partialSuggestions) {
+            _sessionSuggestionsById[suggestion.candidateId] = suggestion;
+          }
+          final partialResult = orchestrator.reviewCandidates(
+            candidates: candidates,
+            suggestions: _sessionSuggestionsById.values,
+            languageCode: _effectiveLanguageCode,
+          );
+          state = state.copyWith(
+            runResult: partialResult,
+            processedCandidates: _sessionSuggestionsById.length,
+            totalCandidates: candidates.length,
+            processedBatches: progress.processedBatches,
+            totalBatches: progress.totalBatches,
+          );
+        },
+      );
+
+      final processedCandidates = _sessionSuggestionsById.length;
+      final hasPending = processedCandidates < candidates.length;
+      final finalResult = orchestrator.reviewCandidates(
+        candidates: candidates,
+        suggestions: _sessionSuggestionsById.values,
+        languageCode: _effectiveLanguageCode,
+      );
+
+      _stopRequested = false;
+      state = state.copyWith(
+        isAnalyzing: false,
+        stopRequested: false,
+        canContinueAnalyze: hasPending,
+        runResult: finalResult,
+        processedCandidates: processedCandidates,
+        totalCandidates: candidates.length,
+        processedBatches: state.processedBatches == 0 && processedCandidates > 0
+            ? 1
+            : state.processedBatches,
+        totalBatches: state.totalBatches == 0 && processedCandidates > 0
+            ? 1
+            : state.totalBatches,
+      );
+
+      _clearSessionIfComplete();
     } catch (e) {
       _stopRequested = false;
       final l10n = _localizations();
@@ -261,6 +310,34 @@ class CleanerNotifier extends StateNotifier<CleanerState> {
       return;
     }
 
+    final orchestrator = _ref.read(cleanerOrchestratorProvider);
+    final analyzedIds = _sessionSuggestionsById.keys.toSet();
+    final remaining = candidates
+        .where((candidate) => !analyzedIds.contains(candidate.id))
+        .toList(growable: false);
+
+    if (remaining.isEmpty) {
+      final runResult = orchestrator.reviewCandidates(
+        candidates: candidates,
+        suggestions: _sessionSuggestionsById.values,
+        languageCode: _effectiveLanguageCode,
+      );
+      state = state.copyWith(
+        isAnalyzing: false,
+        stopRequested: false,
+        canContinueAnalyze: false,
+        runResult: runResult,
+        processedCandidates: _sessionSuggestionsById.length,
+        totalCandidates: candidates.length,
+      );
+      _clearSessionIfComplete();
+      return;
+    }
+
+    final baseBatches = state.processedBatches;
+    var lastProcessedBatches = 0;
+    var lastTotalBatches = 0;
+
     _stopRequested = false;
     state = state.copyWith(
       isAnalyzing: true,
@@ -271,7 +348,58 @@ class CleanerNotifier extends StateNotifier<CleanerState> {
     );
 
     try {
-      await _analyzeRemainingCandidates();
+      await orchestrator.analyzeCandidates(
+        candidates: remaining,
+        context: _lastContext!,
+        shouldStop: _isStopRequested,
+        onProgress: (partialSuggestions, progress) {
+          for (final suggestion in partialSuggestions) {
+            _sessionSuggestionsById[suggestion.candidateId] = suggestion;
+          }
+          lastProcessedBatches = progress.processedBatches;
+          lastTotalBatches = progress.totalBatches;
+          final partialResult = orchestrator.reviewCandidates(
+            candidates: candidates,
+            suggestions: _sessionSuggestionsById.values,
+            languageCode: _effectiveLanguageCode,
+          );
+          state = state.copyWith(
+            runResult: partialResult,
+            processedCandidates: _sessionSuggestionsById.length,
+            totalCandidates: candidates.length,
+            processedBatches: baseBatches + progress.processedBatches,
+            totalBatches: math.max(
+              state.totalBatches,
+              baseBatches + progress.totalBatches,
+            ),
+          );
+        },
+      );
+
+      final processedCandidates = _sessionSuggestionsById.length;
+      final hasPending = processedCandidates < candidates.length;
+      final runResult = orchestrator.reviewCandidates(
+        candidates: candidates,
+        suggestions: _sessionSuggestionsById.values,
+        languageCode: _effectiveLanguageCode,
+      );
+
+      _stopRequested = false;
+      state = state.copyWith(
+        isAnalyzing: false,
+        stopRequested: false,
+        canContinueAnalyze: hasPending,
+        runResult: runResult,
+        processedCandidates: processedCandidates,
+        totalCandidates: candidates.length,
+        processedBatches: baseBatches + lastProcessedBatches,
+        totalBatches: math.max(
+          state.totalBatches,
+          baseBatches + lastTotalBatches,
+        ),
+      );
+
+      _clearSessionIfComplete();
     } catch (e) {
       _stopRequested = false;
       final l10n = _localizations();
@@ -284,94 +412,6 @@ class CleanerNotifier extends StateNotifier<CleanerState> {
     }
   }
 
-  Future<void> _analyzeRemainingCandidates() async {
-    final candidates = _sessionCandidates;
-    final context = _lastContext;
-    if (candidates == null || context == null) {
-      state = state.copyWith(
-        isAnalyzing: false,
-        stopRequested: false,
-        canContinueAnalyze: false,
-      );
-      return;
-    }
-
-    final remaining = candidates
-        .where(
-            (candidate) => !_sessionSuggestionsById.containsKey(candidate.id))
-        .toList(growable: false);
-
-    if (remaining.isEmpty) {
-      _stopRequested = false;
-      state = state.copyWith(
-        isAnalyzing: false,
-        stopRequested: false,
-        canContinueAnalyze: false,
-        runResult: _buildRunResult(candidates, _sessionSuggestionsById.values),
-      );
-      _clearSessionIfComplete();
-      return;
-    }
-
-    final baseBatches = state.processedBatches;
-    final advisor = _ref.read(cleanerAiAdvisorProvider);
-    final newSuggestions = await advisor.suggest(
-      candidates: remaining,
-      context: context,
-      shouldStop: _isStopRequested,
-      onProgress: (partialSuggestions, progress) {
-        final merged = <String, CleanerAiSuggestion>{
-          ..._sessionSuggestionsById,
-        };
-        for (final suggestion in partialSuggestions) {
-          merged[suggestion.candidateId] = suggestion;
-        }
-        final partialResult = _buildRunResult(candidates, merged.values);
-        state = state.copyWith(
-          runResult: partialResult,
-          processedCandidates: merged.length,
-          totalCandidates: candidates.length,
-          processedBatches: baseBatches + progress.processedBatches,
-          totalBatches: math.max(
-            state.totalBatches,
-            baseBatches + progress.totalBatches,
-          ),
-        );
-      },
-    );
-
-    for (final suggestion in newSuggestions) {
-      _sessionSuggestionsById[suggestion.candidateId] = suggestion;
-    }
-
-    var processedBatches = state.processedBatches;
-    var totalBatches = state.totalBatches;
-    if (newSuggestions.isNotEmpty && processedBatches == baseBatches) {
-      processedBatches = baseBatches + 1;
-      totalBatches = math.max(totalBatches, processedBatches);
-    }
-
-    final processedCandidates = _sessionSuggestionsById.length;
-    final hasPending = processedCandidates < candidates.length;
-    final runResult =
-        _buildRunResult(candidates, _sessionSuggestionsById.values);
-
-    _stopRequested = false;
-    state = state.copyWith(
-      isAnalyzing: false,
-      stopRequested: false,
-      canContinueAnalyze: hasPending,
-      runResult: runResult,
-      processedCandidates: processedCandidates,
-      totalCandidates: candidates.length,
-      processedBatches: processedBatches,
-      totalBatches:
-          totalBatches == 0 && processedCandidates > 0 ? 1 : totalBatches,
-    );
-
-    _clearSessionIfComplete();
-  }
-
   CleanerAiContext _buildAiContext() {
     final settings = _ref.read(settingsProvider);
     return CleanerAiContext(
@@ -379,59 +419,6 @@ class CleanerNotifier extends StateNotifier<CleanerState> {
       model: settings.executionModel ?? settings.selectedModel,
       providerId: settings.executionProviderId ?? settings.activeProviderId,
       redactPaths: true,
-    );
-  }
-
-  CleanerRunResult _buildRunResult(
-    List<CleanerCandidate> candidates,
-    Iterable<CleanerAiSuggestion> suggestions,
-  ) {
-    final items = _ref.read(cleanerPolicyEngineProvider).evaluateAll(
-          candidates: candidates,
-          suggestions: suggestions.toList(),
-          languageCode: _effectiveLanguageCode,
-        );
-    final summary = _buildSummary(items);
-    return CleanerRunResult(
-      analyzedAt: DateTime.now().toUtc(),
-      items: items,
-      summary: summary,
-    );
-  }
-
-  CleanerRunSummary _buildSummary(List<CleanerReviewItem> items) {
-    var recommended = 0;
-    var reviewRequired = 0;
-    var keep = 0;
-    var adjusted = 0;
-    var reclaimBytes = 0;
-
-    for (final item in items) {
-      switch (item.finalDecision) {
-        case CleanerDecision.deleteRecommend:
-          recommended++;
-          reclaimBytes += item.candidate.sizeBytes;
-          break;
-        case CleanerDecision.reviewRequired:
-          reviewRequired++;
-          break;
-        case CleanerDecision.keep:
-          keep++;
-          break;
-      }
-
-      if (item.policyAdjusted) {
-        adjusted++;
-      }
-    }
-
-    return CleanerRunSummary(
-      totalCandidates: items.length,
-      deleteRecommendedCount: recommended,
-      reviewRequiredCount: reviewRequired,
-      keepCount: keep,
-      policyAdjustedCount: adjusted,
-      estimatedReclaimBytes: reclaimBytes,
     );
   }
 

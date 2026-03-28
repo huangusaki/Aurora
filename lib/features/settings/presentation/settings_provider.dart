@@ -91,7 +91,6 @@ class ProviderConfig {
     List<String> globalExcludeModels = const [],
     List<String> models = const [],
     String? selectedChatModel,
-    @Deprecated('Use selectedChatModel instead.') String? selectedModel,
     bool isEnabled = true,
   }) {
     final normalizedModelSettings = _sanitizeModelSettings(modelSettings);
@@ -124,7 +123,7 @@ class ProviderConfig {
       modelCapabilityOverrides: modelCapabilityOverrides,
       globalExcludeModels: globalExcludeModels,
       models: models,
-      selectedChatModel: selectedChatModel ?? selectedModel,
+      selectedChatModel: selectedChatModel,
       isEnabled: isEnabled,
     );
   }
@@ -166,7 +165,6 @@ class ProviderConfig {
     List<String>? globalExcludeModels,
     List<String>? models,
     Object? selectedChatModel = _settingsSentinel,
-    @Deprecated('Use selectedChatModel instead.') String? selectedModel,
     bool? isEnabled,
   }) {
     return ProviderConfig(
@@ -188,7 +186,7 @@ class ProviderConfig {
       globalExcludeModels: globalExcludeModels ?? this.globalExcludeModels,
       models: models ?? this.models,
       selectedChatModel: selectedChatModel == _settingsSentinel
-          ? (selectedModel ?? this.selectedChatModel)
+          ? this.selectedChatModel
           : selectedChatModel as String?,
       isEnabled: isEnabled ?? this.isEnabled,
     );
@@ -845,7 +843,7 @@ ProviderConfigEntity _buildProviderEntity(ProviderConfig source) {
     ..modelCapabilityOverridesJson = null
     ..globalExcludeModels = source.globalExcludeModels
     ..savedModels = source.models
-    ..lastSelectedModel = source.selectedModel
+    ..lastSelectedModel = null
     ..selectedChatModel = source.selectedChatModel
     ..isEnabled = source.isEnabled;
 }
@@ -1189,7 +1187,6 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
       final fixedProvider = state.activeProvider;
       await _storage.saveAppSettings(
         activeProviderId: fixedProvider.id,
-        selectedModel: fixedProvider.selectedModel,
         availableModels: fixedProvider.models,
       );
       debugPrint(
@@ -1256,7 +1253,6 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
       );
       await _storage.saveAppSettings(
         activeProviderId: id,
-        selectedModel: provider.selectedModel,
         availableModels: provider.models,
       );
     }
@@ -1279,7 +1275,6 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     List<String>? globalExcludeModels,
     List<String>? models,
     Object? selectedChatModel = _settingsSentinel,
-    @Deprecated('Use selectedChatModel instead.') String? selectedModel,
     bool? isEnabled,
   }) async {
     final newProviders = state.providers.map((p) {
@@ -1329,7 +1324,6 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     final provider = state.activeProvider;
     await _storage.saveAppSettings(
       activeProviderId: state.activeProvider.id,
-      selectedModel: model,
       availableModels: provider.models,
     );
   }
@@ -1590,7 +1584,6 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
       if (isActiveProvider) {
         await _storage.saveAppSettings(
           activeProviderId: provider.id,
-          selectedModel: newSelectedModel,
           availableModels: models,
         );
       }

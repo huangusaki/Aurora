@@ -1,82 +1,72 @@
 import 'package:aurora/features/assistant/presentation/widgets/assistant_avatar.dart';
-import 'package:aurora/shared/theme/aurora_icons.dart';
 import 'package:fluent_ui/fluent_ui.dart' as fluent;
 import 'package:flutter/material.dart';
 import 'package:aurora/shared/riverpod_compat.dart';
 import 'package:aurora/features/assistant/presentation/assistant_provider.dart';
-import 'package:aurora/features/settings/presentation/settings_provider.dart';
 
-import 'custom_dropdown_overlay.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 
-class AssistantSelector extends ConsumerStatefulWidget {
+import 'custom_dropdown_overlay.dart';
+import 'selector_overlay_scaffold.dart';
+
+class AssistantSelector extends SelectorOverlayScaffold {
   final String sessionId;
-  const AssistantSelector({super.key, required this.sessionId});
+  const AssistantSelector({super.key, required this.sessionId})
+      : super(overlayWidth: 220);
+
   @override
-  ConsumerState<AssistantSelector> createState() => _AssistantSelectorState();
-}
+  SelectorTriggerContentBuilder get triggerContentBuilder =>
+      _buildTriggerContent;
 
-class _AssistantSelectorState extends ConsumerState<AssistantSelector> {
-  final LayerLink _layerLink = LayerLink();
-  OverlayEntry? _overlayEntry;
-  bool _isOpen = false;
   @override
-  void dispose() {
-    _overlayEntry?.remove();
-    _overlayEntry = null;
-    super.dispose();
-  }
+  SelectorOverlayItemsBuilder get overlayItemsBuilder => _buildDropdownItems;
 
-  void _removeOverlay() {
-    _overlayEntry?.remove();
-    _overlayEntry = null;
-    if (mounted) {
-      setState(() => _isOpen = false);
-    }
-  }
-
-  void _toggleDropdown() {
-    if (_isOpen) {
-      _removeOverlay();
-    } else {
-      _showOverlay();
-    }
-  }
-
-  void _showOverlay() {
-    final overlay = Overlay.of(context);
-    final theme = fluent.FluentTheme.of(context);
-    final l10n = AppLocalizations.of(context)!;
-    _overlayEntry = OverlayEntry(
-      builder: (context) => CustomDropdownOverlay(
-        onDismiss: _removeOverlay,
-        layerLink: _layerLink,
-        offset: const Offset(0, 0),
-        targetAnchor: Alignment.bottomRight,
-        followerAnchor: Alignment.topRight,
-        child: AnimatedDropdownList(
-          backgroundColor: theme.menuColor,
-          borderColor: theme.resources.surfaceStrokeColorDefault,
-          width: 220,
-          coloredItems: _buildDropdownItems(theme, l10n),
-        ),
-      ),
+  Widget _buildTriggerContent(BuildContext context, WidgetRef ref,
+      fluent.FluentThemeData theme, AppLocalizations l10n) {
+    final assistantState = ref.watch(assistantProvider);
+    final selectedId = assistantState.selectedAssistantId;
+    final assistants = assistantState.assistants;
+    final selectedAssistant =
+        assistants.where((a) => a.id == selectedId).firstOrNull;
+    final textStyle = theme.typography.body?.copyWith(
+      fontSize: 13,
+      fontWeight: FontWeight.w500,
     );
-    overlay.insert(_overlayEntry!);
-    setState(() => _isOpen = true);
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        AssistantAvatar(
+          assistant: selectedAssistant,
+          size: 18,
+        ),
+        const SizedBox(width: 6),
+        Container(
+          constraints: const BoxConstraints(maxWidth: 120),
+          child: fluent.Text(
+            selectedAssistant?.name ?? l10n.defaultAssistant,
+            style: textStyle,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
   }
 
   List<ColoredDropdownItem> _buildDropdownItems(
-      fluent.FluentThemeData theme, AppLocalizations l10n) {
+    BuildContext context,
+    WidgetRef ref,
+    fluent.FluentThemeData theme,
+    AppLocalizations l10n,
+    VoidCallback dismissOverlay,
+  ) {
     final assistants = ref.watch(assistantProvider).assistants;
-    ref.watch(settingsProvider);
     final List<ColoredDropdownItem> items = [];
 
-    // Add Default option first
     items.add(ColoredDropdownItem(
       onPressed: () {
         ref.read(assistantProvider.notifier).selectAssistant(null);
-        _removeOverlay();
+        dismissOverlay();
       },
       child: Row(
         children: [
@@ -96,7 +86,7 @@ class _AssistantSelectorState extends ConsumerState<AssistantSelector> {
       items.add(ColoredDropdownItem(
         onPressed: () {
           ref.read(assistantProvider.notifier).selectAssistant(assistant.id);
-          _removeOverlay();
+          dismissOverlay();
         },
         child: Row(
           children: [
@@ -128,60 +118,5 @@ class _AssistantSelectorState extends ConsumerState<AssistantSelector> {
     }
 
     return items;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = fluent.FluentTheme.of(context);
-    final textStyle = theme.typography.body?.copyWith(
-      fontSize: 13,
-      fontWeight: FontWeight.w500,
-    );
-    final l10n = AppLocalizations.of(context)!;
-    final selectedId = ref.watch(assistantProvider).selectedAssistantId;
-    final assistants = ref.watch(assistantProvider).assistants;
-    final selectedAssistant =
-        assistants.where((a) => a.id == selectedId).firstOrNull;
-
-    return CompositedTransformTarget(
-      link: _layerLink,
-      child: fluent.HoverButton(
-        onPressed: _toggleDropdown,
-        builder: (context, states) {
-          return Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: _isOpen || states.isHovered
-                  ? theme.resources.subtleFillColorSecondary
-                  : fluent.Colors.transparent,
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                AssistantAvatar(
-                  assistant: selectedAssistant,
-                  size: 18,
-                ),
-                const SizedBox(width: 6),
-                Container(
-                  constraints: const BoxConstraints(maxWidth: 120),
-                  child: fluent.Text(
-                    selectedAssistant?.name ?? l10n.defaultAssistant,
-                    style: textStyle,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                const SizedBox(width: 4),
-                fluent.Icon(
-                    _isOpen ? AuroraIcons.chevronUp : AuroraIcons.chevronDown,
-                    size: 8,
-                    color: theme.typography.caption?.color),
-              ],
-            ),
-          );
-        },
-      ),
-    );
   }
 }

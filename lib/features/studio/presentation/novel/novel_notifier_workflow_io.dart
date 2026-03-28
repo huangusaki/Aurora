@@ -205,7 +205,9 @@ extension NovelNotifierWorkflowIo on NovelNotifier {
     );
 
     // Update the provider's selected model temporarily
-    final updatedProvider = provider.copyWith(selectedModel: config.modelId);
+    final updatedProvider = provider.copyWith(
+      selectedChatModel: config.modelId,
+    );
     final updatedProviders = tempSettings.providers.map((p) {
       return p.id == updatedProvider.id ? updatedProvider : p;
     }).toList();

@@ -55,12 +55,6 @@ class SearchOptions {
     this.maxResults = 10,
     this.page = 1,
     this.backend = 'auto',
-    this.includeMetadata = false,
-    this.minRelevanceScore,
-    this.language,
-    this.fileType,
-    this.imageSize,
-    this.imageColor,
   });
   final SearchRegion region;
   final SafeSearchLevel safeSearch;
@@ -68,12 +62,6 @@ class SearchOptions {
   final int maxResults;
   final int page;
   final String backend;
-  final bool includeMetadata;
-  final int? minRelevanceScore;
-  final String? language;
-  final String? fileType;
-  final ImageSize? imageSize;
-  final ImageColor? imageColor;
   SearchOptions copyWith({
     SearchRegion? region,
     SafeSearchLevel? safeSearch,
@@ -81,12 +69,6 @@ class SearchOptions {
     int? maxResults,
     int? page,
     String? backend,
-    bool? includeMetadata,
-    int? minRelevanceScore,
-    String? language,
-    String? fileType,
-    ImageSize? imageSize,
-    ImageColor? imageColor,
   }) =>
       SearchOptions(
         region: region ?? this.region,
@@ -95,49 +77,15 @@ class SearchOptions {
         maxResults: maxResults ?? this.maxResults,
         page: page ?? this.page,
         backend: backend ?? this.backend,
-        includeMetadata: includeMetadata ?? this.includeMetadata,
-        minRelevanceScore: minRelevanceScore ?? this.minRelevanceScore,
-        language: language ?? this.language,
-        fileType: fileType ?? this.fileType,
-        imageSize: imageSize ?? this.imageSize,
-        imageColor: imageColor ?? this.imageColor,
       );
   static const quick = SearchOptions(maxResults: 5);
   static const comprehensive = SearchOptions(
     maxResults: 50,
-    includeMetadata: true,
   );
   @override
   String toString() => 'SearchOptions(region: ${region.code}, '
-      'safeSearch: ${safeSearch.code}, maxResults: $maxResults)';
-}
-
-enum ImageSize {
-  small('Small'),
-  medium('Medium'),
-  large('Large'),
-  wallpaper('Wallpaper');
-
-  final String displayName;
-  const ImageSize(this.displayName);
-}
-
-enum ImageColor {
-  any('Any'),
-  monochrome('Monochrome'),
-  red('Red'),
-  orange('Orange'),
-  yellow('Yellow'),
-  green('Green'),
-  blue('Blue'),
-  purple('Purple'),
-  pink('Pink'),
-  brown('Brown'),
-  black('Black'),
-  white('White');
-
-  final String displayName;
-  const ImageColor(this.displayName);
+      'safeSearch: ${safeSearch.code}, timeLimit: ${timeLimit.code ?? 'none'}, '
+      'maxResults: $maxResults, page: $page, backend: $backend)';
 }
 
 class CacheConfig {
@@ -174,12 +122,6 @@ class ResultCache {
       options.maxResults.toString(),
       options.page.toString(),
       options.backend,
-      options.includeMetadata.toString(),
-      options.minRelevanceScore?.toString() ?? '',
-      options.language ?? '',
-      options.fileType ?? '',
-      options.imageSize?.name ?? '',
-      options.imageColor?.name ?? '',
     ].join('|');
   }
 

@@ -310,23 +310,6 @@ class AuroraSearch {
         page: page,
         backend: backend,
       );
-  Future<List<Map<String, dynamic>>> books(
-    String query, {
-    String region = 'us-en',
-    String safesearch = 'moderate',
-    int? maxResults = 10,
-    int page = 1,
-    String backend = 'auto',
-  }) =>
-      _search(
-        category: 'books',
-        query: query,
-        region: region,
-        safesearch: safesearch,
-        maxResults: maxResults,
-        page: page,
-        backend: backend,
-      );
   Future<List<TextSearchResult>> textTyped(
     String query, {
     SearchOptions options = const SearchOptions(),

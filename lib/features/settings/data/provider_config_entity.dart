@@ -33,8 +33,6 @@ class ProviderConfigEntity {
 class AppSettingsEntity {
   Id id = Isar.autoIncrement;
   late String activeProviderId;
-  String? selectedModel;
-  String? selectedChatModel;
   List<String> availableModels = [];
   String userName = 'User';
   String? userAvatar;

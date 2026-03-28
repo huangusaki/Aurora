@@ -20,6 +20,7 @@ import 'preset_settings_page.dart';
 import 'knowledge_settings_panel.dart';
 import 'log_records_page.dart';
 import 'widgets/deferred_fluent_slider.dart';
+import 'background_style_options.dart';
 
 import '../../../shared/utils/avatar_cropper.dart';
 import '../../../shared/utils/avatar_storage.dart';

@@ -6,82 +6,78 @@ import 'package:aurora/features/settings/presentation/settings_provider.dart';
 import 'package:aurora/features/chat/presentation/desktop/desktop_tabs.dart';
 import '../chat_provider.dart';
 
-import 'custom_dropdown_overlay.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 
-class PresetSelector extends ConsumerStatefulWidget {
-  final String sessionId;
-  const PresetSelector({super.key, required this.sessionId});
-  @override
-  ConsumerState<PresetSelector> createState() => _PresetSelectorState();
-}
+import 'custom_dropdown_overlay.dart';
+import 'selector_overlay_scaffold.dart';
 
-class _PresetSelectorState extends ConsumerState<PresetSelector> {
+class PresetSelector extends SelectorOverlayScaffold {
+  final String sessionId;
+  const PresetSelector({super.key, required this.sessionId})
+      : super(overlayWidth: 200, overlayOffset: const Offset(0, 36));
+
   static const int _desktopSettingsTabIndex = kDesktopTabSettings;
   static const int _presetSettingsPageIndex = 4;
-  final LayerLink _layerLink = LayerLink();
-  OverlayEntry? _overlayEntry;
-  bool _isOpen = false;
+
   @override
-  void dispose() {
-    _overlayEntry?.remove();
-    _overlayEntry = null;
-    super.dispose();
-  }
+  SelectorTriggerContentBuilder get triggerContentBuilder =>
+      _buildTriggerContent;
 
-  void _removeOverlay() {
-    _overlayEntry?.remove();
-    _overlayEntry = null;
-    if (mounted) {
-      setState(() => _isOpen = false);
+  @override
+  SelectorOverlayItemsBuilder get overlayItemsBuilder => _buildDropdownItems;
+
+  Widget _buildTriggerContent(BuildContext context, WidgetRef ref,
+      fluent.FluentThemeData theme, AppLocalizations l10n) {
+    final textStyle = theme.typography.body?.copyWith(
+      fontSize: 13,
+      fontWeight: FontWeight.w500,
+    );
+    ref.watch(chatStateUpdateTriggerProvider);
+    final settings = ref.watch(settingsProvider);
+    final presets = settings.presets;
+    final chatState = ref
+        .watch(chatSessionManagerProvider)
+        .getOrCreate(sessionId)
+        .currentState;
+    String? activePresetName = chatState.activePresetName;
+    if (activePresetName == null) {
+      final lastPresetId = settings.lastPresetId;
+      if (lastPresetId != null) {
+        final match = presets.where((p) => p.id == lastPresetId);
+        if (match.isNotEmpty) {
+          activePresetName = match.first.name;
+        }
+      }
     }
-  }
 
-  void _toggleDropdown() {
-    if (_isOpen) {
-      _removeOverlay();
-    } else {
-      _showOverlay();
-    }
-  }
-
-  void _showOverlay() {
-    final overlay = Overlay.of(context);
-    final theme = fluent.FluentTheme.of(context);
-    final l10n = AppLocalizations.of(context)!;
-    _overlayEntry = OverlayEntry(
-      builder: (context) => CustomDropdownOverlay(
-        onDismiss: _removeOverlay,
-        layerLink: _layerLink,
-        offset: const Offset(0, 36),
-        child: AnimatedDropdownList(
-          backgroundColor: theme.menuColor,
-          borderColor: theme.resources.surfaceStrokeColorDefault,
-          width: 200,
-          coloredItems: _buildDropdownItems(theme, l10n),
-        ),
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 160),
+      child: fluent.Text(
+        activePresetName ?? l10n.defaultPreset,
+        style: textStyle,
+        overflow: TextOverflow.ellipsis,
       ),
     );
-    overlay.insert(_overlayEntry!);
-    setState(() => _isOpen = true);
   }
 
   List<ColoredDropdownItem> _buildDropdownItems(
-      fluent.FluentThemeData theme, AppLocalizations l10n) {
+    BuildContext context,
+    WidgetRef ref,
+    fluent.FluentThemeData theme,
+    AppLocalizations l10n,
+    VoidCallback dismissOverlay,
+  ) {
     final settings = ref.watch(settingsProvider);
     final presets = settings.presets;
     final List<ColoredDropdownItem> items = [];
-    // --- Assistants Section ---
-    // Removed to separate concerns based on user feedback.
 
-    // --- Presets Section ---
     items.add(ColoredDropdownItem(
       onPressed: () {
         ref
             .read(chatSessionManagerProvider)
-            .getOrCreate(widget.sessionId)
+            .getOrCreate(sessionId)
             .updateSystemPrompt('', null);
-        _removeOverlay();
+        dismissOverlay();
       },
       child: Text(l10n.defaultPreset,
           style: const TextStyle(fontWeight: FontWeight.w500)),
@@ -92,9 +88,9 @@ class _PresetSelectorState extends ConsumerState<PresetSelector> {
         onPressed: () {
           ref
               .read(chatSessionManagerProvider)
-              .getOrCreate(widget.sessionId)
+              .getOrCreate(sessionId)
               .updateSystemPrompt(preset.systemPrompt, preset.name);
-          _removeOverlay();
+          dismissOverlay();
         },
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -116,7 +112,7 @@ class _PresetSelectorState extends ConsumerState<PresetSelector> {
     items.add(const DropdownSeparator());
     items.add(ColoredDropdownItem(
       onPressed: () {
-        _removeOverlay();
+        dismissOverlay();
         ref.read(desktopActiveTabProvider.notifier).state =
             _desktopSettingsTabIndex;
         ref.read(settingsPageIndexProvider.notifier).state =
@@ -131,67 +127,5 @@ class _PresetSelectorState extends ConsumerState<PresetSelector> {
       ),
     ));
     return items;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = fluent.FluentTheme.of(context);
-    final textStyle = theme.typography.body?.copyWith(
-      fontSize: 13,
-      fontWeight: FontWeight.w500,
-    );
-    final l10n = AppLocalizations.of(context)!;
-    ref.watch(chatStateUpdateTriggerProvider);
-    final chatState = ref
-        .watch(chatSessionManagerProvider)
-        .getOrCreate(widget.sessionId)
-        .currentState;
-    String? activePresetName = chatState.activePresetName;
-    if (activePresetName == null) {
-      final settings = ref.watch(settingsProvider);
-      final presets = settings.presets;
-      final lastPresetId = settings.lastPresetId;
-      if (lastPresetId != null) {
-        final match = presets.where((p) => p.id == lastPresetId);
-        if (match.isNotEmpty) {
-          activePresetName = match.first.name;
-        }
-      }
-    }
-    return CompositedTransformTarget(
-      link: _layerLink,
-      child: fluent.HoverButton(
-        onPressed: _toggleDropdown,
-        builder: (context, states) {
-          return Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: _isOpen || states.isHovered
-                  ? theme.resources.subtleFillColorSecondary
-                  : fluent.Colors.transparent,
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  constraints: const BoxConstraints(maxWidth: 160),
-                  child: fluent.Text(
-                    activePresetName ?? l10n.defaultPreset,
-                    style: textStyle,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                const SizedBox(width: 4),
-                fluent.Icon(
-                    _isOpen ? AuroraIcons.chevronUp : AuroraIcons.chevronDown,
-                    size: 8,
-                    color: theme.typography.caption?.color),
-              ],
-            ),
-          );
-        },
-      ),
-    );
   }
 }

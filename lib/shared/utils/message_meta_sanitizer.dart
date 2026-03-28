@@ -1,15 +1,14 @@
-/// Utilities to prevent message metadata fields (requestId/model/provider/role…)
-/// from being polluted by unexpectedly large strings.
-///
-/// These fields are treated as *metadata* and may be indexed in Isar. Storing
-/// large values here can cause severe database bloat.
+// Utilities to prevent message metadata fields (requestId/model/provider/role…)
+// from being polluted by unexpectedly large strings.
+//
+// These fields are treated as metadata and may be indexed in Isar. Storing
+// large values here can cause severe database bloat.
 
 const int kMaxMessageRequestIdChars = 128;
 const int kMaxMessageModelChars = 128;
 const int kMaxMessageProviderChars = 128;
 const int kMaxMessageRoleChars = 32;
 const int kMaxMessageAssistantIdChars = 128;
-const int kMaxMessageSessionIdChars = 128;
 const int kMaxMessageToolCallIdChars = 128;
 
 String? _sanitizeShortSingleLine(String? value, {required int maxChars}) {
@@ -34,13 +33,11 @@ String? sanitizeMessageProvider(String? value) =>
 String? sanitizeMessageAssistantId(String? value) =>
     _sanitizeShortSingleLine(value, maxChars: kMaxMessageAssistantIdChars);
 
-String? sanitizeMessageSessionId(String? value) =>
-    _sanitizeShortSingleLine(value, maxChars: kMaxMessageSessionIdChars);
-
 String? sanitizeMessageToolCallId(String? value) =>
     _sanitizeShortSingleLine(value, maxChars: kMaxMessageToolCallIdChars);
 
 String? sanitizeMessageRole(String? value) {
-  final cleaned = _sanitizeShortSingleLine(value, maxChars: kMaxMessageRoleChars);
+  final cleaned =
+      _sanitizeShortSingleLine(value, maxChars: kMaxMessageRoleChars);
   return cleaned?.toLowerCase();
 }

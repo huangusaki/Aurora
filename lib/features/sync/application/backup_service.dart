@@ -713,8 +713,6 @@ class BackupService {
 
   Map<String, dynamic> _appSettingsToJson(AppSettingsEntity s) => {
         'activeProviderId': s.activeProviderId,
-        'selectedModel': s.selectedModel,
-        'selectedChatModel': s.selectedChatModel,
         'availableModels': s.availableModels,
         'userName': s.userName,
         'userAvatar': s.userAvatar,
@@ -737,6 +735,8 @@ class BackupService {
         'activeKnowledgeBaseIds': s.activeKnowledgeBaseIds,
         'enableSmartTopic': s.enableSmartTopic,
         'topicGenerationModel': s.topicGenerationModel,
+        'restoreLastSessionOnLaunch': s.restoreLastSessionOnLaunch,
+        'keepChatScrollPositionOnResponse': s.keepChatScrollPositionOnResponse,
         'lastSessionId': s.lastSessionId,
         'lastTopicId': s.lastTopicId,
         'language': s.language,
@@ -755,6 +755,7 @@ class BackupService {
         'transcriptionProviderId': s.transcriptionProviderId,
         'translationModel': s.translationModel,
         'translationProviderId': s.translationProviderId,
+        'llmRequestTimeoutSeconds': s.llmRequestTimeoutSeconds,
         'memoryMinNewUserMessages': s.memoryMinNewUserMessages,
         'memoryIdleSeconds': s.memoryIdleSeconds,
         'memoryMaxBufferedMessages': s.memoryMaxBufferedMessages,
@@ -772,9 +773,6 @@ class BackupService {
     return AppSettingsEntity()
       ..activeProviderId =
           _asString(json['activeProviderId'], fallback: 'custom')
-      ..selectedModel = _asNullableString(json['selectedModel'])
-      ..selectedChatModel = _asNullableString(json['selectedChatModel']) ??
-          _asNullableString(json['selectedModel'])
       ..availableModels = _asStringList(json['availableModels'])
       ..userName = _asString(json['userName'], fallback: 'User')
       ..userAvatar = _asNullableString(json['userAvatar'])
@@ -804,6 +802,10 @@ class BackupService {
       ..activeKnowledgeBaseIds = _asStringList(json['activeKnowledgeBaseIds'])
       ..enableSmartTopic = _asBool(json['enableSmartTopic'], fallback: true)
       ..topicGenerationModel = _asNullableString(json['topicGenerationModel'])
+      ..restoreLastSessionOnLaunch =
+          _asNullableBool(json['restoreLastSessionOnLaunch'])
+      ..keepChatScrollPositionOnResponse =
+          _asNullableBool(json['keepChatScrollPositionOnResponse'])
       ..lastSessionId = _asNullableString(json['lastSessionId'])
       ..lastTopicId = _asNullableString(json['lastTopicId'])
       ..language = _asString(json['language'], fallback: 'zh')
@@ -824,6 +826,8 @@ class BackupService {
           _asNullableString(json['transcriptionProviderId'])
       ..translationModel = _asNullableString(json['translationModel'])
       ..translationProviderId = _asNullableString(json['translationProviderId'])
+      ..llmRequestTimeoutSeconds =
+          _asInt(json['llmRequestTimeoutSeconds'], fallback: 300)
       ..memoryMinNewUserMessages =
           _asInt(json['memoryMinNewUserMessages'], fallback: 20)
       ..memoryIdleSeconds = _asInt(json['memoryIdleSeconds'], fallback: 600)
@@ -1232,6 +1236,18 @@ class BackupService {
     }
     final converted = value.toString().trim();
     return converted.isEmpty ? null : converted;
+  }
+
+  bool? _asNullableBool(dynamic value) {
+    if (value == null) return null;
+    if (value is bool) return value;
+    if (value is num) return value != 0;
+    if (value is String) {
+      final normalized = value.trim().toLowerCase();
+      if (normalized == 'true' || normalized == '1') return true;
+      if (normalized == 'false' || normalized == '0') return false;
+    }
+    return null;
   }
 
   bool _asBool(dynamic value, {required bool fallback}) {

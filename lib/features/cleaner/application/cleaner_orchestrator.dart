@@ -3,6 +3,11 @@ import '../domain/cleaner_models.dart';
 import '../domain/cleaner_services.dart';
 import 'cleaner_policy_engine.dart';
 
+typedef CleanerAnalysisProgressCallback = void Function(
+  List<CleanerAiSuggestion> partialSuggestions,
+  CleanerAiProgress progress,
+);
+
 class CleanerOrchestrator {
   final CleanerScanner scanner;
   final CleanerAiAdvisor aiAdvisor;
@@ -20,18 +25,74 @@ class CleanerOrchestrator {
     CleanerScanOptions options = const CleanerScanOptions(),
     CleanerAiContext context = const CleanerAiContext(),
   }) async {
-    final candidates = await scanner.scan(options);
+    final candidates = await scan(options);
     if (candidates.isEmpty) {
       return CleanerRunResult.empty();
     }
 
-    final suggestions = await aiAdvisor.suggest(
+    return analyzeCandidates(
       candidates: candidates,
       context: context,
     );
+  }
+
+  Future<List<CleanerCandidate>> scan(
+    CleanerScanOptions options, {
+    bool Function()? shouldStop,
+  }) {
+    return scanner.scan(
+      options,
+      shouldStop: shouldStop,
+    );
+  }
+
+  Future<CleanerRunResult> analyzeCandidates({
+    required List<CleanerCandidate> candidates,
+    required CleanerAiContext context,
+    CleanerAnalysisProgressCallback? onProgress,
+    bool Function()? shouldStop,
+  }) async {
+    if (candidates.isEmpty) {
+      return CleanerRunResult.empty();
+    }
+
+    final suggestionsById = <String, CleanerAiSuggestion>{};
+    final suggestions = await aiAdvisor.suggest(
+      candidates: candidates,
+      context: context,
+      shouldStop: shouldStop,
+      onProgress: (partialSuggestions, progress) {
+        for (final suggestion in partialSuggestions) {
+          suggestionsById[suggestion.candidateId] = suggestion;
+        }
+        onProgress?.call(partialSuggestions, progress);
+      },
+    );
+
+    for (final suggestion in suggestions) {
+      suggestionsById[suggestion.candidateId] = suggestion;
+    }
+
+    return reviewCandidates(
+      candidates: candidates,
+      suggestions: suggestionsById.values,
+      languageCode: context.language,
+    );
+  }
+
+  CleanerRunResult reviewCandidates({
+    required List<CleanerCandidate> candidates,
+    required Iterable<CleanerAiSuggestion> suggestions,
+    String languageCode = 'en',
+  }) {
+    if (candidates.isEmpty) {
+      return CleanerRunResult.empty();
+    }
+
     final items = policyEngine.evaluateAll(
       candidates: candidates,
-      suggestions: suggestions,
+      suggestions: suggestions.toList(),
+      languageCode: languageCode,
     );
     final summary = _buildSummary(items);
     return CleanerRunResult(

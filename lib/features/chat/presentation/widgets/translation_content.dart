@@ -10,6 +10,7 @@ import '../../domain/message.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 import 'package:aurora/shared/utils/platform_utils.dart';
 import 'package:aurora/shared/utils/translation_prompt_utils.dart';
+import 'translation_shared.dart';
 
 class TranslationContent extends ConsumerStatefulWidget {
   const TranslationContent({super.key});
@@ -20,31 +21,12 @@ class TranslationContent extends ConsumerStatefulWidget {
 class _TranslationContentState extends ConsumerState<TranslationContent> {
   final TextEditingController _sourceController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
-  String _sourceLang = 'auto';
-  String _targetLang = 'zh-Hans';
-  bool _showComparison = true;
+  String _sourceLang = translationDefaultSourceLanguageCode;
+  String _targetLang = translationDefaultTargetLanguageCode;
+  bool _showComparison = translationDefaultShowComparison;
   bool _hasRestored = false;
-  final List<String> _sourceLanguages = [
-    'auto',
-    'en',
-    'ja',
-    'ko',
-    'zh-Hans',
-    'zh-Hant',
-    'ru',
-    'fr',
-    'de',
-  ];
-  final List<String> _targetLanguages = [
-    'zh-Hans',
-    'en',
-    'ja',
-    'ko',
-    'zh-Hant',
-    'ru',
-    'fr',
-    'de',
-  ];
+  final List<String> _sourceLanguages = translationSourceLanguageCodes;
+  final List<String> _targetLanguages = translationTargetLanguageCodes;
   @override
   void initState() {
     super.initState();
@@ -79,23 +61,17 @@ class _TranslationContentState extends ConsumerState<TranslationContent> {
   void _translate() {
     if (_sourceController.text.trim().isEmpty) return;
     final l10n = AppLocalizations.of(context)!;
-    final sourceLangLabel =
-        _sourceLang == 'auto' ? '' : _getDisplayLanguage(context, _sourceLang);
-    final targetLangLabel = _getDisplayLanguage(context, _targetLang);
     final notifier = ref.read(translationProvider.notifier);
     notifier.clearContext().then((_) {
-      final sb = StringBuffer();
-      sb.writeln(_sourceLang == 'auto'
-          ? l10n.translationPromptIntroAuto(targetLangLabel)
-          : l10n.translationPromptIntro(sourceLangLabel, targetLangLabel));
-      sb.writeln(l10n.translationPromptRequirements);
-      sb.writeln(l10n.translationPromptRequirement1);
-      sb.writeln(l10n.translationPromptRequirement2);
-      sb.writeln(l10n.translationPromptRequirement3);
-      sb.writeln();
-      sb.writeln(l10n.translationPromptSourceText);
-      sb.writeln(_sourceController.text);
-      notifier.sendMessage(_sourceController.text, apiContent: sb.toString());
+      notifier.sendMessage(
+        _sourceController.text,
+        apiContent: buildTranslationPrompt(
+          l10n,
+          sourceLanguageCode: _sourceLang,
+          targetLanguageCode: _targetLang,
+          sourceText: _sourceController.text,
+        ),
+      );
     });
   }
 
@@ -276,6 +252,7 @@ class _TranslationContentState extends ConsumerState<TranslationContent> {
     required List<String> items,
     required ValueChanged<String?> onChanged,
   }) {
+    final l10n = AppLocalizations.of(context)!;
     return SizedBox(
       width: 200,
       child: AuroraFluentDropdownField<String>(
@@ -285,40 +262,14 @@ class _TranslationContentState extends ConsumerState<TranslationContent> {
             .map(
               (item) => AuroraDropdownOption<String>(
                 value: item,
-                label: _getDisplayLanguage(context, item),
+                label: translationLanguageLabel(l10n, item),
               ),
             )
             .toList(growable: false),
         onChanged: onChanged,
-        placeholder: AppLocalizations.of(context)!.selectLanguage,
+        placeholder: l10n.selectLanguage,
       ),
     );
-  }
-
-  String _getDisplayLanguage(BuildContext context, String internalLang) {
-    final l10n = AppLocalizations.of(context)!;
-    switch (internalLang) {
-      case 'auto':
-        return l10n.autoDetect;
-      case 'en':
-        return l10n.english;
-      case 'ja':
-        return l10n.japanese;
-      case 'ko':
-        return l10n.korean;
-      case 'zh-Hans':
-        return l10n.simplifiedChinese;
-      case 'zh-Hant':
-        return l10n.traditionalChinese;
-      case 'ru':
-        return l10n.russian;
-      case 'fr':
-        return l10n.french;
-      case 'de':
-        return l10n.german;
-      default:
-        return internalLang;
-    }
   }
 
   Widget _buildCard({

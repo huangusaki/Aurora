@@ -29,17 +29,6 @@ String normalizeBase64Payload(String raw) {
   return normalized;
 }
 
-/// If [dataUrl] is a base64 `data:` URL, returns a normalized version with a
-/// whitespace-free, padded base64 payload. Otherwise returns [dataUrl].
-String normalizeBase64DataUrl(String dataUrl) {
-  if (!dataUrl.startsWith('data:')) return dataUrl;
-  final commaIndex = dataUrl.indexOf(',');
-  if (commaIndex <= 0) return dataUrl;
-  final header = dataUrl.substring(0, commaIndex);
-  final payload = dataUrl.substring(commaIndex + 1);
-  return '$header,${normalizeBase64Payload(payload)}';
-}
-
 Uint8List decodeBase64Lenient(String raw) {
   final normalized = normalizeBase64Payload(raw);
   return base64Decode(normalized);
@@ -56,4 +45,3 @@ Uint8List decodeDataUrlBytesLenient(String dataUrl) {
   final payload = dataUrl.substring(commaIndex + 1);
   return decodeBase64Lenient(payload);
 }
-
