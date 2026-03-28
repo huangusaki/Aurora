@@ -1007,6 +1007,10 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
               },
               child: Shortcuts(
                 shortcuts: const <ShortcutActivator, Intent>{
+                  SingleActivator(LogicalKeyboardKey.keyV, control: true):
+                      PasteTextIntent(SelectionChangedCause.keyboard),
+                  SingleActivator(LogicalKeyboardKey.insert, shift: true):
+                      PasteTextIntent(SelectionChangedCause.keyboard),
                   SingleActivator(LogicalKeyboardKey.paste):
                       PasteTextIntent(SelectionChangedCause.keyboard),
                 },
@@ -1014,6 +1018,7 @@ class _DesktopChatInputAreaState extends ConsumerState<DesktopChatInputArea>
                   actions: <Type, Action<Intent>>{
                     PasteTextIntent: AttachmentAwarePasteAction(
                       onCustomPaste: widget.onPaste,
+                      onFallbackPaste: _pastePlainTextFromClipboard,
                       onAfterPaste: _focusNode.requestFocus,
                     ),
                   },

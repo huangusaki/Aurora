@@ -5,10 +5,12 @@ import 'package:flutter/material.dart';
 class AttachmentAwarePasteAction extends Action<PasteTextIntent> {
   AttachmentAwarePasteAction({
     required this.onCustomPaste,
+    this.onFallbackPaste,
     this.onAfterPaste,
   });
 
   final Future<bool> Function() onCustomPaste;
+  final Future<bool> Function()? onFallbackPaste;
   final VoidCallback? onAfterPaste;
 
   @override
@@ -27,6 +29,14 @@ class AttachmentAwarePasteAction extends Action<PasteTextIntent> {
       handled = await onCustomPaste();
     } catch (_) {
       handled = false;
+    }
+
+    if (!handled && onFallbackPaste != null) {
+      try {
+        handled = await onFallbackPaste!.call();
+      } catch (_) {
+        handled = false;
+      }
     }
 
     if (!handled) {

@@ -144,6 +144,33 @@ class MessageBubbleState extends ConsumerState<MessageBubble>
     }
   }
 
+  Future<bool> _pastePlainTextFromClipboard() async {
+    final data = await Clipboard.getData(Clipboard.kTextPlain);
+    final text = data?.text;
+    if (text == null || text.isEmpty) {
+      return false;
+    }
+
+    final selection = _editController.selection;
+    final currentText = _editController.text;
+    late final String newText;
+    late final int newSelectionIndex;
+
+    if (selection.isValid && selection.start >= 0) {
+      newText = currentText.replaceRange(selection.start, selection.end, text);
+      newSelectionIndex = selection.start + text.length;
+    } else {
+      newText = currentText + text;
+      newSelectionIndex = newText.length;
+    }
+
+    _editController.value = TextEditingValue(
+      text: newText,
+      selection: TextSelection.collapsed(offset: newSelectionIndex),
+    );
+    return true;
+  }
+
   Future<String?> _saveClipboardFileAsAttachment(
     ClipboardReader reader,
     FileFormat format,
@@ -452,6 +479,7 @@ class MessageBubbleState extends ConsumerState<MessageBubble>
                 ref.read(historyChatProvider).regenerateResponse(message.id);
               },
               onCustomPaste: _handlePaste,
+              onFallbackPaste: _pastePlainTextFromClipboard,
             )
           : ChatMessageContentRenderer(
               blocks: renderData.blocks,
@@ -533,6 +561,7 @@ class _MessageEditPanel extends StatelessWidget {
     required this.onCancel,
     required this.onSaveAndRegenerate,
     required this.onCustomPaste,
+    required this.onFallbackPaste,
   });
 
   final Message message;
@@ -546,6 +575,7 @@ class _MessageEditPanel extends StatelessWidget {
   final VoidCallback onCancel;
   final Future<void> Function() onSaveAndRegenerate;
   final Future<bool> Function() onCustomPaste;
+  final Future<bool> Function() onFallbackPaste;
 
   @override
   Widget build(BuildContext context) {
@@ -566,6 +596,10 @@ class _MessageEditPanel extends StatelessWidget {
             children: [
               Shortcuts(
                 shortcuts: const <ShortcutActivator, Intent>{
+                  SingleActivator(LogicalKeyboardKey.keyV, control: true):
+                      PasteTextIntent(SelectionChangedCause.keyboard),
+                  SingleActivator(LogicalKeyboardKey.insert, shift: true):
+                      PasteTextIntent(SelectionChangedCause.keyboard),
                   SingleActivator(LogicalKeyboardKey.paste):
                       PasteTextIntent(SelectionChangedCause.keyboard),
                 },
@@ -573,6 +607,7 @@ class _MessageEditPanel extends StatelessWidget {
                   actions: <Type, Action<Intent>>{
                     PasteTextIntent: AttachmentAwarePasteAction(
                       onCustomPaste: onCustomPaste,
+                      onFallbackPaste: onFallbackPaste,
                       onAfterPaste: focusNode.requestFocus,
                     ),
                   },
