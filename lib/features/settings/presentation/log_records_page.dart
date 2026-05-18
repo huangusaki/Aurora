@@ -3,7 +3,7 @@ import 'dart:math' as math;
 
 import 'package:aurora/features/settings/presentation/app_log_provider.dart';
 import 'package:aurora/l10n/app_localizations.dart';
-import 'package:aurora/shared/riverpod_compat.dart';
+import 'package:aurora/shared/riverpod_legacy.dart';
 import 'package:aurora/shared/theme/aurora_icons.dart';
 import 'package:aurora/shared/utils/app_logger.dart';
 import 'package:aurora/shared/widgets/aurora_notice.dart';
@@ -1074,3 +1074,4 @@ String _formatTimestamp(DateTime timestamp) {
   return '${local.year}-${local.month.toString().padLeft(2, '0')}-${local.day.toString().padLeft(2, '0')} '
       '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}:${local.second.toString().padLeft(2, '0')}';
 }
+

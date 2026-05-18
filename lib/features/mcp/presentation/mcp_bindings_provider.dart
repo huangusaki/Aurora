@@ -1,4 +1,4 @@
-import 'package:aurora/shared/riverpod_compat.dart';
+import 'package:aurora/shared/riverpod_legacy.dart';
 import 'package:aurora/shared/utils/platform_utils.dart';
 
 import '../data/mcp_bindings_storage.dart';
@@ -161,4 +161,5 @@ final mcpBindingsProvider =
     StateNotifierProvider<McpBindingsNotifier, McpBindingsState>((ref) {
   return McpBindingsNotifier();
 });
+
 

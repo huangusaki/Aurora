@@ -1,5 +1,5 @@
 import 'package:aurora/l10n/app_localizations.dart';
-import 'package:aurora/shared/riverpod_compat.dart';
+import 'package:aurora/shared/riverpod_legacy.dart';
 import 'package:aurora/shared/theme/aurora_icons.dart';
 import 'package:fluent_ui/fluent_ui.dart' as fluent;
 import 'package:flutter/material.dart';
@@ -136,3 +136,4 @@ class _SelectorOverlayScaffoldState
     );
   }
 }
+

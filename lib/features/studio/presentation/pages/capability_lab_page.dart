@@ -4,7 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:aurora/l10n/app_localizations.dart';
-import 'package:aurora/shared/riverpod_compat.dart';
+import 'package:aurora/shared/riverpod_legacy.dart';
 
 import 'package:aurora/features/settings/presentation/provider_route_labels.dart';
 import 'package:aurora/features/settings/presentation/settings_provider.dart';
@@ -823,3 +823,4 @@ IconData _iconFor(ProviderCapability capability) {
 extension _FirstOrNull<T> on List<T> {
   T? get firstOrNull => isEmpty ? null : first;
 }
+

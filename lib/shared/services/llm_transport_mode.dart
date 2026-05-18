@@ -1,13 +1,14 @@
+import '../../features/settings/domain/provider_route_config.dart';
 import '../../features/settings/presentation/settings_provider.dart';
-import 'model_capability_registry.dart';
+import 'capability_route_resolver.dart';
 
-const String auroraTransportModeKey = '_aurora_transport_mode';
-const String auroraLegacyTransportModeKey = '_aurora_transport';
 const String auroraTransportBaseUrlKey = '_aurora_transport_base_url';
 const String auroraTransportApiKeyKey = '_aurora_transport_api_key';
 const String auroraImageConfigKey = '_aurora_image_config';
 const String auroraImageConfigModeKey = 'mode';
 const String auroraImageConfigIncludeThoughtsKey = 'include_thoughts';
+const String auroraGeminiProxyAssistantImageRewriteKey =
+    '_aurora_gemini_proxy_assistant_image_rewrite';
 const String auroraGeminiNativeToolsKey = '_aurora_gemini_native_tools';
 const String auroraGeminiNativeGoogleSearchKey = 'google_search';
 const String auroraGeminiNativeUrlContextKey = 'url_context';
@@ -20,19 +21,6 @@ enum LlmTransportMode {
 
   final String wireName;
   const LlmTransportMode(this.wireName);
-
-  static LlmTransportMode fromRaw(Object? raw) {
-    final value = raw?.toString().trim().toLowerCase();
-    switch (value) {
-      case 'openai_compat':
-        return LlmTransportMode.openaiCompat;
-      case 'gemini_native':
-        return LlmTransportMode.geminiNative;
-      case 'auto':
-      default:
-        return LlmTransportMode.auto;
-    }
-  }
 }
 
 enum ImageConfigTransportMode {
@@ -170,22 +158,25 @@ Map<String, dynamic> withAuroraImageConfig(
   return next;
 }
 
-LlmTransportMode resolveTransportModeFromSettings(
-    Map<String, dynamic>? modelSettings) {
-  return LlmTransportMode.auto;
-}
-
-LlmTransportMode resolveProviderTransportMode(ProviderConfig provider) {
-  return provider.providerFamily == ProviderModelFamily.geminiNative
-      ? LlmTransportMode.geminiNative
-      : LlmTransportMode.openaiCompat;
-}
-
 LlmTransportMode resolveModelTransportMode({
   required ProviderConfig provider,
   required String modelName,
 }) {
-  return resolveProviderTransportMode(provider);
+  final route = const CapabilityRouteResolver().resolve(
+    provider: provider,
+    capability: ProviderCapability.chat,
+    modelName: modelName,
+  );
+  return route.preset == ProtocolPreset.geminiNativeGenerateContent
+      ? LlmTransportMode.geminiNative
+      : LlmTransportMode.openaiCompat;
+}
+
+bool resolveGeminiProxyAssistantImageRewrite(
+  Map<String, dynamic>? modelSettings,
+) {
+  if (modelSettings == null || modelSettings.isEmpty) return false;
+  return _asBool(modelSettings[auroraGeminiProxyAssistantImageRewriteKey]);
 }
 
 class GeminiNativeToolsConfig {

@@ -1,4 +1,4 @@
-import 'package:aurora/shared/riverpod_compat.dart';
+import 'package:aurora/shared/riverpod_legacy.dart';
 import 'package:uuid/uuid.dart';
 import '../../settings/presentation/settings_provider.dart';
 import '../data/assistant_entity.dart';
@@ -139,4 +139,5 @@ final assistantProvider =
     StateNotifierProvider<AssistantNotifier, AssistantState>((ref) {
   return AssistantNotifier(ref);
 });
+
 

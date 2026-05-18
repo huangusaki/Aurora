@@ -4,7 +4,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 import 'package:flutter/foundation.dart';
-import 'package:aurora/shared/riverpod_compat.dart';
+import 'package:aurora/shared/riverpod_legacy.dart';
 import 'package:aurora/shared/services/model_capability_registry.dart';
 import 'package:aurora/shared/services/capability_route_resolver.dart';
 import 'package:aurora/shared/services/provider_capability_gateway.dart';
@@ -24,6 +24,35 @@ const List<String> _legacyTransportRoutingKeys = <String>[
 const int minLlmRequestTimeoutSeconds = 30;
 const int maxLlmRequestTimeoutSeconds = 1800;
 const int defaultLlmRequestTimeoutSeconds = 300;
+
+bool _deepEquals(Object? left, Object? right) {
+  if (identical(left, right)) {
+    return true;
+  }
+  if (left is Map && right is Map) {
+    if (left.length != right.length) {
+      return false;
+    }
+    for (final key in left.keys) {
+      if (!right.containsKey(key) || !_deepEquals(left[key], right[key])) {
+        return false;
+      }
+    }
+    return true;
+  }
+  if (left is List && right is List) {
+    if (left.length != right.length) {
+      return false;
+    }
+    for (int index = 0; index < left.length; index += 1) {
+      if (!_deepEquals(left[index], right[index])) {
+        return false;
+      }
+    }
+    return true;
+  }
+  return left == right;
+}
 
 class _ProviderEntityLoadResult {
   final ProviderConfig config;
@@ -249,6 +278,10 @@ class ProviderConfig {
     final rawModelSettings = _decodeModelSettings(entity.modelSettingsJson);
     final sanitizedModelSettings = _sanitizeModelSettings(rawModelSettings);
     final globalSettings = _decodeJsonMap(entity.globalSettingsJson);
+    final persistedCapabilityConfig =
+        _decodeCapabilityConfig(entity.capabilityRoutesJson);
+    final persistedModelCapabilityOverrides =
+        _decodeModelCapabilityOverrides(entity.modelCapabilityOverridesJson);
 
     List<String> apiKeys = List<String>.from(entity.apiKeys);
     // ignore: deprecated_member_use_from_same_package
@@ -266,33 +299,42 @@ class ProviderConfig {
           baseUrl: entity.baseUrl,
           modelSettings: rawModelSettings,
         );
+    final config = ProviderConfig(
+      id: entity.providerId,
+      name: entity.name,
+      color: entity.color,
+      apiKeys: apiKeys,
+      currentKeyIndex: entity.currentKeyIndex,
+      autoRotateKeys: entity.autoRotateKeys,
+      baseUrl: entity.baseUrl,
+      providerProtocol: effectiveProtocol,
+      isCustom: entity.isCustom,
+      customParameters: customParams,
+      modelSettings: sanitizedModelSettings,
+      globalSettings: globalSettings,
+      capabilityConfig: persistedCapabilityConfig,
+      modelCapabilityOverrides: persistedModelCapabilityOverrides,
+      globalExcludeModels: entity.globalExcludeModels,
+      models: entity.savedModels,
+      selectedChatModel: selectedChatModel,
+      isEnabled: entity.isEnabled,
+    );
     final needsWriteBack = storedProtocolRaw != effectiveProtocol.wireName ||
-        (entity.capabilityRoutesJson?.trim().isNotEmpty ?? false) ||
-        (entity.modelCapabilityOverridesJson?.trim().isNotEmpty ?? false) ||
+        !_jsonPayloadsEqual(
+          entity.capabilityRoutesJson,
+          _encodeCapabilityRoutesJson(config),
+        ) ||
+        !_jsonPayloadsEqual(
+          entity.modelCapabilityOverridesJson,
+          _encodeModelCapabilityOverridesJson(config),
+        ) ||
         jsonEncode(rawModelSettings) != jsonEncode(sanitizedModelSettings) ||
         // ignore: deprecated_member_use_from_same_package
         (entity.apiKey.isNotEmpty && entity.apiKeys.isEmpty) ||
         entity.selectedChatModel != selectedChatModel;
 
     return _ProviderEntityLoadResult(
-      config: ProviderConfig(
-        id: entity.providerId,
-        name: entity.name,
-        color: entity.color,
-        apiKeys: apiKeys,
-        currentKeyIndex: entity.currentKeyIndex,
-        autoRotateKeys: entity.autoRotateKeys,
-        baseUrl: entity.baseUrl,
-        providerProtocol: effectiveProtocol,
-        isCustom: entity.isCustom,
-        customParameters: customParams,
-        modelSettings: sanitizedModelSettings,
-        globalSettings: globalSettings,
-        globalExcludeModels: entity.globalExcludeModels,
-        models: entity.savedModels,
-        selectedChatModel: selectedChatModel,
-        isEnabled: entity.isEnabled,
-      ),
+      config: config,
       needsWriteBack: needsWriteBack,
     );
   }
@@ -310,6 +352,24 @@ class ProviderConfig {
       }
     } catch (_) {}
     return {};
+  }
+
+  static ProviderCapabilityConfig _decodeCapabilityConfig(String? raw) {
+    final decoded = _decodeJsonMap(raw);
+    if (decoded.isEmpty) {
+      return const ProviderCapabilityConfig();
+    }
+    return ProviderCapabilityConfig.fromJson(decoded);
+  }
+
+  static Map<String, ModelCapabilityOverride> _decodeModelCapabilityOverrides(
+    String? raw,
+  ) {
+    final decoded = _decodeJsonMap(raw);
+    if (decoded.isEmpty) {
+      return const {};
+    }
+    return decodeModelCapabilityOverrides(decoded);
   }
 
   static Map<String, Map<String, dynamic>> _decodeModelSettings(String? raw) {
@@ -496,6 +556,14 @@ class ProviderConfig {
       },
     );
   }
+}
+
+bool usesOpenAiResponsesForChat(ProviderConfig provider) {
+  if (provider.providerProtocol != ProviderProtocol.openaiCompatible) {
+    return false;
+  }
+  return provider.capabilityConfig.routeFor(ProviderCapability.chat)?.preset ==
+      ProtocolPreset.openaiResponses;
 }
 
 class SettingsState {
@@ -839,13 +907,83 @@ ProviderConfigEntity _buildProviderEntity(ProviderConfig source) {
     ..customParametersJson = jsonEncode(source.customParameters)
     ..modelSettingsJson = jsonEncode(source.modelSettings)
     ..globalSettingsJson = jsonEncode(source.globalSettings)
-    ..capabilityRoutesJson = null
-    ..modelCapabilityOverridesJson = null
+    ..capabilityRoutesJson = _encodeCapabilityRoutesJson(source)
+    ..modelCapabilityOverridesJson = _encodeModelCapabilityOverridesJson(source)
     ..globalExcludeModels = source.globalExcludeModels
     ..savedModels = source.models
     ..lastSelectedModel = null
     ..selectedChatModel = source.selectedChatModel
     ..isEnabled = source.isEnabled;
+}
+
+String? _encodeCapabilityRoutesJson(ProviderConfig source) {
+  final defaultConfig = ProviderConfig._buildCapabilityConfig(
+    providerProtocol: source.providerProtocol,
+    baseUrl: source.baseUrl,
+  );
+  final payload = source.capabilityConfig.toJson();
+  if (payload.isEmpty) {
+    return null;
+  }
+  if (jsonEncode(payload) == jsonEncode(defaultConfig.toJson())) {
+    return null;
+  }
+  return jsonEncode(payload);
+}
+
+String? _encodeModelCapabilityOverridesJson(ProviderConfig source) {
+  if (source.modelCapabilityOverrides.isEmpty) {
+    return null;
+  }
+  final payload = <String, dynamic>{};
+  source.modelCapabilityOverrides.forEach((modelName, override) {
+    final json = override.toJson();
+    if (json.isNotEmpty) {
+      payload[modelName] = json;
+    }
+  });
+  if (payload.isEmpty) {
+    return null;
+  }
+  return jsonEncode(payload);
+}
+
+bool _providerConfigEquals(ProviderConfig left, ProviderConfig right) {
+  return left.id == right.id &&
+      left.name == right.name &&
+      left.color == right.color &&
+      listEquals(left.apiKeys, right.apiKeys) &&
+      left.currentKeyIndex == right.currentKeyIndex &&
+      left.autoRotateKeys == right.autoRotateKeys &&
+      left.baseUrl == right.baseUrl &&
+      left.providerProtocol == right.providerProtocol &&
+      left.isCustom == right.isCustom &&
+      _deepEquals(left.customParameters, right.customParameters) &&
+      _deepEquals(left.modelSettings, right.modelSettings) &&
+      _deepEquals(left.globalSettings, right.globalSettings) &&
+      _encodeCapabilityRoutesJson(left) == _encodeCapabilityRoutesJson(right) &&
+      _encodeModelCapabilityOverridesJson(left) ==
+          _encodeModelCapabilityOverridesJson(right) &&
+      listEquals(left.globalExcludeModels, right.globalExcludeModels) &&
+      listEquals(left.models, right.models) &&
+      left.selectedChatModel == right.selectedChatModel &&
+      left.isEnabled == right.isEnabled;
+}
+
+bool _jsonPayloadsEqual(String? left, String? right) {
+  return _normalizeJsonPayload(left) == _normalizeJsonPayload(right);
+}
+
+String? _normalizeJsonPayload(String? raw) {
+  final trimmed = raw?.trim();
+  if (trimmed == null || trimmed.isEmpty) {
+    return null;
+  }
+  try {
+    return jsonEncode(jsonDecode(trimmed));
+  } catch (_) {
+    return trimmed;
+  }
 }
 
 int _clampInt(int value, int min, int max) {
@@ -1090,6 +1228,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
   Future<void> refreshSettings() async {
     final providerEntities = await _storage.loadProviders();
     final appSettings = await _storage.loadAppSettings();
+    final knownKnowledgeBaseIds = await _storage.loadKnowledgeBaseIds();
 
     final loadedProviders = providerEntities.isEmpty
         ? const <_ProviderEntityLoadResult>[]
@@ -1106,6 +1245,14 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     final rawThemeMode = appSettings?.themeMode ?? 'system';
     final rawUseCustomTheme = appSettings?.useCustomTheme ?? false;
     final rawBackgroundImagePath = appSettings?.backgroundImagePath;
+    final rawActiveKnowledgeBaseIds =
+        appSettings?.activeKnowledgeBaseIds ?? const <String>[];
+    final normalizedActiveKnowledgeBaseIds = rawActiveKnowledgeBaseIds
+        .map((id) => id.trim())
+        .where((id) => id.isNotEmpty && knownKnowledgeBaseIds.contains(id))
+        .toSet()
+        .toList()
+      ..sort();
     final resolvedThemeState = resolveThemeBackgroundState(
       themeMode: rawThemeMode,
       useCustomTheme: rawUseCustomTheme,
@@ -1138,7 +1285,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
       knowledgeLlmEnhanceMode: appSettings?.knowledgeLlmEnhanceMode ?? 'off',
       knowledgeEmbeddingModel: appSettings?.knowledgeEmbeddingModel,
       knowledgeEmbeddingProviderId: appSettings?.knowledgeEmbeddingProviderId,
-      activeKnowledgeBaseIds: appSettings?.activeKnowledgeBaseIds ?? const [],
+      activeKnowledgeBaseIds: normalizedActiveKnowledgeBaseIds,
       enableSmartTopic: appSettings?.enableSmartTopic ?? true,
       topicGenerationModel: appSettings?.topicGenerationModel,
       restoreLastSessionOnLaunch:
@@ -1210,6 +1357,18 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
       debugPrint(
           'Normalized invalid custom background settings during refresh.');
     }
+    if (appSettings != null &&
+        !_sameStringList(
+          rawActiveKnowledgeBaseIds,
+          normalizedActiveKnowledgeBaseIds,
+        )) {
+      await _storage.saveAppSettings(
+        activeProviderId: state.activeProvider.id,
+        activeKnowledgeBaseIds: normalizedActiveKnowledgeBaseIds,
+      );
+      debugPrint(
+          'Normalized invalid active knowledge base ids during refresh.');
+    }
     debugPrint(
         'Settings reloaded with backgroundImagePath: ${resolvedThemeState.backgroundImagePath}');
     debugPrint(
@@ -1224,6 +1383,16 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     }
 
     await loadPresets();
+  }
+
+  bool _sameStringList(List<String> left, List<String> right) {
+    if (left.length != right.length) return false;
+    for (var i = 0; i < left.length; i++) {
+      if (left[i] != right[i]) {
+        return false;
+      }
+    }
+    return true;
   }
 
   void viewProvider(String id) {
@@ -1277,31 +1446,38 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     Object? selectedChatModel = _settingsSentinel,
     bool? isEnabled,
   }) async {
-    final newProviders = state.providers.map((p) {
-      if (p.id == id) {
-        return p.copyWith(
-          name: name,
-          color: color,
-          apiKeys: apiKeys,
-          currentKeyIndex: currentKeyIndex,
-          autoRotateKeys: autoRotateKeys,
-          baseUrl: baseUrl,
-          providerProtocol: providerProtocol,
-          customParameters: customParameters,
-          modelSettings: modelSettings,
-          globalSettings: globalSettings,
-          capabilityConfig: capabilityConfig,
-          modelCapabilityOverrides: modelCapabilityOverrides,
-          globalExcludeModels: globalExcludeModels,
-          models: models,
-          selectedChatModel: selectedChatModel,
-          isEnabled: isEnabled,
-        );
-      }
-      return p;
-    }).toList();
+    final providerIndex =
+        state.providers.indexWhere((provider) => provider.id == id);
+    if (providerIndex == -1) {
+      return;
+    }
+
+    final currentProvider = state.providers[providerIndex];
+    final updatedProvider = currentProvider.copyWith(
+      name: name,
+      color: color,
+      apiKeys: apiKeys,
+      currentKeyIndex: currentKeyIndex,
+      autoRotateKeys: autoRotateKeys,
+      baseUrl: baseUrl,
+      providerProtocol: providerProtocol,
+      customParameters: customParameters,
+      modelSettings: modelSettings,
+      globalSettings: globalSettings,
+      capabilityConfig: capabilityConfig,
+      modelCapabilityOverrides: modelCapabilityOverrides,
+      globalExcludeModels: globalExcludeModels,
+      models: models,
+      selectedChatModel: selectedChatModel,
+      isEnabled: isEnabled,
+    );
+    if (_providerConfigEquals(currentProvider, updatedProvider)) {
+      return;
+    }
+
+    final newProviders = List<ProviderConfig>.from(state.providers);
+    newProviders[providerIndex] = updatedProvider;
     state = state.copyWith(providers: newProviders);
-    final updatedProvider = newProviders.firstWhere((p) => p.id == id);
     await _storage.saveProvider(_buildProviderEntity(updatedProvider));
   }
 
@@ -1312,10 +1488,77 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     final normalizedBaseUrl = baseUrl.trim();
     final inferredProtocol =
         ProviderConfig._inferProviderProtocolFromBaseUrl(normalizedBaseUrl);
+    final provider = state.providers.firstWhere(
+      (item) => item.id == id,
+      orElse: () => state.activeProvider,
+    );
+    ProviderCapabilityConfig? capabilityConfig;
+    if (usesOpenAiResponsesForChat(provider) &&
+        inferredProtocol == ProviderProtocol.openaiCompatible) {
+      final defaultConfig = ProviderConfig._buildCapabilityConfig(
+        providerProtocol: inferredProtocol,
+        baseUrl: normalizedBaseUrl,
+      );
+      final routes = <ProviderCapability, CapabilityRouteConfig>{
+        ...defaultConfig.routes,
+      };
+      for (final entry in provider.capabilityConfig.routes.entries) {
+        if (entry.key == ProviderCapability.chat) continue;
+        routes[entry.key] = entry.value;
+      }
+      final chatRoute = routes[ProviderCapability.chat] ??
+          const CapabilityRouteConfig(enabled: true);
+      routes[ProviderCapability.chat] = chatRoute.copyWith(
+        preset: ProtocolPreset.openaiResponses,
+        enabled: true,
+        pathOverride: null,
+        baseUrlOverride: null,
+        fallbackPreset: null,
+      );
+      capabilityConfig = ProviderCapabilityConfig(routes: routes);
+    }
     await updateProvider(
       id: id,
       baseUrl: normalizedBaseUrl,
       providerProtocol: inferredProtocol,
+      capabilityConfig: capabilityConfig,
+    );
+  }
+
+  Future<void> setOpenAiCompatUseResponses(
+      String providerId, bool enabled) async {
+    final provider = state.providers.firstWhere(
+      (item) => item.id == providerId,
+      orElse: () => state.activeProvider,
+    );
+    if (provider.id != providerId ||
+        provider.providerProtocol != ProviderProtocol.openaiCompatible) {
+      return;
+    }
+
+    final defaultConfig = ProviderConfig._buildCapabilityConfig(
+      providerProtocol: provider.providerProtocol,
+      baseUrl: provider.baseUrl,
+    );
+    final routes = <ProviderCapability, CapabilityRouteConfig>{
+      ...defaultConfig.routes,
+      ...provider.capabilityConfig.routes,
+    };
+    final chatRoute = routes[ProviderCapability.chat] ??
+        const CapabilityRouteConfig(enabled: true);
+    routes[ProviderCapability.chat] = chatRoute.copyWith(
+      preset: enabled
+          ? ProtocolPreset.openaiResponses
+          : ProtocolPreset.openaiChatCompletions,
+      enabled: true,
+      pathOverride: null,
+      baseUrlOverride: null,
+      fallbackPreset: null,
+    );
+
+    await updateProvider(
+      id: providerId,
+      capabilityConfig: ProviderCapabilityConfig(routes: routes),
     );
   }
 

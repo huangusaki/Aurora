@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:aurora/shared/riverpod_compat.dart';
+import 'package:aurora/shared/riverpod_legacy.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 import '../../settings/domain/chat_preset.dart';
 import '../../settings/presentation/settings_provider.dart';
@@ -249,4 +249,5 @@ class _VariableChip extends StatelessWidget {
     );
   }
 }
+
 

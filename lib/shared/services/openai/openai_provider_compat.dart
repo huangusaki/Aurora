@@ -186,14 +186,8 @@ String _thinkingTierToGeminiEffort(_ThinkingTier tier) {
   }
 }
 
-bool _supportsXHighReasoningEffort(String baseUrl, String model) {
-  return true;
-}
-
-String _thinkingTierToOpenAIEffort(_ThinkingTier tier,
-    {required bool supportsXHigh}) {
+String _thinkingTierToOpenAIEffort(_ThinkingTier tier) {
   final coerced = _coerceTierForOpenAI(tier);
-  if (coerced == _ThinkingTier.xhigh && !supportsXHigh) return 'high';
   switch (coerced) {
     case _ThinkingTier.minimal:
       return 'minimal';
@@ -241,7 +235,6 @@ void _applyConfiguredReasoningEffortCompatAlias({
 String? _thinkingInputToCompatReasoningEffort(
   _ThinkingInput input, {
   required _ModelFamily modelFamily,
-  required bool supportsXHigh,
 }) {
   final normalizedRaw = input.raw.trim().toLowerCase();
   if (normalizedRaw.isEmpty) return null;
@@ -256,12 +249,11 @@ String? _thinkingInputToCompatReasoningEffort(
     final tier = modelFamily == _ModelFamily.gemini3
         ? _tierFromBudgetForGemini3(budget)
         : _tierFromBudgetForOpenAI(budget);
-    return _thinkingTierToOpenAIEffort(tier, supportsXHigh: supportsXHigh);
+    return _thinkingTierToOpenAIEffort(tier);
   }
 
   if (input.tier != null) {
-    return _thinkingTierToOpenAIEffort(input.tier!,
-        supportsXHigh: supportsXHigh);
+    return _thinkingTierToOpenAIEffort(input.tier!);
   }
 
   // Allow explicit effort strings if user typed them directly.
@@ -356,7 +348,6 @@ void _applyGeminiExtraBodyReasoningCompat({
   required _ThinkingInput input,
   required _ModelFamily modelFamily,
   required String baseUrl,
-  required String selectedModel,
   String? explicitReasoningEffort,
 }) {
   if (modelFamily != _ModelFamily.gemini &&
@@ -373,7 +364,6 @@ void _applyGeminiExtraBodyReasoningCompat({
   final effort = _thinkingInputToCompatReasoningEffort(
     input,
     modelFamily: modelFamily,
-    supportsXHigh: _supportsXHighReasoningEffort(baseUrl, selectedModel),
   );
   if (effort == null || effort.isEmpty) return;
   requestData['reasoning_effort'] = effort;
@@ -746,7 +736,6 @@ void _applyThinkingConfigToRequest({
         input: input,
         modelFamily: modelFamily,
         baseUrl: baseUrl,
-        selectedModel: selectedModel,
         explicitReasoningEffort: explicitReasoningEffort,
       );
     } else if (modelFamily == _ModelFamily.anthropic) {
@@ -764,7 +753,6 @@ void _applyThinkingConfigToRequest({
       );
     }
   } else if (thinkingMode == 'reasoning_effort') {
-    final supportsXHigh = _supportsXHighReasoningEffort(baseUrl, selectedModel);
     String effort;
     if (explicitReasoningEffort != null && explicitReasoningEffort.isNotEmpty) {
       effort = explicitReasoningEffort;
@@ -781,11 +769,9 @@ void _applyThinkingConfigToRequest({
     } else if (modelFamily == _ModelFamily.openai) {
       if (input.budgetTokens != null) {
         effort = _thinkingTierToOpenAIEffort(
-            _tierFromBudgetForOpenAI(input.budgetTokens!),
-            supportsXHigh: supportsXHigh);
+            _tierFromBudgetForOpenAI(input.budgetTokens!));
       } else if (input.tier != null) {
-        effort = _thinkingTierToOpenAIEffort(_coerceTierForOpenAI(input.tier!),
-            supportsXHigh: supportsXHigh);
+        effort = _thinkingTierToOpenAIEffort(_coerceTierForOpenAI(input.tier!));
       } else {
         effort = input.raw.toLowerCase();
       }

@@ -3,7 +3,7 @@ import 'package:fluent_ui/fluent_ui.dart' as fluent;
 import 'package:aurora/shared/services/provider_display_metadata.dart';
 import 'package:aurora/shared/utils/platform_utils.dart';
 import 'package:flutter/material.dart';
-import 'package:aurora/shared/riverpod_compat.dart';
+import 'package:aurora/shared/riverpod_legacy.dart';
 import '../../../settings/presentation/settings_provider.dart';
 import 'custom_dropdown_overlay.dart';
 import 'mobile_model_switcher_sheet.dart';
@@ -235,3 +235,4 @@ class _ModelSelectorState extends ConsumerState<ModelSelector> {
     }
   }
 }
+

@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:aurora/shared/utils/platform_utils.dart';
 import 'package:fluent_ui/fluent_ui.dart' as fluent;
 import 'package:flutter/material.dart';
-import 'package:aurora/shared/riverpod_compat.dart';
+import 'package:aurora/shared/riverpod_legacy.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'package:path/path.dart' as p;
@@ -29,6 +29,18 @@ class DesktopChatScreen extends ConsumerStatefulWidget {
   const DesktopChatScreen({super.key});
   @override
   ConsumerState<DesktopChatScreen> createState() => _DesktopChatScreenState();
+}
+
+class _DesktopNavItem {
+  const _DesktopNavItem({
+    required this.icon,
+    required this.label,
+    required this.buildBody,
+  });
+
+  final IconData icon;
+  final String label;
+  final Widget Function() buildBody;
 }
 
 class _DesktopChatScreenState extends ConsumerState<DesktopChatScreen>
@@ -219,33 +231,50 @@ class _DesktopChatScreenState extends ConsumerState<DesktopChatScreen>
     });
 
     final theme = fluent.FluentTheme.of(context);
-    final settings = ref.watch(settingsProvider);
+    final shellSettings = ref.watch(settingsProvider.select((s) => (
+          useCustomTheme: s.useCustomTheme,
+          themeMode: s.themeMode,
+          backgroundImagePath: s.backgroundImagePath,
+          backgroundColor: s.backgroundColor,
+        )));
     final isExpanded = ref.watch(isSidebarExpandedProvider);
     final selectedIndex = ref.watch(desktopActiveTabProvider);
     final l10n = AppLocalizations.of(context)!;
-    final navItems = [
-      (icon: AuroraIcons.history, label: l10n.history, body: HistoryContent()),
-      (
+    final navItems = <_DesktopNavItem>[
+      _DesktopNavItem(
+        icon: AuroraIcons.history,
+        label: l10n.history,
+        buildBody: () => HistoryContent(),
+      ),
+      _DesktopNavItem(
         icon: AuroraIcons.translation,
         label: l10n.textTranslation,
-        body: TranslationContent()
+        buildBody: () => TranslationContent(),
       ),
-      (
+      _DesktopNavItem(
         icon: AuroraIcons.skills,
         label: l10n.agentSkills,
-        body: SkillSettingsPage()
+        buildBody: () => SkillSettingsPage(),
       ),
-      (icon: AuroraIcons.mcp, label: l10n.mcpTitle, body: McpSettingsPage()),
-      (icon: AuroraIcons.studio, label: l10n.studio, body: StudioContent()),
-      (
+      _DesktopNavItem(
+        icon: AuroraIcons.mcp,
+        label: l10n.mcpTitle,
+        buildBody: () => McpSettingsPage(),
+      ),
+      _DesktopNavItem(
+        icon: AuroraIcons.studio,
+        label: l10n.studio,
+        buildBody: () => StudioContent(),
+      ),
+      _DesktopNavItem(
         icon: AuroraIcons.settings,
         label: l10n.settings,
-        body: SettingsContent()
+        buildBody: () => SettingsContent(),
       ),
-      (
+      _DesktopNavItem(
         icon: AuroraIcons.robot,
         label: l10n.assistantSystem,
-        body: AssistantContent()
+        buildBody: () => AssistantContent(),
       ),
     ];
     String currentSessionId;
@@ -256,19 +285,19 @@ class _DesktopChatScreenState extends ConsumerState<DesktopChatScreen>
     } else {
       currentSessionId = '';
     }
-    final backgroundColor =
-        ref.watch(settingsProvider.select((s) => s.backgroundColor));
     final customThemeEnabled =
-        settings.useCustomTheme || settings.themeMode == 'custom';
+        shellSettings.useCustomTheme || shellSettings.themeMode == 'custom';
     final hasCustomBackground = customThemeEnabled &&
-        settings.backgroundImagePath != null &&
-        settings.backgroundImagePath!.isNotEmpty;
+        shellSettings.backgroundImagePath != null &&
+        shellSettings.backgroundImagePath!.isNotEmpty;
 
     final isDark = theme.brightness == fluent.Brightness.dark;
-    final backgroundGradient =
-        ChatBackgroundTheme.getGradient(backgroundColor, isDark: isDark);
+    final backgroundGradient = ChatBackgroundTheme.getGradient(
+      shellSettings.backgroundColor,
+      isDark: isDark,
+    );
     final solidBackgroundColor = ChatBackgroundTheme.getSolidBackgroundColor(
-      backgroundColor,
+      shellSettings.backgroundColor,
       isDark: isDark,
     );
 
@@ -668,8 +697,9 @@ class _DesktopChatScreenState extends ConsumerState<DesktopChatScreen>
                           color: Colors.transparent,
                           child: FadeIndexedStack(
                             index: selectedIndex,
+                            duration: const Duration(milliseconds: 180),
                             children: navItems
-                                .map<Widget>((item) => item.body)
+                                .map<Widget>((item) => item.buildBody())
                                 .toList(),
                           ),
                         ),

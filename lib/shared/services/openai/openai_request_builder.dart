@@ -35,45 +35,8 @@ Use search for:
 - When you receive search results, cite sources using `[index](link)` format immediately after the relevant fact
 ''';
 
-  ProviderConfig _resolveProvider(String? providerId) {
-    if (providerId == null) {
-      return _settings.activeProvider;
-    }
-    return _settings.providers.firstWhere(
-      (provider) => provider.id == providerId,
-      orElse: () => _settings.activeProvider,
-    );
-  }
-
-  String? _resolveSelectedModel({
-    required ProviderConfig provider,
-    required String? requestedModel,
-  }) {
-    final candidate = requestedModel ?? provider.selectedModel;
-    if (candidate == null) {
-      return null;
-    }
-    final normalized = candidate.trim();
-    if (normalized.isEmpty) {
-      return null;
-    }
-    return normalized;
-  }
-
   String _normalizeBaseUrl(String baseUrl) {
     return baseUrl.endsWith('/') ? baseUrl : '$baseUrl/';
-  }
-
-  String _emptyApiKeyMessage() {
-    return _settings.language == 'zh'
-        ? '错误：API Key 为空。请检查设置。'
-        : 'Error: API key is empty. Please check your settings.';
-  }
-
-  String _missingModelMessage() {
-    return _settings.language == 'zh'
-        ? '错误：未选择模型。请先在设置中为当前 Provider 配置模型。'
-        : 'Error: no model selected. Please configure a model for the current provider.';
   }
 
   void _upsertSystemInstruction({
@@ -117,46 +80,6 @@ Use search for:
         prepend: false,
       );
     }
-  }
-
-  Map<String, dynamic> _buildActiveParams(
-      ProviderConfig provider, String selectedModel) {
-    final activeParams = <String, dynamic>{};
-    final isExcluded = provider.globalExcludeModels.contains(selectedModel);
-    if (!isExcluded) {
-      activeParams.addAll(provider.globalSettings);
-    }
-    final specificModelParams = provider.modelSettings[selectedModel];
-    if (specificModelParams != null) {
-      activeParams.addAll(specificModelParams);
-    }
-    return activeParams;
-  }
-
-  void _applyProviderAndModelParams({
-    required Map<String, dynamic> requestData,
-    required Map<String, dynamic> activeParams,
-    required ProviderConfig provider,
-  }) {
-    final filteredParams = Map<String, dynamic>.fromEntries(
-      activeParams.entries.where((entry) => !entry.key.startsWith('_aurora_')),
-    );
-    final providerParams = Map<String, dynamic>.fromEntries(
-      provider.customParameters.entries.where((entry) {
-        final key = entry.key.toLowerCase();
-        return key != 'api_keys' &&
-            key != 'base_url' &&
-            key != 'id' &&
-            key != 'name' &&
-            key != 'models' &&
-            key != 'color' &&
-            key != 'is_custom' &&
-            key != 'is_enabled' &&
-            !entry.key.startsWith('_aurora_');
-      }),
-    );
-    requestData.addAll(providerParams);
-    requestData.addAll(filteredParams);
   }
 
   void _applyGenerationConfig({
@@ -206,21 +129,26 @@ Use search for:
       modelName: selectedModel,
     );
     final baseUrl = _normalizeBaseUrl(route.baseUrl);
+    final activeParams = LlmServiceConfig.buildActiveParams(
+      provider: provider,
+      selectedModel: selectedModel,
+    );
     var apiMessages = await _buildApiMessages(messages);
     apiMessages = _sanitizeOutgoingImageMessages(
       apiMessages,
       selectedModel: selectedModel,
       baseUrl: baseUrl,
     );
-    apiMessages = _applyGeminiImageEditFallback(
-      apiMessages,
-      selectedModel: selectedModel,
-      baseUrl: baseUrl,
-    );
+    if (resolveGeminiProxyAssistantImageRewrite(activeParams)) {
+      apiMessages = _applyGeminiImageEditFallback(
+        apiMessages,
+        selectedModel: selectedModel,
+        baseUrl: baseUrl,
+      );
+    }
     apiMessages = await _compressApiMessagesIfNeeded(apiMessages);
     _injectSystemInstructions(apiMessages);
 
-    final activeParams = _buildActiveParams(provider, selectedModel);
     final requestData = <String, dynamic>{
       'model': selectedModel,
       'messages': apiMessages,
@@ -259,10 +187,11 @@ Use search for:
       }
     }
 
-    _applyProviderAndModelParams(
-      requestData: requestData,
-      activeParams: activeParams,
-      provider: provider,
+    requestData.addAll(
+      LlmServiceConfig.buildRequestParameters(
+        provider: provider,
+        activeParams: activeParams,
+      ),
     );
     _applyGenerationConfig(
       requestData: requestData,

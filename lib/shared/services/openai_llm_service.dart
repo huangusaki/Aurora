@@ -15,7 +15,9 @@ import '../utils/app_logger.dart';
 import '../utils/base64_utils.dart';
 import '../utils/file_snapshot_cache.dart';
 import '../utils/llm_stream_log_accumulator.dart';
+import 'attachment_mime.dart';
 import 'capability_route_resolver.dart';
+import 'llm_service_config.dart';
 import 'llm_transport_mode.dart';
 
 part 'openai/openai_attachments.dart';
@@ -80,15 +82,8 @@ class OpenAILLMService implements LLMService {
     }
   }
 
-  String _resolveOutgoingThoughtSignature(String imageUrl) {
-    final cached = _imageThoughtSignatureByUrl[imageUrl];
-    if (cached != null && cached.trim().isNotEmpty) return cached;
-    // TODO(usaki): Temporary fallback for proxy chains that drop or rename
-    // thought_signature during OpenAI<->Gemini conversion.
-    // Proper fix: persist per-image thought_signature in message state and send
-    // the original signature value end-to-end (no synthetic sentinel).
-    // Remove this sentinel once translator compatibility is verified.
-    return 'skip_thought_signature_validator';
+  String? _resolveOutgoingThoughtSignature(String imageUrl) {
+    return _normalizeThoughtSignature(_imageThoughtSignatureByUrl[imageUrl]);
   }
 
   List<String> _extractMarkdownDataImageUrls(String? text) {
@@ -346,17 +341,17 @@ class OpenAILLMService implements LLMService {
       String? model,
       String? providerId,
       CancelToken? cancelToken}) async* {
-    final provider = _resolveProvider(providerId);
-    final selectedModel = _resolveSelectedModel(
-      provider: provider,
+    final resolved = LlmServiceConfig.resolveTarget(
+      settings: _settings,
+      providerId: providerId,
       requestedModel: model,
     );
+    final provider = resolved.provider;
+    final selectedModel = resolved.selectedModel;
     if (selectedModel == null) {
-      yield LLMResponseChunk(content: _missingModelMessage());
-      return;
-    }
-    if (provider.apiKey.isEmpty) {
-      yield LLMResponseChunk(content: _emptyApiKeyMessage());
+      yield LLMResponseChunk(
+        content: LlmServiceConfig.missingModelMessage(_settings),
+      );
       return;
     }
     LlmStreamLogAccumulator? streamLog;
@@ -370,6 +365,12 @@ class OpenAILLMService implements LLMService {
         toolChoice: toolChoice,
       );
       final apiKey = prepared.apiKey;
+      if (apiKey.trim().isEmpty) {
+        yield LLMResponseChunk(
+          content: LlmServiceConfig.emptyApiKeyMessage(_settings),
+        );
+        return;
+      }
       final requestData = prepared.requestData;
       final endpointUri = prepared.endpointUri;
       final route = prepared.route;
@@ -836,58 +837,6 @@ class OpenAILLMService implements LLMService {
     }
   }
 
-  String _getMimeType(String path) {
-    final p = path.toLowerCase();
-    // Images
-    if (p.endsWith('png')) return 'image/png';
-    if (p.endsWith('jpg') || p.endsWith('jpeg')) return 'image/jpeg';
-    if (p.endsWith('webp')) return 'image/webp';
-    if (p.endsWith('gif')) return 'image/gif';
-    if (p.endsWith('bmp')) return 'image/bmp';
-
-    // Audio
-    if (p.endsWith('mp3')) return 'audio/mpeg';
-    if (p.endsWith('wav')) return 'audio/wav';
-    if (p.endsWith('m4a')) return 'audio/x-m4a';
-    if (p.endsWith('flac')) return 'audio/flac';
-    if (p.endsWith('ogg')) return 'audio/ogg';
-    if (p.endsWith('opus')) return 'audio/opus';
-    if (p.endsWith('aac')) return 'audio/aac';
-
-    // Video
-    if (p.endsWith('mp4')) return 'video/mp4';
-    if (p.endsWith('mov')) return 'video/quicktime';
-    if (p.endsWith('avi')) return 'video/x-msvideo';
-    if (p.endsWith('webm')) return 'video/webm';
-    if (p.endsWith('mkv')) return 'video/x-matroska';
-    if (p.endsWith('flv')) return 'video/x-flv';
-    if (p.endsWith('3gp')) return 'video/3gpp';
-    if (p.endsWith('mpg') || p.endsWith('mpeg')) return 'video/mpeg';
-
-    // Documents
-    if (p.endsWith('pdf')) return 'application/pdf';
-    if (p.endsWith('txt')) return 'text/plain';
-    if (p.endsWith('md')) return 'text/markdown';
-    if (p.endsWith('csv')) return 'text/csv';
-    if (p.endsWith('json')) return 'application/json';
-    if (p.endsWith('xml')) return 'application/xml';
-    if (p.endsWith('yaml') || p.endsWith('yml')) return 'text/yaml';
-    if (p.endsWith('docx')) {
-      return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-    }
-    if (p.endsWith('doc')) return 'application/msword';
-    if (p.endsWith('xlsx')) {
-      return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-    }
-    if (p.endsWith('xls')) return 'application/vnd.ms-excel';
-    if (p.endsWith('pptx')) {
-      return 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
-    }
-    if (p.endsWith('ppt')) return 'application/vnd.ms-powerpoint';
-
-    return 'application/octet-stream';
-  }
-
   Map<String, dynamic> _buildBinaryAttachmentPart({
     required String mimeType,
     required String base64Data,
@@ -931,12 +880,10 @@ class OpenAILLMService implements LLMService {
     String path,
   ) async {
     return _attachmentPartsCache.getOrLoad(path, (snapshot) async {
-      final mimeType = _getMimeType(snapshot.path);
+      final mimeType = AttachmentMime.fromPath(snapshot.path);
       final fileName = snapshot.fileName;
 
-      if (mimeType.startsWith('text/') ||
-          mimeType == 'application/json' ||
-          mimeType == 'application/xml') {
+      if (AttachmentMime.isTextLike(mimeType)) {
         try {
           final textContent = await snapshot.file.readAsString();
           return [
@@ -961,10 +908,7 @@ class OpenAILLMService implements LLMService {
         bytes: bytes,
       );
 
-      if (mimeType.startsWith('image/') ||
-          mimeType.startsWith('audio/') ||
-          mimeType.startsWith('video/') ||
-          mimeType == 'application/pdf') {
+      if (AttachmentMime.shouldInlineBinary(mimeType)) {
         return [
           _buildBinaryAttachmentPart(
             mimeType: normalizedBinary.mimeType,
@@ -973,8 +917,7 @@ class OpenAILLMService implements LLMService {
         ];
       }
 
-      if (mimeType.endsWith('officedocument.wordprocessingml.document') ||
-          mimeType == 'application/msword') {
+      if (AttachmentMime.isWordDocument(mimeType)) {
         final docxParts = _extractDocxContent(bytes, fileName);
         if (docxParts.isNotEmpty) {
           return docxParts;
@@ -987,9 +930,7 @@ class OpenAILLMService implements LLMService {
         ];
       }
 
-      if (mimeType.contains('officedocument') ||
-          mimeType == 'application/vnd.ms-excel' ||
-          mimeType == 'application/vnd.ms-powerpoint') {
+      if (AttachmentMime.isOfficeDocument(mimeType)) {
         return [
           _buildBinaryAttachmentPart(
             mimeType: normalizedBinary.mimeType,
@@ -1095,23 +1036,16 @@ class OpenAILLMService implements LLMService {
           // we can preserve per-image metadata (including thought_signature)
           // across full multi-image histories instead of last-image fallback.
           if (lastImage.startsWith('data:')) {
-            if (!m.isUser) {
-              contentList.add({
-                'type': 'image_url',
-                'image_url': {
-                  'url': lastImage,
-                },
-                'thought_signature':
-                    _resolveOutgoingThoughtSignature(lastImage),
-              });
-            } else {
-              contentList.add({
-                'type': 'image_url',
-                'image_url': {
-                  'url': lastImage,
-                },
-              });
-            }
+            final thoughtSignature =
+                m.isUser ? null : _resolveOutgoingThoughtSignature(lastImage);
+            contentList.add({
+              'type': 'image_url',
+              'image_url': {
+                'url': lastImage,
+              },
+              if (thoughtSignature != null)
+                'thought_signature': thoughtSignature,
+            });
           }
         }
         result.add({
@@ -1155,16 +1089,17 @@ class OpenAILLMService implements LLMService {
       String? model,
       String? providerId,
       CancelToken? cancelToken}) async {
-    final provider = _resolveProvider(providerId);
-    final selectedModel = _resolveSelectedModel(
-      provider: provider,
+    final resolved = LlmServiceConfig.resolveTarget(
+      settings: _settings,
+      providerId: providerId,
       requestedModel: model,
     );
+    final provider = resolved.provider;
+    final selectedModel = resolved.selectedModel;
     if (selectedModel == null) {
-      return LLMResponseChunk(content: _missingModelMessage());
-    }
-    if (provider.apiKey.isEmpty) {
-      return LLMResponseChunk(content: _emptyApiKeyMessage());
+      return LLMResponseChunk(
+        content: LlmServiceConfig.missingModelMessage(_settings),
+      );
     }
     try {
       final prepared = await _buildPreparedChatRequest(
@@ -1176,6 +1111,11 @@ class OpenAILLMService implements LLMService {
         toolChoice: toolChoice,
       );
       final apiKey = prepared.apiKey;
+      if (apiKey.trim().isEmpty) {
+        return LLMResponseChunk(
+          content: LlmServiceConfig.emptyApiKeyMessage(_settings),
+        );
+      }
       final requestData = prepared.requestData;
       final endpointUri = prepared.endpointUri;
       final route = prepared.route;

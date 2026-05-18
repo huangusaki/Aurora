@@ -1,7 +1,8 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:aurora/shared/theme/aurora_icons.dart';
 import 'package:fluent_ui/fluent_ui.dart';
-import 'package:aurora/shared/riverpod_compat.dart';
+import 'package:aurora/shared/riverpod_legacy.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 import 'package:aurora/shared/widgets/aurora_dropdown.dart';
 import 'settings_config_draft.dart';
@@ -19,54 +20,154 @@ class GlobalConfigDialog extends ConsumerStatefulWidget {
 class _GlobalConfigDialogState extends ConsumerState<GlobalConfigDialog> {
   late SettingsConfigDraft _draft;
   late List<String> _globalExcludeModels;
+  final FocusNode _thinkingBudgetFocusNode = FocusNode();
+  final FocusNode _temperatureFocusNode = FocusNode();
+  final FocusNode _maxTokensFocusNode = FocusNode();
+  final FocusNode _contextLengthFocusNode = FocusNode();
+  bool _isDirty = false;
+  Future<bool>? _pendingCommit;
 
   @override
   void initState() {
     super.initState();
     _loadSettings();
+    _attachCommitOnBlur(_thinkingBudgetFocusNode);
+    _attachCommitOnBlur(_temperatureFocusNode);
+    _attachCommitOnBlur(_maxTokensFocusNode);
+    _attachCommitOnBlur(_contextLengthFocusNode);
   }
 
   void _loadSettings() {
     _draft = SettingsConfigDraft.fromSettings(widget.provider.globalSettings);
     _globalExcludeModels =
         List<String>.from(widget.provider.globalExcludeModels);
+    _isDirty = false;
+  }
+
+  void _attachCommitOnBlur(FocusNode focusNode) {
+    focusNode.addListener(() {
+      if (!focusNode.hasFocus) {
+        unawaited(_commitDraftIfNeeded());
+      }
+    });
   }
 
   @override
   void dispose() {
+    _thinkingBudgetFocusNode.dispose();
+    _temperatureFocusNode.dispose();
+    _maxTokensFocusNode.dispose();
+    _contextLengthFocusNode.dispose();
     _draft.dispose();
     super.dispose();
   }
 
-  void _saveSettings({
+  void _updateDraft({
     bool? thinkingEnabled,
     String? thinkingMode,
     Map<String, dynamic>? customParams,
+    List<String>? globalExcludeModels,
   }) {
-    if (thinkingEnabled != null) {
-      _draft.thinkingEnabled = thinkingEnabled;
-    }
-    if (thinkingMode != null) {
-      _draft.thinkingMode = thinkingMode;
-    }
-    final newSettings = _draft.buildSettings(customParams: customParams);
-
-    ref.read(settingsProvider.notifier).updateProvider(
-          id: widget.provider.id,
-          globalSettings: newSettings,
-          globalExcludeModels: _globalExcludeModels,
-        );
-    setState(() {});
+    setState(() {
+      if (thinkingEnabled != null) {
+        _draft.thinkingEnabled = thinkingEnabled;
+      }
+      if (thinkingMode != null) {
+        _draft.thinkingMode = thinkingMode;
+      }
+      if (globalExcludeModels != null) {
+        _globalExcludeModels = globalExcludeModels;
+      }
+      if (thinkingEnabled != null ||
+          thinkingMode != null ||
+          customParams != null) {
+        _draft.buildSettings(customParams: customParams);
+      }
+      _isDirty = true;
+    });
   }
 
   void _updateExcludeModels(List<String> newModels) {
+    _updateDraft(globalExcludeModels: newModels);
+  }
+
+  void _markDirty() {
+    if (_isDirty) {
+      return;
+    }
     setState(() {
-      _globalExcludeModels = newModels;
+      _isDirty = true;
     });
-    ref.read(settingsProvider.notifier).updateProvider(
-          id: widget.provider.id,
-          globalExcludeModels: _globalExcludeModels,
+  }
+
+  Future<bool> _commitDraftIfNeeded() {
+    final pendingCommit = _pendingCommit;
+    if (pendingCommit != null) {
+      return pendingCommit;
+    }
+    if (!_isDirty) {
+      return Future.value(true);
+    }
+
+    final future = _commitDraft();
+    _pendingCommit = future;
+    future.whenComplete(() {
+      if (identical(_pendingCommit, future)) {
+        _pendingCommit = null;
+      }
+    });
+    return future;
+  }
+
+  Future<bool> _commitDraft() async {
+    final liveProvider = ref.read(settingsProvider).providers.firstWhere(
+          (item) => item.id == widget.provider.id,
+          orElse: () => widget.provider,
         );
+    final newSettings = _draft.buildSettings();
+    final hasSettingsChange =
+        jsonEncode(newSettings) != jsonEncode(liveProvider.globalSettings);
+    final hasExcludeModelsChange = jsonEncode(_globalExcludeModels) !=
+        jsonEncode(liveProvider.globalExcludeModels);
+
+    if (!hasSettingsChange && !hasExcludeModelsChange) {
+      if (mounted && _isDirty) {
+        setState(() {
+          _isDirty = false;
+        });
+      }
+      return true;
+    }
+
+    try {
+      await ref.read(settingsProvider.notifier).updateProvider(
+            id: widget.provider.id,
+            globalSettings: newSettings,
+            globalExcludeModels: _globalExcludeModels,
+          );
+      if (mounted) {
+        setState(() {
+          _isDirty = false;
+        });
+      }
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  void _scheduleCommitIfNeeded() {
+    if (!_isDirty) {
+      return;
+    }
+    unawaited(_commitDraftIfNeeded());
+  }
+
+  Future<void> _saveAndClose() async {
+    final saved = await _commitDraftIfNeeded();
+    if (saved && mounted) {
+      Navigator.pop(context);
+    }
   }
 
   Widget _buildSectionCard({
@@ -174,7 +275,7 @@ class _GlobalConfigDialogState extends ConsumerState<GlobalConfigDialog> {
     if (result != null) {
       final newParams = Map<String, dynamic>.from(currentParams);
       newParams[result.key] = result.value;
-      _saveSettings(customParams: newParams);
+      _updateDraft(customParams: newParams);
     }
   }
 
@@ -189,14 +290,14 @@ class _GlobalConfigDialogState extends ConsumerState<GlobalConfigDialog> {
       final newParams = Map<String, dynamic>.from(currentParams);
       newParams.remove(key);
       newParams[result.key] = result.value;
-      _saveSettings(customParams: newParams);
+      _updateDraft(customParams: newParams);
     }
   }
 
   void _removeParam(String key, Map<String, dynamic> currentParams) {
     final newParams = Map<String, dynamic>.from(currentParams);
     newParams.remove(key);
-    _saveSettings(customParams: newParams);
+    _updateDraft(customParams: newParams);
   }
 
   @override
@@ -281,7 +382,7 @@ class _GlobalConfigDialogState extends ConsumerState<GlobalConfigDialog> {
               icon: AuroraIcons.lightbulb,
               headerAction: ToggleSwitch(
                 checked: _draft.thinkingEnabled,
-                onChanged: (v) => _saveSettings(thinkingEnabled: v),
+                onChanged: (v) => _updateDraft(thinkingEnabled: v),
               ),
               child: _draft.thinkingEnabled
                   ? Column(
@@ -295,7 +396,10 @@ class _GlobalConfigDialogState extends ConsumerState<GlobalConfigDialog> {
                           child: TextBox(
                             placeholder: l10n.thinkingBudgetHint,
                             controller: _draft.thinkingBudgetController,
-                            onChanged: (_) => _saveSettings(),
+                            focusNode: _thinkingBudgetFocusNode,
+                            onChanged: (_) => _markDirty(),
+                            onSubmitted: (_) => _scheduleCommitIfNeeded(),
+                            onTapOutside: (_) => _scheduleCommitIfNeeded(),
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -318,7 +422,9 @@ class _GlobalConfigDialogState extends ConsumerState<GlobalConfigDialog> {
                               ),
                             ],
                             onChanged: (v) {
-                              if (v != null) _saveSettings(thinkingMode: v);
+                              if (v != null) {
+                                _updateDraft(thinkingMode: v);
+                              }
                             },
                           ),
                         ),
@@ -343,7 +449,10 @@ class _GlobalConfigDialogState extends ConsumerState<GlobalConfigDialog> {
                     child: TextBox(
                       placeholder: l10n.temperatureHint,
                       controller: _draft.temperatureController,
-                      onChanged: (_) => _saveSettings(),
+                      focusNode: _temperatureFocusNode,
+                      onChanged: (_) => _markDirty(),
+                      onSubmitted: (_) => _scheduleCommitIfNeeded(),
+                      onTapOutside: (_) => _scheduleCommitIfNeeded(),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -352,7 +461,10 @@ class _GlobalConfigDialogState extends ConsumerState<GlobalConfigDialog> {
                     child: TextBox(
                       placeholder: l10n.maxTokensHint,
                       controller: _draft.maxTokensController,
-                      onChanged: (_) => _saveSettings(),
+                      focusNode: _maxTokensFocusNode,
+                      onChanged: (_) => _markDirty(),
+                      onSubmitted: (_) => _scheduleCommitIfNeeded(),
+                      onTapOutside: (_) => _scheduleCommitIfNeeded(),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -361,7 +473,10 @@ class _GlobalConfigDialogState extends ConsumerState<GlobalConfigDialog> {
                     child: TextBox(
                       placeholder: l10n.contextLengthHint,
                       controller: _draft.contextLengthController,
-                      onChanged: (_) => _saveSettings(),
+                      focusNode: _contextLengthFocusNode,
+                      onChanged: (_) => _markDirty(),
+                      onSubmitted: (_) => _scheduleCommitIfNeeded(),
+                      onTapOutside: (_) => _scheduleCommitIfNeeded(),
                     ),
                   ),
                 ],
@@ -407,7 +522,11 @@ class _GlobalConfigDialogState extends ConsumerState<GlobalConfigDialog> {
       actions: [
         Button(
           onPressed: () => Navigator.pop(context),
-          child: Text(l10n.close),
+          child: Text(l10n.cancel),
+        ),
+        FilledButton(
+          onPressed: _saveAndClose,
+          child: Text(l10n.save),
         ),
       ],
     );

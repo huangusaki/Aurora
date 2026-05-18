@@ -2,7 +2,7 @@ import 'package:aurora/shared/theme/aurora_icons.dart';
 import 'package:aurora/shared/widgets/aurora_notice.dart';
 import 'package:flutter/material.dart';
 
-import 'package:aurora/shared/riverpod_compat.dart';
+import 'package:aurora/shared/riverpod_legacy.dart';
 import 'package:aurora/features/settings/presentation/settings_provider.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 import '../novel/novel_provider.dart';
@@ -686,4 +686,5 @@ class _MobileModelConfigSheetState
     );
   }
 }
+
 

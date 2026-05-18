@@ -232,6 +232,8 @@ class AuroraDropdown<T> extends StatefulWidget {
     this.leading,
     this.textStyle,
     this.isExpanded = false,
+    this.padding,
+    this.borderRadius = 6.0,
   });
 
   final List<AuroraDropdownOption<T>> options;
@@ -245,6 +247,8 @@ class AuroraDropdown<T> extends StatefulWidget {
   final Widget? leading;
   final TextStyle? textStyle;
   final bool isExpanded;
+  final EdgeInsetsGeometry? padding;
+  final double borderRadius;
 
   @override
   State<AuroraDropdown<T>> createState() => _AuroraDropdownState<T>();
@@ -379,10 +383,11 @@ class _AuroraDropdownState<T> extends State<AuroraDropdown<T>> {
     Widget container = AnimatedContainer(
       duration: const Duration(milliseconds: 150),
       curve: Curves.easeOutCubic,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: widget.padding ??
+          const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(6.0),
+        borderRadius: BorderRadius.circular(widget.borderRadius),
         border: Border.all(color: borderColor, width: 1.0),
       ),
       child: buttonContent,

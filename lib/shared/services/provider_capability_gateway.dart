@@ -7,6 +7,7 @@ import 'package:dio/dio.dart';
 import '../../features/settings/domain/provider_route_config.dart';
 import '../../features/settings/presentation/settings_provider.dart';
 import '../utils/app_logger.dart';
+import 'attachment_mime.dart';
 import 'capability_route_resolver.dart';
 import 'gemini_native_endpoint.dart';
 
@@ -1100,13 +1101,6 @@ class ProviderCapabilityGateway {
   }
 
   String _mimeTypeForPath(String path) {
-    final normalized = path.toLowerCase();
-    if (normalized.endsWith('.mp3')) return 'audio/mpeg';
-    if (normalized.endsWith('.wav')) return 'audio/wav';
-    if (normalized.endsWith('.m4a')) return 'audio/x-m4a';
-    if (normalized.endsWith('.aac')) return 'audio/aac';
-    if (normalized.endsWith('.ogg')) return 'audio/ogg';
-    if (normalized.endsWith('.flac')) return 'audio/flac';
-    return 'application/octet-stream';
+    return AttachmentMime.fromPath(path);
   }
 }

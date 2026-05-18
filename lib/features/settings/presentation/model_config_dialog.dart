@@ -1,7 +1,8 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:aurora/shared/theme/aurora_icons.dart';
 import 'package:fluent_ui/fluent_ui.dart';
-import 'package:aurora/shared/riverpod_compat.dart';
+import 'package:aurora/shared/riverpod_legacy.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 import 'package:aurora/shared/services/llm_transport_mode.dart';
 import 'package:aurora/shared/services/model_capability_registry.dart';
@@ -26,15 +27,29 @@ class ModelConfigDialog extends ConsumerStatefulWidget {
 class _ModelConfigDialogState extends ConsumerState<ModelConfigDialog> {
   late SettingsConfigDraft _draft;
   late Map<String, dynamic> _modelSettings;
+  final FocusNode _thinkingBudgetFocusNode = FocusNode();
+  final FocusNode _temperatureFocusNode = FocusNode();
+  final FocusNode _maxTokensFocusNode = FocusNode();
+  final FocusNode _contextLengthFocusNode = FocusNode();
+  bool _isDirty = false;
+  Future<bool>? _pendingCommit;
 
   @override
   void initState() {
     super.initState();
     _loadSettings();
+    _attachCommitOnBlur(_thinkingBudgetFocusNode);
+    _attachCommitOnBlur(_temperatureFocusNode);
+    _attachCommitOnBlur(_maxTokensFocusNode);
+    _attachCommitOnBlur(_contextLengthFocusNode);
   }
 
   @override
   void dispose() {
+    _thinkingBudgetFocusNode.dispose();
+    _temperatureFocusNode.dispose();
+    _maxTokensFocusNode.dispose();
+    _contextLengthFocusNode.dispose();
     _draft.dispose();
     super.dispose();
   }
@@ -47,37 +62,92 @@ class _ModelConfigDialogState extends ConsumerState<ModelConfigDialog> {
     final existingSettings = liveProvider.modelSettings[widget.modelName] ?? {};
     _modelSettings = Map<String, dynamic>.from(existingSettings);
     _draft = SettingsConfigDraft.fromSettings(_modelSettings);
+    _isDirty = false;
   }
 
-  void _saveSettings({
+  void _attachCommitOnBlur(FocusNode focusNode) {
+    focusNode.addListener(() {
+      if (!focusNode.hasFocus) {
+        unawaited(_commitDraftIfNeeded());
+      }
+    });
+  }
+
+  void _updateDraft({
     bool? thinkingEnabled,
     String? thinkingMode,
     GeminiNativeToolsConfig? geminiNativeTools,
     Map<String, dynamic>? customParams,
   }) {
-    if (thinkingEnabled != null) {
-      _draft.thinkingEnabled = thinkingEnabled;
-    }
-    if (thinkingMode != null) {
-      _draft.thinkingMode = thinkingMode;
-    }
-    final newSettings = _draft.buildSettings(customParams: customParams);
-
-    var normalizedSettings = Map<String, dynamic>.from(newSettings);
-    if (geminiNativeTools != null) {
-      normalizedSettings =
-          withGeminiNativeTools(normalizedSettings, geminiNativeTools);
-    }
-
     setState(() {
+      if (thinkingEnabled != null) {
+        _draft.thinkingEnabled = thinkingEnabled;
+      }
+      if (thinkingMode != null) {
+        _draft.thinkingMode = thinkingMode;
+      }
+      var normalizedSettings = Map<String, dynamic>.from(
+        _draft.buildSettings(customParams: customParams),
+      );
+      if (geminiNativeTools != null) {
+        normalizedSettings =
+            withGeminiNativeTools(normalizedSettings, geminiNativeTools);
+        _draft.replaceSettings(normalizedSettings);
+      }
       _modelSettings = normalizedSettings;
+      _isDirty = true;
     });
-    _draft.replaceSettings(normalizedSettings);
+  }
 
-    // Save to provider
+  void _markDirty() {
+    if (_isDirty) {
+      return;
+    }
+    setState(() {
+      _isDirty = true;
+    });
+  }
+
+  Future<bool> _commitDraftIfNeeded() {
+    final pendingCommit = _pendingCommit;
+    if (pendingCommit != null) {
+      return pendingCommit;
+    }
+    if (!_isDirty) {
+      return Future.value(true);
+    }
+
+    final future = _commitDraft();
+    _pendingCommit = future;
+    future.whenComplete(() {
+      if (identical(_pendingCommit, future)) {
+        _pendingCommit = null;
+      }
+    });
+    return future;
+  }
+
+  Future<bool> _commitDraft() async {
     final liveProvider = ref.read(settingsProvider).providers.firstWhere(
-        (p) => p.id == widget.provider.id,
-        orElse: () => widget.provider);
+          (item) => item.id == widget.provider.id,
+          orElse: () => widget.provider,
+        );
+    final nativeTools = resolveGeminiNativeToolsFromSettings(_modelSettings);
+    final normalizedSettings = withGeminiNativeTools(
+      Map<String, dynamic>.from(_draft.buildSettings()),
+      nativeTools,
+    );
+    final existingSettings = liveProvider.modelSettings[widget.modelName] ?? {};
+
+    if (jsonEncode(normalizedSettings) == jsonEncode(existingSettings)) {
+      if (mounted) {
+        setState(() {
+          _modelSettings = normalizedSettings;
+          _isDirty = false;
+        });
+      }
+      return true;
+    }
 
     final allModelSettings =
         Map<String, Map<String, dynamic>>.from(liveProvider.modelSettings);
@@ -87,10 +157,35 @@ class _ModelConfigDialogState extends ConsumerState<ModelConfigDialog> {
       allModelSettings[widget.modelName] = normalizedSettings;
     }
 
-    ref.read(settingsProvider.notifier).updateProvider(
-          id: widget.provider.id,
-          modelSettings: allModelSettings,
-        );
+    try {
+      await ref.read(settingsProvider.notifier).updateProvider(
+            id: widget.provider.id,
+            modelSettings: allModelSettings,
+          );
+      if (mounted) {
+        setState(() {
+          _modelSettings = normalizedSettings;
+          _isDirty = false;
+        });
+      }
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  void _scheduleCommitIfNeeded() {
+    if (!_isDirty) {
+      return;
+    }
+    unawaited(_commitDraftIfNeeded());
+  }
+
+  Future<void> _saveAndClose() async {
+    final saved = await _commitDraftIfNeeded();
+    if (saved && mounted) {
+      Navigator.pop(context);
+    }
   }
 
   @override
@@ -150,7 +245,7 @@ class _ModelConfigDialogState extends ConsumerState<ModelConfigDialog> {
                         ToggleSwitch(
                           checked: nativeTools.googleSearch,
                           onChanged: (v) {
-                            _saveSettings(
+                            _updateDraft(
                               geminiNativeTools: GeminiNativeToolsConfig(
                                 googleSearch: v,
                                 urlContext: nativeTools.urlContext,
@@ -168,7 +263,7 @@ class _ModelConfigDialogState extends ConsumerState<ModelConfigDialog> {
                         ToggleSwitch(
                           checked: nativeTools.urlContext,
                           onChanged: (v) {
-                            _saveSettings(
+                            _updateDraft(
                               geminiNativeTools: GeminiNativeToolsConfig(
                                 googleSearch: nativeTools.googleSearch,
                                 urlContext: v,
@@ -186,7 +281,7 @@ class _ModelConfigDialogState extends ConsumerState<ModelConfigDialog> {
                         ToggleSwitch(
                           checked: nativeTools.codeExecution,
                           onChanged: (v) {
-                            _saveSettings(
+                            _updateDraft(
                               geminiNativeTools: GeminiNativeToolsConfig(
                                 googleSearch: nativeTools.googleSearch,
                                 urlContext: nativeTools.urlContext,
@@ -227,7 +322,7 @@ class _ModelConfigDialogState extends ConsumerState<ModelConfigDialog> {
               icon: AuroraIcons.lightbulb,
               headerAction: ToggleSwitch(
                 checked: _draft.thinkingEnabled,
-                onChanged: (v) => _saveSettings(thinkingEnabled: v),
+                onChanged: (v) => _updateDraft(thinkingEnabled: v),
               ),
               child: _draft.thinkingEnabled
                   ? Column(
@@ -241,7 +336,10 @@ class _ModelConfigDialogState extends ConsumerState<ModelConfigDialog> {
                           child: TextBox(
                             placeholder: l10n.thinkingBudgetHint,
                             controller: _draft.thinkingBudgetController,
-                            onChanged: (_) => _saveSettings(),
+                            focusNode: _thinkingBudgetFocusNode,
+                            onChanged: (_) => _markDirty(),
+                            onSubmitted: (_) => _scheduleCommitIfNeeded(),
+                            onTapOutside: (_) => _scheduleCommitIfNeeded(),
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -264,7 +362,9 @@ class _ModelConfigDialogState extends ConsumerState<ModelConfigDialog> {
                               ),
                             ],
                             onChanged: (v) {
-                              if (v != null) _saveSettings(thinkingMode: v);
+                              if (v != null) {
+                                _updateDraft(thinkingMode: v);
+                              }
                             },
                           ),
                         ),
@@ -289,7 +389,10 @@ class _ModelConfigDialogState extends ConsumerState<ModelConfigDialog> {
                     child: TextBox(
                       placeholder: l10n.temperatureHint,
                       controller: _draft.temperatureController,
-                      onChanged: (_) => _saveSettings(),
+                      focusNode: _temperatureFocusNode,
+                      onChanged: (_) => _markDirty(),
+                      onSubmitted: (_) => _scheduleCommitIfNeeded(),
+                      onTapOutside: (_) => _scheduleCommitIfNeeded(),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -298,7 +401,10 @@ class _ModelConfigDialogState extends ConsumerState<ModelConfigDialog> {
                     child: TextBox(
                       placeholder: l10n.maxTokensHint,
                       controller: _draft.maxTokensController,
-                      onChanged: (_) => _saveSettings(),
+                      focusNode: _maxTokensFocusNode,
+                      onChanged: (_) => _markDirty(),
+                      onSubmitted: (_) => _scheduleCommitIfNeeded(),
+                      onTapOutside: (_) => _scheduleCommitIfNeeded(),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -307,7 +413,10 @@ class _ModelConfigDialogState extends ConsumerState<ModelConfigDialog> {
                     child: TextBox(
                       placeholder: l10n.contextLengthHint,
                       controller: _draft.contextLengthController,
-                      onChanged: (_) => _saveSettings(),
+                      focusNode: _contextLengthFocusNode,
+                      onChanged: (_) => _markDirty(),
+                      onSubmitted: (_) => _scheduleCommitIfNeeded(),
+                      onTapOutside: (_) => _scheduleCommitIfNeeded(),
                     ),
                   ),
                 ],
@@ -370,8 +479,12 @@ class _ModelConfigDialogState extends ConsumerState<ModelConfigDialog> {
       ),
       actions: [
         Button(
-          child: Text(l10n.done),
           onPressed: () => Navigator.pop(context),
+          child: Text(l10n.cancel),
+        ),
+        FilledButton(
+          onPressed: _saveAndClose,
+          child: Text(l10n.save),
         ),
       ],
     );
@@ -495,7 +608,7 @@ class _ModelConfigDialogState extends ConsumerState<ModelConfigDialog> {
     if (result != null) {
       final newParams = Map<String, dynamic>.from(currentParams);
       newParams[result.key] = result.value;
-      _saveSettings(customParams: newParams);
+      _updateDraft(customParams: newParams);
     }
   }
 
@@ -510,14 +623,14 @@ class _ModelConfigDialogState extends ConsumerState<ModelConfigDialog> {
       final newParams = Map<String, dynamic>.from(currentParams);
       newParams.remove(key);
       newParams[result.key] = result.value;
-      _saveSettings(customParams: newParams);
+      _updateDraft(customParams: newParams);
     }
   }
 
   void _removeParam(String key, Map<String, dynamic> currentParams) {
     final newParams = Map<String, dynamic>.from(currentParams);
     newParams.remove(key);
-    _saveSettings(customParams: newParams);
+    _updateDraft(customParams: newParams);
   }
 }
 

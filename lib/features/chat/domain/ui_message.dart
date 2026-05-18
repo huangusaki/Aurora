@@ -408,3 +408,12 @@ List<ToolCall>? _mergeToolCalls(
 }
 
 const Object _sentinel = Object();
+
+extension MessageUiBridge on Message {
+  UiMessage get asUiMessage => UiMessage.fromLegacy(this);
+}
+
+extension MessageListUiBridge on Iterable<Message> {
+  List<UiMessage> get asUiMessages =>
+      map((message) => message.asUiMessage).toList(growable: false);
+}

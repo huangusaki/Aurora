@@ -372,6 +372,7 @@ extension _SettingsContentSections on _SettingsContentState {
                           onPressed: () {
                             showDialog(
                               context: context,
+                              barrierDismissible: false,
                               builder: (context) =>
                                   GlobalConfigDialog(provider: viewingProvider),
                             );
@@ -577,6 +578,56 @@ extension _SettingsContentSections on _SettingsContentState {
                           },
                         ),
                       ),
+                      if (viewingProvider.providerProtocol ==
+                          ProviderProtocol.openaiCompatible) ...[
+                        const SizedBox(height: 16),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: theme.resources.controlFillColorSecondary,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: theme.resources.dividerStrokeColorDefault,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      l10n.protocolPresetOpenaiResponses,
+                                      style: theme.typography.bodyStrong,
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      '/v1/responses',
+                                      style: theme.typography.caption?.copyWith(
+                                        color: theme
+                                            .resources.textFillColorSecondary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              fluent.ToggleSwitch(
+                                checked:
+                                    usesOpenAiResponsesForChat(viewingProvider),
+                                onChanged: (value) {
+                                  ref
+                                      .read(settingsProvider.notifier)
+                                      .setOpenAiCompatUseResponses(
+                                        viewingProvider.id,
+                                        value,
+                                      );
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -769,6 +820,15 @@ extension _SettingsContentSections on _SettingsContentState {
                               List<String> models, {
                               required bool isEnabled,
                             }) {
+                              const estimatedModelRowExtent = 64.0;
+                              const maxModelGroupHeight = 440.0;
+                              final estimatedContentHeight =
+                                  models.length * estimatedModelRowExtent;
+                              final groupHeight =
+                                  estimatedContentHeight > maxModelGroupHeight
+                                      ? maxModelGroupHeight
+                                      : estimatedContentHeight;
+
                               return fluent.Expander(
                                 key: ValueKey(
                                     '${viewingProvider.id}_${isEnabled ? 'enabled' : 'disabled'}_models_group'),
@@ -778,16 +838,26 @@ extension _SettingsContentSections on _SettingsContentState {
                                   '$title (${models.length})',
                                   style: theme.typography.bodyStrong,
                                 ),
-                                content: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: models
-                                      .map(
-                                        (model) => buildModelRow(
+                                content: SizedBox(
+                                  height: groupHeight,
+                                  child: ListView.builder(
+                                    key: PageStorageKey(
+                                        '${viewingProvider.id}_${isEnabled ? 'enabled' : 'disabled'}_models_list'),
+                                    primary: false,
+                                    padding: EdgeInsets.zero,
+                                    itemCount: models.length,
+                                    itemBuilder: (context, index) {
+                                      final model = models[index];
+                                      return KeyedSubtree(
+                                        key: ValueKey(
+                                            '${viewingProvider.id}_${isEnabled ? 'enabled' : 'disabled'}_$model'),
+                                        child: buildModelRow(
                                           model,
                                           isEnabled: isEnabled,
                                         ),
-                                      )
-                                      .toList(),
+                                      );
+                                    },
+                                  ),
                                 ),
                               );
                             }
@@ -1819,6 +1889,7 @@ extension _SettingsContentSections on _SettingsContentState {
   void _openModelSettings(ProviderConfig provider, String modelName) async {
     showDialog(
         context: context,
+        barrierDismissible: false,
         builder: (context) {
           return ModelConfigDialog(
             provider: provider,

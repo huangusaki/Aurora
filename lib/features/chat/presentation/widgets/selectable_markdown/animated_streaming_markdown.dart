@@ -10,6 +10,8 @@ class AnimatedStreamingMarkdown extends StatefulWidget {
   final Color textColor;
   final double baseFontSize;
   final bool animate;
+  final bool streamingActive;
+  final bool useSelectionArea;
 
   const AnimatedStreamingMarkdown({
     super.key,
@@ -18,6 +20,8 @@ class AnimatedStreamingMarkdown extends StatefulWidget {
     required this.textColor,
     this.baseFontSize = 14.0,
     this.animate = true,
+    this.streamingActive = false,
+    this.useSelectionArea = true,
   });
 
   @override
@@ -26,15 +30,21 @@ class AnimatedStreamingMarkdown extends StatefulWidget {
 }
 
 class _AnimatedStreamingMarkdownState extends State<AnimatedStreamingMarkdown> {
+  static const Duration _markdownSettleDelay = Duration(milliseconds: 180);
+
   late String _displayedData;
   Timer? _timer;
+  Timer? _settleTimer;
   int _activePointers = 0;
   bool _suspendAnimation = false;
+  bool _useStreamingPreview = false;
 
   @override
   void initState() {
     super.initState();
     _displayedData = widget.data;
+    _useStreamingPreview =
+        widget.animate && widget.streamingActive && widget.data.isNotEmpty;
   }
 
   @override
@@ -42,10 +52,12 @@ class _AnimatedStreamingMarkdownState extends State<AnimatedStreamingMarkdown> {
     super.didUpdateWidget(oldWidget);
     if (!widget.animate) {
       if (_displayedData != widget.data ||
-          oldWidget.animate != widget.animate) {
+          oldWidget.animate != widget.animate ||
+          _useStreamingPreview) {
         _displayedData = widget.data;
-        _timer?.cancel();
-        _timer = null;
+        _stopAnimation();
+        _cancelSettleTimer();
+        _useStreamingPreview = false;
         if (mounted) setState(() {});
       }
       return;
@@ -57,11 +69,15 @@ class _AnimatedStreamingMarkdownState extends State<AnimatedStreamingMarkdown> {
       if (_displayedData.length > widget.data.length ||
           !widget.data.startsWith(_displayedData)) {
         _displayedData = widget.data;
-        _timer?.cancel();
-        _timer = null;
+        _stopAnimation();
+        _cancelSettleTimer();
+        _useStreamingPreview = widget.streamingActive;
         if (mounted) setState(() {});
         return;
       }
+
+      _activateStreamingPreview();
+      _maybeScheduleMarkdownCommit();
 
       if (_suspendAnimation) {
         // Freeze the current render tree while the user is interacting (selection),
@@ -70,6 +86,10 @@ class _AnimatedStreamingMarkdownState extends State<AnimatedStreamingMarkdown> {
       }
 
       _startAnimation();
+    }
+
+    if (oldWidget.streamingActive && !widget.streamingActive) {
+      _maybeScheduleMarkdownCommit();
     }
   }
 
@@ -80,15 +100,19 @@ class _AnimatedStreamingMarkdownState extends State<AnimatedStreamingMarkdown> {
     if (_displayedData.length > widget.data.length ||
         !widget.data.startsWith(_displayedData)) {
       _displayedData = widget.data;
-      _timer?.cancel();
-      _timer = null;
+      _stopAnimation();
+      _cancelSettleTimer();
+      _useStreamingPreview = widget.streamingActive;
       // Force rebuild to show immediate change
       if (mounted) setState(() {});
       return;
     }
 
     // If already equal, do nothing
-    if (_displayedData.length == widget.data.length) return;
+    if (_displayedData.length == widget.data.length) {
+      _maybeScheduleMarkdownCommit();
+      return;
+    }
 
     // If timer is already running, let it continue, but it will use the new widget.data
     if (_timer != null && _timer!.isActive) return;
@@ -107,6 +131,7 @@ class _AnimatedStreamingMarkdownState extends State<AnimatedStreamingMarkdown> {
         _displayedData = widget.data;
         timer.cancel();
         _timer = null;
+        _maybeScheduleMarkdownCommit();
         setState(() {});
         return;
       }
@@ -127,9 +152,61 @@ class _AnimatedStreamingMarkdownState extends State<AnimatedStreamingMarkdown> {
     });
   }
 
+  void _activateStreamingPreview() {
+    if (_useStreamingPreview) return;
+    _useStreamingPreview = true;
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  void _stopAnimation() {
+    _timer?.cancel();
+    _timer = null;
+  }
+
+  void _cancelSettleTimer() {
+    _settleTimer?.cancel();
+    _settleTimer = null;
+  }
+
+  void _scheduleMarkdownCommit() {
+    _cancelSettleTimer();
+    if (!widget.animate || widget.streamingActive) return;
+    _settleTimer = Timer(_markdownSettleDelay, () {
+      if (!mounted) return;
+      if (_suspendAnimation) {
+        _scheduleMarkdownCommit();
+        return;
+      }
+      if (_displayedData != widget.data) {
+        _scheduleMarkdownCommit();
+        return;
+      }
+      if (_useStreamingPreview) {
+        setState(() {
+          _useStreamingPreview = false;
+        });
+      }
+    });
+  }
+
+  void _maybeScheduleMarkdownCommit() {
+    if (!_useStreamingPreview) {
+      _cancelSettleTimer();
+      return;
+    }
+    if (!widget.animate || widget.streamingActive) {
+      _cancelSettleTimer();
+      return;
+    }
+    _scheduleMarkdownCommit();
+  }
+
   @override
   void dispose() {
-    _timer?.cancel();
+    _stopAnimation();
+    _cancelSettleTimer();
     super.dispose();
   }
 
@@ -148,8 +225,7 @@ class _AnimatedStreamingMarkdownState extends State<AnimatedStreamingMarkdown> {
         }
         _activePointers++;
         _suspendAnimation = true;
-        _timer?.cancel();
-        _timer = null;
+        _stopAnimation();
       },
       onPointerUp: (_) {
         if (!widget.animate) return;
@@ -161,6 +237,7 @@ class _AnimatedStreamingMarkdownState extends State<AnimatedStreamingMarkdown> {
               _displayedData = widget.data;
             });
           }
+          _maybeScheduleMarkdownCommit();
         }
       },
       onPointerCancel: (_) {
@@ -173,6 +250,7 @@ class _AnimatedStreamingMarkdownState extends State<AnimatedStreamingMarkdown> {
               _displayedData = widget.data;
             });
           }
+          _maybeScheduleMarkdownCommit();
         }
       },
       child: SelectableMarkdown(
@@ -180,6 +258,11 @@ class _AnimatedStreamingMarkdownState extends State<AnimatedStreamingMarkdown> {
         isDark: widget.isDark,
         textColor: widget.textColor,
         baseFontSize: widget.baseFontSize,
+        useSelectionArea:
+            widget.useSelectionArea && !(_timer?.isActive ?? false),
+        renderMode: _useStreamingPreview
+            ? SelectableMarkdownRenderMode.plainTextPreview
+            : SelectableMarkdownRenderMode.markdown,
       ),
     );
   }

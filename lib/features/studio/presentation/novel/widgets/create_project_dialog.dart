@@ -1,6 +1,6 @@
 import 'package:aurora/shared/theme/aurora_icons.dart';
 import 'package:fluent_ui/fluent_ui.dart';
-import 'package:aurora/shared/riverpod_compat.dart';
+import 'package:aurora/shared/riverpod_legacy.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 import '../novel_provider.dart';
 import '../novel_state.dart';
@@ -162,4 +162,5 @@ class _CreateProjectDialogState extends ConsumerState<CreateProjectDialog> {
 
   Widget constSpacer() => const Spacer();
 }
+
 

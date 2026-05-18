@@ -41,7 +41,7 @@ class _ChatActionExecutor {
       providerName: _requestContext.currentProviderName,
     );
     final transformed = chatMessageTransformers.onGenerationFinish(
-      UiMessage.fromLegacy(aiMsg),
+      aiMsg.asUiMessage,
       context,
     );
 

@@ -1,7 +1,7 @@
 import 'package:aurora/features/assistant/presentation/widgets/assistant_avatar.dart';
 import 'package:fluent_ui/fluent_ui.dart' as fluent;
 import 'package:flutter/material.dart';
-import 'package:aurora/shared/riverpod_compat.dart';
+import 'package:aurora/shared/riverpod_legacy.dart';
 import 'package:aurora/features/assistant/presentation/assistant_provider.dart';
 
 import 'package:aurora/l10n/app_localizations.dart';
@@ -120,3 +120,4 @@ class AssistantSelector extends SelectorOverlayScaffold {
     return items;
   }
 }
+

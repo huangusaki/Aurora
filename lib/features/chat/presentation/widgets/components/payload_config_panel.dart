@@ -4,7 +4,7 @@ import 'package:aurora/shared/services/llm_transport_mode.dart';
 import 'package:aurora/shared/services/model_capability_registry.dart';
 import 'package:aurora/shared/widgets/aurora_dropdown.dart';
 import 'package:fluent_ui/fluent_ui.dart';
-import 'package:aurora/shared/riverpod_compat.dart';
+import 'package:aurora/shared/riverpod_legacy.dart';
 import 'package:aurora/shared/theme/aurora_icons.dart';
 
 final RegExp _gemini3ImageModelPattern =
@@ -545,3 +545,4 @@ class _PayloadConfigPanelState extends ConsumerState<PayloadConfigPanel> {
     );
   }
 }
+

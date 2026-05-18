@@ -256,16 +256,8 @@ List<Map<String, dynamic>> _applyGeminiImageEditFallback(
   required String selectedModel,
   required String baseUrl,
 }) {
-  // TODO(usaki): Temporary workaround for Gemini-compatible proxy chains
-  // (Aurora -> OpenAI-compatible endpoint -> CLIProxyAPI/antigravity -> Gemini).
-  // Current behavior:
-  // 1) Move latest assistant image into current user turn when user has no image.
-  // 2) Remove image from source assistant turn to avoid duplicate context.
-  // Known debt:
-  // - Changes original role semantics (assistant output becomes user input).
-  // - Can hide upstream incompatibilities instead of fixing translator behavior.
-  // Replace with proper upstream support once assistant image context is
-  // consistently forwarded and accepted for multi-turn image edits.
+  // Legacy proxy escape hatch. Disabled by default because it rewrites role
+  // semantics by moving assistant images into the latest user turn.
   final isGeminiModel = selectedModel.toLowerCase().contains('gemini');
   if (!isGeminiModel) return apiMessages;
   if (_isOfficialGeminiOpenAIEndpoint(baseUrl)) return apiMessages;
@@ -330,10 +322,8 @@ List<Map<String, dynamic>> _applyGeminiImageEditFallback(
         stripped.add(item);
       }
       if (stripped.isEmpty) {
-        // A model-turn with zero parts can be rejected by some proxy layers.
-        // Drop the now-empty assistant message after moving its image to user.
-        // TODO(usaki): Remove this branch after upstream fix; assistant turns
-        // should remain intact once proxy supports assistant image parts.
+        // Keep the request valid for legacy proxy chains if the rewrite emptied
+        // the original assistant turn.
         result.removeAt(sourceAssistantIndex);
       } else {
         sourceMessage['content'] = stripped;

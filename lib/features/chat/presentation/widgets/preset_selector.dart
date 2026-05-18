@@ -1,7 +1,7 @@
 import 'package:aurora/shared/theme/aurora_icons.dart';
 import 'package:fluent_ui/fluent_ui.dart' as fluent;
 import 'package:flutter/material.dart';
-import 'package:aurora/shared/riverpod_compat.dart';
+import 'package:aurora/shared/riverpod_legacy.dart';
 import 'package:aurora/features/settings/presentation/settings_provider.dart';
 import 'package:aurora/features/chat/presentation/desktop/desktop_tabs.dart';
 import '../chat_provider.dart';
@@ -129,3 +129,4 @@ class PresetSelector extends SelectorOverlayScaffold {
     return items;
   }
 }
+

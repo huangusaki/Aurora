@@ -1,0 +1,13 @@
+name: Detect version
+description: Parse pubspec.yaml and expose VERSION and VERSION_RAW via GITHUB_ENV.
+runs:
+  using: composite
+  steps:
+    - name: Detect version
+      shell: pwsh
+      run: |
+        $versionRaw = (Select-String -Path "pubspec.yaml" -Pattern "^version:\s*(.+)$").Matches.Groups[1].Value.Trim()
+        $version = $versionRaw.Split('+')[0]
+        "VERSION_RAW=$versionRaw" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+        "VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+        Write-Output "Detected Version: $versionRaw"

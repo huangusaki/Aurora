@@ -3,7 +3,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:aurora/shared/riverpod_compat.dart';
+import 'package:aurora/shared/riverpod_legacy.dart';
 
 import '../../features/settings/presentation/settings_provider.dart';
 import 'wallpaper_tint.dart';
@@ -109,4 +109,5 @@ final wallpaperTintColorProvider = Provider<Color?>((ref) {
   if (base == null) return null;
   return applyBlackOverlay(base, brightness);
 });
+
 

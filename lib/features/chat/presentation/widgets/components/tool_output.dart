@@ -8,13 +8,18 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 
-import 'package:aurora/shared/riverpod_compat.dart';
+import 'package:aurora/shared/riverpod_legacy.dart';
 import 'package:aurora/features/settings/presentation/settings_provider.dart';
 import 'package:aurora/shared/widgets/aurora_selection.dart';
 
 class BuildToolOutput extends ConsumerStatefulWidget {
   final String content;
-  const BuildToolOutput({super.key, required this.content});
+  final bool useSelectionArea;
+  const BuildToolOutput({
+    super.key,
+    required this.content,
+    this.useSelectionArea = true,
+  });
   @override
   ConsumerState<BuildToolOutput> createState() => _BuildToolOutputState();
 }
@@ -86,6 +91,7 @@ class _BuildToolOutputState extends ConsumerState<BuildToolOutput> {
             const SizedBox(height: 8),
             AuroraSelectableText(
               error,
+              useSelectionArea: widget.useSelectionArea,
               style: TextStyle(
                 fontSize: 13,
                 color: theme.typography.body?.color,
@@ -159,6 +165,7 @@ class _BuildToolOutputState extends ConsumerState<BuildToolOutput> {
                   padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
                   child: AuroraSelectableText(
                     message,
+                    useSelectionArea: widget.useSelectionArea,
                     style: TextStyle(
                       color: theme.typography.body?.color,
                       fontSize: 13,
@@ -224,6 +231,7 @@ class _BuildToolOutputState extends ConsumerState<BuildToolOutput> {
                 padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
                 child: AuroraSelectableText(
                   widget.content,
+                  useSelectionArea: widget.useSelectionArea,
                   style: TextStyle(
                     color: theme.typography.body?.color,
                     fontSize: 13,
@@ -623,6 +631,7 @@ class _BuildToolOutputState extends ConsumerState<BuildToolOutput> {
               padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
               child: AuroraSelectableText(
                 prettyJson,
+                useSelectionArea: widget.useSelectionArea,
                 style: TextStyle(
                   color: theme.typography.body?.color,
                   fontSize: 13,
@@ -713,48 +722,54 @@ class _BuildToolOutputState extends ConsumerState<BuildToolOutput> {
           if (_isExpanded)
             Padding(
               padding: const EdgeInsets.all(12),
-              child: AuroraSelectionArea(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (stdout != null && stdout.isNotEmpty)
-                      AuroraSelectableText(
-                        stdout.trim(),
-                        useSelectionArea: false,
-                        style: const TextStyle(
-                          fontFamily: 'Consolas',
-                          fontSize: 12,
-                          color: Color(0xFFD4D4D4),
-                          height: 1.4,
-                        ),
-                      ),
-                    if (stderr != null && stderr.isNotEmpty) ...[
+              child: Builder(
+                builder: (context) {
+                  final content = Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                       if (stdout != null && stdout.isNotEmpty)
-                        const SizedBox(height: 8),
-                      AuroraSelectableText(
-                        stderr.trim(),
-                        useSelectionArea: false,
-                        style: TextStyle(
-                          fontFamily: 'Consolas',
-                          fontSize: 12,
-                          color: Colors.red.shade300,
-                          height: 1.4,
+                        AuroraSelectableText(
+                          stdout.trim(),
+                          useSelectionArea: false,
+                          style: const TextStyle(
+                            fontFamily: 'Consolas',
+                            fontSize: 12,
+                            color: Color(0xFFD4D4D4),
+                            height: 1.4,
+                          ),
                         ),
-                      ),
+                      if (stderr != null && stderr.isNotEmpty) ...[
+                        if (stdout != null && stdout.isNotEmpty)
+                          const SizedBox(height: 8),
+                        AuroraSelectableText(
+                          stderr.trim(),
+                          useSelectionArea: false,
+                          style: TextStyle(
+                            fontFamily: 'Consolas',
+                            fontSize: 12,
+                            color: Colors.red.shade300,
+                            height: 1.4,
+                          ),
+                        ),
+                      ],
+                      if ((stdout == null || stdout.isEmpty) &&
+                          (stderr == null || stderr.isEmpty))
+                        Text(
+                          l10n?.noOutput ?? '[No output]',
+                          style: const TextStyle(
+                            fontFamily: 'Consolas',
+                            fontSize: 12,
+                            color: Colors.grey,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
                     ],
-                    if ((stdout == null || stdout.isEmpty) &&
-                        (stderr == null || stderr.isEmpty))
-                      Text(
-                        l10n?.noOutput ?? '[No output]',
-                        style: const TextStyle(
-                          fontFamily: 'Consolas',
-                          fontSize: 12,
-                          color: Colors.grey,
-                          fontStyle: FontStyle.italic,
-                        ),
-                      ),
-                  ],
-                ),
+                  );
+                  if (!widget.useSelectionArea) {
+                    return content;
+                  }
+                  return AuroraSelectionArea(child: content);
+                },
               ),
             ),
         ],

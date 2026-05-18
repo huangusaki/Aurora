@@ -7,30 +7,8 @@ import 'package:aurora/shared/widgets/aurora_bottom_sheet.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
-import 'package:aurora/shared/riverpod_compat.dart';
-
-enum _MobileSizeFilter {
-  all,
-  oneToTenMb,
-  tenToHundredMb,
-  overHundredMb,
-}
-
-const String _mobileDefaultExecutionModelKey = '__default_execution_model__';
-
-class _MobileExecutionModelChoice {
-  final String key;
-  final String label;
-  final String? model;
-  final String? providerId;
-
-  const _MobileExecutionModelChoice({
-    required this.key,
-    required this.label,
-    required this.model,
-    required this.providerId,
-  });
-}
+import 'package:aurora/shared/riverpod_legacy.dart';
+import 'storage_cleaning_logic.dart';
 
 class MobileStorageCleaningPage extends ConsumerStatefulWidget {
   final VoidCallback? onBack;
@@ -47,13 +25,11 @@ class _MobileStorageCleaningPageState
   final List<String> _selectedRoots = <String>[];
   bool _detectDuplicates = true;
   bool _deleteReviewRequired = false;
-  _MobileSizeFilter _sizeFilter = _MobileSizeFilter.all;
+  StorageCleaningSizeFilter _sizeFilter = StorageCleaningSizeFilter.all;
   CleanerRiskLevel? _riskFilter;
   Set<String> _selectedCandidateIds = <String>{};
 
   AppLocalizations get _l10n => AppLocalizations.of(context)!;
-
-  // ─── Business logic (unchanged) ────────────────────────────────
 
   Future<void> _pickFolder() async {
     final path = await getDirectoryPath();
@@ -78,128 +54,38 @@ class _MobileStorageCleaningPageState
     });
   }
 
-  List<_MobileExecutionModelChoice> _buildExecutionModelChoices(
-      SettingsState settings) {
-    final choices = <_MobileExecutionModelChoice>[
-      _MobileExecutionModelChoice(
-        key: _mobileDefaultExecutionModelKey,
-        label: _l10n.cleanerExecutionModelDefaultChat,
-        model: null,
-        providerId: null,
-      ),
-    ];
-
-    for (final provider in settings.providers) {
-      if (!provider.isEnabled || provider.models.isEmpty) {
-        continue;
-      }
-      for (final model in provider.models) {
-        if (!provider.isModelEnabled(model)) {
-          continue;
-        }
-        choices.add(
-          _MobileExecutionModelChoice(
-            key: '${provider.id}::$model',
-            label: '${provider.name} - $model',
-            model: model,
-            providerId: provider.id,
-          ),
-        );
-      }
-    }
-    return choices;
-  }
-
-  String _currentExecutionModelChoiceKey(
-    SettingsState settings,
-    List<_MobileExecutionModelChoice> choices,
-  ) {
-    final model = settings.executionModel;
-    if (model == null || model.trim().isEmpty) {
-      return _mobileDefaultExecutionModelKey;
-    }
-    final providerId =
-        (settings.executionProviderId ?? settings.activeProviderId).trim();
-    final key = '$providerId::$model';
-    final exists = choices.any((choice) => choice.key == key);
-    return exists ? key : _mobileDefaultExecutionModelKey;
-  }
-
-  void _setExecutionModelByKey(
-    String key,
-    List<_MobileExecutionModelChoice> choices,
-  ) {
-    if (key == _mobileDefaultExecutionModelKey) {
-      ref
-          .read(settingsProvider.notifier)
-          .setExecutionSettings(model: null, providerId: null);
-      return;
-    }
-
-    for (final choice in choices) {
-      if (choice.key != key) continue;
-      ref.read(settingsProvider.notifier).setExecutionSettings(
-            model: choice.model,
-            providerId: choice.providerId,
-          );
-      return;
-    }
-  }
-
   Future<void> _runAnalyze() async {
-    final notifier = ref.read(cleanerProvider.notifier);
-    final roots = List<String>.from(_selectedRoots);
-    final hasUserRoots = roots.isNotEmpty;
-
-    await notifier.analyze(
-      options: CleanerScanOptions(
-        includeAppCache: true,
-        includeTemporary: true,
-        includeCommonUserRoots: true,
-        additionalRootPaths: roots,
-        includeUserSelectedRoots: hasUserRoots,
-        includeUnknownInUserSelectedRoots: hasUserRoots,
-        detectDuplicates: _detectDuplicates,
-      ),
+    final recommendedIds = await StorageCleaningLogic.runAnalyze(
+      ref: ref,
+      selectedRoots: _selectedRoots,
+      detectDuplicates: _detectDuplicates,
     );
-
     if (!mounted) return;
-    final result = ref.read(cleanerProvider).runResult;
-    if (result == null) return;
     setState(() {
-      _selectedCandidateIds = result.items
-          .where(
-              (item) => item.finalDecision == CleanerDecision.deleteRecommend)
-          .map((item) => item.candidate.id)
-          .toSet();
+      _selectedCandidateIds = recommendedIds;
     });
   }
 
   Future<void> _continueAnalyze() async {
-    await ref.read(cleanerProvider.notifier).continueAnalyze();
+    final recommendedIds = await StorageCleaningLogic.continueAnalyze(ref: ref);
     if (!mounted) return;
-    final result = ref.read(cleanerProvider).runResult;
-    if (result == null) return;
     setState(() {
-      _selectedCandidateIds = result.items
-          .where(
-              (item) => item.finalDecision == CleanerDecision.deleteRecommend)
-          .map((item) => item.candidate.id)
-          .toSet();
+      _selectedCandidateIds = recommendedIds;
     });
   }
 
   Future<void> _deleteSelected() async {
-    if (_selectedCandidateIds.isEmpty) return;
-    await ref
-        .read(cleanerProvider.notifier)
-        .deleteByIds(_selectedCandidateIds.toList());
+    await StorageCleaningLogic.deleteSelected(
+      ref: ref,
+      selectedCandidateIds: _selectedCandidateIds,
+    );
   }
 
   Future<void> _deleteByRecommendation() async {
-    await ref.read(cleanerProvider.notifier).deleteRecommended(
-          includeReviewRequired: _deleteReviewRequired,
-        );
+    await StorageCleaningLogic.deleteByRecommendation(
+      ref: ref,
+      includeReviewRequired: _deleteReviewRequired,
+    );
   }
 
   // ─── UI ────────────────────────────────────────────────────────
@@ -211,13 +97,26 @@ class _MobileStorageCleaningPageState
     final result = state.runResult;
     final summary = result?.summary;
     final allItems = result?.items ?? const <CleanerReviewItem>[];
-    final filteredItems = _applyFilters(allItems);
+    final filteredItems = StorageCleaningLogic.applyFilters(
+      items: allItems,
+      sizeFilter: _sizeFilter,
+      riskFilter: _riskFilter,
+    );
     final theme = Theme.of(context);
     final l10n = _l10n;
 
-    final executionModelChoices = _buildExecutionModelChoices(settings);
+    final executionModelChoices =
+        StorageCleaningLogic.buildExecutionModelChoices(
+      settings: settings,
+      defaultKey: storageCleaningDefaultExecutionModelKey,
+      defaultLabel: l10n.cleanerExecutionModelDefaultChat,
+    );
     final executionModelChoiceKey =
-        _currentExecutionModelChoiceKey(settings, executionModelChoices);
+        StorageCleaningLogic.currentExecutionModelChoiceKey(
+      settings: settings,
+      choices: executionModelChoices,
+      defaultKey: storageCleaningDefaultExecutionModelKey,
+    );
     final currentModelLabel = executionModelChoices
         .firstWhere((c) => c.key == executionModelChoiceKey,
             orElse: () => executionModelChoices.first)
@@ -267,8 +166,8 @@ class _MobileStorageCleaningPageState
                 onTap: busy ? null : _pickFolder,
                 trailing: _selectedRoots.isNotEmpty
                     ? IconButton(
-                        icon: Icon(Icons.clear,
-                            size: 18, color: theme.hintColor),
+                        icon:
+                            Icon(Icons.clear, size: 18, color: theme.hintColor),
                         onPressed: busy ? null : _clearFolders,
                         tooltip: l10n.cleanerClearFolders,
                       )
@@ -316,8 +215,7 @@ class _MobileStorageCleaningPageState
                 decoration: BoxDecoration(
                   color: Colors.red.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                      color: Colors.red.withValues(alpha: 0.3)),
+                  border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
                 ),
                 child: Row(
                   children: [
@@ -327,8 +225,7 @@ class _MobileStorageCleaningPageState
                     Expanded(
                       child: Text(
                         state.error!,
-                        style: const TextStyle(
-                            color: Colors.red, fontSize: 13),
+                        style: const TextStyle(color: Colors.red, fontSize: 13),
                       ),
                     ),
                   ],
@@ -346,8 +243,8 @@ class _MobileStorageCleaningPageState
                 decoration: BoxDecoration(
                   color: Colors.green.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                      color: Colors.green.withValues(alpha: 0.3)),
+                  border:
+                      Border.all(color: Colors.green.withValues(alpha: 0.3)),
                 ),
                 child: Row(
                   children: [
@@ -356,11 +253,12 @@ class _MobileStorageCleaningPageState
                     const SizedBox(width: 8),
                     Text(
                       l10n.cleanerFreedBytesOnly(
-                        _formatBytes(state.lastDeleteResult!.totalFreedBytes),
+                        StorageCleaningLogic.formatBytes(
+                          state.lastDeleteResult!.totalFreedBytes,
+                        ),
                       ),
                       style: const TextStyle(
-                          color: Colors.green,
-                          fontWeight: FontWeight.w500),
+                          color: Colors.green, fontWeight: FontWeight.w500),
                     ),
                   ],
                 ),
@@ -368,11 +266,11 @@ class _MobileStorageCleaningPageState
             ),
 
           // ── 3. Summary Section ──
-          if (summary != null) _buildSummarySection(summary, allItems, theme, l10n),
+          if (summary != null)
+            _buildSummarySection(summary, allItems, theme, l10n),
 
           // ── 4. Filter & Delete Section ──
-          if (allItems.isNotEmpty)
-            _buildFilterSection(state, allItems, filteredItems, theme, l10n),
+          if (allItems.isNotEmpty) _buildFilterSection(l10n),
 
           // ── 5. Results List ──
           if (allItems.isNotEmpty) ...[
@@ -445,8 +343,7 @@ class _MobileStorageCleaningPageState
               child: LinearProgressIndicator(
                 value: progress,
                 minHeight: 4,
-                backgroundColor:
-                    theme.primaryColor.withValues(alpha: 0.12),
+                backgroundColor: theme.primaryColor.withValues(alpha: 0.12),
               ),
             ),
             const SizedBox(height: 4),
@@ -471,8 +368,9 @@ class _MobileStorageCleaningPageState
               onPressed: state.isAnalyzing
                   ? (state.stopRequested
                       ? null
-                      : () =>
-                          ref.read(cleanerProvider.notifier).requestStopAnalyze())
+                      : () => ref
+                          .read(cleanerProvider.notifier)
+                          .requestStopAnalyze())
                   : (state.canContinueAnalyze && !state.isDeleting
                       ? _continueAnalyze
                       : null),
@@ -498,10 +396,13 @@ class _MobileStorageCleaningPageState
 
   // ─── Summary Section ───────────────────────────────────────────
 
-  Widget _buildSummarySection(CleanerRunSummary summary,
-      List<CleanerReviewItem> allItems, ThemeData theme, AppLocalizations l10n) {
-    final sizeCounts = _buildSizeCounts(allItems);
-    final riskCounts = _buildRiskCounts(allItems);
+  Widget _buildSummarySection(
+      CleanerRunSummary summary,
+      List<CleanerReviewItem> allItems,
+      ThemeData theme,
+      AppLocalizations l10n) {
+    final sizeCounts = StorageCleaningLogic.buildSizeCounts(allItems);
+    final riskCounts = StorageCleaningLogic.buildRiskCounts(allItems);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
@@ -548,7 +449,9 @@ class _MobileStorageCleaningPageState
               _buildStatChip(
                 icon: Icons.storage_outlined,
                 label: l10n.cleanerEstimatedReclaim,
-                value: _formatBytes(summary.estimatedReclaimBytes),
+                value: StorageCleaningLogic.formatBytes(
+                  summary.estimatedReclaimBytes,
+                ),
                 color: Colors.green,
                 theme: theme,
               ),
@@ -576,21 +479,24 @@ class _MobileStorageCleaningPageState
               _buildStatChip(
                 icon: Icons.folder_outlined,
                 label: '1-10MB',
-                value: '${sizeCounts[_MobileSizeFilter.oneToTenMb] ?? 0}',
+                value:
+                    '${sizeCounts[StorageCleaningSizeFilter.oneToTenMb] ?? 0}',
                 color: theme.hintColor,
                 theme: theme,
               ),
               _buildStatChip(
                 icon: Icons.folder,
                 label: '10-100MB',
-                value: '${sizeCounts[_MobileSizeFilter.tenToHundredMb] ?? 0}',
+                value:
+                    '${sizeCounts[StorageCleaningSizeFilter.tenToHundredMb] ?? 0}',
                 color: theme.hintColor,
                 theme: theme,
               ),
               _buildStatChip(
                 icon: Icons.folder_special,
                 label: '≥100MB',
-                value: '${sizeCounts[_MobileSizeFilter.overHundredMb] ?? 0}',
+                value:
+                    '${sizeCounts[StorageCleaningSizeFilter.overHundredMb] ?? 0}',
                 color: theme.hintColor,
                 theme: theme,
               ),
@@ -642,13 +548,7 @@ class _MobileStorageCleaningPageState
 
   // ─── Filter & Delete Section ───────────────────────────────────
 
-  Widget _buildFilterSection(
-    CleanerState state,
-    List<CleanerReviewItem> allItems,
-    List<CleanerReviewItem> filteredItems,
-    ThemeData theme,
-    AppLocalizations l10n,
-  ) {
+  Widget _buildFilterSection(AppLocalizations l10n) {
     return MobileSettingsSection(
       title: l10n.cleanerClassificationFilter,
       children: [
@@ -690,11 +590,12 @@ class _MobileStorageCleaningPageState
         spacing: 6,
         runSpacing: 6,
         children: _selectedRoots.map((path) {
-          final shortName =
-              path.length > 30 ? '...${path.substring(path.length - 27)}' : path;
+          final shortName = path.length > 30
+              ? '...${path.substring(path.length - 27)}'
+              : path;
           return Chip(
-            avatar: Icon(AuroraIcons.folder,
-                size: 14, color: theme.primaryColor),
+            avatar:
+                Icon(AuroraIcons.folder, size: 14, color: theme.primaryColor),
             label: Text(shortName, style: const TextStyle(fontSize: 12)),
             deleteIcon: const Icon(Icons.close, size: 14),
             onDeleted: () => _removeFolder(path),
@@ -851,7 +752,9 @@ class _MobileStorageCleaningPageState
                       ),
                       _buildTag(_riskText(item.finalRiskLevel), riskColor),
                       _buildTag(
-                        _formatBytes(item.candidate.sizeBytes),
+                        StorageCleaningLogic.formatBytes(
+                          item.candidate.sizeBytes,
+                        ),
                         Theme.of(context).hintColor,
                       ),
                       if (item.aiSuggestion.humanReason.isNotEmpty)
@@ -883,7 +786,8 @@ class _MobileStorageCleaningPageState
       ),
       child: Text(
         text,
-        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: color),
+        style:
+            TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: color),
       ),
     );
   }
@@ -891,7 +795,7 @@ class _MobileStorageCleaningPageState
   // ─── Bottom‐Sheet Pickers ──────────────────────────────────────
 
   void _showExecutionModelPicker(
-    List<_MobileExecutionModelChoice> choices,
+    List<StorageCleaningExecutionModelChoice> choices,
     String currentKey,
   ) {
     final l10n = _l10n;
@@ -914,7 +818,12 @@ class _MobileStorageCleaningPageState
                         color: Theme.of(ctx).primaryColor, size: 18)
                     : null,
                 onTap: () {
-                  _setExecutionModelByKey(choice.key, choices);
+                  StorageCleaningLogic.setExecutionModelByKey(
+                    ref: ref,
+                    key: choice.key,
+                    choices: choices,
+                    defaultKey: storageCleaningDefaultExecutionModelKey,
+                  );
                   Navigator.pop(ctx);
                 },
               );
@@ -934,7 +843,7 @@ class _MobileStorageCleaningPageState
         children: [
           AuroraBottomSheet.buildTitle(ctx, l10n.cleanerAllSize),
           const Divider(height: 1),
-          ..._MobileSizeFilter.values.map((filter) {
+          ...StorageCleaningSizeFilter.values.map((filter) {
             final selected = filter == _sizeFilter;
             return AuroraBottomSheet.buildListItem(
               context: ctx,
@@ -1028,94 +937,16 @@ class _MobileStorageCleaningPageState
     }
   }
 
-  String _sizeFilterText(_MobileSizeFilter filter) {
+  String _sizeFilterText(StorageCleaningSizeFilter filter) {
     switch (filter) {
-      case _MobileSizeFilter.all:
+      case StorageCleaningSizeFilter.all:
         return _l10n.cleanerAllSize;
-      case _MobileSizeFilter.oneToTenMb:
+      case StorageCleaningSizeFilter.oneToTenMb:
         return '1-10MB';
-      case _MobileSizeFilter.tenToHundredMb:
+      case StorageCleaningSizeFilter.tenToHundredMb:
         return '10-100MB';
-      case _MobileSizeFilter.overHundredMb:
+      case StorageCleaningSizeFilter.overHundredMb:
         return '>=100MB';
     }
   }
-
-  List<CleanerReviewItem> _applyFilters(List<CleanerReviewItem> items) {
-    return items.where((item) {
-      if (!_matchesSizeFilter(item.candidate.sizeBytes, _sizeFilter)) {
-        return false;
-      }
-      if (_riskFilter != null && item.finalRiskLevel != _riskFilter) {
-        return false;
-      }
-      return true;
-    }).toList(growable: false);
-  }
-
-  Map<_MobileSizeFilter, int> _buildSizeCounts(List<CleanerReviewItem> items) {
-    final counts = <_MobileSizeFilter, int>{
-      _MobileSizeFilter.oneToTenMb: 0,
-      _MobileSizeFilter.tenToHundredMb: 0,
-      _MobileSizeFilter.overHundredMb: 0,
-    };
-    for (final item in items) {
-      final bucket = _sizeBucketForBytes(item.candidate.sizeBytes);
-      if (bucket == null) continue;
-      counts[bucket] = (counts[bucket] ?? 0) + 1;
-    }
-    return counts;
-  }
-
-  Map<CleanerRiskLevel, int> _buildRiskCounts(List<CleanerReviewItem> items) {
-    final counts = <CleanerRiskLevel, int>{
-      CleanerRiskLevel.low: 0,
-      CleanerRiskLevel.medium: 0,
-      CleanerRiskLevel.high: 0,
-    };
-    for (final item in items) {
-      counts[item.finalRiskLevel] = (counts[item.finalRiskLevel] ?? 0) + 1;
-    }
-    return counts;
-  }
-
-  bool _matchesSizeFilter(int bytes, _MobileSizeFilter filter) {
-    switch (filter) {
-      case _MobileSizeFilter.all:
-        return true;
-      case _MobileSizeFilter.oneToTenMb:
-        return bytes >= 1024 * 1024 && bytes < 10 * 1024 * 1024;
-      case _MobileSizeFilter.tenToHundredMb:
-        return bytes >= 10 * 1024 * 1024 && bytes < 100 * 1024 * 1024;
-      case _MobileSizeFilter.overHundredMb:
-        return bytes >= 100 * 1024 * 1024;
-    }
-  }
-
-  _MobileSizeFilter? _sizeBucketForBytes(int bytes) {
-    if (bytes >= 100 * 1024 * 1024) {
-      return _MobileSizeFilter.overHundredMb;
-    }
-    if (bytes >= 10 * 1024 * 1024) {
-      return _MobileSizeFilter.tenToHundredMb;
-    }
-    if (bytes >= 1024 * 1024) {
-      return _MobileSizeFilter.oneToTenMb;
-    }
-    return null;
-  }
-
-  String _formatBytes(int bytes) {
-    if (bytes <= 0) return '0 B';
-    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-    var value = bytes.toDouble();
-    var index = 0;
-    while (value >= 1024 && index < units.length - 1) {
-      value /= 1024;
-      index++;
-    }
-    final fractionDigits = value >= 100 ? 0 : (value >= 10 ? 1 : 2);
-    return '${value.toStringAsFixed(fractionDigits)} ${units[index]}';
-  }
 }
-

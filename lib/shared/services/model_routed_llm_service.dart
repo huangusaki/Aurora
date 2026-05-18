@@ -7,6 +7,7 @@ import 'capability_route_resolver.dart';
 import 'chat_capability_handlers.dart';
 import 'gemini_native_llm_service.dart';
 import 'llm_service.dart';
+import 'llm_service_config.dart';
 import 'llm_transport_mode.dart';
 import 'openai_llm_service.dart';
 import 'tool_schema_sanitizer.dart';
@@ -51,33 +52,17 @@ class ModelRoutedLlmService implements LLMService {
 
   ModelRoutedLlmService(this._settings);
 
-  ProviderConfig _resolveProvider(String? providerId) {
-    if (providerId == null) {
-      return _settings.activeProvider;
-    }
-    return _settings.providers.firstWhere(
-      (provider) => provider.id == providerId,
-      orElse: () => _settings.activeProvider,
-    );
-  }
-
-  String? _resolveModel({
-    required ProviderConfig provider,
-    required String? requestedModel,
-  }) {
-    final candidate = requestedModel ?? provider.selectedModel;
-    if (candidate == null) return null;
-    final normalized = candidate.trim();
-    if (normalized.isEmpty) return null;
-    return normalized;
-  }
-
   _ResolvedDelegate _resolveDelegateResolution({
     String? model,
     String? providerId,
   }) {
-    final provider = _resolveProvider(providerId);
-    final modelName = _resolveModel(provider: provider, requestedModel: model);
+    final resolved = LlmServiceConfig.resolveTarget(
+      settings: _settings,
+      providerId: providerId,
+      requestedModel: model,
+    );
+    final provider = resolved.provider;
+    final modelName = resolved.selectedModel;
     if (modelName == null) {
       return _delegateForOpenAiCompat();
     }

@@ -4,7 +4,7 @@ import 'package:file_selector/file_selector.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:super_clipboard/super_clipboard.dart';
-import 'package:aurora/shared/riverpod_compat.dart';
+import 'package:aurora/shared/riverpod_legacy.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 import 'package:aurora/features/settings/presentation/settings_provider.dart';
 import 'package:aurora/shared/widgets/aurora_selection.dart';
@@ -31,6 +31,10 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
   final _projectFlyoutController = FlyoutController();
   final _outlineController = TextEditingController();
   final _taskDescriptionController = TextEditingController();
+
+  static const double _toolbarControlHeight = 32;
+  static const EdgeInsets _toolbarButtonPadding =
+      EdgeInsets.symmetric(horizontal: 12, vertical: 6);
 
   int _selectedNavIndex = 0; // 0: Writing, 1: Context, 2: Preview
   bool _isProjectKnowledgeBusy = false;
@@ -393,31 +397,44 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
       String title, IconData icon) {
     final isSelected = _selectedNavIndex == index;
     if (isSelected) {
-      return FilledButton(
-        onPressed: () => setState(() => _selectedNavIndex = index),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 14, color: Colors.white),
-            const SizedBox(width: 6),
-            Text(title,
-                style: const TextStyle(
-                    fontWeight: FontWeight.w600, color: Colors.white)),
-          ],
+      return SizedBox(
+        height: _toolbarControlHeight,
+        child: FilledButton(
+          style: ButtonStyle(
+            padding: WidgetStateProperty.all(_toolbarButtonPadding),
+          ),
+          onPressed: () => setState(() => _selectedNavIndex = index),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 14, color: Colors.white),
+              const SizedBox(width: 6),
+              Text(title,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w600, color: Colors.white)),
+            ],
+          ),
         ),
       );
     } else {
-      return Button(
-        onPressed: () => setState(() => _selectedNavIndex = index),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon,
-                size: 14,
-                color: theme.typography.body?.color?.withValues(alpha: 0.8)),
-            const SizedBox(width: 6),
-            Text(title, style: TextStyle(color: theme.typography.body?.color)),
-          ],
+      return SizedBox(
+        height: _toolbarControlHeight,
+        child: Button(
+          style: ButtonStyle(
+            padding: WidgetStateProperty.all(_toolbarButtonPadding),
+          ),
+          onPressed: () => setState(() => _selectedNavIndex = index),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon,
+                  size: 14,
+                  color: theme.typography.body?.color?.withValues(alpha: 0.8)),
+              const SizedBox(width: 6),
+              Text(title,
+                  style: TextStyle(color: theme.typography.body?.color)),
+            ],
+          ),
         ),
       );
     }
@@ -430,31 +447,40 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
     NovelWritingState state,
     NovelNotifier notifier,
   ) {
+    final hasSelectedProject = state.selectedProject != null;
     final hasAnalysis =
         state.selectedProject?.analyzedStyle?.isNotEmpty ?? false;
-    return Button(
-      onPressed: () => _showStyleImitationDialog(context, l10n, theme),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(AuroraIcons.autoAwesome,
-              size: 14,
-              color: theme.typography.body?.color?.withValues(alpha: 0.8)),
-          const SizedBox(width: 6),
-          Text(l10n.styleImitation,
-              style: TextStyle(color: theme.typography.body?.color)),
-          if (hasAnalysis) ...[
+    return SizedBox(
+      height: _toolbarControlHeight,
+      child: Button(
+        style: ButtonStyle(
+          padding: WidgetStateProperty.all(_toolbarButtonPadding),
+        ),
+        onPressed: hasSelectedProject
+            ? () => _showStyleImitationDialog(context, l10n, theme)
+            : null,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(AuroraIcons.autoAwesome,
+                size: 14,
+                color: theme.typography.body?.color?.withValues(alpha: 0.8)),
             const SizedBox(width: 6),
-            Container(
-              width: 8,
-              height: 8,
-              decoration: BoxDecoration(
-                color: Colors.green,
-                shape: BoxShape.circle,
+            Text(l10n.styleImitation,
+                style: TextStyle(color: theme.typography.body?.color)),
+            if (hasAnalysis) ...[
+              const SizedBox(width: 6),
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: Colors.green,
+                  shape: BoxShape.circle,
+                ),
               ),
-            ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
@@ -481,61 +507,66 @@ class _NovelWritingPageState extends ConsumerState<NovelWritingPage> {
     }
 
     const systemDefaultKey = '__system_default__';
-    return AuroraDropdown<String>(
-      leading: const Icon(AuroraIcons.parameter, size: 14),
-      textStyle: const TextStyle(fontSize: 13),
-      value: activePresetId ?? systemDefaultKey,
-      selectedLabel: selectedLabel,
-      options: [
-        AuroraDropdownOption<String>(
-          value: systemDefaultKey,
-          label: l10n.systemDefault,
-        ),
-        ...presets.map(
-          (preset) => AuroraDropdownOption<String>(
-            value: preset.id,
-            label: preset.name,
+    return SizedBox(
+      height: _toolbarControlHeight,
+      child: AuroraDropdown<String>(
+        leading: const Icon(AuroraIcons.parameter, size: 14),
+        textStyle: const TextStyle(fontSize: 13),
+        value: activePresetId ?? systemDefaultKey,
+        selectedLabel: selectedLabel,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        borderRadius: 4,
+        options: [
+          AuroraDropdownOption<String>(
+            value: systemDefaultKey,
+            label: l10n.systemDefault,
           ),
-        ),
-      ],
-      onChanged: (selectedId) {
-        if (selectedId == systemDefaultKey) {
-          notifier.setOutlinePrompt(NovelPromptPresets.outline);
-          notifier.setDecomposePrompt(NovelPromptPresets.decompose);
-          notifier.setWriterPrompt(NovelPromptPresets.writer);
-          notifier.setReviewerPrompt(NovelPromptPresets.reviewer);
-          notifier.setActivePromptPresetId(null);
-          return;
-        }
+          ...presets.map(
+            (preset) => AuroraDropdownOption<String>(
+              value: preset.id,
+              label: preset.name,
+            ),
+          ),
+        ],
+        onChanged: (selectedId) {
+          if (selectedId == systemDefaultKey) {
+            notifier.setOutlinePrompt(NovelPromptPresets.outline);
+            notifier.setDecomposePrompt(NovelPromptPresets.decompose);
+            notifier.setWriterPrompt(NovelPromptPresets.writer);
+            notifier.setReviewerPrompt(NovelPromptPresets.reviewer);
+            notifier.setActivePromptPresetId(null);
+            return;
+          }
 
-        final selectedPreset = presets.firstWhere(
-          (preset) => preset.id == selectedId,
-          orElse: () => NovelPromptPreset(
-            id: '',
-            name: '',
-            outlinePrompt: '',
-            decomposePrompt: '',
-            writerPrompt: '',
-            reviewerPrompt: '',
-          ),
-        );
-        if (selectedPreset.id.isEmpty) {
-          return;
-        }
-        if (selectedPreset.outlinePrompt.isNotEmpty) {
-          notifier.setOutlinePrompt(selectedPreset.outlinePrompt);
-        }
-        if (selectedPreset.decomposePrompt.isNotEmpty) {
-          notifier.setDecomposePrompt(selectedPreset.decomposePrompt);
-        }
-        if (selectedPreset.writerPrompt.isNotEmpty) {
-          notifier.setWriterPrompt(selectedPreset.writerPrompt);
-        }
-        if (selectedPreset.reviewerPrompt.isNotEmpty) {
-          notifier.setReviewerPrompt(selectedPreset.reviewerPrompt);
-        }
-        notifier.setActivePromptPresetId(selectedPreset.id);
-      },
+          final selectedPreset = presets.firstWhere(
+            (preset) => preset.id == selectedId,
+            orElse: () => NovelPromptPreset(
+              id: '',
+              name: '',
+              outlinePrompt: '',
+              decomposePrompt: '',
+              writerPrompt: '',
+              reviewerPrompt: '',
+            ),
+          );
+          if (selectedPreset.id.isEmpty) {
+            return;
+          }
+          if (selectedPreset.outlinePrompt.isNotEmpty) {
+            notifier.setOutlinePrompt(selectedPreset.outlinePrompt);
+          }
+          if (selectedPreset.decomposePrompt.isNotEmpty) {
+            notifier.setDecomposePrompt(selectedPreset.decomposePrompt);
+          }
+          if (selectedPreset.writerPrompt.isNotEmpty) {
+            notifier.setWriterPrompt(selectedPreset.writerPrompt);
+          }
+          if (selectedPreset.reviewerPrompt.isNotEmpty) {
+            notifier.setReviewerPrompt(selectedPreset.reviewerPrompt);
+          }
+          notifier.setActivePromptPresetId(selectedPreset.id);
+        },
+      ),
     );
   }
 
@@ -1879,12 +1910,24 @@ class _StyleImitationDialogContentState
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(novelProvider);
-    final notifier = ref.read(novelProvider.notifier);
     final project = state.selectedProject;
     final l10n = widget.l10n;
     final theme = widget.theme;
 
-    if (project == null) return const SizedBox.shrink();
+    if (project == null) {
+      return ContentDialog(
+        title: Text(l10n.styleImitation),
+        content: Text(l10n.selectProject),
+        actions: [
+          Button(
+            child: Text(l10n.close),
+            onPressed: () => Navigator.pop(context),
+          ),
+        ],
+      );
+    }
+
+    final notifier = ref.read(novelProvider.notifier);
 
     final hasAnalysis =
         project.analyzedStyle != null && project.analyzedStyle!.isNotEmpty;
@@ -1977,3 +2020,4 @@ class _StyleImitationDialogContentState
     );
   }
 }
+

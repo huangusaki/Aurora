@@ -1,4 +1,4 @@
-import 'package:aurora/shared/riverpod_compat.dart';
+import 'package:aurora/shared/riverpod_legacy.dart';
 
 import '../../settings/presentation/settings_provider.dart';
 import '../data/knowledge_storage.dart';
@@ -132,4 +132,5 @@ final knowledgeProvider =
   final storage = ref.watch(knowledgeStorageProvider);
   return KnowledgeNotifier(storage);
 });
+
 

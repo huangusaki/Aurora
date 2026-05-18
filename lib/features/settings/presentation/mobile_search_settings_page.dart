@@ -3,7 +3,7 @@ import 'package:aurora/shared/theme/aurora_icons.dart';
 import 'package:aurora/shared/widgets/aurora_bottom_sheet.dart';
 import 'package:aurora_search/aurora_search.dart';
 import 'package:flutter/material.dart';
-import 'package:aurora/shared/riverpod_compat.dart';
+import 'package:aurora/shared/riverpod_legacy.dart';
 import 'settings_provider.dart';
 import 'widgets/mobile_settings_widgets.dart';
 
@@ -263,5 +263,6 @@ class MobileSearchSettingsPage extends ConsumerWidget {
     await ref.read(settingsProvider.notifier).setSearchTimeoutSeconds(parsed);
   }
 }
+
 
 

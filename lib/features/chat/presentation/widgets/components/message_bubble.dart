@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:aurora/l10n/app_localizations.dart';
-import 'package:aurora/shared/riverpod_compat.dart';
+import 'package:aurora/shared/riverpod_legacy.dart';
 import 'package:aurora/shared/theme/aurora_icons.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:fluent_ui/fluent_ui.dart' as fluent;
@@ -345,7 +345,7 @@ class MessageBubbleState extends ConsumerState<MessageBubble>
           providerName: message.provider ?? settingsState.activeProvider.name,
         );
         final transformed = chatMessageTransformers.visualTransform(
-          UiMessage.fromLegacy(message),
+          message.asUiMessage,
           transformContext,
         );
         await Clipboard.setData(ClipboardData(text: transformed.text));
@@ -394,35 +394,43 @@ class MessageBubbleState extends ConsumerState<MessageBubble>
     super.build(context);
     final message = widget.message;
     final isUser = message.isUser;
-    final settingsState = ref.watch(settingsProvider);
+    final bubbleSettings = ref.watch(settingsProvider.select((s) => (
+          language: s.language,
+          selectedModel: s.selectedModel,
+          activeProviderName: s.activeProvider.name,
+          hasCustomBackground: s.useCustomTheme &&
+              s.backgroundImagePath != null &&
+              s.backgroundImagePath!.isNotEmpty,
+          userName: s.userName,
+          llmAvatar: s.llmAvatar,
+          userAvatar: s.userAvatar,
+        )));
     final theme = fluent.FluentTheme.of(context);
     final l10n = AppLocalizations.of(context)!;
     final transformContext = MessageTransformContext(
-      language: settingsState.language,
-      model: message.model ?? settingsState.selectedModel,
-      providerName: message.provider ?? settingsState.activeProvider.name,
+      language: bubbleSettings.language,
+      model: message.model ?? bubbleSettings.selectedModel,
+      providerName: message.provider ?? bubbleSettings.activeProviderName,
     );
+    final uiMessage = message.asUiMessage;
     final renderData = ChatMessageAssembler.assembleSingle(
       message: message,
+      uiMessage: uiMessage,
       transformContext: transformContext,
       isGenerating: widget.isGenerating,
       animateStreamingContent: widget.animateStreamingContent,
       loadingLabel: '${l10n.thinking}...',
     );
-    final headerTextColor = (settingsState.useCustomTheme &&
-            settingsState.backgroundImagePath != null &&
-            settingsState.backgroundImagePath!.isNotEmpty)
+    final headerTextColor = bubbleSettings.hasCustomBackground
         ? Colors.white.withValues(alpha: 0.7)
         : Colors.grey[600];
-    final mobileActionColor = (settingsState.useCustomTheme &&
-            settingsState.backgroundImagePath != null &&
-            settingsState.backgroundImagePath!.isNotEmpty)
+    final mobileActionColor = bubbleSettings.hasCustomBackground
         ? Colors.white.withValues(alpha: 0.7)
         : null;
 
     return ChatMessageFrame(
       isUser: isUser,
-      settingsState: settingsState,
+      hasBackground: bubbleSettings.hasCustomBackground,
       theme: theme,
       isEditing: _isEditing,
       reserveLeadingAvatarSpace: !isUser && !widget.showAvatar,
@@ -437,10 +445,10 @@ class MessageBubbleState extends ConsumerState<MessageBubble>
               padding: const EdgeInsets.only(bottom: 4, left: 4, right: 4),
               child: Text(
                 isUser
-                    ? (settingsState.userName.isNotEmpty
-                        ? settingsState.userName
+                    ? (bubbleSettings.userName.isNotEmpty
+                        ? bubbleSettings.userName
                         : l10n.user)
-                    : '${message.model ?? settingsState.selectedModel} | ${message.provider ?? settingsState.activeProvider.name}',
+                    : '${message.model ?? bubbleSettings.selectedModel} | ${message.provider ?? bubbleSettings.activeProviderName}',
                 style: TextStyle(
                   color: headerTextColor,
                   fontSize: 12,
@@ -450,14 +458,14 @@ class MessageBubbleState extends ConsumerState<MessageBubble>
           : null,
       leadingAvatar: !isUser && widget.showAvatar
           ? ChatMessageAvatar(
-              avatarPath: settingsState.llmAvatar,
+              avatarPath: bubbleSettings.llmAvatar,
               fallbackIcon: AuroraIcons.robot,
               backgroundColor: Colors.teal,
             )
           : null,
       trailingAvatar: isUser
           ? ChatMessageAvatar(
-              avatarPath: settingsState.userAvatar,
+              avatarPath: bubbleSettings.userAvatar,
               fallbackIcon: AuroraIcons.person,
               backgroundColor: Colors.blue,
             )

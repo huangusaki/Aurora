@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'package:aurora/shared/riverpod_compat.dart';
+import 'package:aurora/shared/riverpod_legacy.dart';
 import '../domain/skill_entity.dart';
 import '../data/skill_parser.dart';
 
@@ -201,4 +201,5 @@ Provide clear, imperative execution steps for the assistant.
 final skillProvider = StateNotifierProvider<SkillNotifier, SkillState>((ref) {
   return SkillNotifier();
 });
+
 

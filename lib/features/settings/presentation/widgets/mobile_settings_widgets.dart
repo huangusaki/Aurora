@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:aurora/shared/riverpod_compat.dart';
+import 'package:aurora/shared/riverpod_legacy.dart';
 import 'package:aurora/shared/theme/wallpaper_tint.dart';
 import 'package:aurora/shared/theme/wallpaper_tint_provider.dart';
 import '../settings_provider.dart';
@@ -192,4 +192,5 @@ class MobileSettingsTile extends StatelessWidget {
     );
   }
 }
+
 

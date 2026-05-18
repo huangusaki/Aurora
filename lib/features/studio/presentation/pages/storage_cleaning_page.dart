@@ -7,31 +7,9 @@ import 'package:aurora/features/studio/presentation/widgets/studio_surface_compo
 import 'package:aurora/l10n/app_localizations.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:fluent_ui/fluent_ui.dart';
-import 'package:aurora/shared/riverpod_compat.dart';
+import 'package:aurora/shared/riverpod_legacy.dart';
 import 'package:aurora/shared/widgets/aurora_dropdown.dart';
-
-enum _DesktopSizeFilter {
-  all,
-  oneToTenMb,
-  tenToHundredMb,
-  overHundredMb,
-}
-
-const String _desktopDefaultExecutionModelKey = '__default_execution_model__';
-
-class _DesktopExecutionModelChoice {
-  final String key;
-  final String label;
-  final String? model;
-  final String? providerId;
-
-  const _DesktopExecutionModelChoice({
-    required this.key,
-    required this.label,
-    required this.model,
-    required this.providerId,
-  });
-}
+import 'storage_cleaning_logic.dart';
 
 class StudioStorageCleaningPage extends ConsumerStatefulWidget {
   final VoidCallback onBack;
@@ -51,7 +29,7 @@ class _StudioStorageCleaningPageState
   final List<String> _selectedRoots = <String>[];
   bool _detectDuplicates = true;
   bool _deleteReviewRequired = false;
-  _DesktopSizeFilter _sizeFilter = _DesktopSizeFilter.all;
+  StorageCleaningSizeFilter _sizeFilter = StorageCleaningSizeFilter.all;
   CleanerRiskLevel? _riskFilter;
   Set<String> _selectedCandidateIds = <String>{};
 
@@ -81,71 +59,43 @@ class _StudioStorageCleaningPageState
   }
 
   Future<void> _runAnalyze() async {
-    final notifier = ref.read(cleanerProvider.notifier);
-    final roots = List<String>.from(_selectedRoots);
-    final hasUserRoots = roots.isNotEmpty;
-    await notifier.analyze(
-      options: CleanerScanOptions(
-        includeAppCache: true,
-        includeTemporary: true,
-        includeCommonUserRoots: true,
-        additionalRootPaths: roots,
-        includeUserSelectedRoots: hasUserRoots,
-        includeUnknownInUserSelectedRoots: hasUserRoots,
-        detectDuplicates: _detectDuplicates,
-      ),
+    final recommendedIds = await StorageCleaningLogic.runAnalyze(
+      ref: ref,
+      selectedRoots: _selectedRoots,
+      detectDuplicates: _detectDuplicates,
     );
-
     if (!mounted) return;
-    final result = ref.read(cleanerProvider).runResult;
-    if (result == null) return;
     setState(() {
-      _selectedCandidateIds = result.items
-          .where(
-            (item) => item.finalDecision == CleanerDecision.deleteRecommend,
-          )
-          .map((item) => item.candidate.id)
-          .toSet();
+      _selectedCandidateIds = recommendedIds;
     });
   }
 
   Future<void> _continueAnalyze() async {
-    final notifier = ref.read(cleanerProvider.notifier);
-    await notifier.continueAnalyze();
-
+    final recommendedIds = await StorageCleaningLogic.continueAnalyze(ref: ref);
     if (!mounted) return;
-    final result = ref.read(cleanerProvider).runResult;
-    if (result == null) return;
     setState(() {
-      _selectedCandidateIds = result.items
-          .where(
-            (item) => item.finalDecision == CleanerDecision.deleteRecommend,
-          )
-          .map((item) => item.candidate.id)
-          .toSet();
+      _selectedCandidateIds = recommendedIds;
     });
   }
 
   Future<void> _deleteSelected() async {
-    if (_selectedCandidateIds.isEmpty) return;
-    await ref
-        .read(cleanerProvider.notifier)
-        .deleteByIds(_selectedCandidateIds.toList());
+    await StorageCleaningLogic.deleteSelected(
+      ref: ref,
+      selectedCandidateIds: _selectedCandidateIds,
+    );
   }
 
   Future<void> _deleteByRecommendation() async {
-    await ref.read(cleanerProvider.notifier).deleteRecommended(
-          includeReviewRequired: _deleteReviewRequired,
-        );
+    await StorageCleaningLogic.deleteByRecommendation(
+      ref: ref,
+      includeReviewRequired: _deleteReviewRequired,
+    );
   }
 
   void _selectVisibleRecommendations(List<CleanerReviewItem> visibleItems) {
-    final ids = visibleItems
-        .where((item) => item.finalDecision == CleanerDecision.deleteRecommend)
-        .map((item) => item.candidate.id)
-        .toSet();
     setState(() {
-      _selectedCandidateIds = ids;
+      _selectedCandidateIds =
+          StorageCleaningLogic.recommendedCandidateIds(visibleItems);
     });
   }
 
@@ -153,74 +103,6 @@ class _StudioStorageCleaningPageState
     setState(() {
       _selectedCandidateIds.clear();
     });
-  }
-
-  List<_DesktopExecutionModelChoice> _buildExecutionModelChoices(
-      SettingsState settings) {
-    final choices = <_DesktopExecutionModelChoice>[
-      _DesktopExecutionModelChoice(
-        key: _desktopDefaultExecutionModelKey,
-        label: _l10n.cleanerExecutionModelDefaultChat,
-        model: null,
-        providerId: null,
-      ),
-    ];
-
-    for (final provider in settings.providers) {
-      if (!provider.isEnabled || provider.models.isEmpty) {
-        continue;
-      }
-      for (final model in provider.models) {
-        if (!provider.isModelEnabled(model)) {
-          continue;
-        }
-        choices.add(
-          _DesktopExecutionModelChoice(
-            key: '${provider.id}::$model',
-            label: '${provider.name} - $model',
-            model: model,
-            providerId: provider.id,
-          ),
-        );
-      }
-    }
-    return choices;
-  }
-
-  String _currentExecutionModelChoiceKey(
-    SettingsState settings,
-    List<_DesktopExecutionModelChoice> choices,
-  ) {
-    final model = settings.executionModel;
-    if (model == null || model.trim().isEmpty) {
-      return _desktopDefaultExecutionModelKey;
-    }
-    final providerId =
-        (settings.executionProviderId ?? settings.activeProviderId).trim();
-    final key = '$providerId::$model';
-    final exists = choices.any((choice) => choice.key == key);
-    return exists ? key : _desktopDefaultExecutionModelKey;
-  }
-
-  void _setExecutionModelByKey(
-    String key,
-    List<_DesktopExecutionModelChoice> choices,
-  ) {
-    if (key == _desktopDefaultExecutionModelKey) {
-      ref
-          .read(settingsProvider.notifier)
-          .setExecutionSettings(model: null, providerId: null);
-      return;
-    }
-
-    for (final choice in choices) {
-      if (choice.key != key) continue;
-      ref.read(settingsProvider.notifier).setExecutionSettings(
-            model: choice.model,
-            providerId: choice.providerId,
-          );
-      return;
-    }
   }
 
   @override
@@ -231,15 +113,28 @@ class _StudioStorageCleaningPageState
         (settings.useCustomTheme || settings.themeMode == 'custom') &&
             settings.backgroundImagePath != null &&
             settings.backgroundImagePath!.isNotEmpty;
-    final executionModelChoices = _buildExecutionModelChoices(settings);
+    final executionModelChoices =
+        StorageCleaningLogic.buildExecutionModelChoices(
+      settings: settings,
+      defaultKey: storageCleaningDefaultExecutionModelKey,
+      defaultLabel: _l10n.cleanerExecutionModelDefaultChat,
+    );
     final executionModelChoiceKey =
-        _currentExecutionModelChoiceKey(settings, executionModelChoices);
+        StorageCleaningLogic.currentExecutionModelChoiceKey(
+      settings: settings,
+      choices: executionModelChoices,
+      defaultKey: storageCleaningDefaultExecutionModelKey,
+    );
     final result = state.runResult;
     final summary = result?.summary;
     final allItems = result?.items ?? const <CleanerReviewItem>[];
-    final filteredItems = _applyFilters(allItems);
-    final sizeCounts = _buildSizeCounts(allItems);
-    final riskCounts = _buildRiskCounts(allItems);
+    final filteredItems = StorageCleaningLogic.applyFilters(
+      items: allItems,
+      sizeFilter: _sizeFilter,
+      riskFilter: _riskFilter,
+    );
+    final sizeCounts = StorageCleaningLogic.buildSizeCounts(allItems);
+    final riskCounts = StorageCleaningLogic.buildRiskCounts(allItems);
     final theme = FluentTheme.of(context);
 
     return Container(
@@ -447,7 +342,9 @@ class _StudioStorageCleaningPageState
                   label: l10n.cleanerEstimatedReclaim,
                   value: summary == null
                       ? '-'
-                      : _formatBytes(summary.estimatedReclaimBytes),
+                      : StorageCleaningLogic.formatBytes(
+                          summary.estimatedReclaimBytes,
+                        ),
                   hasBackground: hasBackground,
                 ),
               ],
@@ -462,7 +359,7 @@ class _StudioStorageCleaningPageState
     required FluentThemeData theme,
     required CleanerState state,
     required bool hasBackground,
-    required List<_DesktopExecutionModelChoice> executionModelChoices,
+    required List<StorageCleaningExecutionModelChoice> executionModelChoices,
     required String executionModelChoiceKey,
   }) {
     final l10n = _l10n;
@@ -498,7 +395,12 @@ class _StudioStorageCleaningPageState
                   ? null
                   : (value) {
                       if (value == null) return;
-                      _setExecutionModelByKey(value, executionModelChoices);
+                      StorageCleaningLogic.setExecutionModelByKey(
+                        ref: ref,
+                        key: value,
+                        choices: executionModelChoices,
+                        defaultKey: storageCleaningDefaultExecutionModelKey,
+                      );
                     },
             ),
           ),
@@ -674,7 +576,9 @@ class _StudioStorageCleaningPageState
               severity: InfoBarSeverity.success,
               content: Text(
                 l10n.cleanerDeleteResultSummary(
-                  _formatBytes(state.lastDeleteResult!.totalFreedBytes),
+                  StorageCleaningLogic.formatBytes(
+                    state.lastDeleteResult!.totalFreedBytes,
+                  ),
                   state.lastDeleteResult!.results
                       .where((e) => e.success)
                       .length,
@@ -691,7 +595,7 @@ class _StudioStorageCleaningPageState
   Widget _buildSummaryPanel({
     required FluentThemeData theme,
     required CleanerRunSummary? summary,
-    required Map<_DesktopSizeFilter, int> sizeCounts,
+    required Map<StorageCleaningSizeFilter, int> sizeCounts,
     required Map<CleanerRiskLevel, int> riskCounts,
     required bool hasBackground,
   }) {
@@ -763,29 +667,33 @@ class _StudioStorageCleaningPageState
               ),
               StudioStatTile(
                 label: l10n.cleanerEstimatedReclaim,
-                value: _formatBytes(summary.estimatedReclaimBytes),
+                value: StorageCleaningLogic.formatBytes(
+                  summary.estimatedReclaimBytes,
+                ),
                 color: Colors.teal,
                 wide: true,
                 hasBackground: hasBackground,
               ),
               StudioStatTile(
                 label: '1-10MB',
-                value:
-                    (sizeCounts[_DesktopSizeFilter.oneToTenMb] ?? 0).toString(),
+                value: (sizeCounts[StorageCleaningSizeFilter.oneToTenMb] ?? 0)
+                    .toString(),
                 color: Colors.purple,
                 hasBackground: hasBackground,
               ),
               StudioStatTile(
                 label: '10-100MB',
-                value: (sizeCounts[_DesktopSizeFilter.tenToHundredMb] ?? 0)
-                    .toString(),
+                value:
+                    (sizeCounts[StorageCleaningSizeFilter.tenToHundredMb] ?? 0)
+                        .toString(),
                 color: Colors.blue,
                 hasBackground: hasBackground,
               ),
               StudioStatTile(
                 label: '>=100MB',
-                value: (sizeCounts[_DesktopSizeFilter.overHundredMb] ?? 0)
-                    .toString(),
+                value:
+                    (sizeCounts[StorageCleaningSizeFilter.overHundredMb] ?? 0)
+                        .toString(),
                 color: Colors.magenta,
                 hasBackground: hasBackground,
               ),
@@ -837,12 +745,12 @@ class _StudioStorageCleaningPageState
                   width: 220,
                   child: InfoLabel(
                     label: l10n.cleanerSizeFilter,
-                    child: AuroraFluentDropdownField<_DesktopSizeFilter>(
+                    child: AuroraFluentDropdownField<StorageCleaningSizeFilter>(
                       value: _sizeFilter,
-                      options: _DesktopSizeFilter.values
+                      options: StorageCleaningSizeFilter.values
                           .map(
                             (filter) =>
-                                AuroraDropdownOption<_DesktopSizeFilter>(
+                                AuroraDropdownOption<StorageCleaningSizeFilter>(
                               value: filter,
                               label: _sizeFilterText(filter),
                             ),
@@ -1054,7 +962,7 @@ class _StudioStorageCleaningPageState
                             ),
                             StudioTag(
                               text:
-                                  '${_formatBytes(item.candidate.sizeBytes)} · ${_sizeBucketLabel(item.candidate.sizeBytes)}',
+                                  '${StorageCleaningLogic.formatBytes(item.candidate.sizeBytes)} · ${StorageCleaningLogic.sizeBucketLabel(item.candidate.sizeBytes)}',
                               color: Colors.grey,
                               hasBackground: hasBackground,
                             ),
@@ -1228,106 +1136,16 @@ class _StudioStorageCleaningPageState
 
   String get _riskFilterWireValue => _riskFilter?.name ?? 'all';
 
-  String _sizeFilterText(_DesktopSizeFilter filter) {
+  String _sizeFilterText(StorageCleaningSizeFilter filter) {
     switch (filter) {
-      case _DesktopSizeFilter.all:
+      case StorageCleaningSizeFilter.all:
         return _l10n.cleanerAllSize;
-      case _DesktopSizeFilter.oneToTenMb:
+      case StorageCleaningSizeFilter.oneToTenMb:
         return '1-10MB';
-      case _DesktopSizeFilter.tenToHundredMb:
+      case StorageCleaningSizeFilter.tenToHundredMb:
         return '10-100MB';
-      case _DesktopSizeFilter.overHundredMb:
+      case StorageCleaningSizeFilter.overHundredMb:
         return '>=100MB';
     }
-  }
-
-  List<CleanerReviewItem> _applyFilters(List<CleanerReviewItem> items) {
-    return items.where((item) {
-      if (!_matchesSizeFilter(item.candidate.sizeBytes, _sizeFilter)) {
-        return false;
-      }
-      if (_riskFilter != null && item.finalRiskLevel != _riskFilter) {
-        return false;
-      }
-      return true;
-    }).toList(growable: false);
-  }
-
-  Map<_DesktopSizeFilter, int> _buildSizeCounts(List<CleanerReviewItem> items) {
-    final counts = <_DesktopSizeFilter, int>{
-      _DesktopSizeFilter.oneToTenMb: 0,
-      _DesktopSizeFilter.tenToHundredMb: 0,
-      _DesktopSizeFilter.overHundredMb: 0,
-    };
-    for (final item in items) {
-      final bucket = _sizeBucketForBytes(item.candidate.sizeBytes);
-      if (bucket == null) continue;
-      counts[bucket] = (counts[bucket] ?? 0) + 1;
-    }
-    return counts;
-  }
-
-  Map<CleanerRiskLevel, int> _buildRiskCounts(List<CleanerReviewItem> items) {
-    final counts = <CleanerRiskLevel, int>{
-      CleanerRiskLevel.low: 0,
-      CleanerRiskLevel.medium: 0,
-      CleanerRiskLevel.high: 0,
-    };
-    for (final item in items) {
-      counts[item.finalRiskLevel] = (counts[item.finalRiskLevel] ?? 0) + 1;
-    }
-    return counts;
-  }
-
-  bool _matchesSizeFilter(int bytes, _DesktopSizeFilter filter) {
-    switch (filter) {
-      case _DesktopSizeFilter.all:
-        return true;
-      case _DesktopSizeFilter.oneToTenMb:
-        return bytes >= 1024 * 1024 && bytes < 10 * 1024 * 1024;
-      case _DesktopSizeFilter.tenToHundredMb:
-        return bytes >= 10 * 1024 * 1024 && bytes < 100 * 1024 * 1024;
-      case _DesktopSizeFilter.overHundredMb:
-        return bytes >= 100 * 1024 * 1024;
-    }
-  }
-
-  _DesktopSizeFilter? _sizeBucketForBytes(int bytes) {
-    if (bytes >= 100 * 1024 * 1024) {
-      return _DesktopSizeFilter.overHundredMb;
-    }
-    if (bytes >= 10 * 1024 * 1024) {
-      return _DesktopSizeFilter.tenToHundredMb;
-    }
-    if (bytes >= 1024 * 1024) {
-      return _DesktopSizeFilter.oneToTenMb;
-    }
-    return null;
-  }
-
-  String _sizeBucketLabel(int bytes) {
-    final bucket = _sizeBucketForBytes(bytes);
-    if (bucket == null) {
-      return '<1MB';
-    }
-    return switch (bucket) {
-      _DesktopSizeFilter.oneToTenMb => '1-10MB',
-      _DesktopSizeFilter.tenToHundredMb => '10-100MB',
-      _DesktopSizeFilter.overHundredMb => '>=100MB',
-      _DesktopSizeFilter.all => '<1MB',
-    };
-  }
-
-  String _formatBytes(int bytes) {
-    if (bytes <= 0) return '0 B';
-    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-    var value = bytes.toDouble();
-    var index = 0;
-    while (value >= 1024 && index < units.length - 1) {
-      value /= 1024;
-      index++;
-    }
-    final fractionDigits = value >= 100 ? 0 : (value >= 10 ? 1 : 2);
-    return '${value.toStringAsFixed(fractionDigits)} ${units[index]}';
   }
 }

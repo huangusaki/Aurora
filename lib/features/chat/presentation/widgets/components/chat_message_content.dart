@@ -11,11 +11,13 @@ class ChatTextBlock extends ChatMessageContentBlock {
     required this.text,
     required this.presentation,
     this.animate = false,
+    this.streamingActive = false,
   });
 
   final String text;
   final ChatTextPresentation presentation;
   final bool animate;
+  final bool streamingActive;
 }
 
 class ChatReasoningBlock extends ChatMessageContentBlock {

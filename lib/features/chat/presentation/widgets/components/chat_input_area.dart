@@ -5,7 +5,7 @@ import 'package:aurora/shared/services/provider_display_metadata.dart';
 import 'package:fluent_ui/fluent_ui.dart' as fluent;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:aurora/shared/riverpod_compat.dart';
+import 'package:aurora/shared/riverpod_legacy.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 import 'package:aurora/shared/widgets/aurora_bottom_sheet.dart';
 import '../../chat_provider.dart';
@@ -1615,3 +1615,4 @@ class MobileChatInputArea extends ConsumerWidget {
     );
   }
 }
+

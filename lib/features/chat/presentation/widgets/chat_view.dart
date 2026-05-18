@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:fluent_ui/fluent_ui.dart' as fluent;
 import 'package:flutter/material.dart';
 
-import 'package:aurora/shared/riverpod_compat.dart';
+import 'package:aurora/shared/riverpod_legacy.dart';
 import 'package:aurora/features/settings/presentation/settings_provider.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:aurora/l10n/app_localizations.dart';
@@ -1035,7 +1035,9 @@ class ChatViewState extends ConsumerState<ChatView> {
                                                     key: ValueKey(msg.id),
                                                     message: msg,
                                                     isLast: isLatest,
-                                                    isGenerating: false,
+                                                    isGenerating:
+                                                        isGenerating &&
+                                                            !msg.isUser,
                                                     animateStreamingContent:
                                                         !disableStreamingAnimations,
                                                     showAvatar: showAvatar,
@@ -1194,7 +1196,8 @@ class ChatViewState extends ConsumerState<ChatView> {
                                               key: ValueKey(msg.id),
                                               message: msg,
                                               isLast: isLatest,
-                                              isGenerating: false,
+                                              isGenerating:
+                                                  isGenerating && !msg.isUser,
                                               animateStreamingContent:
                                                   !disableStreamingAnimations,
                                               showAvatar: showAvatar,

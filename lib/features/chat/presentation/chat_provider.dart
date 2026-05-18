@@ -4,7 +4,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/services.dart';
-import 'package:aurora/shared/riverpod_compat.dart';
+import 'package:aurora/shared/riverpod_legacy.dart';
 
 import 'package:aurora/shared/utils/platform_utils.dart';
 import 'package:aurora/features/assistant/data/assistant_memory_service.dart';
@@ -47,3 +47,4 @@ part 'chat_persistence.dart';
 part 'sessions_notifier.dart';
 part 'chat_session_manager.dart';
 part 'chat_providers.dart';
+

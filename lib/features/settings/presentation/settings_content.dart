@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:fluent_ui/fluent_ui.dart' as fluent;
-import 'package:aurora/shared/riverpod_compat.dart';
+import 'package:aurora/shared/riverpod_legacy.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 import 'package:aurora_search/aurora_search.dart';
@@ -11,7 +11,6 @@ import 'package:aurora/shared/theme/wallpaper_tint.dart';
 import 'package:aurora/shared/theme/wallpaper_tint_provider.dart';
 import 'package:aurora/shared/utils/platform_utils.dart';
 import 'package:aurora/shared/widgets/aurora_dropdown.dart';
-import 'package:aurora/shared/widgets/aurora_notice.dart';
 import 'settings_provider.dart';
 import 'model_display_name.dart';
 import 'provider_route_labels.dart';
@@ -26,6 +25,7 @@ import '../../../shared/utils/avatar_cropper.dart';
 import '../../../shared/utils/avatar_storage.dart';
 import 'model_config_dialog.dart';
 import 'global_config_dialog.dart';
+import 'settings_feedback.dart';
 import '../../sync/presentation/sync_settings_section.dart';
 import 'package:aurora/shared/theme/aurora_icons.dart';
 
@@ -39,10 +39,8 @@ class SettingsContent extends ConsumerStatefulWidget {
 }
 
 class _SettingsContentState extends ConsumerState<SettingsContent> {
-  final TextEditingController _apiKeyController = TextEditingController();
   final TextEditingController _baseUrlController = TextEditingController();
   final FocusNode _baseUrlFocusNode = FocusNode();
-  final TextEditingController _nameController = TextEditingController();
   final TextEditingController _userNameController = TextEditingController();
   final TextEditingController _llmNameController = TextEditingController();
 
@@ -54,31 +52,15 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
   Future<void> _refreshModelsWithNotice(AppLocalizations l10n) async {
     final success = await ref.read(settingsProvider.notifier).fetchModels();
     if (!mounted) return;
-
-    if (success) {
-      showAuroraNotice(
-        context,
-        '${l10n.fetchModelList} ${l10n.success}',
-        icon: AuroraIcons.success,
-      );
-      return;
-    }
-
-    final errorMessage = ref.read(settingsProvider).error;
-    final message = (errorMessage?.isNotEmpty ?? false)
-        ? '${l10n.fetchModelList} ${l10n.failed}: $errorMessage'
-        : '${l10n.fetchModelList} ${l10n.failed}';
-    showAuroraNotice(
+    showModelRefreshNotice(
       context,
-      message,
-      icon: AuroraIcons.error,
+      l10n: l10n,
+      errorMessage: ref.read(settingsProvider).error,
+      success: success,
     );
   }
 
   final TextEditingController _renameListController = TextEditingController();
-
-  // Local state for API key visibility
-  final Set<int> _visibleKeyIndices = {};
 
   @override
   void initState() {
@@ -93,10 +75,8 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
 
   @override
   void dispose() {
-    _apiKeyController.dispose();
     _baseUrlController.dispose();
     _baseUrlFocusNode.dispose();
-    _nameController.dispose();
     _userNameController.dispose();
     _llmNameController.dispose();
     _renameListController.dispose();
@@ -152,19 +132,11 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
 
   void _updateControllers(ProviderConfig provider) {
     if (_currentProviderId != provider.id) {
-      _visibleKeyIndices.clear();
       _currentProviderId = provider.id;
       _isBaseUrlDirty = false;
     }
-
-    if (_apiKeyController.text != provider.apiKey) {
-      _apiKeyController.text = provider.apiKey;
-    }
     if (!_isBaseUrlDirty && _baseUrlController.text != provider.baseUrl) {
       _baseUrlController.text = provider.baseUrl;
-    }
-    if (_nameController.text != provider.name) {
-      _nameController.text = provider.name;
     }
   }
 
@@ -182,13 +154,17 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
 
   @override
   Widget build(BuildContext context) {
-    final settingsState = ref.watch(settingsProvider);
-    final viewingProvider = settingsState.viewingProvider;
+    final viewingProvider =
+        ref.watch(settingsProvider.select((s) => s.viewingProvider));
     _updateControllers(viewingProvider);
     final settingsPageIndex = ref.watch(settingsPageIndexProvider);
     final l10n = AppLocalizations.of(context)!;
     if (PlatformUtils.isDesktop) {
       final theme = fluent.FluentTheme.of(context);
+      final hasCustomBackground = ref.watch(settingsProvider.select((s) =>
+          s.useCustomTheme &&
+          s.backgroundImagePath != null &&
+          s.backgroundImagePath!.isNotEmpty));
       final settingsPages = [
         (icon: AuroraIcons.model, label: l10n.modelProvider),
         (icon: AuroraIcons.translation, label: l10n.chatSettings),
@@ -269,9 +245,7 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
               child: Container(
                 margin: const EdgeInsets.only(top: 8, right: 8, bottom: 8),
                 decoration: BoxDecoration(
-                  color: settingsState.useCustomTheme &&
-                          settingsState.backgroundImagePath != null &&
-                          settingsState.backgroundImagePath!.isNotEmpty
+                  color: hasCustomBackground
                       ? theme.cardColor.withValues(alpha: 0.7)
                       : theme.cardColor,
                   borderRadius: BorderRadius.circular(16),
@@ -285,19 +259,29 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(16),
-                  child: IndexedStack(
-                    index: settingsPageIndex,
-                    children: [
-                      _buildProviderSettings(settingsState, viewingProvider),
-                      _buildChatSettings(settingsState),
-                      _buildSearchSettings(settingsState),
-                      const KnowledgeSettingsPanel(),
-                      const PresetSettingsPage(),
-                      _buildDisplaySettings(),
-                      _buildDataSettings(),
-                      const LogRecordsView(),
-                      const UsageStatsView(),
-                    ],
+                  child: Consumer(
+                    builder: (context, ref, child) {
+                      final settingsState = ref.watch(settingsProvider);
+                      final activeViewingProvider =
+                          settingsState.viewingProvider;
+                      return AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 180),
+                        switchInCurve: Curves.easeOutCubic,
+                        switchOutCurve: Curves.easeInCubic,
+                        transitionBuilder: (child, animation) => FadeTransition(
+                          opacity: animation,
+                          child: child,
+                        ),
+                        child: KeyedSubtree(
+                          key: ValueKey(settingsPageIndex),
+                          child: _buildActiveSettingsPage(
+                            settingsPageIndex: settingsPageIndex,
+                            settingsState: settingsState,
+                            viewingProvider: activeViewingProvider,
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ),
               ),
@@ -327,5 +311,24 @@ class _SettingsContentState extends ConsumerState<SettingsContent> {
         ),
       );
     }
+  }
+
+  Widget _buildActiveSettingsPage({
+    required int settingsPageIndex,
+    required SettingsState settingsState,
+    required ProviderConfig viewingProvider,
+  }) {
+    return switch (settingsPageIndex) {
+      0 => _buildProviderSettings(settingsState, viewingProvider),
+      1 => _buildChatSettings(settingsState),
+      2 => _buildSearchSettings(settingsState),
+      3 => const KnowledgeSettingsPanel(),
+      4 => const PresetSettingsPage(),
+      5 => _buildDisplaySettings(),
+      6 => _buildDataSettings(),
+      7 => const LogRecordsView(),
+      8 => const UsageStatsView(),
+      _ => const SizedBox.shrink(),
+    };
   }
 }

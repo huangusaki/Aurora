@@ -1,4 +1,4 @@
-import 'package:aurora/shared/riverpod_compat.dart';
+import 'package:aurora/shared/riverpod_legacy.dart';
 import 'package:aurora/shared/utils/app_log_repository.dart';
 import 'package:aurora/shared/utils/app_logger.dart';
 
@@ -22,3 +22,4 @@ final filteredAppLogEntriesProvider = Provider<List<AppLogEntry>>((ref) {
       .reversed
       .toList(growable: false);
 });
+

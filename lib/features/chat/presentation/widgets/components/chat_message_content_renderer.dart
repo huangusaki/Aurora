@@ -26,11 +26,13 @@ class ChatMessageContentRenderer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        for (final block in blocks) _buildBlock(context, block),
-      ],
+    return AuroraSelectionArea(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (final block in blocks) _buildBlock(context, block),
+        ],
+      ),
     );
   }
 
@@ -43,11 +45,15 @@ class ChatMessageContentRenderer extends StatelessWidget {
             isRunning: block.isRunning,
             duration: block.duration,
             startTime: block.startTime,
+            useSelectionArea: false,
           ),
         ),
       ChatToolOutputBlock() => Padding(
           padding: const EdgeInsets.symmetric(vertical: 4),
-          child: BuildToolOutput(content: block.content),
+          child: BuildToolOutput(
+            content: block.content,
+            useSelectionArea: false,
+          ),
         ),
       ChatTextBlock() => _buildTextBlock(block),
       ChatAttachmentsBlock() => _buildAttachmentBlock(block),
@@ -90,11 +96,14 @@ class ChatMessageContentRenderer extends StatelessWidget {
           isDark: theme.brightness == Brightness.dark,
           textColor: theme.typography.body!.color!,
           animate: block.animate,
+          streamingActive: block.streamingActive,
+          useSelectionArea: false,
         ),
       );
     }
     return AuroraSelectableText(
       block.text,
+      useSelectionArea: false,
       style: TextStyle(
         fontSize: 14,
         height: 1.5,

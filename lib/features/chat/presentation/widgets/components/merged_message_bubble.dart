@@ -1,5 +1,5 @@
 import 'package:aurora/l10n/app_localizations.dart';
-import 'package:aurora/shared/riverpod_compat.dart';
+import 'package:aurora/shared/riverpod_legacy.dart';
 import 'package:aurora/shared/theme/aurora_icons.dart';
 import 'package:fluent_ui/fluent_ui.dart' as fluent;
 import 'package:flutter/material.dart';
@@ -96,7 +96,7 @@ class _MergedMessageBubbleState extends ConsumerState<MergedMessageBubble>
           providerName: msg.provider ?? settingsState.activeProvider.name,
         );
         final transformed = chatMessageTransformers.visualTransform(
-          UiMessage.fromLegacy(msg),
+          msg.asUiMessage,
           transformContext,
         );
         await Clipboard.setData(ClipboardData(text: transformed.text));
@@ -143,7 +143,15 @@ class _MergedMessageBubbleState extends ConsumerState<MergedMessageBubble>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    final settingsState = ref.watch(settingsProvider);
+    final bubbleSettings = ref.watch(settingsProvider.select((s) => (
+          language: s.language,
+          selectedModel: s.selectedModel,
+          activeProviderName: s.activeProvider.name,
+          hasCustomBackground: s.useCustomTheme &&
+              s.backgroundImagePath != null &&
+              s.backgroundImagePath!.isNotEmpty,
+          llmAvatar: s.llmAvatar,
+        )));
     final theme = fluent.FluentTheme.of(context);
     final l10n = AppLocalizations.of(context);
     final messages = widget.group.messages;
@@ -152,35 +160,33 @@ class _MergedMessageBubbleState extends ConsumerState<MergedMessageBubble>
       orElse: () => messages.last,
     );
     final transformContext = MessageTransformContext(
-      language: settingsState.language,
-      model: headerMessage.model ?? settingsState.selectedModel,
-      providerName: headerMessage.provider ?? settingsState.activeProvider.name,
+      language: bubbleSettings.language,
+      model: headerMessage.model ?? bubbleSettings.selectedModel,
+      providerName: headerMessage.provider ?? bubbleSettings.activeProviderName,
     );
+    final uiMessages = messages.asUiMessages;
     final renderData = ChatMessageAssembler.assembleMerged(
       messages: messages,
+      uiMessages: uiMessages,
       transformContext: transformContext,
       isGenerating: widget.isGenerating,
       animateStreamingContent: widget.animateStreamingContent,
       loadingLabel: '${l10n?.deepThinking ?? 'Thinking'}...',
     );
-    final headerTextColor = (settingsState.useCustomTheme &&
-            settingsState.backgroundImagePath != null &&
-            settingsState.backgroundImagePath!.isNotEmpty)
+    final headerTextColor = bubbleSettings.hasCustomBackground
         ? Colors.white.withValues(alpha: 0.7)
         : Colors.grey[600];
-    final mobileActionColor = (settingsState.useCustomTheme &&
-            settingsState.backgroundImagePath != null &&
-            settingsState.backgroundImagePath!.isNotEmpty)
+    final mobileActionColor = bubbleSettings.hasCustomBackground
         ? Colors.white.withValues(alpha: 0.7)
         : null;
 
     return ChatMessageFrame(
       isUser: false,
-      settingsState: settingsState,
+      hasBackground: bubbleSettings.hasCustomBackground,
       theme: theme,
       isEditing: _isEditing,
       leadingAvatar: ChatMessageAvatar(
-        avatarPath: settingsState.llmAvatar,
+        avatarPath: bubbleSettings.llmAvatar,
         fallbackIcon: AuroraIcons.robot,
         backgroundColor: theme.accentColor,
       ),

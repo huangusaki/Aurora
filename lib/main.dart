@@ -4,7 +4,7 @@ import 'dart:ui' show PlatformDispatcher;
 import 'package:fluent_ui/fluent_ui.dart' as fluent;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:aurora/shared/riverpod_compat.dart';
+import 'package:aurora/shared/riverpod_legacy.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 import 'package:window_manager/window_manager.dart';
@@ -646,3 +646,4 @@ class MyApp extends ConsumerWidget {
     );
   }
 }
+

@@ -25,7 +25,10 @@ build_output.txt
 *.ipr
 *.iws
 .idea/
-tools
+tools/__pycache__/
+tools/_tmp_*
+tools/_tmp_*.zip
+tools/_tmp_*.json
 
 # VS Code settings (personal project)
 .vscode/

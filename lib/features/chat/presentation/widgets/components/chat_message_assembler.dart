@@ -11,18 +11,19 @@ class ChatMessageAssembler {
 
   static ChatMessageRenderData assembleSingle({
     required Message message,
+    required UiMessage uiMessage,
     required MessageTransformContext transformContext,
     required bool isGenerating,
     required bool animateStreamingContent,
     required String loadingLabel,
   }) {
-    final uiMessage = chatMessageTransformers.visualTransform(
-      UiMessage.fromLegacy(message),
+    final transformedUiMessage = chatMessageTransformers.visualTransform(
+      uiMessage,
       transformContext,
     );
-    final contentText = uiMessage.text;
-    final reasoningText = uiMessage.reasoning;
-    final isTool = uiMessage.role == UiRole.tool;
+    final contentText = transformedUiMessage.text;
+    final reasoningText = transformedUiMessage.reasoning;
+    final isTool = transformedUiMessage.role == UiRole.tool;
     final blocks = <ChatMessageContentBlock>[];
 
     if (!message.isUser &&
@@ -36,7 +37,7 @@ class ChatMessageAssembler {
         ChatReasoningBlock(
           content: reasoningText,
           isRunning: isGenerating,
-          duration: uiMessage.reasoningDurationSeconds,
+          duration: transformedUiMessage.reasoningDurationSeconds,
           startTime: message.timestamp,
         ),
       );
@@ -53,14 +54,15 @@ class ChatMessageAssembler {
               ? ChatTextPresentation.plain
               : ChatTextPresentation.markdown,
           animate: animateStreamingContent,
+          streamingActive: isGenerating && !message.isUser,
         ),
       );
     }
-    if (uiMessage.attachments.isNotEmpty) {
-      blocks.add(ChatAttachmentsBlock(uiMessage.attachments));
+    if (transformedUiMessage.attachments.isNotEmpty) {
+      blocks.add(ChatAttachmentsBlock(transformedUiMessage.attachments));
     }
-    if (uiMessage.images.isNotEmpty) {
-      blocks.add(ChatImagesBlock(uiMessage.images));
+    if (transformedUiMessage.images.isNotEmpty) {
+      blocks.add(ChatImagesBlock(transformedUiMessage.images));
     }
     if ((message.tokenCount != null && message.tokenCount! > 0) ||
         message.durationMs != null) {
@@ -71,6 +73,7 @@ class ChatMessageAssembler {
 
   static ChatMessageRenderData assembleMerged({
     required List<Message> messages,
+    required List<UiMessage> uiMessages,
     required MessageTransformContext transformContext,
     required bool isGenerating,
     required bool animateStreamingContent,
@@ -84,15 +87,16 @@ class ChatMessageAssembler {
     DateTime? firstReasoningTimestamp;
     bool hasActiveReasoning = false;
 
-    for (final message in messages) {
-      final reasoning = UiMessage.fromLegacy(message).reasoning;
+    for (var i = 0; i < messages.length; i++) {
+      final message = messages[i];
+      final uiMessage = uiMessages[i];
+      final reasoning = uiMessage.reasoning;
       if (reasoning == null || reasoning.isEmpty) continue;
       if (allReasoning.isNotEmpty) {
         allReasoning.write('\n\n');
       }
       allReasoning.write(reasoning);
-      totalReasoningDuration +=
-          UiMessage.fromLegacy(message).reasoningDurationSeconds ?? 0;
+      totalReasoningDuration += uiMessage.reasoningDurationSeconds ?? 0;
       firstReasoningTimestamp ??= message.timestamp;
       if (isGenerating && message == lastMessage) {
         hasActiveReasoning = true;
@@ -140,10 +144,19 @@ class ChatMessageAssembler {
       blocks.add(ChatToolOutputBlock(output));
     }
 
-    for (final message in messages) {
+    int? latestNonToolIndex;
+    for (var i = messages.length - 1; i >= 0; i -= 1) {
+      if (messages[i].role != 'tool') {
+        latestNonToolIndex = i;
+        break;
+      }
+    }
+
+    for (var i = 0; i < messages.length; i++) {
+      final message = messages[i];
       if (message.role == 'tool') continue;
       final ui = chatMessageTransformers.visualTransform(
-        UiMessage.fromLegacy(message),
+        uiMessages[i],
         transformContext,
       );
       if (ui.text.isNotEmpty) {
@@ -152,6 +165,9 @@ class ChatMessageAssembler {
             text: ui.text,
             presentation: ChatTextPresentation.markdown,
             animate: animateStreamingContent,
+            streamingActive: isGenerating &&
+                latestNonToolIndex != null &&
+                i == latestNonToolIndex,
           ),
         );
       }
@@ -163,7 +179,7 @@ class ChatMessageAssembler {
       }
     }
 
-    final latestUi = UiMessage.fromLegacy(lastMessage);
+    final latestUi = uiMessages.last;
     final latestText = chatMessageTransformers
         .visualTransform(latestUi, transformContext)
         .text;

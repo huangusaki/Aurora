@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 
-import 'package:aurora/shared/riverpod_compat.dart';
+import 'package:aurora/shared/riverpod_legacy.dart';
 import 'package:aurora/shared/services/mcp/mcp_client_session.dart';
 import 'package:aurora/shared/utils/platform_utils.dart';
 
@@ -591,3 +591,4 @@ final mcpConnectionProvider =
   final notifier = McpConnectionNotifier();
   return notifier;
 });
+

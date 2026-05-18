@@ -165,7 +165,7 @@ class _ChatGenerationOrchestrator {
     var turnCompletionTokens = 0;
     var turnReasoningTokens = 0;
     var turnTokenCount = 0;
-    var uiMsg = UiMessage.fromLegacy(aiMsg);
+    var uiMsg = aiMsg.asUiMessage;
 
     final responseStream = _requestContext.llmService.streamResponse(
       _requestContext.messagesForApi,
@@ -371,7 +371,7 @@ class _ChatGenerationOrchestrator {
       providerName: _requestContext.currentProviderName,
     );
     aiMsg = chatMessageTransformers
-        .onGenerationFinish(UiMessage.fromLegacy(aiMsg), context)
+        .onGenerationFinish(aiMsg.asUiMessage, context)
         .toLegacy();
 
     final finalizeInstruction = _requestContext.settings.language == 'zh'

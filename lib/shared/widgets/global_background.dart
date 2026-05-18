@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:aurora/shared/riverpod_compat.dart';
+import 'package:aurora/shared/riverpod_legacy.dart';
 import '../../features/settings/presentation/settings_provider.dart';
 
 class GlobalBackground extends ConsumerWidget {
@@ -80,3 +80,4 @@ class _GlobalBackgroundConfig {
     );
   }
 }
+

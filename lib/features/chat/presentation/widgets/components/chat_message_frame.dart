@@ -1,4 +1,3 @@
-import 'package:aurora/features/settings/presentation/settings_provider.dart';
 import 'package:aurora/shared/utils/platform_utils.dart';
 import 'package:fluent_ui/fluent_ui.dart' as fluent;
 import 'package:flutter/material.dart';
@@ -7,7 +6,7 @@ class ChatMessageFrame extends StatelessWidget {
   const ChatMessageFrame({
     super.key,
     required this.isUser,
-    required this.settingsState,
+    required this.hasBackground,
     required this.theme,
     required this.body,
     this.header,
@@ -27,7 +26,7 @@ class ChatMessageFrame extends StatelessWidget {
   });
 
   final bool isUser;
-  final SettingsState settingsState;
+  final bool hasBackground;
   final fluent.FluentThemeData theme;
   final Widget body;
   final Widget? header;
@@ -45,14 +44,9 @@ class ChatMessageFrame extends StatelessWidget {
   final EdgeInsetsGeometry? desktopActionsPadding;
   final EdgeInsetsGeometry? mobileActionsPadding;
 
-  bool get _hasBackground =>
-      settingsState.useCustomTheme &&
-      settingsState.backgroundImagePath != null &&
-      settingsState.backgroundImagePath!.isNotEmpty;
-
   @override
   Widget build(BuildContext context) {
-    final cardColor = _hasBackground
+    final cardColor = hasBackground
         ? theme.cardColor.withValues(alpha: 0.55)
         : theme.cardColor;
 

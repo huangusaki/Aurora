@@ -1,7 +1,7 @@
 import 'package:fluent_ui/fluent_ui.dart' as fluent;
 import 'package:aurora/shared/theme/aurora_icons.dart';
 import 'package:flutter/material.dart';
-import 'package:aurora/shared/riverpod_compat.dart';
+import 'package:aurora/shared/riverpod_legacy.dart';
 import 'package:super_clipboard/super_clipboard.dart';
 import 'package:aurora/shared/widgets/aurora_dropdown.dart';
 import 'package:aurora/shared/widgets/aurora_selection.dart';
@@ -406,3 +406,4 @@ class _TranslationContentState extends ConsumerState<TranslationContent> {
     );
   }
 }
+

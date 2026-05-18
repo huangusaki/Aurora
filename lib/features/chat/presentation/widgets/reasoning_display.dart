@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:aurora/l10n/app_localizations.dart';
 
-import 'package:aurora/shared/riverpod_compat.dart';
+import 'package:aurora/shared/riverpod_legacy.dart';
 import 'package:aurora/features/settings/presentation/settings_provider.dart';
 
 class ReasoningDisplay extends ConsumerStatefulWidget {
@@ -14,12 +14,14 @@ class ReasoningDisplay extends ConsumerStatefulWidget {
   final bool isRunning;
   final double? duration;
   final DateTime? startTime;
+  final bool useSelectionArea;
   const ReasoningDisplay({
     super.key,
     required this.content,
     this.isRunning = false,
     this.duration,
     this.startTime,
+    this.useSelectionArea = true,
   });
   @override
   ConsumerState<ReasoningDisplay> createState() => _ReasoningDisplayState();
@@ -214,6 +216,8 @@ class _ReasoningDisplayState extends ConsumerState<ReasoningDisplay>
                         const SizedBox(height: 8),
                         AuroraSelectableText(
                           widget.content,
+                          useSelectionArea:
+                              widget.useSelectionArea && !widget.isRunning,
                           style: TextStyle(
                             fontSize: 13,
                             height: 1.5,

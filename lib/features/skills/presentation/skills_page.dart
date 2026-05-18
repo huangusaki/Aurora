@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:aurora/shared/services/provider_display_metadata.dart';
 import 'package:fluent_ui/fluent_ui.dart' as fluent;
 import 'package:flutter/material.dart';
-import 'package:aurora/shared/riverpod_compat.dart';
+import 'package:aurora/shared/riverpod_legacy.dart';
 import 'package:aurora/shared/utils/platform_utils.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:aurora/l10n/app_localizations.dart';
@@ -787,3 +787,4 @@ class _SkillSettingsPageState extends ConsumerState<SkillSettingsPage> {
     }
   }
 }
+

@@ -1,8 +1,5 @@
-import 'dart:async';
-import 'dart:convert';
-
 import 'package:aurora/l10n/app_localizations.dart';
-import 'package:aurora/shared/riverpod_compat.dart';
+import 'package:aurora/shared/riverpod_legacy.dart';
 import 'package:aurora/shared/theme/aurora_icons.dart';
 import 'package:aurora/shared/widgets/aurora_bottom_sheet.dart';
 import 'package:aurora/shared/widgets/aurora_notice.dart';
@@ -11,7 +8,9 @@ import 'package:flutter/material.dart';
 import '../../settings/presentation/widgets/mobile_settings_widgets.dart';
 import '../domain/mcp_server_config.dart';
 import 'mcp_connection_provider.dart';
+import 'mcp_presentation_utils.dart';
 import 'mcp_server_provider.dart';
+import 'mcp_settings_actions.dart';
 
 class MobileMcpSettingsPage extends ConsumerStatefulWidget {
   final VoidCallback? onBack;
@@ -33,38 +32,30 @@ class _MobileMcpSettingsPageState extends ConsumerState<MobileMcpSettingsPage> {
     });
   }
 
-  String _statusLabel(AppLocalizations l10n, McpConnectionStatus status) {
-    switch (status) {
-      case McpConnectionStatus.ready:
-        return l10n.mcpStatusConnected;
-      case McpConnectionStatus.connecting:
-        return l10n.mcpStatusConnecting;
-      case McpConnectionStatus.error:
-        return l10n.error;
-      case McpConnectionStatus.disconnected:
-        return l10n.mcpStatusDisconnected;
-    }
-  }
-
   Future<void> _testServer(BuildContext context, McpServerConfig server) async {
-    setState(() => _testingServerIds.add(server.id));
-    final result =
-        await ref.read(mcpConnectionProvider.notifier).testConnection(server);
-    if (!context.mounted) return;
-    setState(() => _testingServerIds.remove(server.id));
-
     final l10n = AppLocalizations.of(context)!;
-    final toolNames = result.tools
-        .map((t) => t.name)
-        .where((s) => s.isNotEmpty)
-        .toList()
-      ..sort();
-    final stderr = result.stderrTail.join('\n').trim();
-    final content = result.success
-        ? '${l10n.mcpToolsCount}: ${toolNames.length}\n\n${toolNames.isEmpty ? l10n.none : toolNames.join('\n')}${stderr.isNotEmpty ? '\n\n${l10n.mcpStderrTail}\n$stderr' : ''}'
-        : '${l10n.error}: ${result.error ?? l10n.unknown}${stderr.isNotEmpty ? '\n\n${l10n.mcpStderrTail}\n$stderr' : ''}';
+    setState(() => _testingServerIds.add(server.id));
+    McpConnectionTestResult? result;
+    try {
+      result = await ref.read(mcpConnectionProvider.notifier).testConnection(
+            server,
+          );
+    } catch (error) {
+      if (context.mounted) {
+        showAuroraNotice(
+          context,
+          '${l10n.error}: $error',
+          icon: AuroraIcons.error,
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _testingServerIds.remove(server.id));
+      }
+    }
 
-    if (!context.mounted) return;
+    if (!context.mounted || result == null) return;
+    final content = formatMcpConnectionTestContent(l10n, result);
     await AuroraBottomSheet.show(
       context: context,
       builder: (ctx) => Padding(
@@ -114,39 +105,20 @@ class _MobileMcpSettingsPageState extends ConsumerState<MobileMcpSettingsPage> {
     McpServerTransport transport = server?.transport ?? McpServerTransport.http;
     final commandController =
         TextEditingController(text: server?.command ?? '');
-    final argsController =
-        TextEditingController(text: (server?.args ?? const []).join('\n'));
+    final argsController = TextEditingController(
+      text: encodeMcpArgs(server?.args ?? const []),
+    );
     final cwdController = TextEditingController(text: server?.cwd ?? '');
     final envController = TextEditingController(
-      text: (server?.env.entries.map((e) => '${e.key}=${e.value}').toList() ??
-              const <String>[])
-          .join('\n'),
+      text: encodeMcpKeyValueLines(server?.env ?? const {}),
     );
     final urlController = TextEditingController(text: server?.url ?? '');
     final headersController = TextEditingController(
-      text:
-          (server?.headers.entries.map((e) => '${e.key}=${e.value}').toList() ??
-                  const <String>[])
-              .join('\n'),
+      text: encodeMcpKeyValueLines(server?.headers ?? const {}),
     );
 
     bool enabled = server?.enabled ?? true;
     bool runInShell = server?.runInShell ?? false;
-
-    Map<String, String> parseKeyValue(String raw) {
-      final result = <String, String>{};
-      for (final line in const LineSplitter().convert(raw)) {
-        final trimmed = line.trim();
-        if (trimmed.isEmpty) continue;
-        final idx = trimmed.indexOf('=');
-        if (idx <= 0) continue;
-        final key = trimmed.substring(0, idx).trim();
-        final value = trimmed.substring(idx + 1).trim();
-        if (key.isEmpty) continue;
-        result[key] = value;
-      }
-      return result;
-    }
 
     await AuroraBottomSheet.show(
       context: context,
@@ -334,16 +306,13 @@ class _MobileMcpSettingsPageState extends ConsumerState<MobileMcpSettingsPage> {
                             }
                           }
 
-                          final args = const LineSplitter()
-                              .convert(argsController.text)
-                              .map((s) => s.trim())
-                              .where((s) => s.isNotEmpty)
-                              .toList(growable: false);
+                          final args = parseMcpLineList(argsController.text);
                           final cwd = cwdController.text.trim().isEmpty
                               ? null
                               : cwdController.text.trim();
-                          final env = parseKeyValue(envController.text);
-                          final headers = parseKeyValue(headersController.text);
+                          final env = parseMcpKeyValueLines(envController.text);
+                          final headers =
+                              parseMcpKeyValueLines(headersController.text);
 
                           if (server == null) {
                             await ref
@@ -403,12 +372,7 @@ class _MobileMcpSettingsPageState extends ConsumerState<MobileMcpSettingsPage> {
     required McpConnectionInfo info,
   }) async {
     final l10n = AppLocalizations.of(context)!;
-    final summary = server.transport == McpServerTransport.http
-        ? server.url.trim()
-        : [
-            server.command,
-            ...server.args,
-          ].where((s) => s.trim().isNotEmpty).join(' ');
+    final summary = summarizeMcpServer(server);
     final stderrText = info.stderrTail.join('\n').trim();
 
     await AuroraBottomSheet.show(
@@ -436,7 +400,7 @@ class _MobileMcpSettingsPageState extends ConsumerState<MobileMcpSettingsPage> {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    '${l10n.mcpStatus}: ${_statusLabel(l10n, info.status)}',
+                    '${l10n.mcpStatus}: ${mcpStatusLabel(l10n, info.status)}',
                     style: Theme.of(ctx).textTheme.bodyMedium,
                   ),
                   if (info.lastError != null &&
@@ -496,24 +460,12 @@ class _MobileMcpSettingsPageState extends ConsumerState<MobileMcpSettingsPage> {
                         showChevron: false,
                         onTap: () async {
                           Navigator.pop(ctx);
-                          try {
-                            await ref
-                                .read(mcpConnectionProvider.notifier)
-                                .listTools(server, forceRefresh: true);
-                            if (!context.mounted) return;
-                            showAuroraNotice(
-                              context,
-                              l10n.mcpRefreshToolsCacheSuccess,
-                              icon: AuroraIcons.success,
-                            );
-                          } catch (e) {
-                            if (!context.mounted) return;
-                            showAuroraNotice(
-                              context,
-                              '${l10n.error}: $e',
-                              icon: AuroraIcons.error,
-                            );
-                          }
+                          await refreshMcpToolsCache(
+                            context: context,
+                            ref: ref,
+                            l10n: l10n,
+                            server: server,
+                          );
                         },
                       ),
                       MobileSettingsTile(
@@ -522,18 +474,12 @@ class _MobileMcpSettingsPageState extends ConsumerState<MobileMcpSettingsPage> {
                         showChevron: false,
                         onTap: () async {
                           Navigator.pop(ctx);
-                          try {
-                            await ref
-                                .read(mcpConnectionProvider.notifier)
-                                .reconnect(server);
-                          } catch (e) {
-                            if (!context.mounted) return;
-                            showAuroraNotice(
-                              context,
-                              '${l10n.error}: $e',
-                              icon: AuroraIcons.error,
-                            );
-                          }
+                          await reconnectMcpServer(
+                            context: context,
+                            ref: ref,
+                            l10n: l10n,
+                            server: server,
+                          );
                         },
                       ),
                       MobileSettingsTile(
@@ -542,9 +488,10 @@ class _MobileMcpSettingsPageState extends ConsumerState<MobileMcpSettingsPage> {
                         showChevron: false,
                         onTap: () async {
                           Navigator.pop(ctx);
-                          await ref
-                              .read(mcpConnectionProvider.notifier)
-                              .disconnect(server.id);
+                          await disconnectMcpServer(
+                            ref: ref,
+                            serverId: server.id,
+                          );
                         },
                       ),
                       MobileSettingsTile(
@@ -570,15 +517,16 @@ class _MobileMcpSettingsPageState extends ConsumerState<MobileMcpSettingsPage> {
                           );
                           if (ok != true) return;
                           if (!ctx.mounted) return;
-                          Navigator.pop(ctx);
-                          await ref
-                              .read(mcpServerProvider.notifier)
-                              .deleteServer(server.id);
-                          if (!context.mounted) return;
-                          showAuroraNotice(
-                            context,
-                            l10n.deleteSuccess,
-                            icon: AuroraIcons.success,
+                          await deleteMcpServer(
+                            context: context,
+                            onDeleted: () {
+                              if (ctx.mounted) {
+                                Navigator.pop(ctx);
+                              }
+                            },
+                            ref: ref,
+                            l10n: l10n,
+                            serverId: server.id,
                           );
                         },
                       ),
@@ -626,13 +574,8 @@ class _MobileMcpSettingsPageState extends ConsumerState<MobileMcpSettingsPage> {
                   const McpConnectionInfo(
                     status: McpConnectionStatus.disconnected,
                   );
-              final summary = server.transport == McpServerTransport.http
-                  ? server.url.trim()
-                  : [
-                      server.command,
-                      ...server.args,
-                    ].where((s) => s.trim().isNotEmpty).join(' ');
-              final status = _statusLabel(l10n, info.status);
+              final summary = summarizeMcpServer(server);
+              final status = mcpStatusLabel(l10n, info.status);
               final subtitle =
                   '${summary.isEmpty ? l10n.none : summary}\n$status';
               final isTesting = _testingServerIds.contains(server.id);

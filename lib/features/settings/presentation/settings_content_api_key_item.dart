@@ -17,16 +17,18 @@ class _ApiKeyItem extends StatefulWidget {
 class _ApiKeyItemState extends State<_ApiKeyItem> {
   late TextEditingController _controller;
   bool _isVisible = false;
+  bool _isDirty = false;
+  late String _lastCommittedValue;
   final FocusNode _focusNode = FocusNode();
 
   @override
   void initState() {
     super.initState();
+    _lastCommittedValue = widget.apiKey;
     _controller = TextEditingController(text: widget.apiKey);
     _focusNode.addListener(() {
       if (!_focusNode.hasFocus) {
-        // Optional: Trigger update on blur if we want to be safe,
-        // but onChanged should handle it.
+        _commitDraft();
       }
     });
   }
@@ -34,9 +36,53 @@ class _ApiKeyItemState extends State<_ApiKeyItem> {
   @override
   void didUpdateWidget(_ApiKeyItem oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.apiKey != _controller.text) {
-      _controller.text = widget.apiKey;
+    if (_focusNode.hasFocus && _isDirty) {
+      return;
     }
+    _lastCommittedValue = widget.apiKey;
+    if (widget.apiKey != _controller.text) {
+      _controller.value = _controller.value.copyWith(
+        text: widget.apiKey,
+        selection: TextSelection.collapsed(offset: widget.apiKey.length),
+        composing: TextRange.empty,
+      );
+    }
+    if (_isDirty) {
+      setState(() {
+        _isDirty = false;
+      });
+    }
+  }
+
+  void _handleChanged(String value) {
+    final nextDirty = value != _lastCommittedValue;
+    if (nextDirty == _isDirty) {
+      return;
+    }
+    setState(() {
+      _isDirty = nextDirty;
+    });
+  }
+
+  void _commitDraft() {
+    final nextValue = _controller.text;
+    if (nextValue == _lastCommittedValue) {
+      if (_isDirty) {
+        setState(() {
+          _isDirty = false;
+        });
+      }
+      return;
+    }
+
+    _lastCommittedValue = nextValue;
+    widget.onUpdate(nextValue);
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _isDirty = false;
+    });
   }
 
   @override
@@ -53,7 +99,9 @@ class _ApiKeyItemState extends State<_ApiKeyItem> {
       controller: _controller,
       focusNode: _focusNode,
       obscureText: !_isVisible,
-      onChanged: widget.onUpdate,
+      onChanged: _handleChanged,
+      onSubmitted: (_) => _commitDraft(),
+      onTapOutside: (_) => _commitDraft(),
       placeholder: l10n.apiKeyPlaceholder,
       suffix: fluent.IconButton(
         icon: fluent.Icon(

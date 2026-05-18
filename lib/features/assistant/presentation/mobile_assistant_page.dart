@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:aurora/shared/riverpod_compat.dart';
+import 'package:aurora/shared/riverpod_legacy.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 import 'assistant_provider.dart';
 import '../domain/assistant.dart';
@@ -137,4 +137,5 @@ class MobileAssistantPage extends ConsumerWidget {
     return AssistantAvatar(assistant: assistant, size: size);
   }
 }
+
 

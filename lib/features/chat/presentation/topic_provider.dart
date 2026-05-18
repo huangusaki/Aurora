@@ -1,4 +1,4 @@
-import 'package:aurora/shared/riverpod_compat.dart';
+import 'package:aurora/shared/riverpod_legacy.dart';
 import 'chat_provider.dart';
 import '../data/topic_entity.dart';
 
@@ -44,4 +44,5 @@ final topicNotifierProvider =
     StateNotifierProvider<TopicNotifier, AsyncValue<void>>((ref) {
   return TopicNotifier(ref);
 });
+
 

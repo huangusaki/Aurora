@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:aurora/shared/riverpod_compat.dart';
+import 'package:aurora/shared/riverpod_legacy.dart';
 import '../domain/provider_route_config.dart';
 import 'settings_provider.dart';
 import 'package:aurora/l10n/app_localizations.dart';
@@ -10,6 +10,7 @@ import 'package:aurora/shared/widgets/aurora_notice.dart';
 import 'model_display_name.dart';
 import 'provider_route_labels.dart';
 import 'settings_config_draft.dart';
+import 'settings_feedback.dart';
 import 'widgets/mobile_settings_widgets.dart';
 
 class MobileSettingsPage extends ConsumerStatefulWidget {
@@ -20,45 +21,25 @@ class MobileSettingsPage extends ConsumerStatefulWidget {
 }
 
 class _MobileSettingsPageState extends ConsumerState<MobileSettingsPage> {
-  final TextEditingController _apiKeyController = TextEditingController();
-  final TextEditingController _baseUrlController = TextEditingController();
-  final TextEditingController _userNameController = TextEditingController();
-
   final Map<String, bool> _enabledModelsExpandedByProvider = {};
   final Map<String, bool> _disabledModelsExpandedByProvider = {};
+
   @override
-  void dispose() {
-    _apiKeyController.dispose();
-    _baseUrlController.dispose();
-    _userNameController.dispose();
-    super.dispose();
-  }
+  void dispose() => super.dispose();
 
   Future<void> _refreshModelsWithNotice(AppLocalizations l10n) async {
     final success = await ref.read(settingsProvider.notifier).fetchModels();
     if (!mounted) return;
-
-    if (success) {
-      showAuroraNotice(
-        context,
-        '${l10n.fetchModelList} ${l10n.success}',
-        icon: Icons.check_circle_outline_rounded,
-      );
-      return;
-    }
-
-    final errorMessage = ref.read(settingsProvider).error;
-    final message = (errorMessage?.isNotEmpty ?? false)
-        ? '${l10n.fetchModelList} ${l10n.failed}: $errorMessage'
-        : '${l10n.fetchModelList} ${l10n.failed}';
-    showAuroraNotice(
+    showModelRefreshNotice(
       context,
-      message,
-      icon: Icons.error_outline_rounded,
+      l10n: l10n,
+      errorMessage: ref.read(settingsProvider).error,
+      success: success,
+      successIcon: Icons.check_circle_outline_rounded,
+      errorIcon: Icons.error_outline_rounded,
     );
   }
 
-  @override
   @override
   Widget build(BuildContext context) {
     final settingsState = ref.watch(settingsProvider);
@@ -130,6 +111,25 @@ class _MobileSettingsPageState extends ConsumerState<MobileSettingsPage> {
                 onTap: () =>
                     _showProviderProtocolPicker(context, viewingProvider),
               ),
+              if (viewingProvider.providerProtocol ==
+                  ProviderProtocol.openaiCompatible)
+                MobileSettingsTile(
+                  leading: const Icon(Icons.stream_rounded),
+                  title: l10n.protocolPresetOpenaiResponses,
+                  subtitle: '/v1/responses',
+                  trailing: Switch.adaptive(
+                    value: usesOpenAiResponsesForChat(viewingProvider),
+                    onChanged: (value) {
+                      ref
+                          .read(settingsProvider.notifier)
+                          .setOpenAiCompatUseResponses(
+                            viewingProvider.id,
+                            value,
+                          );
+                    },
+                  ),
+                  showChevron: false,
+                ),
               MobileSettingsTile(
                 leading: const Icon(Icons.power_settings_new),
                 title: l10n.enabledStatus,

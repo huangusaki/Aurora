@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:aurora/shared/riverpod_compat.dart';
+import 'package:aurora/shared/riverpod_legacy.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../../shared/utils/avatar_cropper.dart';
@@ -383,3 +383,4 @@ class _MobileUserPageState extends ConsumerState<MobileUserPage> {
     );
   }
 }
+

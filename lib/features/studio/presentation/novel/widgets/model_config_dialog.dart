@@ -1,7 +1,7 @@
 import 'package:aurora/shared/theme/aurora_icons.dart';
 import 'dart:async';
 import 'package:fluent_ui/fluent_ui.dart';
-import 'package:aurora/shared/riverpod_compat.dart';
+import 'package:aurora/shared/riverpod_legacy.dart';
 import 'package:aurora/features/settings/presentation/settings_provider.dart';
 import 'package:aurora/l10n/app_localizations.dart';
 import 'package:aurora/shared/widgets/aurora_dropdown.dart';
@@ -659,3 +659,4 @@ class _ModelConfigDialogState extends ConsumerState<ModelConfigDialog> {
     _showToast(l10n.presetLoaded(preset.name), AuroraIcons.check);
   }
 }
+

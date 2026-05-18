@@ -1,8 +1,5 @@
-import 'dart:async';
-import 'dart:convert';
-
 import 'package:aurora/l10n/app_localizations.dart';
-import 'package:aurora/shared/riverpod_compat.dart';
+import 'package:aurora/shared/riverpod_legacy.dart';
 import 'package:aurora/shared/theme/aurora_icons.dart';
 import 'package:aurora/shared/utils/platform_utils.dart';
 import 'package:aurora/shared/widgets/aurora_notice.dart';
@@ -13,7 +10,9 @@ import 'package:flutter/services.dart';
 
 import '../domain/mcp_server_config.dart';
 import 'mcp_connection_provider.dart';
+import 'mcp_presentation_utils.dart';
 import 'mcp_server_provider.dart';
+import 'mcp_settings_actions.dart';
 
 class McpSettingsPage extends ConsumerStatefulWidget {
   const McpSettingsPage({super.key});
@@ -141,19 +140,6 @@ class _McpSettingsPageState extends ConsumerState<McpSettingsPage> {
     );
   }
 
-  String _statusLabel(AppLocalizations l10n, McpConnectionStatus status) {
-    switch (status) {
-      case McpConnectionStatus.ready:
-        return l10n.mcpStatusConnected;
-      case McpConnectionStatus.connecting:
-        return l10n.mcpStatusConnecting;
-      case McpConnectionStatus.error:
-        return l10n.error;
-      case McpConnectionStatus.disconnected:
-        return l10n.mcpStatusDisconnected;
-    }
-  }
-
   Color _statusColor(fluent.FluentThemeData theme, McpConnectionStatus status) {
     switch (status) {
       case McpConnectionStatus.ready:
@@ -173,7 +159,7 @@ class _McpSettingsPageState extends ConsumerState<McpSettingsPage> {
     McpConnectionInfo info,
   ) {
     final color = _statusColor(theme, info.status);
-    final label = _statusLabel(l10n, info.status);
+    final label = mcpStatusLabel(l10n, info.status);
     final badge = Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
@@ -209,12 +195,7 @@ class _McpSettingsPageState extends ConsumerState<McpSettingsPage> {
     McpConnectionInfo info,
   ) {
     final isTesting = _testingServerIds.contains(server.id);
-    final commandSummary = server.transport == McpServerTransport.http
-        ? server.url.trim()
-        : [
-            server.command,
-            ...server.args,
-          ].where((s) => s.trim().isNotEmpty).join(' ');
+    final commandSummary = summarizeMcpServer(server);
     final lastCallMs = info.lastCallDurationMs;
 
     return Row(
@@ -343,12 +324,11 @@ class _McpSettingsPageState extends ConsumerState<McpSettingsPage> {
       );
     }
 
-    final envText = server.env.isEmpty
-        ? l10n.none
-        : server.env.entries.map((e) => '${e.key}=${e.value}').join('\n');
+    final envText =
+        server.env.isEmpty ? l10n.none : encodeMcpKeyValueLines(server.env);
     final headersText = server.headers.isEmpty
         ? l10n.none
-        : server.headers.entries.map((e) => '${e.key}=${e.value}').join('\n');
+        : encodeMcpKeyValueLines(server.headers);
     final stderrText = info.stderrTail.join('\n').trim();
 
     return Container(
@@ -367,14 +347,16 @@ class _McpSettingsPageState extends ConsumerState<McpSettingsPage> {
             kv(l10n.mcpHeaders, headersText),
           ] else ...[
             kv(l10n.mcpCommand, server.command),
-            kv(l10n.mcpArgs,
-                server.args.isEmpty ? l10n.none : server.args.join('\n')),
+            kv(
+              l10n.mcpArgs,
+              server.args.isEmpty ? l10n.none : encodeMcpArgs(server.args),
+            ),
             kv(l10n.mcpCwd, server.cwd ?? l10n.none),
             kv(l10n.mcpEnv, envText),
             kv(l10n.mcpRunInShell, server.runInShell ? l10n.yes : l10n.no),
           ],
           const fluent.Divider(),
-          kv(l10n.mcpStatus, _statusLabel(l10n, info.status)),
+          kv(l10n.mcpStatus, mcpStatusLabel(l10n, info.status)),
           kv(
             l10n.mcpLastError,
             (info.lastError == null || info.lastError!.trim().isEmpty)
@@ -421,51 +403,26 @@ class _McpSettingsPageState extends ConsumerState<McpSettingsPage> {
             runSpacing: 8,
             children: [
               fluent.Button(
-                onPressed: () async {
-                  try {
-                    await ref
-                        .read(mcpConnectionProvider.notifier)
-                        .listTools(server, forceRefresh: true);
-                    if (!context.mounted) return;
-                    showAuroraNotice(
-                      context,
-                      l10n.mcpRefreshToolsCacheSuccess,
-                      icon: AuroraIcons.success,
-                    );
-                  } catch (e) {
-                    if (!context.mounted) return;
-                    showAuroraNotice(
-                      context,
-                      '${l10n.error}: $e',
-                      icon: AuroraIcons.error,
-                    );
-                  }
-                },
+                onPressed: () => refreshMcpToolsCache(
+                  context: context,
+                  ref: ref,
+                  l10n: l10n,
+                  server: server,
+                ),
                 child: Text(l10n.mcpRefreshToolsCache),
               ),
               fluent.Button(
-                onPressed: () async {
-                  try {
-                    await ref
-                        .read(mcpConnectionProvider.notifier)
-                        .reconnect(server);
-                  } catch (e) {
-                    if (!context.mounted) return;
-                    showAuroraNotice(
-                      context,
-                      '${l10n.error}: $e',
-                      icon: AuroraIcons.error,
-                    );
-                  }
-                },
+                onPressed: () => reconnectMcpServer(
+                  context: context,
+                  ref: ref,
+                  l10n: l10n,
+                  server: server,
+                ),
                 child: Text(l10n.mcpReconnect),
               ),
               fluent.Button(
-                onPressed: () async {
-                  await ref
-                      .read(mcpConnectionProvider.notifier)
-                      .disconnect(server.id);
-                },
+                onPressed: () =>
+                    disconnectMcpServer(ref: ref, serverId: server.id),
                 child: Text(l10n.mcpDisconnect),
               ),
             ],
@@ -520,11 +477,27 @@ class _McpSettingsPageState extends ConsumerState<McpSettingsPage> {
   }
 
   Future<void> _testServer(BuildContext context, McpServerConfig server) async {
+    final l10n = AppLocalizations.of(context)!;
     setState(() => _testingServerIds.add(server.id));
-    final result =
-        await ref.read(mcpConnectionProvider.notifier).testConnection(server);
-    if (!context.mounted) return;
-    setState(() => _testingServerIds.remove(server.id));
+    McpConnectionTestResult? result;
+    try {
+      result = await ref.read(mcpConnectionProvider.notifier).testConnection(
+            server,
+          );
+    } catch (error) {
+      if (context.mounted) {
+        showAuroraNotice(
+          context,
+          '${l10n.error}: $error',
+          icon: AuroraIcons.error,
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _testingServerIds.remove(server.id));
+      }
+    }
+    if (!context.mounted || result == null) return;
     _showTestResultDialog(context, server, result);
   }
 
@@ -534,99 +507,35 @@ class _McpSettingsPageState extends ConsumerState<McpSettingsPage> {
     McpConnectionTestResult result,
   ) {
     final l10n = AppLocalizations.of(context)!;
+    final content = formatMcpConnectionTestContent(l10n, result);
     showDialog(
       context: context,
-      builder: (ctx) {
-        final body = result.success
-            ? _formatToolsResult(l10n, result)
-            : _formatErrorResult(l10n, result);
-        return fluent.ContentDialog(
-          title: Text('${l10n.mcpTestResultTitle}: ${server.name}'),
-          content: SizedBox(
-            width: 520,
-            child: SingleChildScrollView(child: body),
-          ),
-          actions: [
-            fluent.Button(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text(l10n.close),
+      builder: (ctx) => fluent.ContentDialog(
+        title: Text('${l10n.mcpTestResultTitle}: ${server.name}'),
+        content: SizedBox(
+          width: 520,
+          child: SingleChildScrollView(
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.03),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: AuroraSelectableText(
+                content,
+                style: const TextStyle(fontFamily: 'Consolas', fontSize: 13),
+              ),
             ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _formatToolsResult(
-      AppLocalizations l10n, McpConnectionTestResult result) {
-    final tools = result.tools;
-    final toolNames =
-        tools.map((t) => t.name).where((s) => s.isNotEmpty).toList()..sort();
-    final stderr = result.stderrTail.join('\n').trim();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('${l10n.mcpToolsCount}: ${toolNames.length}'),
-        const SizedBox(height: 8),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.03),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: AuroraSelectableText(
-            toolNames.isEmpty ? l10n.none : toolNames.join('\n'),
-            style: const TextStyle(fontFamily: 'Consolas', fontSize: 13),
           ),
         ),
-        if (stderr.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          Text(l10n.mcpStderr),
-          const SizedBox(height: 6),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.03),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: AuroraSelectableText(
-              stderr,
-              style: const TextStyle(fontFamily: 'Consolas', fontSize: 13),
-            ),
+        actions: [
+          fluent.Button(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(l10n.close),
           ),
         ],
-      ],
-    );
-  }
-
-  Widget _formatErrorResult(
-      AppLocalizations l10n, McpConnectionTestResult result) {
-    final stderr = result.stderrTail.join('\n').trim();
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('${l10n.error}: ${result.error ?? l10n.unknown}'),
-        if (stderr.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          Text(l10n.mcpStderr),
-          const SizedBox(height: 6),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.03),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: AuroraSelectableText(
-              stderr,
-              style: const TextStyle(fontFamily: 'Consolas', fontSize: 13),
-            ),
-          ),
-        ],
-      ],
+      ),
     );
   }
 
@@ -645,13 +554,17 @@ class _McpSettingsPageState extends ConsumerState<McpSettingsPage> {
           ),
           fluent.FilledButton(
             onPressed: () async {
-              await ref
-                  .read(mcpServerProvider.notifier)
-                  .deleteServer(server.id);
-              if (!ctx.mounted) return;
-              Navigator.pop(ctx);
-              showAuroraNotice(context, l10n.deleteSuccess,
-                  icon: AuroraIcons.success);
+              await deleteMcpServer(
+                context: context,
+                onDeleted: () {
+                  if (ctx.mounted) {
+                    Navigator.pop(ctx);
+                  }
+                },
+                ref: ref,
+                l10n: l10n,
+                serverId: server.id,
+              );
             },
             child: Text(l10n.delete),
           ),
@@ -670,20 +583,17 @@ class _McpSettingsPageState extends ConsumerState<McpSettingsPage> {
         server?.transport ?? McpServerTransport.stdio;
     final commandController =
         TextEditingController(text: server?.command ?? '');
-    final argsController =
-        TextEditingController(text: (server?.args ?? const []).join('\n'));
+    final argsController = TextEditingController(
+      text: encodeMcpArgs(server?.args ?? const []),
+    );
     final cwdController = TextEditingController(text: server?.cwd ?? '');
     final envController = TextEditingController(
-        text: (server?.env.entries.map((e) => '${e.key}=${e.value}').toList() ??
-                const <String>[])
-            .join('\n'));
+      text: encodeMcpKeyValueLines(server?.env ?? const {}),
+    );
     final urlController = TextEditingController(text: server?.url ?? '');
     final headersController = TextEditingController(
-        text: (server?.headers.entries
-                    .map((e) => '${e.key}=${e.value}')
-                    .toList() ??
-                const <String>[])
-            .join('\n'));
+      text: encodeMcpKeyValueLines(server?.headers ?? const {}),
+    );
 
     bool enabled = server?.enabled ?? true;
     bool runInShell = server?.runInShell ?? PlatformUtils.isWindows;
@@ -826,7 +736,7 @@ class _McpSettingsPageState extends ConsumerState<McpSettingsPage> {
                       );
                       return;
                     }
-                    headers = _parseKeyValueLines(headersController.text);
+                    headers = parseMcpKeyValueLines(headersController.text);
                   } else {
                     if (command.isEmpty) {
                       showAuroraNotice(
@@ -836,15 +746,11 @@ class _McpSettingsPageState extends ConsumerState<McpSettingsPage> {
                       );
                       return;
                     }
-                    args = const LineSplitter()
-                        .convert(argsController.text)
-                        .map((s) => s.trim())
-                        .where((s) => s.isNotEmpty)
-                        .toList(growable: false);
+                    args = parseMcpLineList(argsController.text);
                     cwd = cwdController.text.trim().isEmpty
                         ? null
                         : cwdController.text.trim();
-                    env = _parseKeyValueLines(envController.text);
+                    env = parseMcpKeyValueLines(envController.text);
                   }
 
                   if (server == null) {
@@ -901,20 +807,5 @@ class _McpSettingsPageState extends ConsumerState<McpSettingsPage> {
       fontWeight: FontWeight.w600,
       color: theme.resources.textFillColorSecondary,
     );
-  }
-
-  Map<String, String> _parseKeyValueLines(String raw) {
-    final result = <String, String>{};
-    for (final line in const LineSplitter().convert(raw)) {
-      final trimmed = line.trim();
-      if (trimmed.isEmpty) continue;
-      final idx = trimmed.indexOf('=');
-      if (idx <= 0) continue;
-      final key = trimmed.substring(0, idx).trim();
-      final value = trimmed.substring(idx + 1).trim();
-      if (key.isEmpty) continue;
-      result[key] = value;
-    }
-    return result;
   }
 }

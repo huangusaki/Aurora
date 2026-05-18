@@ -1,4 +1,4 @@
-import 'package:aurora/shared/riverpod_compat.dart';
+import 'package:aurora/shared/riverpod_legacy.dart';
 import 'package:uuid/uuid.dart';
 
 import '../data/mcp_server_storage.dart';
@@ -109,3 +109,4 @@ final mcpServerProvider =
     StateNotifierProvider<McpServerNotifier, McpServerState>((ref) {
   return McpServerNotifier();
 });
+

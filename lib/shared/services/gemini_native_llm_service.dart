@@ -10,9 +10,11 @@ import '../../features/settings/presentation/settings_provider.dart';
 import '../utils/app_logger.dart';
 import '../utils/file_snapshot_cache.dart';
 import '../utils/llm_stream_log_accumulator.dart';
+import 'attachment_mime.dart';
 import 'capability_route_resolver.dart';
 import 'gemini_native_endpoint.dart';
 import 'llm_service.dart';
+import 'llm_service_config.dart';
 import 'llm_transport_mode.dart';
 
 final RegExp _gemini3ImageModelPattern =
@@ -55,82 +57,6 @@ class GeminiNativeLlmService implements LLMService {
 
   Duration _resolveRequestTimeout() {
     return Duration(seconds: _settings.llmRequestTimeoutSeconds);
-  }
-
-  ProviderConfig _resolveProvider(String? providerId) {
-    if (providerId == null) {
-      return _settings.activeProvider;
-    }
-    return _settings.providers.firstWhere(
-      (provider) => provider.id == providerId,
-      orElse: () => _settings.activeProvider,
-    );
-  }
-
-  String? _resolveSelectedModel({
-    required ProviderConfig provider,
-    required String? requestedModel,
-  }) {
-    final candidate = requestedModel ?? provider.selectedModel;
-    if (candidate == null) return null;
-    final normalized = candidate.trim();
-    if (normalized.isEmpty) return null;
-    return normalized;
-  }
-
-  String _emptyApiKeyMessage() {
-    return _settings.language == 'zh'
-        ? '错误：API Key 为空。请检查设置。'
-        : 'Error: API key is empty. Please check your settings.';
-  }
-
-  String _missingModelMessage() {
-    return _settings.language == 'zh'
-        ? '错误：未选择模型。请先在设置中为当前 Provider 配置模型。'
-        : 'Error: no model selected. Please configure a model for the current provider.';
-  }
-
-  Map<String, dynamic> _buildActiveParams(
-    ProviderConfig provider,
-    String selectedModel,
-  ) {
-    final activeParams = <String, dynamic>{};
-    final isExcluded = provider.globalExcludeModels.contains(selectedModel);
-    if (!isExcluded) {
-      activeParams.addAll(provider.globalSettings);
-    }
-    final specificModelParams = provider.modelSettings[selectedModel];
-    if (specificModelParams != null) {
-      activeParams.addAll(specificModelParams);
-    }
-    return activeParams;
-  }
-
-  Map<String, dynamic> _buildProviderParams(
-    ProviderConfig provider,
-    Map<String, dynamic> activeParams,
-  ) {
-    final filteredModelParams = Map<String, dynamic>.fromEntries(
-      activeParams.entries.where((entry) => !entry.key.startsWith('_aurora_')),
-    );
-    final providerParams = Map<String, dynamic>.fromEntries(
-      provider.customParameters.entries.where((entry) {
-        final key = entry.key.toLowerCase();
-        return key != 'api_keys' &&
-            key != 'base_url' &&
-            key != 'id' &&
-            key != 'name' &&
-            key != 'models' &&
-            key != 'color' &&
-            key != 'is_custom' &&
-            key != 'is_enabled' &&
-            !entry.key.startsWith('_aurora_');
-      }),
-    );
-    final merged = <String, dynamic>{};
-    merged.addAll(providerParams);
-    merged.addAll(filteredModelParams);
-    return merged;
   }
 
   String _resolveNativeBaseUrl({
@@ -234,8 +160,12 @@ class GeminiNativeLlmService implements LLMService {
       toolChoice: toolChoice,
     );
 
-    final providerParams = _buildProviderParams(provider, activeParams);
-    requestData.addAll(providerParams);
+    requestData.addAll(
+      LlmServiceConfig.buildRequestParameters(
+        provider: provider,
+        activeParams: activeParams,
+      ),
+    );
 
     requestData.remove('model');
     requestData.remove('messages');
@@ -416,11 +346,9 @@ class GeminiNativeLlmService implements LLMService {
     final cachedParts = await _attachmentPartsCache.getOrLoad(
       attachmentPath,
       (snapshot) async {
-        final mimeType = _getMimeType(snapshot.path);
+        final mimeType = AttachmentMime.fromPath(snapshot.path);
         final filename = snapshot.fileName;
-        if (mimeType.startsWith('text/') ||
-            mimeType == 'application/json' ||
-            mimeType == 'application/xml') {
+        if (AttachmentMime.isTextLike(mimeType)) {
           try {
             final textContent = await snapshot.file.readAsString();
             return [
@@ -480,7 +408,7 @@ class GeminiNativeLlmService implements LLMService {
     if (image.startsWith('http://') || image.startsWith('https://')) {
       return {
         'fileData': {
-          'mimeType': _guessMimeTypeFromUrl(image),
+          'mimeType': AttachmentMime.guessImageFromUrl(image),
           'fileUri': image,
         }
       };
@@ -504,59 +432,6 @@ class GeminiNativeLlmService implements LLMService {
       return null;
     }
     return _DataUrlPayload(mimeType: mime, data: data);
-  }
-
-  String _guessMimeTypeFromUrl(String url) {
-    final lower = url.toLowerCase();
-    if (lower.contains('.png')) return 'image/png';
-    if (lower.contains('.jpg') || lower.contains('.jpeg')) return 'image/jpeg';
-    if (lower.contains('.webp')) return 'image/webp';
-    if (lower.contains('.gif')) return 'image/gif';
-    return 'application/octet-stream';
-  }
-
-  String _getMimeType(String path) {
-    final p = path.toLowerCase();
-    if (p.endsWith('png')) return 'image/png';
-    if (p.endsWith('jpg') || p.endsWith('jpeg')) return 'image/jpeg';
-    if (p.endsWith('webp')) return 'image/webp';
-    if (p.endsWith('gif')) return 'image/gif';
-    if (p.endsWith('bmp')) return 'image/bmp';
-    if (p.endsWith('mp3')) return 'audio/mpeg';
-    if (p.endsWith('wav')) return 'audio/wav';
-    if (p.endsWith('m4a')) return 'audio/x-m4a';
-    if (p.endsWith('flac')) return 'audio/flac';
-    if (p.endsWith('ogg')) return 'audio/ogg';
-    if (p.endsWith('opus')) return 'audio/opus';
-    if (p.endsWith('aac')) return 'audio/aac';
-    if (p.endsWith('mp4')) return 'video/mp4';
-    if (p.endsWith('mov')) return 'video/quicktime';
-    if (p.endsWith('avi')) return 'video/x-msvideo';
-    if (p.endsWith('webm')) return 'video/webm';
-    if (p.endsWith('mkv')) return 'video/x-matroska';
-    if (p.endsWith('flv')) return 'video/x-flv';
-    if (p.endsWith('3gp')) return 'video/3gpp';
-    if (p.endsWith('mpg') || p.endsWith('mpeg')) return 'video/mpeg';
-    if (p.endsWith('pdf')) return 'application/pdf';
-    if (p.endsWith('txt')) return 'text/plain';
-    if (p.endsWith('md')) return 'text/markdown';
-    if (p.endsWith('csv')) return 'text/csv';
-    if (p.endsWith('json')) return 'application/json';
-    if (p.endsWith('xml')) return 'application/xml';
-    if (p.endsWith('yaml') || p.endsWith('yml')) return 'text/yaml';
-    if (p.endsWith('docx')) {
-      return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-    }
-    if (p.endsWith('doc')) return 'application/msword';
-    if (p.endsWith('xlsx')) {
-      return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-    }
-    if (p.endsWith('xls')) return 'application/vnd.ms-excel';
-    if (p.endsWith('pptx')) {
-      return 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
-    }
-    if (p.endsWith('ppt')) return 'application/vnd.ms-powerpoint';
-    return 'application/octet-stream';
   }
 
   void _applyGenerationConfig({
@@ -1091,23 +966,32 @@ class GeminiNativeLlmService implements LLMService {
     String? providerId,
     CancelToken? cancelToken,
   }) async* {
-    final provider = _resolveProvider(providerId);
-    final selectedModel = _resolveSelectedModel(
-      provider: provider,
+    final resolved = LlmServiceConfig.resolveTarget(
+      settings: _settings,
+      providerId: providerId,
       requestedModel: model,
     );
+    final provider = resolved.provider;
+    final selectedModel = resolved.selectedModel;
     if (selectedModel == null) {
-      yield LLMResponseChunk(content: _missingModelMessage());
+      yield LLMResponseChunk(
+        content: LlmServiceConfig.missingModelMessage(_settings),
+      );
       return;
     }
 
-    final activeParams = _buildActiveParams(provider, selectedModel);
+    final activeParams = LlmServiceConfig.buildActiveParams(
+      provider: provider,
+      selectedModel: selectedModel,
+    );
     final apiKey = _resolveNativeApiKey(
       provider: provider,
       activeParams: activeParams,
     );
     if (apiKey.isEmpty) {
-      yield LLMResponseChunk(content: _emptyApiKeyMessage());
+      yield LLMResponseChunk(
+        content: LlmServiceConfig.emptyApiKeyMessage(_settings),
+      );
       return;
     }
     LlmStreamLogAccumulator? streamLog;
@@ -1318,22 +1202,31 @@ class GeminiNativeLlmService implements LLMService {
     String? providerId,
     CancelToken? cancelToken,
   }) async {
-    final provider = _resolveProvider(providerId);
-    final selectedModel = _resolveSelectedModel(
-      provider: provider,
+    final resolved = LlmServiceConfig.resolveTarget(
+      settings: _settings,
+      providerId: providerId,
       requestedModel: model,
     );
+    final provider = resolved.provider;
+    final selectedModel = resolved.selectedModel;
     if (selectedModel == null) {
-      return LLMResponseChunk(content: _missingModelMessage());
+      return LLMResponseChunk(
+        content: LlmServiceConfig.missingModelMessage(_settings),
+      );
     }
 
-    final activeParams = _buildActiveParams(provider, selectedModel);
+    final activeParams = LlmServiceConfig.buildActiveParams(
+      provider: provider,
+      selectedModel: selectedModel,
+    );
     final apiKey = _resolveNativeApiKey(
       provider: provider,
       activeParams: activeParams,
     );
     if (apiKey.isEmpty) {
-      return LLMResponseChunk(content: _emptyApiKeyMessage());
+      return LLMResponseChunk(
+        content: LlmServiceConfig.emptyApiKeyMessage(_settings),
+      );
     }
 
     var route = const CapabilityRouteResolver().resolve(

@@ -1,6 +1,6 @@
 import 'package:aurora/shared/theme/aurora_icons.dart';
 import 'package:flutter/material.dart';
-import 'package:aurora/shared/riverpod_compat.dart';
+import 'package:aurora/shared/riverpod_legacy.dart';
 import 'package:aurora/shared/widgets/aurora_bottom_sheet.dart';
 import 'package:aurora/shared/widgets/aurora_notice.dart';
 import 'package:intl/intl.dart';
@@ -358,3 +358,4 @@ class _MobileSyncSettingsPageState
     );
   }
 }
+

@@ -1,6 +1,6 @@
 import 'package:fluent_ui/fluent_ui.dart' as fluent;
 import 'package:flutter/material.dart';
-import 'package:aurora/shared/riverpod_compat.dart';
+import 'package:aurora/shared/riverpod_legacy.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'settings_provider.dart';
 import 'package:aurora/l10n/app_localizations.dart';
@@ -50,22 +50,7 @@ class MobileAppSettingsPage extends ConsumerWidget {
           },
           orElse: () => 'v...',
         );
-
-    final knownBaseIds = knowledgeState.bases.map((b) => b.baseId).toSet();
-    final validActiveIds = settingsState.activeKnowledgeBaseIds
-        .where((id) => knownBaseIds.contains(id))
-        .toList(growable: false);
-
-    if (!knowledgeState.isLoading &&
-        knowledgeState.error == null &&
-        validActiveIds.length != settingsState.activeKnowledgeBaseIds.length) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!context.mounted) return;
-        ref.read(settingsProvider.notifier).setActiveKnowledgeBaseIds(
-              validActiveIds,
-            );
-      });
-    }
+    final activeKnowledgeBaseCount = settingsState.activeKnowledgeBaseIds.length;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -216,7 +201,7 @@ class MobileAppSettingsPage extends ConsumerWidget {
                     ? (knowledgeState.isLoading || knowledgeState.error != null
                         ? l10n.enabled
                         : l10n.knowledgeEnabledWithActiveCount(
-                            validActiveIds.length,
+                            activeKnowledgeBaseCount,
                           ))
                     : l10n.disabled,
                 onTap: () => Navigator.push(
@@ -849,3 +834,4 @@ class MobileAppSettingsPage extends ConsumerWidget {
     );
   }
 }
+

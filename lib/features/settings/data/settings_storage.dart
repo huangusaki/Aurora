@@ -6,6 +6,7 @@ import 'package:aurora/shared/utils/message_meta_sanitizer.dart';
 import 'package:flutter/foundation.dart';
 import 'package:isar_community/isar.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/error/app_error_type.dart';
 import 'chat_preset_entity.dart';
 import 'daily_usage_stats_entity.dart';
@@ -24,19 +25,26 @@ import '../../assistant/data/assistant_memory_state_entity.dart';
 class SettingsStorage {
   late Isar _isar;
   Isar get isar => _isar;
+  static const String _legacyStorageMigrationKey =
+      'settings_storage.legacy_migration_completed.v1';
 
   static const CompactCondition _compactOnLaunch = CompactCondition(
     minFileSize: 256 * 1024 * 1024,
     minBytes: 128 * 1024 * 1024,
     minRatio: 2.0,
   );
+
   Future<void> init() async {
     final supportDir = await getApplicationSupportDirectory();
     final documentsDir = await getApplicationDocumentsDirectory();
+    final prefs = await SharedPreferences.getInstance();
+    final shouldRunLegacyMigration =
+        !(prefs.getBool(_legacyStorageMigrationKey) ?? false);
 
-    // Migration logic
-    await _migrateFromExampleIfNeeded(supportDir);
-    await _migrateIfNeeded(documentsDir, supportDir);
+    if (shouldRunLegacyMigration) {
+      await _migrateFromExampleIfNeeded(supportDir);
+      await _migrateIfNeeded(documentsDir, supportDir);
+    }
 
     final schemas = [
       ProviderConfigEntitySchema,
@@ -62,8 +70,11 @@ class SettingsStorage {
       compactOnLaunch: _compactOnLaunch,
     );
 
-    // Fix legacy absolute paths inside the database content
-    await _fixLegacyPaths(supportDir.path);
+    if (shouldRunLegacyMigration) {
+      // Legacy path repair is only relevant for historical installs.
+      await _fixLegacyPaths(supportDir.path);
+      await prefs.setBool(_legacyStorageMigrationKey, true);
+    }
 
     // Repair and compact bloated / polluted DB (MessageEntity metadata bloat, file holes)
     await _repairAndCompactIsarIfNeeded(
@@ -352,6 +363,14 @@ class SettingsStorage {
 
   Future<AppSettingsEntity?> loadAppSettings() async {
     return await _isar.appSettingsEntitys.where().findFirst();
+  }
+
+  Future<Set<String>> loadKnowledgeBaseIds() async {
+    final bases = await _isar.knowledgeBaseEntitys.where().findAll();
+    return bases
+        .map((base) => base.baseId.trim())
+        .where((baseId) => baseId.isNotEmpty)
+        .toSet();
   }
 
   Future<void> saveChatDisplaySettings({

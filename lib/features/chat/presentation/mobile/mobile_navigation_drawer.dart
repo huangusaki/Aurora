@@ -1,6 +1,6 @@
 import 'package:aurora/shared/widgets/aurora_bottom_sheet.dart';
 import 'package:flutter/material.dart';
-import 'package:aurora/shared/riverpod_compat.dart';
+import 'package:aurora/shared/riverpod_legacy.dart';
 import 'package:fluent_ui/fluent_ui.dart' as fluent;
 import '../chat_provider.dart';
 import '../../../settings/presentation/usage_stats_view.dart';
@@ -312,3 +312,4 @@ class _MobileDrawerNavItem extends StatelessWidget {
     );
   }
 }
+

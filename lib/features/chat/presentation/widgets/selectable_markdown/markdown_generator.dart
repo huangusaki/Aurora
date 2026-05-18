@@ -12,6 +12,9 @@ import 'dart:io';
 import 'package:flutter_math_fork/flutter_math.dart';
 
 class MarkdownGenerator {
+  static final RegExp _streamingPreviewDataUrlPattern =
+      RegExp('data:[^)\\s"\']+', caseSensitive: false);
+
   final bool isDark;
   final Color textColor;
   final double baseFontSize;
@@ -29,6 +32,22 @@ class MarkdownGenerator {
   })  : footnotesTitle = footnotesTitle ?? 'Footnotes',
         undefinedFootnoteText =
             undefinedFootnoteText ?? ((id) => 'Undefined footnote: $id');
+
+  static String buildStreamingPreviewText(String markdownText) {
+    if (markdownText.isEmpty) return markdownText;
+
+    final normalized = markdownText.contains('\r')
+        ? markdownText.replaceAll(RegExp(r'\r\n?'), '\n')
+        : markdownText;
+    if (!normalized.contains('data:')) {
+      return normalized;
+    }
+
+    return normalized.replaceAllMapped(
+      _streamingPreviewDataUrlPattern,
+      (_) => '[inline data omitted during streaming]',
+    );
+  }
 
   /// Parse markdown and return a list of widgets
   List<Widget> generate(String markdownText) {
